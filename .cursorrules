@@ -169,7 +169,6 @@ src/components/
   organisms/      # 複雑なUIセクション
   templates/      # ページレイアウト
   pages/          # 具体的なページ実装
-```
 
 ## 付録C. Conventional Commits（抜粋）
 
