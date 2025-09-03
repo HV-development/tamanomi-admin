@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # Production service
+  tamanomi-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    container_name: tamanomi-admin
+    profiles:
+      - prod
+
+  # Development service for local development
+  tamanomi-admin-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+    restart: unless-stopped
+    container_name: tamanomi-admin-dev
+    stdin_open: true
+    tty: true
+
+# Default profile runs development service
+# Use: docker-compose up (for development)
+# Use: docker-compose --profile prod up (for production)
