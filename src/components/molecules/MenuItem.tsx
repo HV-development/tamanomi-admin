@@ -1,5 +1,6 @@
+import React from 'react';
 import Link from 'next/link';
-import Icon from '../atoms/Icon';
+import { Icon } from '../atoms/Icon';
 
 interface MenuItemProps {
   name: string;
@@ -19,7 +20,7 @@ export default function MenuItem({ name, href, iconName, isActive, isCollapsed }
           : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
       }`}
     >
-      <Icon name={iconName} size="md" />
+      <Icon name={iconName} className="w-6 h-6" />
       {!isCollapsed && <span>{name}</span>}
     </Link>
   );

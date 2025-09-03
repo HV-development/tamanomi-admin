@@ -1,60 +1,105 @@
 'use client';
 
-import { useState } from 'react';
-import { usePathname } from 'next/navigation';
-import SidebarHeader from '../molecules/SidebarHeader';
-import MenuItem from '../molecules/MenuItem';
+import React from 'react';
+import { useRouter } from 'next/navigation';
+import { SidebarHeader } from '../molecules/SidebarHeader';
+import { NavItem } from '../molecules/NavItem';
+import { useSidebar } from '../providers/SidebarProvider';
 
-interface MenuItemData {
-  name: string;
-  href: string;
-  iconName: string;
+interface SidebarProps {
+  currentView?: string;
+  onViewChange?: (view: string) => void;
 }
 
-const menuItems: MenuItemData[] = [
-  { name: '加盟店舗一覧', href: '/stores', iconName: 'store' },
-  { name: 'ユーザー一覧', href: '/users', iconName: 'users' },
-  { name: '管理者一覧', href: '/admins', iconName: 'admin' },
-];
+export function Sidebar({ currentView = 'dashboard', onViewChange }: SidebarProps) {
+  const { isCollapsed, setIsCollapsed } = useSidebar();
+  const router = useRouter();
 
-export default function Sidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const pathname = usePathname();
+  const navItems = [
+    {
+      id: 'user-management',
+      label: 'ユーザー管理',
+      icon: 'users',
+      href: '/users',
+    },
+    {
+      id: 'store-management',
+      label: '加盟店管理',
+      icon: 'store',
+      href: '/stores',
+    },
+    {
+      id: 'coupon-management',
+      label: 'クーポン管理',
+      icon: 'coupon',
+      href: '/coupons',
+    },
+    {
+      id: 'usage-history',
+      label: '利用履歴',
+      icon: 'history',
+      href: '/history',
+    },
+    {
+      id: 'account-management',
+      label: 'アカウント管理',
+      icon: 'account',
+      href: '/accounts',
+    },
+    {
+      id: 'contact',
+      label: 'お問い合わせ',
+      icon: 'contact',
+      href: '/contact',
+    }
+  ];
+
+  const handleNavClick = (item: typeof navItems[0]) => {
+    if (onViewChange) {
+      onViewChange(item.id);
+    }
+    router.push(item.href);
+  };
 
   return (
-    <div className={`bg-white shadow-lg transition-all duration-300 relative ${
+    <div className={`fixed left-0 top-0 h-full bg-gradient-to-b from-[#9cc912] to-[#8bb811] text-white shadow-lg transition-all duration-300 ease-in-out z-50 font-sans ${
       isCollapsed ? 'w-16' : 'w-64'
     }`}>
-      <SidebarHeader
-        isCollapsed={isCollapsed}
-        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
-      />
+      <div className="flex flex-col h-full">
+        <SidebarHeader
+          isCollapsed={isCollapsed}
+          onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+        />
 
-      {/* メニュー */}
-      <nav className="p-4">
-        <ul className="space-y-2">
-          {menuItems.map((item) => (
-            <li key={item.href}>
-              <MenuItem
-                name={item.name}
-                href={item.href}
-                iconName={item.iconName}
-                isActive={pathname === item.href}
+        <nav className="flex-1 p-2 pt-6">
+          <div className="space-y-3">
+            {navItems.map((item) => (
+              <NavItem
+                key={item.id}
+                isActive={currentView === item.id}
+                onClick={() => handleNavClick(item)}
                 isCollapsed={isCollapsed}
-              />
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      {/* フッター */}
-      {!isCollapsed && (
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-          <div className="text-sm text-gray-500 text-center">
-            © 2024 たまのみ
+                icon={item.icon}
+              >
+                {item.label}
+              </NavItem>
+            ))}
           </div>
+        </nav>
+
+        <div className="p-2 border-t border-white/20">
+          <NavItem
+            isActive={false}
+            onClick={() => {}}
+            isCollapsed={isCollapsed}
+            icon="logout"
+          >
+            ログアウト
+          </NavItem>
         </div>
-      )}
+      </div>
     </div>
   );
 }
+
+export default Sidebar;

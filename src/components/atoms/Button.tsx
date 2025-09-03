@@ -1,47 +1,64 @@
 import React from 'react';
+import Image from 'next/image';
 
 interface ButtonProps {
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  variant?: 'primary' | 'secondary';
   size?: 'sm' | 'md' | 'lg';
-  disabled?: boolean;
-  onClick?: () => void;
-  type?: 'button' | 'submit' | 'reset';
+  iconSrc?: string;
+  iconAlt?: string;
   className?: string;
+  onClick?: (e?: React.MouseEvent<HTMLButtonElement>) => void;
+  disabled?: boolean;
+  type?: 'button' | 'submit' | 'reset';
 }
 
-export default function Button({
-  children,
-  variant = 'primary',
+export function Button({ 
+  children, 
+  variant = 'secondary', 
   size = 'md',
-  disabled = false,
+  iconSrc,
+  iconAlt,
+  className = '', 
   onClick,
-  type = 'button',
-  className = '',
+  disabled = false,
+  type = 'button'
 }: ButtonProps) {
-  const baseClasses = 'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
-  
-  const variantClasses = {
-    primary: 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500',
-    secondary: 'bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500',
-    outline: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-gray-500',
-    ghost: 'text-gray-700 hover:bg-gray-100 focus:ring-gray-500',
-  };
+  const baseClasses = "rounded-3xl font-medium transition-colors duration-200 cursor-pointer flex items-center justify-center gap-2 opacity-100";
   
   const sizeClasses = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-3 text-base',
+    sm: "px-4 py-2 text-sm h-10",
+    md: "px-4 py-3 text-base",
+    lg: "px-6 py-4 text-lg"
+  };
+  
+  const variantClasses = {
+    primary: "bg-[#9CC912] text-white hover:bg-[#8bb810]",
+    secondary: "bg-gray-200 text-gray-900 hover:bg-gray-300"
   };
 
+  const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";
+
   return (
-    <button
+    <button 
       type={type}
-      disabled={disabled}
+      className={`${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${disabledClasses} ${className}`} 
       onClick={onClick}
-      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      disabled={disabled}
+      suppressHydrationWarning={true}
     >
+      {iconSrc && (
+        <Image 
+          src={iconSrc} 
+          alt={iconAlt || ''} 
+          width={16} 
+          height={16} 
+          className={`w-4 h-4 ${variant === 'primary' ? 'filter brightness-0 invert' : ''}`} 
+        />
+      )}
       {children}
     </button>
   );
 }
+
+export default Button;
