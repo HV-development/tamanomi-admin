@@ -1,0 +1,75 @@
+# AWS/インフラ関連
+aws/*
+
+# 依存関係
+node_modules/
+.pnpm-store/
+
+# ビルド出力・生成ファイル
+.next/
+.nuxt/
+/out/
+/build/
+/dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# ロックファイル
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# 環境変数・機密情報
+.env*
+
+# ログ・キャッシュ
+*.log
+logs/
+.cache/
+.parcel-cache/
+.eslintcache
+.npm/
+coverage/
+
+# OS生成ファイル
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE・エディタファイル
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git関連
+.git/
+.gitignore
+
+# テスト・モック設定
+vitest.config.ts
+vitest.setup.ts
+__tests__/
+
+# 型定義・設定ファイル
+tsconfig.json
+next.config.mjs
+tailwind.config.ts
+postcss.config.mjs
+eslint.config.js
+.prettierrc
+components.json
+pnpm-workspace.yaml
+
+# Docker関連
+Dockerfile
+.dockerignore
+
+# ドキュメント
+README.md
+docs/

@@ -1,0 +1,37 @@
+{
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[javascript]": {
+    "editor.formatOnSave": true
+  },
+  "[javascriptreact]": {
+    "editor.formatOnSave": true
+  },
+  "[typescript]": {
+    "editor.formatOnSave": true
+  },
+  "[typescriptreact]": {
+    "editor.formatOnSave": true
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "eslint.useFlatConfig": true,
+  "eslint.experimental.useFlatConfig": true,
+  "eslint.workingDirectories": ["."],
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+  "eslint.options": {
+    "overrideConfigFile": "eslint.config.js"
+  },
+  "terminal.integrated.env.osx": {
+    "ESLINT_USE_FLAT_CONFIG": "true"
+  },
+  "terminal.integrated.env.linux": {
+    "ESLINT_USE_FLAT_CONFIG": "true"
+  },
+  "terminal.integrated.env.windows": {
+    "ESLINT_USE_FLAT_CONFIG": "true"
+  }
+}

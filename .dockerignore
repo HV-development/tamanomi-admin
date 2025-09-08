@@ -1,0 +1,34 @@
+# OS/エディタ系
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Git
+.git
+.gitignore
+
+# Node
+node_modules
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# テスト・モック
+vitest.config.ts
+vitest.setup.ts
+
+# ドキュメント
+README.md
+docs/
+
+# ビルドアウトプット（任意で追加）
+dist/
+.next/
+
+# CDK/インフラ定義
+aws/
+
+# その他環境変数や機密ファイル
+.env
+.env.*

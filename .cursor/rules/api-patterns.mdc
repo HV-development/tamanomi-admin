@@ -1,0 +1,514 @@
+---
+alwaysApply: true
+---
+# API通信とデータ管理パターン
+
+## サービス層パターン
+
+
+### 基本的なサービス実装
+```typescript
+// services/residentService.ts
+import { api } from '@/lib/axios';
+import { ResidentSchema, type Resident } from '@/types/resident';
+import { handleApiError } from '@/utils/error-handlers';
+
+export const residentService = {
+  async getAll(): Promise<Resident[]> {
+    try {
+      const response = await api.get('/api/residents');
+      return ResidentSchema.array().parse(response.data);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async getById(id: string): Promise<Resident> {
+    try {
+      const response = await api.get(`/api/residents/${id}`);
+      return ResidentSchema.parse(response.data);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async create(data: Omit<Resident, 'id' | 'createdAt' | 'updatedAt'>): Promise<Resident> {
+    try {
+      const response = await api.post('/api/residents', data);
+      return ResidentSchema.parse(response.data);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async update(id: string, data: Partial<Resident>): Promise<Resident> {
+    try {
+      const response = await api.put(`/api/residents/${id}`, data);
+      return ResidentSchema.parse(response.data);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      await api.delete(`/api/residents/${id}`);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  },
+};
+```
+
+### ページネーション対応サービス
+```typescript
+// services/paginatedService.ts
+import { api } from '@/lib/axios';
+import { z } from 'zod';
+
+const PaginatedResponseSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
+  z.object({
+    data: z.array(itemSchema),
+    pagination: z.object({
+      currentPage: z.number(),
+      totalPages: z.number(),
+      totalItems: z.number(),
+      itemsPerPage: z.number(),
+    }),
+  });
+
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export const createPaginatedService = <T extends z.ZodTypeAny>(
+  endpoint: string,
+  itemSchema: T
+) => {
+  return {
+    async getPage(params: PaginationParams = {}) {
+      try {
+        const response = await api.get(endpoint, { params });
+        return PaginatedResponseSchema(itemSchema).parse(response.data);
+      } catch (error) {
+        throw new Error(handleApiError(error));
+      }
+    },
+  };
+};
+```
+
+## カスタムフックパターン
+
+### 基本的なデータフェッチフック
+```typescript
+// hooks/useResident.ts
+import { useState, useEffect } from 'react';
+import { residentService } from '@/services/residentService';
+import type { Resident } from '@/types/resident';
+
+export const useResident = (id: string) => {
+  const [data, setData] = useState<Resident | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const resident = await residentService.getById(id);
+        setData(resident);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '予期しないエラーが発生しました');
+        setData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id]);
+
+  const refetch = async () => {
+    if (!id) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      const resident = await residentService.getById(id);
+      setData(resident);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '予期しないエラーが発生しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { data, loading, error, refetch };
+};
+```
+
+### リスト管理フック
+```typescript
+// hooks/useResidents.ts
+import { useState, useEffect, useCallback } from 'react';
+import { residentService } from '@/services/residentService';
+import type { Resident } from '@/types/resident';
+
+export const useResidents = () => {
+  const [data, setData] = useState<Resident[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const residents = await residentService.getAll();
+      setData(residents);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '予期しないエラーが発生しました');
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const addResident = useCallback(async (newResident: Omit<Resident, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const created = await residentService.create(newResident);
+      setData(prev => [...prev, created]);
+      return created;
+    } catch (err) {
+      throw new Error(err instanceof Error ? err.message : '作成に失敗しました');
+    }
+  }, []);
+
+  const updateResident = useCallback(async (id: string, updates: Partial<Resident>) => {
+    try {
+      const updated = await residentService.update(id, updates);
+      setData(prev => prev.map(item => item.id === id ? updated : item));
+      return updated;
+    } catch (err) {
+      throw new Error(err instanceof Error ? err.message : '更新に失敗しました');
+    }
+  }, []);
+
+  const deleteResident = useCallback(async (id: string) => {
+    try {
+      await residentService.delete(id);
+      setData(prev => prev.filter(item => item.id !== id));
+    } catch (err) {
+      throw new Error(err instanceof Error ? err.message : '削除に失敗しました');
+    }
+  }, []);
+
+  return {
+    data,
+    loading,
+    error,
+    refetch: fetchData,
+    addResident,
+    updateResident,
+    deleteResident,
+  };
+};
+```
+
+### ページネーション対応フック
+```typescript
+// hooks/usePaginatedData.ts
+import { useState, useEffect, useCallback } from 'react';
+import type { PaginationParams } from '@/services/paginatedService';
+
+interface UsePaginatedDataOptions<T> {
+  fetchFn: (params: PaginationParams) => Promise<{
+    data: T[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+    };
+  }>;
+  initialParams?: PaginationParams;
+}
+
+export const usePaginatedData = <T>({ fetchFn, initialParams = {} }: UsePaginatedDataOptions<T>) => {
+  const [data, setData] = useState<T[]>([]);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 10,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [params, setParams] = useState<PaginationParams>({ page: 1, limit: 10, ...initialParams });
+
+  const fetchData = useCallback(async (fetchParams: PaginationParams) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await fetchFn(fetchParams);
+      setData(result.data);
+      setPagination(result.pagination);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '予期しないエラーが発生しました');
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchFn]);
+
+  useEffect(() => {
+    fetchData(params);
+  }, [fetchData, params]);
+
+  const updateParams = useCallback((newParams: Partial<PaginationParams>) => {
+    setParams(prev => ({ ...prev, ...newParams, page: newParams.page ?? 1 }));
+  }, []);
+
+  const goToPage = useCallback((page: number) => {
+    updateParams({ page });
+  }, [updateParams]);
+
+  const search = useCallback((query: string) => {
+    updateParams({ search: query, page: 1 });
+  }, [updateParams]);
+
+  const sort = useCallback((sortBy: string, sortOrder: 'asc' | 'desc' = 'asc') => {
+    updateParams({ sortBy, sortOrder, page: 1 });
+  }, [updateParams]);
+
+  return {
+    data,
+    pagination,
+    loading,
+    error,
+    params,
+    updateParams,
+    goToPage,
+    search,
+    sort,
+    refetch: () => fetchData(params),
+  };
+};
+```
+
+## 型定義パターン
+
+### 基本的な型定義
+```typescript
+// types/resident.ts
+import { z } from 'zod';
+
+export const ResidentSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1, '名前は必須です'),
+  nameKana: z.string().min(1, 'フリガナは必須です'),
+  birthDate: z.string().datetime(),
+  gender: z.enum(['male', 'female', 'other']),
+  roomNumber: z.string().optional(),
+  careLevel: z.enum(['support1', 'support2', 'care1', 'care2', 'care3', 'care4', 'care5']).optional(),
+  status: z.enum(['active', 'discharged', 'deceased']).default('active'),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export type Resident = z.infer<typeof ResidentSchema>;
+
+// フォーム用の型（作成時に不要なフィールドを除外）
+export const CreateResidentSchema = ResidentSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type CreateResident = z.infer<typeof CreateResidentSchema>;
+
+// 更新用の型（すべてオプショナル）
+export const UpdateResidentSchema = ResidentSchema.partial().omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type UpdateResident = z.infer<typeof UpdateResidentSchema>;
+```
+
+### API レスポンス型
+```typescript
+// types/api.ts
+import { z } from 'zod';
+
+export const ApiErrorSchema = z.object({
+  message: z.string(),
+  code: z.string().optional(),
+  details: z.record(z.any()).optional(),
+});
+
+export type ApiError = z.infer<typeof ApiErrorSchema>;
+
+export const ApiResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
+  z.object({
+    success: z.boolean(),
+    data: dataSchema,
+    message: z.string().optional(),
+  });
+
+export const PaginatedApiResponseSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
+  z.object({
+    success: z.boolean(),
+    data: z.array(itemSchema),
+    pagination: z.object({
+      currentPage: z.number(),
+      totalPages: z.number(),
+      totalItems: z.number(),
+      itemsPerPage: z.number(),
+    }),
+    message: z.string().optional(),
+  });
+```
+
+## エラーハンドリングパターン
+
+### 統一エラーハンドラー
+```typescript
+// utils/error-handlers.ts
+import axios from 'axios';
+import type { ApiError } from '@/types/api';
+
+export const handleApiError = (error: unknown): string => {
+  if (axios.isAxiosError(error)) {
+    if (error.response?.data?.message) {
+      return error.response.data.message;
+    }
+    
+    switch (error.response?.status) {
+      case 400:
+        return 'リクエストが正しくありません';
+      case 401:
+        return '認証が必要です';
+      case 403:
+        return 'アクセス権限がありません';
+      case 404:
+        return 'リソースが見つかりません';
+      case 500:
+        return 'サーバーエラーが発生しました';
+      default:
+        return 'ネットワークエラーが発生しました';
+    }
+  }
+  
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  return '予期しないエラーが発生しました';
+};
+
+export const createErrorHandler = (context: string) => {
+  return (error: unknown): string => {
+    const message = handleApiError(error);
+    console.error(`[${context}] Error:`, error);
+    return message;
+  };
+};
+```
+
+## バリデーションパターン
+
+### フォームバリデーション
+```typescript
+// validations/resident-validation.ts
+import { z } from 'zod';
+
+export const residentFormSchema = z.object({
+  name: z.string()
+    .min(1, '名前は必須です')
+    .max(50, '名前は50文字以内で入力してください'),
+  nameKana: z.string()
+    .min(1, 'フリガナは必須です')
+    .max(50, 'フリガナは50文字以内で入力してください')
+    .regex(/^[ァ-ヶー\s]+$/, 'カタカナで入力してください'),
+  birthDate: z.string()
+    .min(1, '生年月日は必須です')
+    .refine((date) => {
+      const birthDate = new Date(date);
+      const today = new Date();
+      return birthDate <= today;
+    }, '未来の日付は選択できません'),
+  gender: z.enum(['male', 'female', 'other'], {
+    errorMap: () => ({ message: '性別を選択してください' }),
+  }),
+  roomNumber: z.string().optional(),
+  careLevel: z.enum(['support1', 'support2', 'care1', 'care2', 'care3', 'care4', 'care5']).optional(),
+});
+
+export type ResidentFormData = z.infer<typeof residentFormSchema>;
+```
+
+## 禁止パターン
+
+❌ **避けるべきパターン**
+```typescript
+// 悪い例：型安全でないAPI呼び出し
+const fetchData = async () => {
+  const response = await fetch('/api/data');
+  const data = await response.json(); // any型
+  return data;
+};
+
+// 悪い例：エラーハンドリングなし
+const updateUser = async (id: string, data: any) => {
+  await api.put(`/users/${id}`, data);
+};
+
+// 悪い例：直接的なstate変更
+const [users, setUsers] = useState([]);
+const addUser = (user) => {
+  users.push(user); // 直接変更
+  setUsers(users);
+};
+```
+
+✅ **推奨パターン**
+```typescript
+// 良い例：型安全なAPI呼び出し
+const fetchData = async (): Promise<User[]> => {
+  const response = await api.get('/api/users');
+  return UserSchema.array().parse(response.data);
+};
+
+// 良い例：適切なエラーハンドリング
+const updateUser = async (id: string, data: UpdateUser): Promise<User> => {
+  try {
+    const response = await api.put(`/users/${id}`, data);
+    return UserSchema.parse(response.data);
+  } catch (error) {
+    throw new Error(handleApiError(error));
+  }
+};
+
+// 良い例：イミュータブルな状態更新
+const [users, setUsers] = useState<User[]>([]);
+const addUser = (user: User) => {
+  setUsers(prev => [...prev, user]);
+};
+```

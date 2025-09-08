@@ -1,0 +1,370 @@
+---
+description: "CareBase Admin - コンポーネントパターンとベストプラクティス"
+globs: ["components/**/*.tsx"]
+alwaysApply: true
+---
+
+# コンポーネントパターンとベストプラクティス
+
+## Atomic Design 実装パターン
+
+### 1_atoms/ パターン
+
+#### Button コンポーネント
+```typescript
+import { cn } from '@/lib/utils';
+import { ButtonHTMLAttributes, forwardRef } from 'react';
+
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  loading?: boolean;
+}
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ variant = 'primary', size = 'md', loading, children, className, disabled, ...props }, ref) => {
+    return (
+      <button
+        ref={ref}
+        className={cn(
+          'inline-flex items-center justify-center rounded-md font-medium transition-colors',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          'disabled:opacity-50 disabled:pointer-events-none',
+          {
+            'bg-primary text-primary-foreground hover:bg-primary/90': variant === 'primary',
+            'bg-secondary text-secondary-foreground hover:bg-secondary/80': variant === 'secondary',
+            'border border-input hover:bg-accent hover:text-accent-foreground': variant === 'outline',
+            'hover:bg-accent hover:text-accent-foreground': variant === 'ghost',
+          },
+          {
+            'h-9 px-3 text-xs': size === 'sm',
+            'h-10 px-4 text-sm': size === 'md',
+            'h-11 px-8 text-base': size === 'lg',
+          },
+          className
+        )}
+        disabled={disabled || loading}
+        {...props}
+      >
+        {loading && <LoadingSpinner className="mr-2 h-4 w-4" />}
+        {children}
+      </button>
+    );
+  }
+);
+```
+
+#### Input コンポーネント
+```typescript
+import { cn } from '@/lib/utils';
+import { InputHTMLAttributes, forwardRef } from 'react';
+
+interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  error?: string;
+  label?: string;
+}
+
+export const Input = forwardRef<HTMLInputElement, InputProps>(
+  ({ className, error, label, id, ...props }, ref) => {
+    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    
+    return (
+      <div className="space-y-1">
+        {label && (
+          <label htmlFor={inputId} className="text-sm font-medium text-gray-700">
+            {label}
+          </label>
+        )}
+        <input
+          id={inputId}
+          ref={ref}
+          className={cn(
+            'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2',
+            'text-sm ring-offset-background file:border-0 file:bg-transparent',
+            'file:text-sm file:font-medium placeholder:text-muted-foreground',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            'disabled:cursor-not-allowed disabled:opacity-50',
+            error && 'border-red-500 focus-visible:ring-red-500',
+            className
+          )}
+          {...props}
+        />
+        {error && <p className="text-sm text-red-600">{error}</p>}
+      </div>
+    );
+  }
+);
+```
+
+### 2_molecules/ パターン
+
+#### Form Field コンポーネント
+```typescript
+import { Input } from '@/components/1_atoms/common/input';
+import { Label } from '@/components/1_atoms/common/label';
+import { cn } from '@/lib/utils';
+
+interface FormFieldProps {
+  label: string;
+  error?: string;
+  required?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}
+
+export const FormField = ({ label, error, required, className, children }: FormFieldProps) => {
+  return (
+    <div className={cn('space-y-2', className)}>
+      <Label className={cn('text-sm font-medium', required && 'after:content-["*"] after:text-red-500 after:ml-1')}>
+        {label}
+      </Label>
+      {children}
+      {error && (
+        <p className="text-sm text-red-600" role="alert" aria-live="polite">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
+```
+
+#### Search Box コンポーネント
+```typescript
+import { Input } from '@/components/1_atoms/common/input';
+import { Button } from '@/components/1_atoms/buttons/button';
+import { Search, X } from 'lucide-react';
+import { useState } from 'react';
+
+interface SearchBoxProps {
+  onSearch: (query: string) => void;
+  placeholder?: string;
+  className?: string;
+}
+
+export const SearchBox = ({ onSearch, placeholder = '検索...', className }: SearchBoxProps) => {
+  const [query, setQuery] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSearch(query);
+  };
+
+  const handleClear = () => {
+    setQuery('');
+    onSearch('');
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className={cn('relative flex items-center', className)}>
+      <div className="relative flex-1">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={placeholder}
+          className="pl-10 pr-10"
+        />
+        {query && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleClear}
+            className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0"
+          >
+            <X className="h-3 w-3" />
+            <span className="sr-only">クリア</span>
+          </Button>
+        )}
+      </div>
+      <Button type="submit" className="ml-2">
+        検索
+      </Button>
+    </form>
+  );
+};
+```
+
+### 3_organisms/ パターン
+
+#### Data Table コンポーネント
+```typescript
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/1_atoms/buttons/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface Column<T> {
+  key: keyof T;
+  header: string;
+  render?: (value: T[keyof T], item: T) => React.ReactNode;
+  className?: string;
+}
+
+interface DataTableProps<T> {
+  data: T[];
+  columns: Column<T>[];
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    onPageChange: (page: number) => void;
+  };
+  loading?: boolean;
+  emptyMessage?: string;
+  className?: string;
+}
+
+export function DataTable<T extends { id: string | number }>({
+  data,
+  columns,
+  pagination,
+  loading,
+  emptyMessage = 'データがありません',
+  className
+}: DataTableProps<T>) {
+  if (loading) {
+    return (
+      <div className="flex h-32 items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="flex h-32 items-center justify-center text-muted-foreground">
+        {emptyMessage}
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn('space-y-4', className)}>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {columns.map((column) => (
+                <TableHead key={String(column.key)} className={column.className}>
+                  {column.header}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((item) => (
+              <TableRow key={item.id}>
+                {columns.map((column) => (
+                  <TableCell key={String(column.key)} className={column.className}>
+                    {column.render ? column.render(item[column.key], item) : String(item[column.key])}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {pagination && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            ページ {pagination.currentPage} / {pagination.totalPages}
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => pagination.onPageChange(pagination.currentPage - 1)}
+              disabled={pagination.currentPage <= 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              前へ
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => pagination.onPageChange(pagination.currentPage + 1)}
+              disabled={pagination.currentPage >= pagination.totalPages}
+            >
+              次へ
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## コンポーネント作成ガイドライン
+
+### 1. Props設計
+- 必要最小限のpropsに絞る
+- デフォルト値を適切に設定
+- 型安全性を確保
+- `children`を適切に活用
+
+### 2. アクセシビリティ
+- 適切なARIA属性を設定
+- キーボードナビゲーション対応
+- スクリーンリーダー対応
+- フォーカス管理
+
+### 3. エラーハンドリング
+- エラー状態の表示
+- ローディング状態の管理
+- バリデーションエラーの表示
+
+### 4. パフォーマンス
+- 必要に応じて`React.memo`使用
+- 重い計算は`useMemo`でメモ化
+- イベントハンドラーは`useCallback`でメモ化
+
+### 5. テスト容易性
+- `data-testid`属性を設定
+- 副作用を分離
+- モック可能な設計
+
+## 禁止パターン
+
+❌ **避けるべきパターン**
+```typescript
+// 悪い例：propsの型が不明確
+export const BadComponent = (props: any) => {
+  return <div>{props.children}</div>;
+};
+
+// 悪い例：インラインスタイル
+export const BadComponent = () => {
+  return <div style={{ color: 'red', fontSize: '14px' }}>Bad</div>;
+};
+
+// 悪い例：直接DOM操作
+export const BadComponent = () => {
+  useEffect(() => {
+    document.getElementById('myDiv').style.display = 'none';
+  }, []);
+  return <div id="myDiv">Bad</div>;
+};
+```
+
+✅ **推奨パターン**
+```typescript
+// 良い例：明確な型定義
+interface GoodComponentProps {
+  title: string;
+  children: React.ReactNode;
+  variant?: 'primary' | 'secondary';
+}
+
+export const GoodComponent = ({ title, children, variant = 'primary' }: GoodComponentProps) => {
+  return (
+    <div className={cn('component-base', variant === 'primary' && 'component-primary')}>
+      <h2 className="component-title">{title}</h2>
+      {children}
+    </div>
+  );
+};
+```
