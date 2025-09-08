@@ -1,0 +1,36 @@
+version: 0.2
+
+env:
+  parameter-store:
+    AWS_ACCOUNT_ID: /$ENV_NAME/codebuild/AWS_ACCOUNT_ID
+
+phases:
+  pre_build:
+    on-failure: ABORT
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - IMAGE_TAG=$CODEBUILD_RESOLVED_SOURCE_VERSION
+      - echo IMAGE_TAG $IMAGE_TAG
+  build:
+    on-failure: ABORT
+    commands:
+      - set env
+      - ./aws/set_next_env.sh
+      - echo "$(cat .env)"
+      - echo build node image
+      - docker build -t $ECR_NAME:$IMAGE_TAG -f ./Dockerfile . # イメージの作成とタグ付け
+      - docker tag $ECR_NAME:$IMAGE_TAG $ECR_REPOSITORY_URL:$IMAGE_TAG
+  post_build:
+    on-failure: ABORT
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker image...
+      - docker push $ECR_REPOSITORY_URL:$IMAGE_TAG
+      - cp ./aws/imagedefinitions.json .
+      - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $ECR_REPOSITORY_URL:$IMAGE_TAG > imagedefinitions.json
+      - echo "$(cat imagedefinitions.json)"
+
+artifacts:
+  files:
+    - imagedefinitions.json
