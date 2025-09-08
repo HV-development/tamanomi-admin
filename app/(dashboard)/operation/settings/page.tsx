@@ -11,7 +11,7 @@ export default function SettingsPage() {
         <Button asChild>
           <Link href="/operation/admins/register">
             <Plus className="mr-2 h-4 w-4" />
-            運営者登録
+            管理アカウント登録
           </Link>
         </Button>
       </div>
@@ -19,11 +19,11 @@ export default function SettingsPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">運営者登録</CardTitle>
+            <CardTitle className="text-sm font-medium">管理アカウント登録</CardTitle>
             <Plus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <CardDescription>新しい運営者を登録</CardDescription>
+            <CardDescription>新しい管理アカウントを登録</CardDescription>
             <Button asChild className="w-full mt-4" variant="outline">
               <Link href="/operation/admins/register">登録</Link>
             </Button>
@@ -32,11 +32,11 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">運営者一覧</CardTitle>
+            <CardTitle className="text-sm font-medium">管理アカウント一覧</CardTitle>
             <List className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <CardDescription>登録済み運営者の一覧</CardDescription>
+            <CardDescription>登録済み管理アカウントの一覧</CardDescription>
             <Button asChild className="w-full mt-4" variant="outline">
               <Link href="/operation/admins">一覧表示</Link>
             </Button>
@@ -45,11 +45,11 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">運営者編集</CardTitle>
+            <CardTitle className="text-sm font-medium">管理アカウント編集</CardTitle>
             <Edit className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <CardDescription>運営者情報の編集</CardDescription>
+            <CardDescription>管理アカウント情報の編集</CardDescription>
             <Button asChild className="w-full mt-4" variant="outline">
               <Link href="/operation/admins/edit">編集</Link>
             </Button>

@@ -3,11 +3,11 @@ export default function AdminsPage() {
     <div className="flex flex-col items-center justify-center py-12">
       <div className="mx-auto w-full max-w-3xl space-y-6">
         <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-bold">運営者一覧</h1>
-          <p className="text-muted-foreground">登録されている運営者の一覧を表示します。</p>
+          <h1 className="text-3xl font-bold">管理アカウント</h1>
+          <p className="text-muted-foreground">登録されている管理アカウントの一覧を表示します。</p>
         </div>
         <div className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
-          <p>ここに運営者一覧テーブルが表示されます。</p>
+          <p>ここに管理アカウント一覧テーブルが表示されます。</p>
         </div>
       </div>
     </div>

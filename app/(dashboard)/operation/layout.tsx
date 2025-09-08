@@ -1,6 +1,6 @@
 import type React from 'react';
 import Link from 'next/link';
-import { Home, Building2, Users, Settings2, Bell, Menu } from 'lucide-react';
+import { Home, Store, Users, UserCog, MessageSquare, Bell, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { UserNav } from '@/components/2_molecules/user-nav';
@@ -19,38 +19,38 @@ export default function OperationLayout({ children }: OperationLayoutProps) {
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link href="/operation" className="flex items-center gap-2 font-semibold">
               <Home className="h-6 w-6" />
-              <span className="">CareBase 運営</span>
+              <span className="">Tamanomi 管理</span>
             </Link>
           </div>
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
               <Link
-                href="/operation"
+                href="/operation/stores"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
-                <Home className="h-4 w-4" />
-                ダッシュボード
+                <Store className="h-4 w-4" />
+                加盟店管理
               </Link>
               <Link
-                href="/operation/offices"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <Building2 className="h-4 w-4" />
-                事業所
-              </Link>
-              <Link
-                href="/operation/care-managers"
+                href="/operation/users"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Users className="h-4 w-4" />
-                ケアマネージャー
+                ユーザー管理
               </Link>
               <Link
-                href="/operation/settings"
+                href="/operation/admins"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
-                <Settings2 className="h-4 w-4" />
-                設定
+                <UserCog className="h-4 w-4" />
+                管理アカウント
+              </Link>
+              <Link
+                href="/operation/contact"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <MessageSquare className="h-4 w-4" />
+                お問い合わせ
               </Link>
             </nav>
           </div>
@@ -70,35 +70,35 @@ export default function OperationLayout({ children }: OperationLayoutProps) {
                 <nav className="grid gap-2 text-lg font-medium">
                   <Link href="/operation" className="flex items-center gap-2 text-lg font-semibold">
                     <Home className="h-6 w-6" />
-                    <span className="sr-only">CareBase 運営</span>
+                    <span className="sr-only">Tamanomi 管理</span>
                   </Link>
                   <Link
-                    href="/operation"
+                    href="/operation/stores"
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                   >
-                    <Home className="h-5 w-5" />
-                    ダッシュボード
+                    <Store className="h-5 w-5" />
+                    加盟店管理
                   </Link>
                   <Link
-                    href="/operation/offices"
-                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                  >
-                    <Building2 className="h-5 w-5" />
-                    事業所
-                  </Link>
-                  <Link
-                    href="/operation/care-managers"
+                    href="/operation/users"
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                   >
                     <Users className="h-5 w-5" />
-                    ケアマネージャー
+                    ユーザー管理
                   </Link>
                   <Link
-                    href="/operation/settings"
+                    href="/operation/admins"
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                   >
-                    <Settings2 className="h-5 w-5" />
-                    設定
+                    <UserCog className="h-5 w-5" />
+                    管理アカウント
+                  </Link>
+                  <Link
+                    href="/operation/contact"
+                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                  >
+                    <MessageSquare className="h-5 w-5" />
+                    お問い合わせ
                   </Link>
                 </nav>
               </SheetContent>
