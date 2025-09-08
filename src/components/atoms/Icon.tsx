@@ -13,6 +13,11 @@ const iconMap: Record<string, string> = {
   home: '🏠',
   settings: '⚙️',
   logout: '🚪',
+  dashboard: '📊',
+  chart: '📈',
+  activity: '⚡',
+  money: '💰',
+  growth: '📈',
 };
 
 export default function Icon({ name, size = 'md', className = '' }: IconProps) {

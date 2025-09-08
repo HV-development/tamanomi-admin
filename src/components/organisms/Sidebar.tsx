@@ -22,8 +22,8 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className={`bg-white shadow-lg transition-all duration-300 relative ${
-      isCollapsed ? 'w-16' : 'w-64'
+    <div className={`bg-white shadow-xl transition-all duration-300 relative border-r border-gray-100 ${
+      isCollapsed ? 'w-20' : 'w-72'
     }`}>
       <SidebarHeader
         isCollapsed={isCollapsed}
@@ -49,8 +49,8 @@ export default function Sidebar() {
 
       {/* フッター */}
       {!isCollapsed && (
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-          <div className="text-sm text-gray-500 text-center">
+        <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-100">
+          <div className="text-sm text-gray-500 text-center font-medium">
             © 2024 たまのみ
           </div>
         </div>

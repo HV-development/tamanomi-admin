@@ -13,14 +13,14 @@ export default function MenuItem({ name, href, iconName, isActive, isCollapsed }
   return (
     <Link
       href={href}
-      className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+      className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
         isActive
-          ? 'bg-green-100 text-green-700 border-l-4 border-green-500'
-          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+          ? 'bg-gradient-to-r from-green-50 to-green-100 text-green-700 shadow-sm border-l-4 border-green-500'
+          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm'
       }`}
     >
-      <Icon name={iconName} size="md" />
-      {!isCollapsed && <span>{name}</span>}
+      <Icon name={iconName} size="md" className={`${isActive ? 'text-green-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
+      {!isCollapsed && <span className="font-medium">{name}</span>}
     </Link>
   );
 }
