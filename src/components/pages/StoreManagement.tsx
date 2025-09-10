@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import DashboardLayout from '../templates/DashboardLayout';
 import Button from '../atoms/Button';
 import Icon from '../atoms/Icon';
