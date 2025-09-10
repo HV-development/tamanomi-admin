@@ -8,10 +8,9 @@ import Icon from '../atoms/Icon';
 interface Store {
   id: string;
   name: string;
-  prefecture: string;
-  city: string;
+  postalCode: string;
   address: string;
-  building: string;
+  homepage: string;
   phone: string;
   genre: string;
   status: 'active' | 'inactive';
@@ -23,10 +22,9 @@ const sampleStores: Store[] = [
   {
     id: '1',
     name: 'たまのみ 渋谷店',
-    prefecture: '東京都',
-    city: '渋谷区',
-    address: '渋谷1-1-1',
-    building: 'たまのみビル1F',
+    postalCode: '150-0002',
+    address: '東京都渋谷区渋谷1-1-1 たまのみビル1F',
+    homepage: 'https://tamanomi-shibuya.com',
     phone: '03-1234-5678',
     genre: '居酒屋',
     status: 'active',
@@ -35,10 +33,9 @@ const sampleStores: Store[] = [
   {
     id: '2',
     name: 'たまのみ 新宿店',
-    prefecture: '東京都',
-    city: '新宿区',
-    address: '新宿2-2-2',
-    building: '新宿センタービル2F',
+    postalCode: '160-0022',
+    address: '東京都新宿区新宿2-2-2 新宿センタービル2F',
+    homepage: 'https://tamanomi-shinjuku.com',
     phone: '03-2345-6789',
     genre: 'カフェ',
     status: 'active',
@@ -47,10 +44,9 @@ const sampleStores: Store[] = [
   {
     id: '3',
     name: 'たまのみ 池袋店',
-    prefecture: '東京都',
-    city: '豊島区',
-    address: '池袋3-3-3',
-    building: '',
+    postalCode: '171-0022',
+    address: '東京都豊島区池袋3-3-3',
+    homepage: 'https://tamanomi-ikebukuro.com',
     phone: '03-3456-7890',
     genre: 'レストラン',
     status: 'inactive',
@@ -302,10 +298,10 @@ export default function StoreManagement() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    店舗ID
+                    店舗名
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    店舗名
+                    郵便番号
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     住所
@@ -314,13 +310,13 @@ export default function StoreManagement() {
                     電話番号
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ホームページ
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ジャンル
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ステータス
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    登録日
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     アクション
@@ -331,19 +327,26 @@ export default function StoreManagement() {
                 {filteredStores.map((store) => (
                   <tr key={store.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{store.id}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{store.name}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {store.prefecture}{store.city}{store.address}
-                        {store.building && <div className="text-xs text-gray-500">{store.building}</div>}
-                      </div>
+                      <div className="text-sm text-gray-900">{store.postalCode}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{store.address}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{store.phone}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <a 
+                        href={store.homepage} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:text-blue-800 underline"
+                      >
+                        {store.homepage}
+                      </a>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{store.genre}</div>
@@ -357,17 +360,14 @@ export default function StoreManagement() {
                         {store.status === 'active' ? '営業中' : '休業中'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {store.registeredAt}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <Button variant="outline" size="sm">
                         <Icon name="edit" size="sm" className="mr-1" />
                         編集
                       </Button>
-                      <Button variant="ghost" size="sm">
-                        <Icon name="eye" size="sm" className="mr-1" />
-                        詳細
+                      <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50">
+                        <Icon name="clear" size="sm" className="mr-1" />
+                        削除
                       </Button>
                     </td>
                   </tr>
