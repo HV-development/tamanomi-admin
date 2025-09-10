@@ -56,7 +56,7 @@ export default function Sidebar() {
               variant="ghost"
               size="sm"
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-2"
+              className="p-2 focus:outline-none"
             >
               <Icon name={isCollapsed ? 'chevronRight' : 'chevronLeft'} size="sm" />
             </Button>

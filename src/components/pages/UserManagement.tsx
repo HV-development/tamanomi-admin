@@ -235,7 +235,7 @@ export default function UserManagement() {
               variant="ghost"
               size="sm"
               onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-              className="flex items-center"
+              className="flex items-center focus:outline-none"
             >
               <Icon name={isSearchExpanded ? 'chevronUp' : 'chevronDown'} size="sm" />
             </Button>
