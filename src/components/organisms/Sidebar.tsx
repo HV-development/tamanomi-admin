@@ -58,14 +58,12 @@ export default function Sidebar() {
       {/* フッター */}
       <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200">
         <div className="p-4 flex justify-end">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-2 focus:outline-none"
-            >
-              <Icon name={isCollapsed ? "chevronRight" : "chevronLeft"} size="sm" />
-            </Button>
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-2 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            <Icon name={isCollapsed ? "chevronRight" : "chevronLeft"} size="sm" />
+          </button>
         </div>
         
         {!isCollapsed && (
