@@ -5,17 +5,17 @@ interface LogoProps {
 
 export default function Logo({ size = 'md', className = '' }: LogoProps) {
   const sizeClasses = {
-    sm: 'w-10 h-10',
-    md: 'w-12 h-12',
-    lg: 'w-16 h-16',
+    sm: 'h-8',
+    md: 'h-10',
+    lg: 'h-12',
   };
 
   return (
-    <div className={`flex items-center ${className}`}>
+    <div className={`flex items-center w-full ${className}`}>
       <img 
         src="/tamanomi_logo.svg" 
         alt="たまのみロゴ" 
-        className={`${sizeClasses[size]} object-contain`}
+        className={`w-full ${sizeClasses[size]} object-contain`}
       />
     </div>
   );
