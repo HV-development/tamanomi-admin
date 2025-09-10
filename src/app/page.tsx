@@ -1,5 +1,6 @@
-import Dashboard from '../components/pages/Dashboard';
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return <Dashboard />;
+  // ルートアクセス時はログイン画面にリダイレクト
+  redirect('/login');
 }
