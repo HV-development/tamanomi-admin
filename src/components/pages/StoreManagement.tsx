@@ -122,7 +122,7 @@ export default function StoreManagement() {
             </p>
           </div>
           <Button variant="primary">
-            新規登録
+            <Link href="/stores/new">新規登録</Link>
           </Button>
         </div>
 
