@@ -6,7 +6,6 @@ import DashboardLayout from '../templates/DashboardLayout';
 import Button from '../atoms/Button';
 import Icon from '../atoms/Icon';
 
-
 interface Store {
   id: string;
   name: string;
@@ -126,7 +125,10 @@ export default function StoreManagement() {
             </p>
             </div>
             <div className="text-sm text-gray-600">
-              ログインユーザー: <span className="font-medium text-gray-900">管理者太郎</span>
+              <div className="flex items-center space-x-2">
+                <Icon name="admin" size="sm" className="text-gray-600" />
+                <span className="font-medium text-gray-900">管理者太郎</span>
+              </div>
             </div>
           </div>
         </div>
