@@ -29,7 +29,21 @@ export default function Sidebar() {
     <div className={`bg-white shadow-lg transition-all duration-300 relative ${
       isCollapsed ? 'w-16' : 'w-64'
     }`}>
-      <SidebarHeader isCollapsed={isCollapsed} />
+      <div className="relative">
+        <SidebarHeader isCollapsed={isCollapsed} />
+        {!isCollapsed && (
+          <div className="absolute top-4 right-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="p-2 focus:outline-none"
+            >
+              <Icon name="chevronLeft" size="sm" />
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* メニュー */}
       <nav className={`p-4 ${isCollapsed ? 'pt-6' : ''}`}>
@@ -50,18 +64,20 @@ export default function Sidebar() {
 
       {/* フッター */}
       <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200">
-        <div className="p-4">
-          <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-2 focus:outline-none"
-            >
-              <Icon name={isCollapsed ? 'chevronRight' : 'chevronLeft'} size="sm" />
-            </Button>
+        {isCollapsed && (
+          <div className="p-4">
+            <div className="flex justify-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="p-2 focus:outline-none"
+              >
+                <Icon name="chevronRight" size="sm" />
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
         
         {!isCollapsed && (
           <div className="p-4 pt-0">
