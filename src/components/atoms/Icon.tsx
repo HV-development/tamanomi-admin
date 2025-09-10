@@ -16,7 +16,7 @@ const iconMap: Record<string, { type: 'emoji' | 'material'; value: string }> = {
   chevronDown: { type: 'material', value: 'expand_more' },
   home: { type: 'emoji', value: '🏠' },
   settings: { type: 'emoji', value: '⚙️' },
-  logout: { type: 'emoji', value: '🚪' },
+  logout: { type: 'material', value: 'logout' },
   plus: { type: 'emoji', value: '➕' },
   search: { type: 'emoji', value: '🔍' },
   edit: { type: 'emoji', value: '✏️' },
