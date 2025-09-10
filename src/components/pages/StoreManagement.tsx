@@ -359,9 +359,11 @@ export default function StoreManagement() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <Button variant="outline" size="sm">
-                        編集
-                      </Button>
+                      <Link href={`/stores/${store.id}/edit`}>
+                        <Button variant="outline" size="sm">
+                          編集
+                        </Button>
+                      </Link>
                       <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50">
                         削除
                       </Button>
