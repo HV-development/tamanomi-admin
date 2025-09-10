@@ -201,22 +201,18 @@ export default function CouponManagement() {
           )}
         </div>
 
-        {/* 新規作成ボタン */}
-        <div className="flex justify-end">
-          <Link href="/coupons/new">
-            <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
-              <span className="mr-2">+</span>
-              新規作成
-            </Button>
-          </Link>
-        </div>
-
         {/* クーポン一覧 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
               クーポン一覧 ({filteredCoupons.length}件)
             </h3>
+            <Link href="/coupons/new">
+              <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
+                <span className="mr-2">+</span>
+                新規作成
+              </Button>
+            </Link>
           </div>
           
           <div className="overflow-x-auto">
