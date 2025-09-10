@@ -221,7 +221,7 @@ export default function UserManagement() {
       <div className="space-y-6">
         {/* ヘッダー */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">ユーザー管理</h1>
+          <h1 className="text-2xl font-bold text-gray-900">ユーザー管理</h1>
           <p className="mt-2 text-gray-600">
             ユーザーの管理・編集を行います
           </p>

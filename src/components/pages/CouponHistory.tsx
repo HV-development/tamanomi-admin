@@ -221,7 +221,7 @@ export default function CouponHistory() {
       <div className="space-y-6">
         {/* ヘッダー */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{pageTitle}</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{pageTitle}</h1>
           <p className="mt-2 text-gray-600">
             {isFromCouponDetail ? 'このクーポンの利用履歴を表示します' : 'クーポンの利用履歴を管理します'}
           </p>

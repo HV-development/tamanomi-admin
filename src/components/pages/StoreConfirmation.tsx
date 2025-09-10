@@ -72,7 +72,7 @@ export default function StoreConfirmation() {
       <div className="space-y-6">
         {/* ページタイトル */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">店舗登録内容確認</h1>
+          <h1 className="text-2xl font-bold text-gray-900">店舗登録内容確認</h1>
           <p className="mt-2 text-gray-600">
             入力内容を確認してください
           </p>

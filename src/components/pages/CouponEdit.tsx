@@ -236,7 +236,7 @@ export default function CouponEdit() {
       <div className="space-y-6">
         {/* ページタイトル */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">クーポン編集</h1>
+          <h1 className="text-2xl font-bold text-gray-900">クーポン編集</h1>
           <p className="mt-2 text-gray-600">
             クーポン情報を編集します
           </p>
