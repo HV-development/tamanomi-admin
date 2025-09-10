@@ -29,11 +29,10 @@ export default function Sidebar() {
     <div className={`bg-white shadow-lg transition-all duration-300 relative ${
       isCollapsed ? 'w-16' : 'w-64'
     }`}>
-      <SidebarHeader
-      />
+      <SidebarHeader isCollapsed={isCollapsed} />
 
       {/* メニュー */}
-      <nav className="p-4">
+      <nav className={`p-4 ${isCollapsed ? 'pt-6' : ''}`}>
         <ul className="space-y-2">
           {menuItems.map((item) => (
             <li key={item.href}>
@@ -49,17 +48,10 @@ export default function Sidebar() {
         </ul>
       </nav>
 
-      {/* 設定とフッター */}
+      {/* フッター */}
       <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200">
-        {/* 設定ボタン */}
         <div className="p-4">
-          <div className="flex items-center justify-between">
-            {!isCollapsed && (
-              <div className="flex items-center space-x-3">
-                <Icon name="settings" size="md" className="text-gray-600" />
-                <span className="text-sm text-gray-700">設定</span>
-              </div>
-            )}
+          <div className="flex justify-center">
             <Button
               variant="ghost"
               size="sm"
@@ -71,7 +63,6 @@ export default function Sidebar() {
           </div>
         </div>
         
-        {/* フッター */}
         {!isCollapsed && (
           <div className="p-4 pt-0">
             <div className="text-sm text-gray-500 text-center">
