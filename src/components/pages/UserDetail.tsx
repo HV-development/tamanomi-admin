@@ -199,10 +199,12 @@ export default function UserDetail() {
       <div className="space-y-6">
         {/* ページタイトル */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">ユーザー詳細</h1>
-          <p className="mt-2 text-gray-600">
-            ユーザーの詳細情報を表示します
-          </p>
+          <div className="flex items-center space-x-4">
+            <h1 className="text-2xl font-bold text-gray-900">ユーザー詳細</h1>
+            <p className="text-gray-600">
+              ユーザーの詳細情報を表示します
+            </p>
+          </div>
         </div>
 
         {/* ユーザー詳細 */}

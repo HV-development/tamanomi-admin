@@ -75,10 +75,12 @@ export default function UserEditConfirmation() {
       <div className="space-y-6">
         {/* ページタイトル */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">ユーザー変更内容確認</h1>
-          <p className="mt-2 text-gray-600">
-            変更内容を確認してください
-          </p>
+          <div className="flex items-center space-x-4">
+            <h1 className="text-2xl font-bold text-gray-900">ユーザー変更内容確認</h1>
+            <p className="text-gray-600">
+              変更内容を確認してください
+            </p>
+          </div>
         </div>
 
         {/* 確認内容 */}

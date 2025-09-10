@@ -122,10 +122,12 @@ export default function AdminManagement() {
       <div className="space-y-6">
         {/* ヘッダー */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">管理者アカウント管理</h1>
-          <p className="mt-2 text-gray-600">
-            管理者アカウントの管理・編集を行います
-          </p>
+          <div className="flex items-center space-x-4">
+            <h1 className="text-2xl font-bold text-gray-900">管理者アカウント管理</h1>
+            <p className="text-gray-600">
+              管理者アカウントの管理・編集を行います
+            </p>
+          </div>
         </div>
 
         {/* 検索フォーム */}

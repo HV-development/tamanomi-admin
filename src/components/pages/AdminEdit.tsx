@@ -189,10 +189,12 @@ export default function AdminEdit() {
       <div className="space-y-6">
         {/* ページタイトル */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">管理者アカウント編集</h1>
-          <p className="mt-2 text-gray-600">
-            管理者アカウント情報を編集します
-          </p>
+          <div className="flex items-center space-x-4">
+            <h1 className="text-2xl font-bold text-gray-900">管理者アカウント編集</h1>
+            <p className="text-gray-600">
+              管理者アカウント情報を編集します
+            </p>
+          </div>
         </div>
 
         {/* 編集フォーム */}
