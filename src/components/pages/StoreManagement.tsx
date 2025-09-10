@@ -8,9 +8,12 @@ import Icon from '../atoms/Icon';
 interface Store {
   id: string;
   name: string;
+  prefecture: string;
+  city: string;
   address: string;
+  building: string;
   phone: string;
-  email: string;
+  genre: string;
   status: 'active' | 'inactive';
   registeredAt: string;
 }
@@ -20,48 +23,96 @@ const sampleStores: Store[] = [
   {
     id: '1',
     name: 'たまのみ 渋谷店',
-    address: '東京都渋谷区渋谷1-1-1',
+    prefecture: '東京都',
+    city: '渋谷区',
+    address: '渋谷1-1-1',
+    building: 'たまのみビル1F',
     phone: '03-1234-5678',
-    email: 'shibuya@tamanomi.com',
+    genre: '居酒屋',
     status: 'active',
     registeredAt: '2024-01-15',
   },
   {
     id: '2',
     name: 'たまのみ 新宿店',
-    address: '東京都新宿区新宿2-2-2',
+    prefecture: '東京都',
+    city: '新宿区',
+    address: '新宿2-2-2',
+    building: '新宿センタービル2F',
     phone: '03-2345-6789',
-    email: 'shinjuku@tamanomi.com',
+    genre: 'カフェ',
     status: 'active',
     registeredAt: '2024-01-20',
   },
   {
     id: '3',
     name: 'たまのみ 池袋店',
-    address: '東京都豊島区池袋3-3-3',
+    prefecture: '東京都',
+    city: '豊島区',
+    address: '池袋3-3-3',
+    building: '',
     phone: '03-3456-7890',
-    email: 'ikebukuro@tamanomi.com',
+    genre: 'レストラン',
     status: 'inactive',
     registeredAt: '2024-02-01',
   },
 ];
 
 export default function StoreManagement() {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchForm, setSearchForm] = useState({
+    storeId: '',
+    storeName: '',
+    prefecture: '',
+    city: '',
+    address: '',
+    building: '',
+    phone: '',
+    genre: '',
+  });
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
   // フィルタリング処理
   const filteredStores = sampleStores.filter((store) => {
     const matchesSearch = 
-      store.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      store.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      store.email.toLowerCase().includes(searchTerm.toLowerCase());
+      (searchForm.storeId === '' || store.id.includes(searchForm.storeId)) &&
+      (searchForm.storeName === '' || store.name.toLowerCase().includes(searchForm.storeName.toLowerCase())) &&
+      (searchForm.prefecture === '' || store.prefecture.toLowerCase().includes(searchForm.prefecture.toLowerCase())) &&
+      (searchForm.city === '' || store.city.toLowerCase().includes(searchForm.city.toLowerCase())) &&
+      (searchForm.address === '' || store.address.toLowerCase().includes(searchForm.address.toLowerCase())) &&
+      (searchForm.building === '' || store.building.toLowerCase().includes(searchForm.building.toLowerCase())) &&
+      (searchForm.phone === '' || store.phone.includes(searchForm.phone)) &&
+      (searchForm.genre === '' || store.genre.toLowerCase().includes(searchForm.genre.toLowerCase()));
     
     const matchesStatus = statusFilter === 'all' || store.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
 
+  const handleInputChange = (field: keyof typeof searchForm, value: string) => {
+    setSearchForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSearch = () => {
+    // 検索処理は既にリアルタイムで実行されているため、特別な処理は不要
+    console.log('検索実行:', searchForm);
+  };
+
+  const handleClear = () => {
+    setSearchForm({
+      storeId: '',
+      storeName: '',
+      prefecture: '',
+      city: '',
+      address: '',
+      building: '',
+      phone: '',
+      genre: '',
+    });
+    setStatusFilter('all');
+  };
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -79,29 +130,263 @@ export default function StoreManagement() {
           </Button>
         </div>
 
-        {/* 検索・フィルター */}
+        {/* 検索フォーム */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* 検索ボックス */}
-            <div className="flex-1">
-              <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
-                店舗検索
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* 店舗ID */}
+            <div>
+              <label htmlFor="storeId" className="block text-sm font-medium text-gray-700 mb-2">
+                店舗ID
               </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  id="search"
-                  placeholder="店舗名、住所、メールアドレスで検索..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-                <Icon name="search" size="sm" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              </div>
+              <input
+                type="text"
+                id="storeId"
+                placeholder="店舗IDを入力"
+                value={searchForm.storeId}
+                onChange={(e) => handleInputChange('storeId', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
             </div>
 
-            {/* ステータスフィルター */}
-            <div className="md:w-48">
+            {/* 店舗名 */}
+            <div>
+              <label htmlFor="storeName" className="block text-sm font-medium text-gray-700 mb-2">
+                店舗名
+              </label>
+              <input
+                type="text"
+                id="storeName"
+                placeholder="店舗名を入力"
+                value={searchForm.storeName}
+                onChange={(e) => handleInputChange('storeName', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+
+            {/* 都道府県 */}
+            <div>
+              <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
+                都道府県
+              </label>
+              <input
+                type="text"
+                id="prefecture"
+                placeholder="都道府県を入力"
+                value={searchForm.prefecture}
+                onChange={(e) => handleInputChange('prefecture', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+
+            {/* 市区町村 */}
+            <div>
+              <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                市区町村
+              </label>
+              <input
+                type="text"
+                id="city"
+                placeholder="市区町村を入力"
+                value={searchForm.city}
+                onChange={(e) => handleInputChange('city', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+
+            {/* 番地以降 */}
+            <div>
+              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                番地以降
+              </label>
+              <input
+                type="text"
+                id="address"
+                placeholder="番地以降を入力"
+                value={searchForm.address}
+                onChange={(e) => handleInputChange('address', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+
+            {/* 建物名 */}
+            <div>
+              <label htmlFor="building" className="block text-sm font-medium text-gray-700 mb-2">
+                建物名
+              </label>
+              <input
+                type="text"
+                id="building"
+                placeholder="建物名を入力"
+                value={searchForm.building}
+                onChange={(e) => handleInputChange('building', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+
+            {/* 電話番号 */}
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                電話番号
+              </label>
+              <input
+                type="text"
+                id="phone"
+                placeholder="電話番号を入力"
+                value={searchForm.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+
+            {/* ジャンル */}
+            <div>
+              <label htmlFor="genre" className="block text-sm font-medium text-gray-700 mb-2">
+                ジャンル
+              </label>
+              <input
+                type="text"
+                id="genre"
+                placeholder="ジャンルを入力"
+                value={searchForm.genre}
+                onChange={(e) => handleInputChange('genre', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+          </div>
+
+          {/* ステータスフィルター */}
+          <div className="mt-4">
+            <div className="flex flex-col md:flex-row gap-4 items-end">
+              <div className="md:w-48">
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                  ステータス
+                </label>
+                <select
+                  id="status"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="all">すべて</option>
+                  <option value="active">営業中</option>
+                  <option value="inactive">休業中</option>
+                </select>
+              </div>
+
+              {/* 検索・クリアボタン */}
+              <div className="flex gap-2">
+                <Button variant="primary" onClick={handleSearch}>
+                  <Icon name="search" size="sm" className="mr-2" />
+                  検索
+                </Button>
+                <Button variant="outline" onClick={handleClear}>
+                  <Icon name="clear" size="sm" className="mr-2" />
+                  クリア
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 店舗一覧 */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900">
+              店舗一覧 ({filteredStores.length}件)
+            </h3>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    店舗ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    店舗名
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    住所
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    電話番号
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ジャンル
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ステータス
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    登録日
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    アクション
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredStores.map((store) => (
+                  <tr key={store.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{store.id}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{store.name}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {store.prefecture}{store.city}{store.address}
+                        {store.building && <div className="text-xs text-gray-500">{store.building}</div>}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{store.phone}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{store.genre}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        store.status === 'active'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {store.status === 'active' ? '営業中' : '休業中'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {store.registeredAt}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                      <Button variant="outline" size="sm">
+                        <Icon name="edit" size="sm" className="mr-1" />
+                        編集
+                      </Button>
+                      <Button variant="ghost" size="sm">
+                        <Icon name="eye" size="sm" className="mr-1" />
+                        詳細
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {filteredStores.length === 0 && (
+            <div className="text-center py-12">
+              <Icon name="store" size="lg" className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">店舗が見つかりません</h3>
+              <p className="text-gray-500">検索条件を変更してお試しください。</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}
               <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
                 ステータス
               </label>

@@ -19,6 +19,7 @@ const iconMap: Record<string, string> = {
   search: '🔍',
   edit: '✏️',
   eye: '👁️',
+  clear: '🗑️',
 };
 
 export default function Icon({ name, size = 'md', className = '' }: IconProps) {
