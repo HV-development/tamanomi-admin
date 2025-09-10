@@ -236,9 +236,8 @@ export default function UserManagement() {
               variant="ghost"
               size="sm"
               onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-              className="flex items-center space-x-2"
+              className="flex items-center"
             >
-              <span>{isSearchExpanded ? '折りたたむ' : '展開する'}</span>
               <Icon name={isSearchExpanded ? 'chevronUp' : 'chevronDown'} size="sm" />
             </Button>
           </div>
