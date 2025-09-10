@@ -115,16 +115,11 @@ export default function CouponManagement() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* ヘッダー */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">クーポン管理</h1>
-            <p className="mt-2 text-gray-600">
-              クーポンの管理・編集を行います
-            </p>
-          </div>
-          <Button variant="primary">
-            <Link href="/coupons/new">新規作成</Link>
-          </Button>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">クーポン管理</h1>
+          <p className="mt-2 text-gray-600">
+            クーポンの管理・編集を行います
+          </p>
         </div>
 
         {/* 検索フォーム */}
@@ -205,6 +200,13 @@ export default function CouponManagement() {
             </div>
           </div>
           )}
+        </div>
+
+        {/* 新規作成ボタン */}
+        <div className="flex justify-end">
+          <Button variant="primary">
+            <Link href="/coupons/new">新規作成</Link>
+          </Button>
         </div>
 
         {/* クーポン一覧 */}

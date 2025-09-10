@@ -121,16 +121,11 @@ export default function AdminManagement() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* ヘッダー */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">管理者アカウント管理</h1>
-            <p className="mt-2 text-gray-600">
-              管理者アカウントの管理・編集を行います
-            </p>
-          </div>
-          <Button variant="primary">
-            <Link href="/admins/new">新規登録</Link>
-          </Button>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">管理者アカウント管理</h1>
+          <p className="mt-2 text-gray-600">
+            管理者アカウントの管理・編集を行います
+          </p>
         </div>
 
         {/* 検索フォーム */}
@@ -225,6 +220,13 @@ export default function AdminManagement() {
             </div>
           </div>
           )}
+        </div>
+
+        {/* 新規登録ボタン */}
+        <div className="flex justify-end">
+          <Button variant="primary">
+            <Link href="/admins/new">新規登録</Link>
+          </Button>
         </div>
 
         {/* アカウント一覧 */}
