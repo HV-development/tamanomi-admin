@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '../templates/DashboardLayout';
 import Button from '../atoms/Button';
@@ -81,6 +81,7 @@ const sampleCouponUsages: CouponUsage[] = [
 export default function CouponHistory() {
   const pathname = usePathname();
   const router = useRouter();
+  const params = useParams();
   
   const [searchForm, setSearchForm] = useState({
     usageId: '',
@@ -94,6 +95,9 @@ export default function CouponHistory() {
 
   const [showBackButton, setShowBackButton] = useState(false);
   const [backUrl, setBackUrl] = useState('');
+  const [pageTitle, setPageTitle] = useState('クーポン利用履歴');
+  const [filteredUsages, setFilteredUsages] = useState<CouponUsage[]>([]);
+  const [isFromCouponDetail, setIsFromCouponDetail] = useState(false);
 
   useEffect(() => {
     // 遷移元を判定して戻るボタンの表示を制御
@@ -102,43 +106,73 @@ export default function CouponHistory() {
       const couponId = pathname.split('/')[2];
       setShowBackButton(true);
       setBackUrl(`/coupons/${couponId}`);
+      setPageTitle('クーポン一覧詳細');
+      setIsFromCouponDetail(true);
+      
+      // 該当クーポンの利用履歴のみを表示
+      const couponUsages = sampleCouponUsages.filter(usage => usage.couponId === couponId);
+      setFilteredUsages(couponUsages);
     } else if (pathname.includes('/users/') && pathname.includes('/coupon-history')) {
       // ユーザー詳細からの遷移
       const userId = pathname.split('/')[2];
       setShowBackButton(true);
       setBackUrl(`/users/${userId}`);
+      setPageTitle('クーポン利用履歴');
+      setIsFromCouponDetail(false);
+      
+      // 該当ユーザーの利用履歴のみを表示
+      const userUsages = sampleCouponUsages.filter(usage => usage.userId === userId);
+      setFilteredUsages(userUsages);
     } else if (pathname === '/coupon-history') {
       // クーポン一覧またはユーザー一覧からの遷移（referrerで判定）
       setShowBackButton(true);
       setBackUrl('/coupons'); // デフォルトはクーポン一覧
+      setPageTitle('クーポン利用履歴');
+      setIsFromCouponDetail(false);
+      setFilteredUsages(sampleCouponUsages);
     }
   }, [pathname]);
 
-  // フィルタリング処理
-  const filteredUsages = sampleCouponUsages.filter((usage) => {
-    const matchesSearch = 
-      (searchForm.usageId === '' || usage.id.toLowerCase().includes(searchForm.usageId.toLowerCase())) &&
-      (searchForm.couponId === '' || usage.couponId.toLowerCase().includes(searchForm.couponId.toLowerCase())) &&
-      (searchForm.couponName === '' || usage.couponName.toLowerCase().includes(searchForm.couponName.toLowerCase())) &&
-      (searchForm.userId === '' || usage.userId.toLowerCase().includes(searchForm.userId.toLowerCase())) &&
-      (searchForm.nickname === '' || usage.nickname.toLowerCase().includes(searchForm.nickname.toLowerCase()));
-
-    // 利用日範囲チェック
-    let matchesDateRange = true;
-    if (searchForm.usedDateStart || searchForm.usedDateEnd) {
-      const usageDate = new Date(usage.usedAt.split(' ')[0].replace(/\//g, '-'));
-      if (searchForm.usedDateStart) {
-        const startDate = new Date(searchForm.usedDateStart);
-        if (usageDate < startDate) matchesDateRange = false;
-      }
-      if (searchForm.usedDateEnd) {
-        const endDate = new Date(searchForm.usedDateEnd);
-        if (usageDate > endDate) matchesDateRange = false;
-      }
+  useEffect(() => {
+    // フィルタリング処理
+    let baseUsages = sampleCouponUsages;
+    
+    // 遷移元に応じて基本データを設定
+    if (pathname.includes('/coupons/') && pathname.includes('/history')) {
+      const couponId = pathname.split('/')[2];
+      baseUsages = sampleCouponUsages.filter(usage => usage.couponId === couponId);
+    } else if (pathname.includes('/users/') && pathname.includes('/coupon-history')) {
+      const userId = pathname.split('/')[2];
+      baseUsages = sampleCouponUsages.filter(usage => usage.userId === userId);
     }
     
-    return matchesSearch && matchesDateRange;
-  });
+    const filtered = baseUsages.filter((usage) => {
+      const matchesSearch = 
+        (searchForm.usageId === '' || usage.id.toLowerCase().includes(searchForm.usageId.toLowerCase())) &&
+        (searchForm.couponId === '' || usage.couponId.toLowerCase().includes(searchForm.couponId.toLowerCase())) &&
+        (searchForm.couponName === '' || usage.couponName.toLowerCase().includes(searchForm.couponName.toLowerCase())) &&
+        (searchForm.userId === '' || usage.userId.toLowerCase().includes(searchForm.userId.toLowerCase())) &&
+        (searchForm.nickname === '' || usage.nickname.toLowerCase().includes(searchForm.nickname.toLowerCase()));
+
+      // 利用日範囲チェック
+      let matchesDateRange = true;
+      if (searchForm.usedDateStart || searchForm.usedDateEnd) {
+        const usageDate = new Date(usage.usedAt.split(' ')[0].replace(/\//g, '-'));
+        if (searchForm.usedDateStart) {
+          const startDate = new Date(searchForm.usedDateStart);
+          if (usageDate < startDate) matchesDateRange = false;
+        }
+        if (searchForm.usedDateEnd) {
+          const endDate = new Date(searchForm.usedDateEnd);
+          if (usageDate > endDate) matchesDateRange = false;
+        }
+      }
+      
+      return matchesSearch && matchesDateRange;
+    });
+    
+    setFilteredUsages(filtered);
+  }, [searchForm, pathname]);
 
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {
     setSearchForm(prev => ({
@@ -187,19 +221,29 @@ export default function CouponHistory() {
         {/* ヘッダー */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">クーポン利用履歴</h1>
+            <h1 className="text-3xl font-bold text-gray-900">{pageTitle}</h1>
             <p className="mt-2 text-gray-600">
-              クーポンの利用履歴を管理します
+              {isFromCouponDetail ? 'このクーポンの利用履歴を表示します' : 'クーポンの利用履歴を管理します'}
             </p>
           </div>
-          {showBackButton && (
-            <Button variant="outline" onClick={handleBack}>
-              戻る
-            </Button>
-          )}
+          <div className="flex space-x-2">
+            {isFromCouponDetail && (
+              <Link href="/coupons">
+                <Button variant="outline">
+                  クーポン一覧に戻る
+                </Button>
+              </Link>
+            )}
+            {showBackButton && (
+              <Button variant="outline" onClick={handleBack}>
+                戻る
+              </Button>
+            )}
+          </div>
         </div>
 
-        {/* 検索フォーム */}
+        {/* 検索フォーム（クーポン詳細からの遷移時は簡略化） */}
+        {!isFromCouponDetail && (
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* 利用ID */}
@@ -321,12 +365,13 @@ export default function CouponHistory() {
             </Button>
           </div>
         </div>
+        )}
 
-        {/* クーポン利用履歴一覧 */}
+        {/* クーポン利用履歴一覧（クーポン詳細からの遷移時は表示項目を調整） */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-medium text-gray-900">
-              クーポン利用履歴一覧 ({filteredUsages.length}件)
+              {isFromCouponDetail ? 'クーポン利用履歴' : 'クーポン利用履歴一覧'} ({filteredUsages.length}件)
             </h3>
           </div>
           
@@ -337,12 +382,21 @@ export default function CouponHistory() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     クーポン利用ID
                   </th>
+                  {!isFromCouponDetail && (
+                    <>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     クーポンID
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     クーポン名
                   </th>
+                    </>
+                  )}
+                  {isFromCouponDetail && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      クーポン名
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ユーザーID
                   </th>
@@ -369,6 +423,8 @@ export default function CouponHistory() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{usage.id}</div>
                     </td>
+                    {!isFromCouponDetail && (
+                      <>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link 
                         href={`/coupons/${usage.couponId}`}
@@ -380,6 +436,18 @@ export default function CouponHistory() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{usage.couponName}</div>
                     </td>
+                      </>
+                    )}
+                    {isFromCouponDetail && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Link 
+                          href={`/coupons/${usage.couponId}`}
+                          className="text-sm text-blue-600 hover:text-blue-800 underline"
+                        >
+                          {usage.couponName}
+                        </Link>
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link 
                         href={`/users/${usage.userId}`}
