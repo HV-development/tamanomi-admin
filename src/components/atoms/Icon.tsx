@@ -7,7 +7,7 @@ interface IconProps {
 const iconMap: Record<string, { type: 'emoji' | 'material'; value: string }> = {
   store: { type: 'material', value: 'storefront' },
   coupon: { type: 'material', value: 'confirmation_number' },
-  users: { type: 'emoji', value: '👥' },
+  users: { type: 'material', value: 'groups' },
   admin: { type: 'emoji', value: '👨‍💼' },
   history: { type: 'emoji', value: '📋' },
   chevronLeft: { type: 'material', value: 'chevron_left' },
