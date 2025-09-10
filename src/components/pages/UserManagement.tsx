@@ -337,19 +337,37 @@ export default function UserManagement() {
               />
             </div>
 
-            {/* さいたま市みんなのアプリID */}
+            {/* 登録日範囲指定 */}
             <div>
-              <label htmlFor="saitamaAppId" className="block text-sm font-medium text-gray-700 mb-2">
-                さいたま市みんなのアプリID
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                登録日（範囲指定）
               </label>
-              <input
-                type="text"
-                id="saitamaAppId"
-                placeholder="アプリIDを入力"
-                value={searchForm.saitamaAppId}
-                onChange={(e) => handleInputChange('saitamaAppId', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
+              <div className="grid grid-cols-1 gap-2">
+                <div>
+                  <label htmlFor="registeredDateStart" className="block text-xs text-gray-500 mb-1">
+                    開始日
+                  </label>
+                  <input
+                    type="date"
+                    id="registeredDateStart"
+                    value={searchForm.registeredDateStart}
+                    onChange={(e) => handleInputChange('registeredDateStart', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="registeredDateEnd" className="block text-xs text-gray-500 mb-1">
+                    終了日
+                  </label>
+                  <input
+                    type="date"
+                    id="registeredDateEnd"
+                    value={searchForm.registeredDateEnd}
+                    onChange={(e) => handleInputChange('registeredDateEnd', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
+              </div>
             </div>
             </div>
 
@@ -451,38 +469,6 @@ export default function UserManagement() {
               </div>
             </div>
 
-            {/* 登録日範囲指定 */}
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                登録日（範囲指定）
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="registeredDateStart" className="block text-xs text-gray-500 mb-1">
-                    開始日
-                  </label>
-                  <input
-                    type="date"
-                    id="registeredDateStart"
-                    value={searchForm.registeredDateStart}
-                    onChange={(e) => handleInputChange('registeredDateStart', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="registeredDateEnd" className="block text-xs text-gray-500 mb-1">
-                    終了日
-                  </label>
-                  <input
-                    type="date"
-                    id="registeredDateEnd"
-                    value={searchForm.registeredDateEnd}
-                    onChange={(e) => handleInputChange('registeredDateEnd', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-                </div>
-              </div>
-            </div>
 
             {/* 検索・クリアボタン */}
             <div className="flex justify-end gap-2 mt-6">
