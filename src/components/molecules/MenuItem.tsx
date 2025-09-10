@@ -19,7 +19,7 @@ export default function MenuItem({ name, href, iconName, isActive, isCollapsed }
           : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
       }`}
     >
-      <Icon name={iconName} size="md" className="text-green-600" />
+      <Icon name={iconName} size="md" className="text-green-700" />
       {!isCollapsed && <span>{name}</span>}
     </Link>
   );
