@@ -50,8 +50,7 @@ export default function Sidebar() {
 
       {/* フッター */}
       <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200">
-        <div className="p-4">
-          <div className="flex justify-center">
+        <div className="p-4 flex justify-end">
             <Button
               variant="ghost"
               size="sm"
@@ -60,7 +59,6 @@ export default function Sidebar() {
             >
               <Icon name={isCollapsed ? "chevronRight" : "chevronLeft"} size="sm" />
             </Button>
-          </div>
         </div>
         
         {!isCollapsed && (
