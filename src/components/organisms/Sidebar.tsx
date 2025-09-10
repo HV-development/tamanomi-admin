@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import SidebarHeader from '../molecules/SidebarHeader';
 import MenuItem from '../molecules/MenuItem';
-import Button from '../atoms/Button';
 import Icon from '../atoms/Icon';
 
 interface MenuItemData {
@@ -27,8 +26,14 @@ export default function Sidebar() {
   const router = useRouter();
 
   const handleMenuClick = (href: string) => {
-    // 閉じた状態でクリックされた場合、サイドバーを閉じたままページ遷移
+    // サイドバーの状態を維持したままページ遷移
+    console.log('Menu clicked:', href, 'isCollapsed:', isCollapsed);
     router.push(href);
+  };
+
+  const handleToggleCollapse = () => {
+    console.log('Toggle collapse clicked, current state:', isCollapsed);
+    setIsCollapsed(!isCollapsed);
   };
 
   return (
@@ -59,7 +64,7 @@ export default function Sidebar() {
       <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200">
         <div className="p-4 flex justify-end">
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={handleToggleCollapse}
             className="p-2 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
           >
             <Icon name={isCollapsed ? "chevronRight" : "chevronLeft"} size="sm" />
