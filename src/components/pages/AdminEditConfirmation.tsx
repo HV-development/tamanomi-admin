@@ -75,7 +75,7 @@ export default function AdminEditConfirmation() {
             </p>
             </div>
             <div className="text-sm text-gray-600">
-              <div className="flex items-start space-x-2 leading-none">
+              <div className="flex items-center space-x-2">
                 <Icon name="admin" size="sm" className="text-gray-600" />
                 <span className="font-medium text-gray-900">管理者太郎</span>
               </div>
@@ -141,5 +141,7 @@ export default function AdminEditConfirmation() {
     </DashboardLayout>
   );
 }
+
+export default AdminEditConfirmation
 
 export default AdminEditConfirmation
