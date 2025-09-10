@@ -26,16 +26,16 @@ const iconMap: Record<string, { type: 'emoji' | 'material'; value: string }> = {
 
 export default function Icon({ name, size = 'md', className = '' }: IconProps) {
   const sizeClasses = {
-    sm: 'w-4 h-4 text-sm',
-    md: 'w-6 h-6 text-lg',
-    lg: 'w-8 h-8 text-xl',
+    sm: 'text-sm leading-none',
+    md: 'text-lg leading-none',
+    lg: 'text-xl leading-none',
   };
 
   const icon = iconMap[name];
   
   if (!icon) {
     return (
-      <span className={`inline-flex items-center justify-center ${sizeClasses[size]} ${className}`}>
+      <span className={`inline-block ${sizeClasses[size]} ${className}`}>
         ?
       </span>
     );
@@ -43,14 +43,14 @@ export default function Icon({ name, size = 'md', className = '' }: IconProps) {
 
   if (icon.type === 'material') {
     return (
-      <span className={`material-symbols-outlined inline-flex items-center justify-center ${sizeClasses[size]} ${className}`}>
+      <span className={`material-symbols-outlined inline-block align-text-bottom ${sizeClasses[size]} ${className}`}>
         {icon.value}
       </span>
     );
   }
 
   return (
-    <span className={`inline-flex items-center justify-center ${sizeClasses[size]} ${className}`}>
+    <span className={`inline-block ${sizeClasses[size]} ${className}`}>
       {icon.value}
     </span>
   );
