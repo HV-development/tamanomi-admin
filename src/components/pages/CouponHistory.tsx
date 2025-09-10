@@ -98,6 +98,7 @@ export default function CouponHistory() {
   const [pageTitle, setPageTitle] = useState('クーポン利用履歴');
   const [filteredUsages, setFilteredUsages] = useState<CouponUsage[]>([]);
   const [isFromCouponDetail, setIsFromCouponDetail] = useState(false);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   useEffect(() => {
     // 遷移元を判定して戻るボタンの表示を制御
@@ -219,35 +220,29 @@ export default function CouponHistory() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* ヘッダー */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{pageTitle}</h1>
-            <p className="mt-2 text-gray-600">
-              {isFromCouponDetail ? 'このクーポンの利用履歴を表示します' : 'クーポンの利用履歴を管理します'}
-            </p>
-          </div>
-          <div className="flex space-x-2">
-            {isFromCouponDetail && (
-              <Link href="/coupons">
-                <Button variant="outline">
-                  クーポン一覧に戻る
-                </Button>
-              </Link>
-            )}
-            {showBackButton && (
-              <Button variant="outline" onClick={handleBack}>
-                戻る
-              </Button>
-            )}
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">{pageTitle}</h1>
+          <p className="mt-2 text-gray-600">
+            {isFromCouponDetail ? 'このクーポンの利用履歴を表示します' : 'クーポンの利用履歴を管理します'}
+          </p>
         </div>
 
         {/* 検索フォーム（クーポン詳細からの遷移時は簡略化） */}
         {!isFromCouponDetail && (
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="pb-3 border-b border-gray-200">
+          <div className="pb-3 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+              className="flex items-center"
+            >
+              <Icon name={isSearchExpanded ? 'chevronUp' : 'chevronDown'} size="sm" />
+            </Button>
           </div>
+          
+          {isSearchExpanded && (
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* 利用ID */}
@@ -369,6 +364,7 @@ export default function CouponHistory() {
               </Button>
             </div>
           </div>
+          )}
         </div>
         )}
 
