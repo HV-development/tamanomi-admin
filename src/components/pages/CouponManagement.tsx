@@ -249,9 +249,7 @@ export default function CouponManagement() {
                       <div className="text-sm text-gray-900">{coupon.name}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(coupon.status)}`}>
-                        {getStatusLabel(coupon.status)}
-                      </span>
+                      <div className="text-sm text-gray-900">{getStatusLabel(coupon.status)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{coupon.createdAt}</div>
