@@ -269,9 +269,7 @@ export default function AdminManagement() {
                       <div className="text-sm text-gray-900">{admin.email}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(admin.role)}`}>
-                        {getRoleLabel(admin.role)}
-                      </span>
+                      <div className="text-sm text-gray-900">{getRoleLabel(admin.role)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <Link href={`/admins/${admin.id}/edit`}>
