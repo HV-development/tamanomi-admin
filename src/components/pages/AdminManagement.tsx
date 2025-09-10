@@ -130,7 +130,7 @@ export default function AdminManagement() {
 
         {/* 検索フォーム */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="py-3 border-b border-gray-200 flex justify-between items-center">
+          <div className="pb-3 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
             <Button
               variant="ghost"
