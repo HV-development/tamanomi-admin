@@ -508,9 +508,6 @@ export default function UserManagement() {
                     性別
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    さいたま市みんなのアプリID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ランク
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -545,12 +542,7 @@ export default function UserManagement() {
                       <div className="text-sm text-gray-900">{getGenderLabel(user.gender)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{user.saitamaAppId}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRankColor(user.rank)}`}>
-                        {getRankLabel(user.rank)}
-                      </span>
+                      <div className="text-sm text-gray-900">{getRankLabel(user.rank)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{user.registeredStore}</div>
