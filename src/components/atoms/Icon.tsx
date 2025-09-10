@@ -6,8 +6,10 @@ interface IconProps {
 
 const iconMap: Record<string, string> = {
   store: '🏪',
+  coupon: '🎫',
   users: '👥',
   admin: '👨‍💼',
+  history: '📋',
   chevronLeft: '←',
   chevronRight: '→',
   home: '🏠',

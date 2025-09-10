@@ -12,9 +12,11 @@ interface MenuItemData {
 }
 
 const menuItems: MenuItemData[] = [
-  { name: '加盟店舗一覧', href: '/stores', iconName: 'store' },
-  { name: 'ユーザー一覧', href: '/users', iconName: 'users' },
-  { name: '管理者一覧', href: '/admins', iconName: 'admin' },
+  { name: '店舗管理', href: '/stores', iconName: 'store' },
+  { name: 'クーポン管理', href: '/coupons', iconName: 'coupon' },
+  { name: 'ユーザー管理', href: '/users', iconName: 'users' },
+  { name: '管理者アカウント', href: '/admins', iconName: 'admin' },
+  { name: 'クーポン利用履歴', href: '/coupon-history', iconName: 'history' },
 ];
 
 export default function Sidebar() {
