@@ -304,5 +304,3 @@ export default function AdminManagement() {
     </DashboardLayout>
   );
 }
-
-export default AdminManagement
