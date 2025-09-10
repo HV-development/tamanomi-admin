@@ -5,7 +5,7 @@ interface IconProps {
 }
 
 const iconMap: Record<string, string> = {
-  store: '🏪',
+  store: '🏬',
   coupon: '🎫',
   users: '👥',
   admin: '👨‍💼',
