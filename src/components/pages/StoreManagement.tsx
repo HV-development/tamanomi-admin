@@ -122,8 +122,7 @@ export default function StoreManagement() {
             </p>
           </div>
           <Button variant="primary">
-            <Icon name="plus" size="sm" className="mr-2" />
-            新規店舗追加
+            新規登録
           </Button>
         </div>
 
@@ -273,11 +272,9 @@ export default function StoreManagement() {
               {/* 検索・クリアボタン */}
               <div className="flex gap-2">
                 <Button variant="primary" onClick={handleSearch}>
-                  <Icon name="search" size="sm" className="mr-2" />
                   検索
                 </Button>
                 <Button variant="outline" onClick={handleClear}>
-                  <Icon name="clear" size="sm" className="mr-2" />
                   クリア
                 </Button>
               </div>
@@ -362,11 +359,9 @@ export default function StoreManagement() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <Button variant="outline" size="sm">
-                        <Icon name="edit" size="sm" className="mr-1" />
                         編集
                       </Button>
                       <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50">
-                        <Icon name="clear" size="sm" className="mr-1" />
                         削除
                       </Button>
                     </td>
