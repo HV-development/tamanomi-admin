@@ -167,7 +167,6 @@ export default function UserManagement() {
       address: '',
       birthDate: '',
       gender: '',
-      saitamaAppId: '',
       ranks: [],
       registeredDateStart: '',
       registeredDateEnd: '',
