@@ -53,6 +53,7 @@ export default function AdminManagement() {
     email: '',
     role: '',
   });
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // フィルタリング処理
   const filteredAdmins = sampleAdmins.filter((admin) => {
@@ -134,7 +135,22 @@ export default function AdminManagement() {
 
         {/* 検索フォーム */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+              className="flex items-center space-x-2"
+            >
+              <span>{isSearchExpanded ? '折りたたむ' : '展開する'}</span>
+              <Icon name={isSearchExpanded ? 'chevronUp' : 'chevronDown'} size="sm" />
+            </Button>
+          </div>
+          
+          {isSearchExpanded && (
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* アカウントID */}
             <div>
               <label htmlFor="accountId" className="block text-sm font-medium text-gray-700 mb-2">
@@ -196,17 +212,19 @@ export default function AdminManagement() {
                 <option value="2">一般</option>
               </select>
             </div>
-          </div>
+            </div>
 
-          {/* 検索・クリアボタン */}
-          <div className="flex gap-2 mt-4">
-            <Button variant="primary" onClick={handleSearch}>
-              検索
-            </Button>
-            <Button variant="outline" onClick={handleClear}>
-              クリア
-            </Button>
+            {/* 検索・クリアボタン */}
+            <div className="flex gap-2 mt-4">
+              <Button variant="primary" onClick={handleSearch}>
+                検索
+              </Button>
+              <Button variant="outline" onClick={handleClear}>
+                クリア
+              </Button>
+            </div>
           </div>
+          )}
         </div>
 
         {/* アカウント一覧 */}

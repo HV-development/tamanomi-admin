@@ -67,6 +67,7 @@ export default function StoreManagement() {
     genre: '',
   });
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // フィルタリング処理
   const filteredStores = sampleStores.filter((store) => {
@@ -129,7 +130,22 @@ export default function StoreManagement() {
 
         {/* 検索フォーム */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+              className="flex items-center space-x-2"
+            >
+              <span>{isSearchExpanded ? '折りたたむ' : '展開する'}</span>
+              <Icon name={isSearchExpanded ? 'chevronUp' : 'chevronDown'} size="sm" />
+            </Button>
+          </div>
+          
+          {isSearchExpanded && (
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* 店舗ID */}
             <div>
               <label htmlFor="storeId" className="block text-sm font-medium text-gray-700 mb-2">
@@ -249,38 +265,40 @@ export default function StoreManagement() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
-          </div>
+            </div>
 
-          {/* ステータスフィルター */}
-          <div className="mt-4">
-            <div className="flex flex-col md:flex-row gap-4 items-end">
-              <div className="md:w-48">
-                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                  ステータス
-                </label>
-                <select
-                  id="status"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                >
-                  <option value="all">すべて</option>
-                  <option value="active">営業中</option>
-                  <option value="inactive">休業中</option>
-                </select>
-              </div>
+            {/* ステータスフィルター */}
+            <div className="mt-4">
+              <div className="flex flex-col md:flex-row gap-4 items-end">
+                <div className="md:w-48">
+                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                    ステータス
+                  </label>
+                  <select
+                    id="status"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  >
+                    <option value="all">すべて</option>
+                    <option value="active">営業中</option>
+                    <option value="inactive">休業中</option>
+                  </select>
+                </div>
 
-              {/* 検索・クリアボタン */}
-              <div className="flex gap-2">
-                <Button variant="primary" onClick={handleSearch}>
-                  検索
-                </Button>
-                <Button variant="outline" onClick={handleClear}>
-                  クリア
-                </Button>
+                {/* 検索・クリアボタン */}
+                <div className="flex gap-2">
+                  <Button variant="primary" onClick={handleSearch}>
+                    検索
+                  </Button>
+                  <Button variant="outline" onClick={handleClear}>
+                    クリア
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
+          )}
         </div>
 
         {/* 店舗一覧 */}

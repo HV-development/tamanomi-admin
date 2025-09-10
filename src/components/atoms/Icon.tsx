@@ -12,6 +12,8 @@ const iconMap: Record<string, { type: 'emoji' | 'material'; value: string }> = {
   history: { type: 'material', value: 'history_2' },
   chevronLeft: { type: 'material', value: 'chevron_left' },
   chevronRight: { type: 'material', value: 'chevron_right' },
+  chevronUp: { type: 'material', value: 'expand_less' },
+  chevronDown: { type: 'material', value: 'expand_more' },
   home: { type: 'emoji', value: '🏠' },
   settings: { type: 'emoji', value: '⚙️' },
   logout: { type: 'emoji', value: '🚪' },

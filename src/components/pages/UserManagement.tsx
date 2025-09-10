@@ -105,6 +105,7 @@ export default function UserManagement() {
     registeredDateStart: '',
     registeredDateEnd: '',
   });
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // フィルタリング処理
   const filteredUsers = sampleUsers.filter((user) => {
@@ -229,7 +230,22 @@ export default function UserManagement() {
 
         {/* 検索フォーム */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+              className="flex items-center space-x-2"
+            >
+              <span>{isSearchExpanded ? '折りたたむ' : '展開する'}</span>
+              <Icon name={isSearchExpanded ? 'chevronUp' : 'chevronDown'} size="sm" />
+            </Button>
+          </div>
+          
+          {isSearchExpanded && (
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* ニックネーム */}
             <div>
               <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 mb-2">
@@ -336,148 +352,150 @@ export default function UserManagement() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
-          </div>
-
-          {/* 性別 */}
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              性別
-            </label>
-            <div className="flex space-x-4">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="gender"
-                  value=""
-                  checked={searchForm.gender === ''}
-                  onChange={(e) => handleInputChange('gender', e.target.value)}
-                  className="mr-2 text-green-600 focus:ring-green-500"
-                />
-                <span className="text-sm text-gray-700">すべて</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="gender"
-                  value="1"
-                  checked={searchForm.gender === '1'}
-                  onChange={(e) => handleInputChange('gender', e.target.value)}
-                  className="mr-2 text-green-600 focus:ring-green-500"
-                />
-                <span className="text-sm text-gray-700">男性</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="gender"
-                  value="2"
-                  checked={searchForm.gender === '2'}
-                  onChange={(e) => handleInputChange('gender', e.target.value)}
-                  className="mr-2 text-green-600 focus:ring-green-500"
-                />
-                <span className="text-sm text-gray-700">女性</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="gender"
-                  value="3"
-                  checked={searchForm.gender === '3'}
-                  onChange={(e) => handleInputChange('gender', e.target.value)}
-                  className="mr-2 text-green-600 focus:ring-green-500"
-                />
-                <span className="text-sm text-gray-700">未回答</span>
-              </label>
             </div>
-          </div>
 
-          {/* ランク */}
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              ランク（複数選択可）
-            </label>
-            <div className="flex space-x-4">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={searchForm.ranks.includes(1)}
-                  onChange={(e) => handleRankChange(1, e.target.checked)}
-                  className="mr-2 text-green-600 focus:ring-green-500"
-                />
-                <span className="text-sm text-gray-700">ブロンズ</span>
+            {/* 性別 */}
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                性別
               </label>
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={searchForm.ranks.includes(2)}
-                  onChange={(e) => handleRankChange(2, e.target.checked)}
-                  className="mr-2 text-green-600 focus:ring-green-500"
-                />
-                <span className="text-sm text-gray-700">シルバー</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={searchForm.ranks.includes(3)}
-                  onChange={(e) => handleRankChange(3, e.target.checked)}
-                  className="mr-2 text-green-600 focus:ring-green-500"
-                />
-                <span className="text-sm text-gray-700">ゴールド</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={searchForm.ranks.includes(4)}
-                  onChange={(e) => handleRankChange(4, e.target.checked)}
-                  className="mr-2 text-green-600 focus:ring-green-500"
-                />
-                <span className="text-sm text-gray-700">ダイヤモンド</span>
-              </label>
-            </div>
-          </div>
-
-          {/* 登録日範囲指定 */}
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              登録日（範囲指定）
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="registeredDateStart" className="block text-xs text-gray-500 mb-1">
-                  開始日
+              <div className="flex space-x-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="gender"
+                    value=""
+                    checked={searchForm.gender === ''}
+                    onChange={(e) => handleInputChange('gender', e.target.value)}
+                    className="mr-2 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">すべて</span>
                 </label>
-                <input
-                  type="date"
-                  id="registeredDateStart"
-                  value={searchForm.registeredDateStart}
-                  onChange={(e) => handleInputChange('registeredDateStart', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-              <div>
-                <label htmlFor="registeredDateEnd" className="block text-xs text-gray-500 mb-1">
-                  終了日
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="gender"
+                    value="1"
+                    checked={searchForm.gender === '1'}
+                    onChange={(e) => handleInputChange('gender', e.target.value)}
+                    className="mr-2 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">男性</span>
                 </label>
-                <input
-                  type="date"
-                  id="registeredDateEnd"
-                  value={searchForm.registeredDateEnd}
-                  onChange={(e) => handleInputChange('registeredDateEnd', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="gender"
+                    value="2"
+                    checked={searchForm.gender === '2'}
+                    onChange={(e) => handleInputChange('gender', e.target.value)}
+                    className="mr-2 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">女性</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="gender"
+                    value="3"
+                    checked={searchForm.gender === '3'}
+                    onChange={(e) => handleInputChange('gender', e.target.value)}
+                    className="mr-2 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">未回答</span>
+                </label>
               </div>
             </div>
-          </div>
 
-          {/* 検索・クリアボタン */}
-          <div className="flex gap-2 mt-6">
-            <Button variant="primary" onClick={handleSearch}>
-              検索
-            </Button>
-            <Button variant="outline" onClick={handleClear}>
-              クリア
-            </Button>
+            {/* ランク */}
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ランク（複数選択可）
+              </label>
+              <div className="flex space-x-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={searchForm.ranks.includes(1)}
+                    onChange={(e) => handleRankChange(1, e.target.checked)}
+                    className="mr-2 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">ブロンズ</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={searchForm.ranks.includes(2)}
+                    onChange={(e) => handleRankChange(2, e.target.checked)}
+                    className="mr-2 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">シルバー</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={searchForm.ranks.includes(3)}
+                    onChange={(e) => handleRankChange(3, e.target.checked)}
+                    className="mr-2 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">ゴールド</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={searchForm.ranks.includes(4)}
+                    onChange={(e) => handleRankChange(4, e.target.checked)}
+                    className="mr-2 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">ダイヤモンド</span>
+                </label>
+              </div>
+            </div>
+
+            {/* 登録日範囲指定 */}
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                登録日（範囲指定）
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="registeredDateStart" className="block text-xs text-gray-500 mb-1">
+                    開始日
+                  </label>
+                  <input
+                    type="date"
+                    id="registeredDateStart"
+                    value={searchForm.registeredDateStart}
+                    onChange={(e) => handleInputChange('registeredDateStart', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="registeredDateEnd" className="block text-xs text-gray-500 mb-1">
+                    終了日
+                  </label>
+                  <input
+                    type="date"
+                    id="registeredDateEnd"
+                    value={searchForm.registeredDateEnd}
+                    onChange={(e) => handleInputChange('registeredDateEnd', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 検索・クリアボタン */}
+            <div className="flex gap-2 mt-6">
+              <Button variant="primary" onClick={handleSearch}>
+                検索
+              </Button>
+              <Button variant="outline" onClick={handleClear}>
+                クリア
+              </Button>
+            </div>
           </div>
+          )}
         </div>
 
         {/* ユーザー一覧 */}
