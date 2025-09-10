@@ -50,6 +50,7 @@ export default function StoreRegistration() {
   });
 
   const [errors, setErrors] = useState<Partial<StoreFormData>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (field: keyof StoreFormData, value: string) => {
     setFormData(prev => ({
@@ -57,25 +58,137 @@ export default function StoreRegistration() {
       [field]: value
     }));
     
-    // エラーをクリア
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
-    }
+    // リアルタイムバリデーション（input時）
+    validateField(field, value);
   };
 
-  const validateForm = (): boolean => {
+  const validateField = (field: keyof StoreFormData, value: string) => {
+    const newErrors = { ...errors };
+
+    switch (field) {
+      case 'storeName':
+        if (!value.trim()) {
+          newErrors.storeName = '店舗名は必須です';
+        } else if (value.length > 30) {
+          newErrors.storeName = '店舗名は30文字以内で入力してください';
+        } else {
+          delete newErrors.storeName;
+        }
+        break;
+
+      case 'storeDescription':
+        if (!value.trim()) {
+          newErrors.storeDescription = '店舗紹介内容は必須です';
+        } else if (value.length > 100) {
+          newErrors.storeDescription = '店舗紹介内容は100文字以内で入力してください';
+        } else {
+          delete newErrors.storeDescription;
+        }
+        break;
+
+      case 'postalCode':
+        if (!value.trim()) {
+          newErrors.postalCode = '郵便番号は必須です';
+        } else if (value.length !== 7 || !/^\d{7}$/.test(value)) {
+          newErrors.postalCode = '郵便番号は7桁の数字で入力してください';
+        } else {
+          delete newErrors.postalCode;
+        }
+        break;
+
+      case 'prefecture':
+        if (!value) {
+          newErrors.prefecture = '都道府県は必須です';
+        } else {
+          delete newErrors.prefecture;
+        }
+        break;
+
+      case 'city':
+        if (!value.trim()) {
+          newErrors.city = '市区町村は必須です';
+        } else if (value.length > 20) {
+          newErrors.city = '市区町村は20文字以内で入力してください';
+        } else {
+          delete newErrors.city;
+        }
+        break;
+
+      case 'address':
+        if (!value.trim()) {
+          newErrors.address = '番地以降は必須です';
+        } else if (value.length > 100) {
+          newErrors.address = '番地以降は100文字以内で入力してください';
+        } else {
+          delete newErrors.address;
+        }
+        break;
+
+      case 'building':
+        if (!value.trim()) {
+          newErrors.building = '建物名は必須です';
+        } else if (value.length > 100) {
+          newErrors.building = '建物名は100文字以内で入力してください';
+        } else {
+          delete newErrors.building;
+        }
+        break;
+
+      case 'phone':
+        if (!value.trim()) {
+          newErrors.phone = '電話番号は必須です';
+        } else if (value.length > 12) {
+          newErrors.phone = '電話番号は12文字以内で入力してください';
+        } else {
+          delete newErrors.phone;
+        }
+        break;
+
+      case 'homepage':
+        if (value && value.length > 255) {
+          newErrors.homepage = 'ホームページは255文字以内で入力してください';
+        } else if (value && !/^https?:\/\/.+/.test(value)) {
+          newErrors.homepage = 'ホームページはURL形式で入力してください（http://またはhttps://で始まる）';
+        } else {
+          delete newErrors.homepage;
+        }
+        break;
+
+      case 'genre':
+        if (!value) {
+          newErrors.genre = 'ジャンルは必須です';
+        } else {
+          delete newErrors.genre;
+        }
+        break;
+
+      case 'storeCode':
+        if (!value.trim()) {
+          newErrors.storeCode = '店舗CDは必須です';
+        } else if (value.length < 3 || value.length > 6) {
+          newErrors.storeCode = '店舗CDは3-6文字で入力してください';
+        } else if (!/^[A-Z0-9]+$/.test(value)) {
+          newErrors.storeCode = '店舗CDは大文字英語または数字で入力してください';
+        } else {
+          delete newErrors.storeCode;
+        }
+        break;
+    }
+
+    setErrors(newErrors);
+  };
+
+  const validateAllFields = (): boolean => {
     const newErrors: Partial<StoreFormData> = {};
 
-    // 必須項目チェック
+    // 必須チェック
     if (!formData.storeName.trim()) newErrors.storeName = '店舗名は必須です';
     if (!formData.storeDescription.trim()) newErrors.storeDescription = '店舗紹介内容は必須です';
     if (!formData.postalCode.trim()) newErrors.postalCode = '郵便番号は必須です';
     if (!formData.prefecture) newErrors.prefecture = '都道府県は必須です';
     if (!formData.city.trim()) newErrors.city = '市区町村は必須です';
     if (!formData.address.trim()) newErrors.address = '番地以降は必須です';
+    if (!formData.building.trim()) newErrors.building = '建物名は必須です';
     if (!formData.phone.trim()) newErrors.phone = '電話番号は必須です';
     if (!formData.genre) newErrors.genre = 'ジャンルは必須です';
     if (!formData.storeCode.trim()) newErrors.storeCode = '店舗CDは必須です';
@@ -106,7 +219,21 @@ export default function StoreRegistration() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const validateForm = (): boolean => {
+    return validateAllFields();
+  };
+
+  const clearFieldError = (field: keyof StoreFormData) => {
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+    }
+  };
+
   const handleAddressSearch = () => {
+    // 郵便番号の存在チェック
     // zipcloudのAPIを使用して住所検索
     if (formData.postalCode.length !== 7) {
       alert('郵便番号を正しく入力してください（7桁の数字）');
@@ -136,6 +263,7 @@ export default function StoreRegistration() {
   };
 
   const handleSubmit = () => {
+    setIsSubmitting(true);
     if (validateForm()) {
       // 登録内容確認画面に遷移
       const queryParams = new URLSearchParams({
@@ -153,6 +281,8 @@ export default function StoreRegistration() {
       });
       
       window.location.href = `/stores/confirm?${queryParams.toString()}`;
+    } else {
+      setIsSubmitting(false);
     }
   };
 
@@ -313,7 +443,7 @@ export default function StoreRegistration() {
             {/* 建物名 */}
             <div>
               <label htmlFor="building" className="block text-sm font-medium text-gray-700 mb-2">
-                建物名
+                建物名 <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -423,9 +553,10 @@ export default function StoreRegistration() {
                 variant="primary"
                 size="lg"
                 onClick={handleSubmit}
+                disabled={isSubmitting}
                 className="px-8"
               >
-                登録内容を確認する
+                {isSubmitting ? '処理中...' : '登録内容を確認する'}
               </Button>
             </div>
           </div>
