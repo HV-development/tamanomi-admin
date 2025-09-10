@@ -1,7 +1,5 @@
 import Logo from '../atoms/Logo';
 
-interface SidebarHeaderProps {}
-
 interface SidebarHeaderProps {
   isCollapsed: boolean;
 }
@@ -12,7 +10,7 @@ export default function SidebarHeader({ isCollapsed }: SidebarHeaderProps) {
   }
 
   return (
-    <div className="flex items-center justify-between p-4 border-b border-gray-200">
+    <div className="flex items-center p-4 border-b border-gray-200">
       <Logo size="sm" />
     </div>
   );
