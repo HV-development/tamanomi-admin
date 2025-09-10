@@ -199,11 +199,16 @@ export default function UserDetail() {
       <div className="space-y-6">
         {/* ページタイトル */}
         <div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
             <h1 className="text-2xl font-bold text-gray-900">ユーザー詳細</h1>
             <p className="text-gray-600">
               ユーザーの詳細情報を表示します
             </p>
+            </div>
+            <div className="text-sm text-gray-600">
+              ログインユーザー: <span className="font-medium text-gray-900">管理者太郎</span>
+            </div>
           </div>
         </div>
 
