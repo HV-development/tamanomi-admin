@@ -223,9 +223,12 @@ export default function AdminManagement() {
 
         {/* 新規登録ボタン */}
         <div className="flex justify-end">
-          <Button variant="primary">
-            <Link href="/admins/new">新規登録</Link>
-          </Button>
+          <Link href="/admins/new">
+            <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
+              <span className="mr-2">+</span>
+              新規登録
+            </Button>
+          </Link>
         </div>
 
         {/* アカウント一覧 */}

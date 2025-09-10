@@ -295,9 +295,12 @@ export default function StoreManagement() {
 
         {/* 新規登録ボタン */}
         <div className="flex justify-end">
-          <Button variant="primary">
-            <Link href="/stores/new">新規登録</Link>
-          </Button>
+          <Link href="/stores/new">
+            <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
+              <span className="mr-2">+</span>
+              新規登録
+            </Button>
+          </Link>
         </div>
 
         {/* 店舗一覧 */}

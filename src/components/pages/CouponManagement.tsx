@@ -203,9 +203,12 @@ export default function CouponManagement() {
 
         {/* 新規作成ボタン */}
         <div className="flex justify-end">
-          <Button variant="primary">
-            <Link href="/coupons/new">新規作成</Link>
-          </Button>
+          <Link href="/coupons/new">
+            <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
+              <span className="mr-2">+</span>
+              新規作成
+            </Button>
+          </Link>
         </div>
 
         {/* クーポン一覧 */}
