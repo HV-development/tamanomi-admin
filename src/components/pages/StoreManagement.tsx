@@ -6,6 +6,7 @@ import DashboardLayout from '../templates/DashboardLayout';
 import Button from '../atoms/Button';
 import Icon from '../atoms/Icon';
 
+
 interface Store {
   id: string;
   name: string;
