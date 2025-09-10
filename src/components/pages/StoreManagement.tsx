@@ -366,13 +366,9 @@ export default function StoreManagement() {
                       <div className="text-sm text-gray-900">{store.genre}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        store.status === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
+                      <div className="text-sm text-gray-900">
                         {store.status === 'active' ? '営業中' : '休業中'}
-                      </span>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <Link href={`/stores/${store.id}/edit`}>
