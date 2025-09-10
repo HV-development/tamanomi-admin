@@ -105,20 +105,21 @@ export default function Login() {
         // 簡単な認証チェック（実際の実装では適切な認証APIを使用）
         if (formData.id === 'admin' && formData.password === 'password123') {
           // 認証成功
-          alert('ログインしました');
           // クーポン一覧画面に遷移
           router.push('/coupons');
         } else {
           // 認証失敗
           alert('IDまたはパスワードが正しくありません');
+          setIsSubmitting(false);
         }
       } catch (error) {
         console.error('ログインエラー:', error);
         alert('ログインに失敗しました');
+        setIsSubmitting(false);
       }
+    } else {
+      setIsSubmitting(false);
     }
-    
-    setIsSubmitting(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
