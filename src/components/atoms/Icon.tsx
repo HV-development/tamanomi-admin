@@ -8,7 +8,7 @@ const iconMap: Record<string, { type: 'emoji' | 'material'; value: string }> = {
   store: { type: 'material', value: 'storefront' },
   coupon: { type: 'material', value: 'confirmation_number' },
   users: { type: 'material', value: 'groups' },
-  admin: { type: 'emoji', value: '👨‍💼' },
+  admin: { type: 'material', value: 'person' },
   history: { type: 'emoji', value: '📋' },
   chevronLeft: { type: 'material', value: 'chevron_left' },
   chevronRight: { type: 'material', value: 'chevron_right' },
