@@ -341,7 +341,7 @@ export default function UserManagement() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 登録日（範囲指定）
               </label>
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label htmlFor="registeredDateStart" className="block text-xs text-gray-500 mb-1">
                     開始日
@@ -370,101 +370,104 @@ export default function UserManagement() {
             </div>
             </div>
 
-            {/* 性別 */}
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                性別
-              </label>
-              <div className="flex space-x-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="gender"
-                    value=""
-                    checked={searchForm.gender === ''}
-                    onChange={(e) => handleInputChange('gender', e.target.value)}
-                    className="mr-2 text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">すべて</span>
+            {/* 性別とランクを横に並べる */}
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* 性別 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  性別
                 </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="gender"
-                    value="1"
-                    checked={searchForm.gender === '1'}
-                    onChange={(e) => handleInputChange('gender', e.target.value)}
-                    className="mr-2 text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">男性</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="gender"
-                    value="2"
-                    checked={searchForm.gender === '2'}
-                    onChange={(e) => handleInputChange('gender', e.target.value)}
-                    className="mr-2 text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">女性</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="gender"
-                    value="3"
-                    checked={searchForm.gender === '3'}
-                    onChange={(e) => handleInputChange('gender', e.target.value)}
-                    className="mr-2 text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">未回答</span>
-                </label>
+                <div className="flex flex-wrap gap-2">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="gender"
+                      value=""
+                      checked={searchForm.gender === ''}
+                      onChange={(e) => handleInputChange('gender', e.target.value)}
+                      className="mr-2 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">すべて</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="gender"
+                      value="1"
+                      checked={searchForm.gender === '1'}
+                      onChange={(e) => handleInputChange('gender', e.target.value)}
+                      className="mr-2 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">男性</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="gender"
+                      value="2"
+                      checked={searchForm.gender === '2'}
+                      onChange={(e) => handleInputChange('gender', e.target.value)}
+                      className="mr-2 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">女性</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="gender"
+                      value="3"
+                      checked={searchForm.gender === '3'}
+                      onChange={(e) => handleInputChange('gender', e.target.value)}
+                      className="mr-2 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">未回答</span>
+                  </label>
+                </div>
               </div>
-            </div>
 
-            {/* ランク */}
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ランク（複数選択可）
-              </label>
-              <div className="flex space-x-4">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={searchForm.ranks.includes(1)}
-                    onChange={(e) => handleRankChange(1, e.target.checked)}
-                    className="mr-2 text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">ブロンズ</span>
+              {/* ランク */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ランク（複数選択可）
                 </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={searchForm.ranks.includes(2)}
-                    onChange={(e) => handleRankChange(2, e.target.checked)}
-                    className="mr-2 text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">シルバー</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={searchForm.ranks.includes(3)}
-                    onChange={(e) => handleRankChange(3, e.target.checked)}
-                    className="mr-2 text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">ゴールド</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={searchForm.ranks.includes(4)}
-                    onChange={(e) => handleRankChange(4, e.target.checked)}
-                    className="mr-2 text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">ダイヤモンド</span>
-                </label>
+                <div className="flex flex-wrap gap-2">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={searchForm.ranks.includes(1)}
+                      onChange={(e) => handleRankChange(1, e.target.checked)}
+                      className="mr-2 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">ブロンズ</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={searchForm.ranks.includes(2)}
+                      onChange={(e) => handleRankChange(2, e.target.checked)}
+                      className="mr-2 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">シルバー</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={searchForm.ranks.includes(3)}
+                      onChange={(e) => handleRankChange(3, e.target.checked)}
+                      className="mr-2 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">ゴールド</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={searchForm.ranks.includes(4)}
+                      onChange={(e) => handleRankChange(4, e.target.checked)}
+                      className="mr-2 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">ダイヤモンド</span>
+                  </label>
+                </div>
               </div>
             </div>
 
