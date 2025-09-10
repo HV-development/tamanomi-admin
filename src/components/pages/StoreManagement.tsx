@@ -293,22 +293,18 @@ export default function StoreManagement() {
           )}
         </div>
 
-        {/* 新規登録ボタン */}
-        <div className="flex justify-end">
-          <Link href="/stores/new">
-            <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
-              <span className="mr-2">+</span>
-              新規登録
-            </Button>
-          </Link>
-        </div>
-
         {/* 店舗一覧 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
               店舗一覧 ({filteredStores.length}件)
             </h3>
+            <Link href="/stores/new">
+              <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
+                <span className="mr-2">+</span>
+                新規登録
+              </Button>
+            </Link>
           </div>
           
           <div className="overflow-x-auto">
