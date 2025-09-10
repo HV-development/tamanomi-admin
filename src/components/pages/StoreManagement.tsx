@@ -262,34 +262,32 @@ export default function StoreManagement() {
             </div>
 
             {/* ステータスフィルター */}
-            <div className="mt-4">
-              <div className="flex flex-col md:flex-row gap-4 items-end">
-                <div className="md:w-48">
-                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                    ステータス
-                  </label>
-                  <select
-                    id="status"
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  >
-                    <option value="all">すべて</option>
-                    <option value="active">営業中</option>
-                    <option value="inactive">休業中</option>
-                  </select>
-                </div>
-
-                {/* 検索・クリアボタン */}
-                <div className="flex gap-2">
-                  <Button variant="primary" onClick={handleSearch}>
-                    検索
-                  </Button>
-                  <Button variant="outline" onClick={handleClear}>
-                    クリア
-                  </Button>
-                </div>
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                  ステータス
+                </label>
+                <select
+                  id="status"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="all">すべて</option>
+                  <option value="active">営業中</option>
+                  <option value="inactive">休業中</option>
+                </select>
               </div>
+            </div>
+
+            {/* 検索・クリアボタン */}
+            <div className="flex justify-end gap-2 mt-6">
+              <Button variant="primary" onClick={handleSearch}>
+                検索
+              </Button>
+              <Button variant="outline" onClick={handleClear}>
+                クリア
+              </Button>
             </div>
           </div>
           )}

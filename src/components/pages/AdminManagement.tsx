@@ -209,7 +209,7 @@ export default function AdminManagement() {
             </div>
 
             {/* 検索・クリアボタン */}
-            <div className="flex gap-2 mt-4">
+            <div className="flex justify-end gap-2 mt-6">
               <Button variant="primary" onClick={handleSearch}>
                 検索
               </Button>
