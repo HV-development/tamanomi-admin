@@ -44,11 +44,16 @@ export default function StoreConfirmation() {
     window.history.back();
   };
 
+  const handleModify = () => {
+    // 店舗登録画面に戻る
+    window.history.back();
+  };
+
   const handleRegister = () => {
     // 実際の登録処理（APIコール等）
     console.log('店舗登録:', storeData);
     alert('店舗を登録しました');
-    // 登録後は店舗管理画面に遷移
+    // 登録後は店舗一覧画面に遷移
     window.location.href = '/stores';
   };
 
@@ -76,20 +81,11 @@ export default function StoreConfirmation() {
         {/* 確認内容 */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  店舗名
-                </label>
-                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.storeName}</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  店舗CD
-                </label>
-                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.storeCode}</p>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                店舗名
+              </label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.storeName}</p>
             </div>
 
             <div>
@@ -99,59 +95,46 @@ export default function StoreConfirmation() {
               <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.storeDescription}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  郵便番号
-                </label>
-                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.postalCode}</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  都道府県
-                </label>
-                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.prefecture}</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  市区町村
-                </label>
-                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.city}</p>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                郵便番号
+              </label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.postalCode}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  番地以降
-                </label>
-                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.address}</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  建物名
-                </label>
-                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.building || '（未入力）'}</p>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                都道府県
+              </label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.prefecture}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  電話番号
-                </label>
-                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.phone}</p>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                市区町村
+              </label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.city}</p>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  ジャンル
-                </label>
-                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.genre}</p>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                番地以降
+              </label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.address}</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                建物名
+              </label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.building || '（未入力）'}</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                電話番号
+              </label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.phone}</p>
             </div>
 
             <div>
@@ -162,6 +145,20 @@ export default function StoreConfirmation() {
                 {storeData.homepage || '（未入力）'}
               </p>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                ジャンル
+              </label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.genre}</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                店舗CD
+              </label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.storeCode}</p>
+            </div>
           </div>
 
           {/* アクションボタン */}
@@ -169,10 +166,10 @@ export default function StoreConfirmation() {
             <Button
               variant="outline"
               size="lg"
-              onClick={handleBack}
+              onClick={handleModify}
               className="px-8"
             >
-              戻る
+              登録内容を修正する
             </Button>
             <Button
               variant="primary"
