@@ -582,7 +582,7 @@ export default function UserManagement() {
                         </Button>
                       </Link>
                       <Link href={`/users/${user.id}/edit`}>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" className="text-blue-600 border-blue-300 hover:bg-blue-50">
                           編集
                         </Button>
                       </Link>
