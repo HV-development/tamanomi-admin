@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import SidebarHeader from '../molecules/SidebarHeader';
 import MenuItem from '../molecules/MenuItem';
 import Button from '../atoms/Button';
@@ -24,6 +24,12 @@ const menuItems: MenuItemData[] = [
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleMenuClick = (href: string) => {
+    // 閉じた状態でクリックされた場合、サイドバーを閉じたままページ遷移
+    router.push(href);
+  };
 
   return (
     <div className={`bg-white shadow-lg transition-all duration-300 relative ${
@@ -42,6 +48,7 @@ export default function Sidebar() {
                 iconName={item.iconName}
                 isActive={pathname === item.href}
                 isCollapsed={isCollapsed}
+                onClick={handleMenuClick}
               />
             </li>
           ))}

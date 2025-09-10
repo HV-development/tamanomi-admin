@@ -7,12 +7,21 @@ interface MenuItemProps {
   iconName: string;
   isActive: boolean;
   isCollapsed: boolean;
+  onClick?: (href: string) => void;
 }
 
-export default function MenuItem({ name, href, iconName, isActive, isCollapsed }: MenuItemProps) {
+export default function MenuItem({ name, href, iconName, isActive, isCollapsed, onClick }: MenuItemProps) {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onClick) {
+      onClick(href);
+    }
+  };
+
   return (
-    <Link
+    <a
       href={href}
+      onClick={handleClick}
       className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 rounded-lg transition-colors ${
         isActive
           ? 'bg-green-100 text-green-700'
@@ -21,6 +30,6 @@ export default function MenuItem({ name, href, iconName, isActive, isCollapsed }
     >
       <Icon name={iconName} size="md" className={isActive ? "text-green-700" : ""} />
       {!isCollapsed && <span>{name}</span>}
-    </Link>
+    </a>
   );
 }
