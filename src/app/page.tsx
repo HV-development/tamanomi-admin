@@ -1,6 +1,4 @@
-import { redirect } from 'next/navigation';
-
 export default function Home() {
-  // ルートアクセス時はログイン画面にリダイレクト
-  redirect('/login');
+  // This page will not be reached due to middleware redirect
+  return null;
 }
