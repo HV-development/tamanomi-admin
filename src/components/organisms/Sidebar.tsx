@@ -26,7 +26,7 @@ export default function Sidebar() {
   const router = useRouter();
 
   const handleMenuClick = (href: string) => {
-    // サイドバーの状態を維持したままページ遷移
+    // メニューが閉じている状態では閉じたままページ遷移
     console.log('Menu clicked:', href, 'isCollapsed:', isCollapsed);
     router.push(href);
   };
