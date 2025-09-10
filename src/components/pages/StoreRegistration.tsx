@@ -107,15 +107,52 @@ export default function StoreRegistration() {
   };
 
   const handleAddressSearch = () => {
-    // 住所検索機能（実装は後で）
-    console.log('住所検索:', formData.postalCode);
-    alert('住所検索機能は実装予定です');
+    // zipcloudのAPIを使用して住所検索
+    if (formData.postalCode.length !== 7) {
+      alert('郵便番号を正しく入力してください（7桁の数字）');
+      return;
+    }
+
+    fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${formData.postalCode}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 200 && data.results && data.results.length > 0) {
+          const result = data.results[0];
+          setFormData(prev => ({
+            ...prev,
+            prefecture: result.address1,
+            city: result.address2,
+            address: result.address3
+          }));
+          alert('住所を取得しました');
+        } else {
+          alert('該当する住所が見つかりませんでした');
+        }
+      })
+      .catch(error => {
+        console.error('住所検索エラー:', error);
+        alert('住所検索に失敗しました');
+      });
   };
 
   const handleSubmit = () => {
     if (validateForm()) {
-      console.log('登録データ:', formData);
-      alert('登録内容を確認します');
+      // 登録内容確認画面に遷移
+      const queryParams = new URLSearchParams({
+        storeName: formData.storeName,
+        storeDescription: formData.storeDescription,
+        postalCode: formData.postalCode,
+        prefecture: formData.prefecture,
+        city: formData.city,
+        address: formData.address,
+        building: formData.building,
+        phone: formData.phone,
+        homepage: formData.homepage,
+        genre: formData.genre,
+        storeCode: formData.storeCode,
+      });
+      
+      window.location.href = `/stores/confirm?${queryParams.toString()}`;
     }
   };
 

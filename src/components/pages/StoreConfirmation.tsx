@@ -1,0 +1,190 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import DashboardLayout from '../templates/DashboardLayout';
+import Button from '../atoms/Button';
+
+interface StoreData {
+  storeName: string;
+  storeDescription: string;
+  postalCode: string;
+  prefecture: string;
+  city: string;
+  address: string;
+  building: string;
+  phone: string;
+  homepage: string;
+  genre: string;
+  storeCode: string;
+}
+
+export default function StoreConfirmation() {
+  const searchParams = useSearchParams();
+  const [storeData, setStoreData] = useState<StoreData | null>(null);
+
+  useEffect(() => {
+    const data: StoreData = {
+      storeName: searchParams.get('storeName') || '',
+      storeDescription: searchParams.get('storeDescription') || '',
+      postalCode: searchParams.get('postalCode') || '',
+      prefecture: searchParams.get('prefecture') || '',
+      city: searchParams.get('city') || '',
+      address: searchParams.get('address') || '',
+      building: searchParams.get('building') || '',
+      phone: searchParams.get('phone') || '',
+      homepage: searchParams.get('homepage') || '',
+      genre: searchParams.get('genre') || '',
+      storeCode: searchParams.get('storeCode') || '',
+    };
+    setStoreData(data);
+  }, [searchParams]);
+
+  const handleBack = () => {
+    window.history.back();
+  };
+
+  const handleRegister = () => {
+    // 実際の登録処理（APIコール等）
+    console.log('店舗登録:', storeData);
+    alert('店舗を登録しました');
+    // 登録後は店舗管理画面に遷移
+    window.location.href = '/stores';
+  };
+
+  if (!storeData) {
+    return (
+      <DashboardLayout>
+        <div className="text-center py-12">
+          <p className="text-gray-500">データを読み込んでいます...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* ページタイトル */}
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">店舗登録内容確認</h1>
+          <p className="mt-2 text-gray-600">
+            入力内容を確認してください
+          </p>
+        </div>
+
+        {/* 確認内容 */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  店舗名
+                </label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.storeName}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  店舗CD
+                </label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.storeCode}</p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                店舗紹介内容
+              </label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.storeDescription}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  郵便番号
+                </label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.postalCode}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  都道府県
+                </label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.prefecture}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  市区町村
+                </label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.city}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  番地以降
+                </label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.address}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  建物名
+                </label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.building || '（未入力）'}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  電話番号
+                </label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.phone}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ジャンル
+                </label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.genre}</p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                ホームページ
+              </label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">
+                {storeData.homepage || '（未入力）'}
+              </p>
+            </div>
+          </div>
+
+          {/* アクションボタン */}
+          <div className="flex justify-center space-x-4 pt-6 mt-6 border-t border-gray-200">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={handleBack}
+              className="px-8"
+            >
+              戻る
+            </Button>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={handleRegister}
+              className="px-8"
+            >
+              登録する
+            </Button>
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}
