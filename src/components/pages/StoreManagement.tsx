@@ -117,7 +117,7 @@ export default function StoreManagement() {
       <div className="space-y-6">
         {/* ヘッダー */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">店舗管理</h1>
+          <h1 className="text-2xl font-bold text-gray-900">店舗管理</h1>
           <p className="mt-2 text-gray-600">
             加盟店舗の管理・編集を行います
           </p>
