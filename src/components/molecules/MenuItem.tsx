@@ -13,11 +13,11 @@ interface MenuItemProps {
 export default function MenuItem({ name, href, iconName, isActive, isCollapsed, onClick }: MenuItemProps) {
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    console.log('MenuItem clicked:', href, 'isCollapsed:', isCollapsed);
+    // メニューが閉じている状態では閉じたままページ遷移する
+    console.log('MenuItem clicked:', href, 'isCollapsed:', isCollapsed, 'keeping collapsed state');
     if (onClick) {
       onClick(href);
     } else {
-      // フォールバック: onClickが提供されていない場合の処理
       window.location.href = href;
     }
   };
