@@ -289,10 +289,9 @@ export default function CouponDetail() {
                       {/* アクションボタン */}
                       <div className="space-y-3 pt-4">
                         <button
-                          onClick={handleClosePreview}
                           className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl text-lg shadow-sm transition-colors"
                         >
-                          承認する
+                          このクーポンで乾杯！
                         </button>
                         <button
                           onClick={handleClosePreview}
