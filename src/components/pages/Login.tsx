@@ -52,8 +52,8 @@ export default function Login() {
           newErrors.password = 'パスワードを入力してください';
         } else if (value.length > 255) {
           newErrors.password = 'パスワードは255文字以内で入力してください';
-        } else if (value.length < 8) {
-          newErrors.password = 'パスワードは8文字以上で入力してください';
+        } else if (value.length > 255) {
+          newErrors.password = 'パスワードは255文字以内で入力してください';
         } else {
           delete newErrors.password;
         }
@@ -78,9 +78,9 @@ export default function Login() {
     if (formData.id.length > 255) {
       newErrors.id = 'IDは255文字以内で入力してください';
     }
-    if (formData.password.length > 255) {
+    if (formData.password && formData.password.length > 255) {
       newErrors.password = 'パスワードは255文字以内で入力してください';
-    } else if (formData.password.length < 8) {
+    } else if (formData.password && formData.password.length < 8) {
       newErrors.password = 'パスワードは8文字以上で入力してください';
     }
 
