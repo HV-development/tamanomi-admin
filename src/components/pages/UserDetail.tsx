@@ -369,7 +369,7 @@ export default function UserDetail() {
                   size="lg"
                   className="px-8"
                 >
-                  ユーザー一覧に戻る
+                  戻る
                 </Button>
               </Link>
               <Link href={`/users/${user.id}/coupon-history`}>
