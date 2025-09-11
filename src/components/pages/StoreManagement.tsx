@@ -438,7 +438,12 @@ export default function StoreManagement() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <Link href={`/stores/${store.id}/edit`}>
-                        <Button variant="outline" size="sm" className="text-green-600 border-green-300 hover:bg-green-50">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-green-600 border-green-300 hover:bg-green-50"
+                          onClick={() => console.log('Edit button clicked for store:', store)}
+                        >
                           編集
                         </Button>
                       </Link>
