@@ -18,6 +18,22 @@ interface Store {
   registeredAt: string;
 }
 
+const prefectures = [
+  '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
+  '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県',
+  '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県',
+  '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県',
+  '奈良県', '和歌山県', '鳥取県', '島根県', '岡山県', '広島県', '山口県',
+  '徳島県', '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県',
+  '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'
+];
+
+const genres = [
+  '居酒屋', 'レストラン', 'カフェ', 'ファストフード', 'ラーメン店',
+  '焼肉店', '寿司店', 'イタリアン', 'フレンチ', '中華料理',
+  'その他'
+];
+
 // サンプルデータ
 const sampleStores: Store[] = [
   {
@@ -64,7 +80,7 @@ export default function StoreManagement() {
     address: '',
     building: '',
     phone: '',
-    genre: '',
+    genres: [] as string[],
   });
   const [appliedSearchForm, setAppliedSearchForm] = useState({
     storeId: '',
@@ -74,7 +90,7 @@ export default function StoreManagement() {
     address: '',
     building: '',
     phone: '',
-    genre: '',
+    genres: [] as string[],
   });
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [appliedStatusFilter, setAppliedStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -90,7 +106,7 @@ export default function StoreManagement() {
       (appliedSearchForm.address === '' || store.address.toLowerCase().includes(appliedSearchForm.address.toLowerCase())) &&
       (appliedSearchForm.building === '' || store.building.toLowerCase().includes(appliedSearchForm.building.toLowerCase())) &&
       (appliedSearchForm.phone === '' || store.phone.includes(appliedSearchForm.phone)) &&
-      (appliedSearchForm.genre === '' || store.genre.toLowerCase().includes(appliedSearchForm.genre.toLowerCase()));
+      (appliedSearchForm.genres.length === 0 || appliedSearchForm.genres.includes(store.genre));
     
     const matchesStatus = appliedStatusFilter === 'all' || store.status === appliedStatusFilter;
     
@@ -101,6 +117,15 @@ export default function StoreManagement() {
     setSearchForm(prev => ({
       ...prev,
       [field]: value
+    }));
+  };
+
+  const handleGenreChange = (genre: string, checked: boolean) => {
+    setSearchForm(prev => ({
+      ...prev,
+      genres: checked 
+        ? [...prev.genres, genre]
+        : prev.genres.filter(g => g !== genre)
     }));
   };
 
@@ -120,7 +145,7 @@ export default function StoreManagement() {
       address: '',
       building: '',
       phone: '',
-      genre: '',
+      genres: [],
     });
     setStatusFilter('all');
     setAppliedSearchForm({
@@ -131,7 +156,7 @@ export default function StoreManagement() {
       address: '',
       building: '',
       phone: '',
-      genre: '',
+      genres: [],
     });
     setAppliedStatusFilter('all');
   };
@@ -209,14 +234,17 @@ export default function StoreManagement() {
               <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
                 都道府県
               </label>
-              <input
-                type="text"
+              <select
                 id="prefecture"
-                placeholder="都道府県を入力"
                 value={searchForm.prefecture}
                 onChange={(e) => handleInputChange('prefecture', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
+              >
+                <option value="">都道府県を選択してください</option>
+                {prefectures.map((pref) => (
+                  <option key={pref} value={pref}>{pref}</option>
+                ))}
+              </select>
             </div>
 
             {/* 市区町村 */}
@@ -279,20 +307,26 @@ export default function StoreManagement() {
               />
             </div>
 
-            {/* ジャンル */}
-            <div>
-              <label htmlFor="genre" className="block text-sm font-medium text-gray-700 mb-2">
-                ジャンル
-              </label>
-              <input
-                type="text"
-                id="genre"
-                placeholder="ジャンルを入力"
-                value={searchForm.genre}
-                onChange={(e) => handleInputChange('genre', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
             </div>
+
+            {/* ジャンル（複数選択） */}
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ジャンル（複数選択可）
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                {genres.map((genre) => (
+                  <label key={genre} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={searchForm.genres.includes(genre)}
+                      onChange={(e) => handleGenreChange(genre, e.target.checked)}
+                      className="mr-2 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">{genre}</span>
+                  </label>
+                ))}
+              </div>
             </div>
 
             {/* ステータスフィルター */}
