@@ -147,11 +147,7 @@ export default function CouponDetail() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 ステータス
               </label>
-              <div className="bg-gray-50 p-3 rounded">
-                <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(coupon.status)}`}>
-                  {getStatusLabel(coupon.status)}
-                </span>
-              </div>
+              <p className="text-gray-900 bg-gray-50 p-3 rounded">{getStatusLabel(coupon.status)}</p>
             </div>
 
             {/* クーポン種別 */}

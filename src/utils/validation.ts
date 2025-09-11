@@ -81,7 +81,7 @@ export const validateFileSize = (file: File | null, maxSizeMB: number): string |
 
 export const validateFileType = (file: File | null, allowedTypes: string[]): string | null => {
   if (file && !allowedTypes.includes(file.type)) {
-    return 'このファイル形式はサポートされていません';
+    return 'JPEG形式のファイルのみアップロード可能です';
   }
   return null;
 };
