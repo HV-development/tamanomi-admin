@@ -146,7 +146,7 @@ export default function StoreEdit() {
       console.log('StoreEdit useEffect - urlData:', urlData);
       
       // いずれかの値が存在する場合のみフォームデータを更新
-      if (Object.values(urlData).some(value => value !== '')) {
+      if (Object.values(urlData).some(value => Array.isArray(value) ? value.length > 0 : value !== '')) {
         console.log('StoreEdit useEffect - Updating formData with urlData');
         setFormData(urlData);
       } else {
