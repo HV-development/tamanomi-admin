@@ -148,7 +148,3 @@ export default function AdminEditConfirmation() {
     </DashboardLayout>
   );
 }
-
-export default AdminEditConfirmation
-
-export default AdminEditConfirmation
