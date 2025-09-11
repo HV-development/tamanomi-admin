@@ -681,8 +681,10 @@ export default function StoreEdit() {
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                   errors.storeCode ? 'border-red-500' : 'border-gray-300'
                 }`}
-                maxLength={6}
               />
+              <div className="mt-1 text-xs text-gray-500">
+                {formData.storeCode.length}/6文字
+              </div>
               {errors.storeCode && (
                 <p className="mt-1 text-sm text-red-500">{errors.storeCode}</p>
               )}
