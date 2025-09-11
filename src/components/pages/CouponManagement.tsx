@@ -51,16 +51,21 @@ export default function CouponManagement() {
     couponId: '',
     couponName: '',
   });
+  const [appliedSearchForm, setAppliedSearchForm] = useState({
+    couponId: '',
+    couponName: '',
+  });
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'expired'>('all');
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState<'all' | 'active' | 'inactive' | 'expired'>('all');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // フィルタリング処理
   const filteredCoupons = sampleCoupons.filter((coupon) => {
     const matchesSearch = 
-      (searchForm.couponId === '' || coupon.id.toLowerCase().includes(searchForm.couponId.toLowerCase())) &&
-      (searchForm.couponName === '' || coupon.name.toLowerCase().includes(searchForm.couponName.toLowerCase()));
+      (appliedSearchForm.couponId === '' || coupon.id.toLowerCase().includes(appliedSearchForm.couponId.toLowerCase())) &&
+      (appliedSearchForm.couponName === '' || coupon.name.toLowerCase().includes(appliedSearchForm.couponName.toLowerCase()));
     
-    const matchesStatus = statusFilter === 'all' || coupon.status === statusFilter;
+    const matchesStatus = appliedStatusFilter === 'all' || coupon.status === appliedStatusFilter;
     
     return matchesSearch && matchesStatus;
   });
@@ -73,7 +78,9 @@ export default function CouponManagement() {
   };
 
   const handleSearch = () => {
-    // 検索処理は既にリアルタイムで実行されているため、特別な処理は不要
+    // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
+    setAppliedSearchForm({ ...searchForm });
+    setAppliedStatusFilter(statusFilter);
     console.log('検索実行:', searchForm);
   };
 
@@ -83,6 +90,11 @@ export default function CouponManagement() {
       couponName: '',
     });
     setStatusFilter('all');
+    setAppliedSearchForm({
+      couponId: '',
+      couponName: '',
+    });
+    setAppliedStatusFilter('all');
   };
 
   const getStatusLabel = (status: string) => {

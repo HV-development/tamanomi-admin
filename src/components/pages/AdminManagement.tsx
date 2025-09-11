@@ -53,15 +53,21 @@ export default function AdminManagement() {
     email: '',
     role: '',
   });
+  const [appliedSearchForm, setAppliedSearchForm] = useState({
+    accountId: '',
+    name: '',
+    email: '',
+    role: '',
+  });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // フィルタリング処理
   const filteredAdmins = sampleAdmins.filter((admin) => {
     const matchesSearch = 
-      (searchForm.accountId === '' || admin.id.toLowerCase().includes(searchForm.accountId.toLowerCase())) &&
-      (searchForm.name === '' || admin.name.toLowerCase().includes(searchForm.name.toLowerCase())) &&
-      (searchForm.email === '' || admin.email.toLowerCase().includes(searchForm.email.toLowerCase())) &&
-      (searchForm.role === '' || admin.role.toString() === searchForm.role);
+      (appliedSearchForm.accountId === '' || admin.id.toLowerCase().includes(appliedSearchForm.accountId.toLowerCase())) &&
+      (appliedSearchForm.name === '' || admin.name.toLowerCase().includes(appliedSearchForm.name.toLowerCase())) &&
+      (appliedSearchForm.email === '' || admin.email.toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
+      (appliedSearchForm.role === '' || admin.role.toString() === appliedSearchForm.role);
     
     return matchesSearch;
   });
@@ -74,12 +80,19 @@ export default function AdminManagement() {
   };
 
   const handleSearch = () => {
-    // 検索処理は既にリアルタイムで実行されているため、特別な処理は不要
+    // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
+    setAppliedSearchForm({ ...searchForm });
     console.log('検索実行:', searchForm);
   };
 
   const handleClear = () => {
     setSearchForm({
+      accountId: '',
+      name: '',
+      email: '',
+      role: '',
+    });
+    setAppliedSearchForm({
       accountId: '',
       name: '',
       email: '',

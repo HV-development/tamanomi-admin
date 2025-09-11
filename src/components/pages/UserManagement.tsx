@@ -105,31 +105,44 @@ export default function UserManagement() {
     registeredDateStart: '',
     registeredDateEnd: '',
   });
+  const [appliedSearchForm, setAppliedSearchForm] = useState({
+    nickname: '',
+    postalCode: '',
+    prefecture: '',
+    city: '',
+    address: '',
+    birthDate: '',
+    gender: '',
+    saitamaAppId: '',
+    ranks: [] as number[],
+    registeredDateStart: '',
+    registeredDateEnd: '',
+  });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // フィルタリング処理
   const filteredUsers = sampleUsers.filter((user) => {
     const matchesSearch = 
-      (searchForm.nickname === '' || user.nickname.includes(searchForm.nickname)) &&
-      (searchForm.postalCode === '' || user.postalCode === searchForm.postalCode) &&
-      (searchForm.prefecture === '' || user.prefecture === searchForm.prefecture) &&
-      (searchForm.city === '' || user.city.includes(searchForm.city)) &&
-      (searchForm.address === '' || user.address.includes(searchForm.address)) &&
-      (searchForm.birthDate === '' || user.birthDate === searchForm.birthDate) &&
-      (searchForm.gender === '' || user.gender.toString() === searchForm.gender) &&
-      (searchForm.saitamaAppId === '' || user.saitamaAppId.includes(searchForm.saitamaAppId)) &&
-      (searchForm.ranks.length === 0 || searchForm.ranks.includes(user.rank));
+      (appliedSearchForm.nickname === '' || user.nickname.includes(appliedSearchForm.nickname)) &&
+      (appliedSearchForm.postalCode === '' || user.postalCode === appliedSearchForm.postalCode) &&
+      (appliedSearchForm.prefecture === '' || user.prefecture === appliedSearchForm.prefecture) &&
+      (appliedSearchForm.city === '' || user.city.includes(appliedSearchForm.city)) &&
+      (appliedSearchForm.address === '' || user.address.includes(appliedSearchForm.address)) &&
+      (appliedSearchForm.birthDate === '' || user.birthDate === appliedSearchForm.birthDate) &&
+      (appliedSearchForm.gender === '' || user.gender.toString() === appliedSearchForm.gender) &&
+      (appliedSearchForm.saitamaAppId === '' || user.saitamaAppId.includes(appliedSearchForm.saitamaAppId)) &&
+      (appliedSearchForm.ranks.length === 0 || appliedSearchForm.ranks.includes(user.rank));
 
     // 登録日範囲チェック
     let matchesDateRange = true;
-    if (searchForm.registeredDateStart || searchForm.registeredDateEnd) {
+    if (appliedSearchForm.registeredDateStart || appliedSearchForm.registeredDateEnd) {
       const userDate = new Date(user.registeredAt.replace(/\//g, '-'));
-      if (searchForm.registeredDateStart) {
-        const startDate = new Date(searchForm.registeredDateStart);
+      if (appliedSearchForm.registeredDateStart) {
+        const startDate = new Date(appliedSearchForm.registeredDateStart);
         if (userDate < startDate) matchesDateRange = false;
       }
-      if (searchForm.registeredDateEnd) {
-        const endDate = new Date(searchForm.registeredDateEnd);
+      if (appliedSearchForm.registeredDateEnd) {
+        const endDate = new Date(appliedSearchForm.registeredDateEnd);
         if (userDate > endDate) matchesDateRange = false;
       }
     }
@@ -154,7 +167,8 @@ export default function UserManagement() {
   };
 
   const handleSearch = () => {
-    // 検索処理は既にリアルタイムで実行されているため、特別な処理は不要
+    // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
+    setAppliedSearchForm({ ...searchForm });
     console.log('検索実行:', searchForm);
   };
 
@@ -167,6 +181,19 @@ export default function UserManagement() {
       address: '',
       birthDate: '',
       gender: '',
+      ranks: [],
+      registeredDateStart: '',
+      registeredDateEnd: '',
+    });
+    setAppliedSearchForm({
+      nickname: '',
+      postalCode: '',
+      prefecture: '',
+      city: '',
+      address: '',
+      birthDate: '',
+      gender: '',
+      saitamaAppId: '',
       ranks: [],
       registeredDateStart: '',
       registeredDateEnd: '',

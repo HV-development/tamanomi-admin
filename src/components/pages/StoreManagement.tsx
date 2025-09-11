@@ -66,22 +66,33 @@ export default function StoreManagement() {
     phone: '',
     genre: '',
   });
+  const [appliedSearchForm, setAppliedSearchForm] = useState({
+    storeId: '',
+    storeName: '',
+    prefecture: '',
+    city: '',
+    address: '',
+    building: '',
+    phone: '',
+    genre: '',
+  });
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // フィルタリング処理
   const filteredStores = sampleStores.filter((store) => {
     const matchesSearch = 
-      (searchForm.storeId === '' || store.id.includes(searchForm.storeId)) &&
-      (searchForm.storeName === '' || store.name.toLowerCase().includes(searchForm.storeName.toLowerCase())) &&
-      (searchForm.prefecture === '' || store.prefecture.toLowerCase().includes(searchForm.prefecture.toLowerCase())) &&
-      (searchForm.city === '' || store.city.toLowerCase().includes(searchForm.city.toLowerCase())) &&
-      (searchForm.address === '' || store.address.toLowerCase().includes(searchForm.address.toLowerCase())) &&
-      (searchForm.building === '' || store.building.toLowerCase().includes(searchForm.building.toLowerCase())) &&
-      (searchForm.phone === '' || store.phone.includes(searchForm.phone)) &&
-      (searchForm.genre === '' || store.genre.toLowerCase().includes(searchForm.genre.toLowerCase()));
+      (appliedSearchForm.storeId === '' || store.id.includes(appliedSearchForm.storeId)) &&
+      (appliedSearchForm.storeName === '' || store.name.toLowerCase().includes(appliedSearchForm.storeName.toLowerCase())) &&
+      (appliedSearchForm.prefecture === '' || store.prefecture.toLowerCase().includes(appliedSearchForm.prefecture.toLowerCase())) &&
+      (appliedSearchForm.city === '' || store.city.toLowerCase().includes(appliedSearchForm.city.toLowerCase())) &&
+      (appliedSearchForm.address === '' || store.address.toLowerCase().includes(appliedSearchForm.address.toLowerCase())) &&
+      (appliedSearchForm.building === '' || store.building.toLowerCase().includes(appliedSearchForm.building.toLowerCase())) &&
+      (appliedSearchForm.phone === '' || store.phone.includes(appliedSearchForm.phone)) &&
+      (appliedSearchForm.genre === '' || store.genre.toLowerCase().includes(appliedSearchForm.genre.toLowerCase()));
     
-    const matchesStatus = statusFilter === 'all' || store.status === statusFilter;
+    const matchesStatus = appliedStatusFilter === 'all' || store.status === appliedStatusFilter;
     
     return matchesSearch && matchesStatus;
   });
@@ -94,7 +105,9 @@ export default function StoreManagement() {
   };
 
   const handleSearch = () => {
-    // 検索処理は既にリアルタイムで実行されているため、特別な処理は不要
+    // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
+    setAppliedSearchForm({ ...searchForm });
+    setAppliedStatusFilter(statusFilter);
     console.log('検索実行:', searchForm);
   };
 
@@ -110,6 +123,17 @@ export default function StoreManagement() {
       genre: '',
     });
     setStatusFilter('all');
+    setAppliedSearchForm({
+      storeId: '',
+      storeName: '',
+      prefecture: '',
+      city: '',
+      address: '',
+      building: '',
+      phone: '',
+      genre: '',
+    });
+    setAppliedStatusFilter('all');
   };
 
   return (

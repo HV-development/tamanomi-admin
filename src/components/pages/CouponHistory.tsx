@@ -92,6 +92,15 @@ export default function CouponHistory() {
     usedDateStart: '',
     usedDateEnd: '',
   });
+  const [appliedSearchForm, setAppliedSearchForm] = useState({
+    usageId: '',
+    couponId: '',
+    couponName: '',
+    userId: '',
+    nickname: '',
+    usedDateStart: '',
+    usedDateEnd: '',
+  });
 
   const [showBackButton, setShowBackButton] = useState(false);
   const [backUrl, setBackUrl] = useState('');
@@ -149,22 +158,22 @@ export default function CouponHistory() {
     
     const filtered = baseUsages.filter((usage) => {
       const matchesSearch = 
-        (searchForm.usageId === '' || usage.id.toLowerCase().includes(searchForm.usageId.toLowerCase())) &&
-        (searchForm.couponId === '' || usage.couponId.toLowerCase().includes(searchForm.couponId.toLowerCase())) &&
-        (searchForm.couponName === '' || usage.couponName.toLowerCase().includes(searchForm.couponName.toLowerCase())) &&
-        (searchForm.userId === '' || usage.userId.toLowerCase().includes(searchForm.userId.toLowerCase())) &&
-        (searchForm.nickname === '' || usage.nickname.toLowerCase().includes(searchForm.nickname.toLowerCase()));
+        (appliedSearchForm.usageId === '' || usage.id.toLowerCase().includes(appliedSearchForm.usageId.toLowerCase())) &&
+        (appliedSearchForm.couponId === '' || usage.couponId.toLowerCase().includes(appliedSearchForm.couponId.toLowerCase())) &&
+        (appliedSearchForm.couponName === '' || usage.couponName.toLowerCase().includes(appliedSearchForm.couponName.toLowerCase())) &&
+        (appliedSearchForm.userId === '' || usage.userId.toLowerCase().includes(appliedSearchForm.userId.toLowerCase())) &&
+        (appliedSearchForm.nickname === '' || usage.nickname.toLowerCase().includes(appliedSearchForm.nickname.toLowerCase()));
 
       // 利用日範囲チェック
       let matchesDateRange = true;
-      if (searchForm.usedDateStart || searchForm.usedDateEnd) {
+      if (appliedSearchForm.usedDateStart || appliedSearchForm.usedDateEnd) {
         const usageDate = new Date(usage.usedAt.split(' ')[0].replace(/\//g, '-'));
-        if (searchForm.usedDateStart) {
-          const startDate = new Date(searchForm.usedDateStart);
+        if (appliedSearchForm.usedDateStart) {
+          const startDate = new Date(appliedSearchForm.usedDateStart);
           if (usageDate < startDate) matchesDateRange = false;
         }
-        if (searchForm.usedDateEnd) {
-          const endDate = new Date(searchForm.usedDateEnd);
+        if (appliedSearchForm.usedDateEnd) {
+          const endDate = new Date(appliedSearchForm.usedDateEnd);
           if (usageDate > endDate) matchesDateRange = false;
         }
       }
@@ -183,12 +192,22 @@ export default function CouponHistory() {
   };
 
   const handleSearch = () => {
-    // 検索処理は既にリアルタイムで実行されているため、特別な処理は不要
+    // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
+    setAppliedSearchForm({ ...searchForm });
     console.log('検索実行:', searchForm);
   };
 
   const handleClear = () => {
     setSearchForm({
+      usageId: '',
+      couponId: '',
+      couponName: '',
+      userId: '',
+      nickname: '',
+      usedDateStart: '',
+      usedDateEnd: '',
+    });
+    setAppliedSearchForm({
       usageId: '',
       couponId: '',
       couponName: '',
