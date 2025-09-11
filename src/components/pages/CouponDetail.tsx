@@ -238,7 +238,6 @@ export default function CouponDetail() {
                         <div className="w-1 h-1 bg-black rounded-full opacity-40"></div>
                         <div className="w-1 h-1 bg-black rounded-full opacity-40"></div>
                       </div>
-                      <span className="ml-2 text-xs">docomo</span>
                     </div>
                     <div className="text-center">
                       <span className="text-sm font-semibold">9:41</span>
@@ -257,12 +256,6 @@ export default function CouponDetail() {
                     <div className="bg-green-600 text-white px-4 py-3">
                       <div className="flex items-center justify-center relative">
                         <h1 className="text-lg font-bold">クーポン使用確認</h1>
-                        <button
-                          onClick={handleClosePreview}
-                          className="absolute right-0 w-8 h-8 flex items-center justify-center rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 text-white"
-                        >
-                          ×
-                        </button>
                       </div>
                     </div>
 
