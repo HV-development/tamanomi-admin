@@ -447,11 +447,9 @@ export default function UserManagement() {
                   </div>
                 </div>
               </div>
-            </div>
-            </div>
 
-            {/* 性別 */}
-            <div className="mt-4">
+              {/* 性別 */}
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   性別
                 </label>
@@ -501,6 +499,8 @@ export default function UserManagement() {
                     <span className="text-sm text-gray-700">未回答</span>
                   </label>
                 </div>
+              </div>
+            </div>
             </div>
 
 
