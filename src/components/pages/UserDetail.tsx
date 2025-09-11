@@ -310,22 +310,13 @@ export default function UserDetail() {
 
             {/* アクションボタン */}
             <div className="flex justify-center space-x-4 pt-6 border-t border-gray-200">
-              <Link href={`/users/${user.id}/edit`}>
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="px-8"
-                >
-                  編集
-                </Button>
-              </Link>
-              <Link href={`/users/${user.id}/coupon-history`}>
+              <Link href="/coupon-history">
                 <Button
                   variant="outline"
                   size="lg"
                   className="px-8"
                 >
-                  クーポン利用履歴
+                  戻る
                 </Button>
               </Link>
             </div>

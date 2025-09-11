@@ -198,6 +198,15 @@ export default function CouponDetail() {
 
             {/* アクションボタン */}
             <div className="flex justify-center space-x-4 pt-6 border-t border-gray-200">
+              <Link href="/coupon-history">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="px-8"
+                >
+                  戻る
+                </Button>
+              </Link>
               <Button
                 variant="outline"
                 size="lg"
@@ -206,24 +215,6 @@ export default function CouponDetail() {
               >
                 プレビュー
               </Button>
-              <Link href={`/coupons/${coupon.id}/edit`}>
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="px-8"
-                >
-                  編集
-                </Button>
-              </Link>
-              <Link href={`/coupons/${coupon.id}/history`}>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="px-8"
-                >
-                  クーポン利用履歴
-                </Button>
-              </Link>
             </div>
           </div>
         </div>
