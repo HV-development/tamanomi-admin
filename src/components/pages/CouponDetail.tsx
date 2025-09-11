@@ -221,113 +221,108 @@ export default function CouponDetail() {
 
         {/* プレビューモーダル */}
         {showPreview && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full mx-4 overflow-hidden">
-              {/* スマホデバイス風のヘッダー */}
-              <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-4 relative">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-1">
-                    <div className="w-1 h-1 bg-white rounded-full opacity-60"></div>
-                    <div className="w-1 h-1 bg-white rounded-full opacity-60"></div>
-                    <div className="w-1 h-1 bg-white rounded-full opacity-60"></div>
-                    <div className="w-1 h-1 bg-white rounded-full"></div>
-                    <div className="w-1 h-1 bg-white rounded-full"></div>
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+            {/* スマホデバイス外枠 */}
+            <div className="relative">
+              {/* デバイスフレーム */}
+              <div className="bg-black rounded-[3rem] p-3 shadow-2xl">
+                {/* スクリーン */}
+                <div className="bg-white rounded-[2.5rem] overflow-hidden w-80 h-[680px] relative">
+                  {/* ステータスバー */}
+                  <div className="bg-white px-6 py-2 flex items-center justify-between text-black text-sm font-medium">
+                    <div className="flex items-center space-x-1">
+                      <div className="flex space-x-1">
+                        <div className="w-1 h-1 bg-black rounded-full"></div>
+                        <div className="w-1 h-1 bg-black rounded-full"></div>
+                        <div className="w-1 h-1 bg-black rounded-full"></div>
+                        <div className="w-1 h-1 bg-black rounded-full opacity-40"></div>
+                        <div className="w-1 h-1 bg-black rounded-full opacity-40"></div>
+                      </div>
+                      <span className="ml-2 text-xs">docomo</span>
+                    </div>
+                    <div className="text-center">
+                      <span className="text-sm font-semibold">9:41</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <div className="text-xs">100%</div>
+                      <div className="w-6 h-3 border border-black rounded-sm">
+                        <div className="w-full h-full bg-green-500 rounded-sm"></div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-center flex-1">
-                    <div className="text-sm font-medium">たまのみ</div>
-                    <div className="text-xs opacity-80">9:41</div>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <div className="text-xs opacity-80">100%</div>
-                    <div className="w-6 h-3 border border-white rounded-sm opacity-80">
-                      <div className="w-full h-full bg-white rounded-sm"></div>
+
+                  {/* アプリコンテンツ */}
+                  <div className="flex-1 bg-gray-50 h-full overflow-hidden">
+                    {/* ヘッダー */}
+                    <div className="bg-green-600 text-white px-4 py-3">
+                      <div className="flex items-center justify-between">
+                        <h1 className="text-lg font-bold">クーポン使用確認</h1>
+                        <button
+                          onClick={handleClosePreview}
+                          className="w-8 h-8 flex items-center justify-center rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 text-white"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* メインコンテンツ */}
+                    <div className="p-4 space-y-4">
+                      {/* クーポンカード */}
+                      <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200">
+                        {/* クーポン画像 */}
+                        <div className="relative">
+                          <img 
+                            src={coupon.imageUrl} 
+                            alt={coupon.name}
+                            className="w-full h-40 object-cover"
+                          />
+                        </div>
+
+                        {/* クーポン情報 */}
+                        <div className="p-4">
+                          <h2 className="text-lg font-bold text-gray-900 mb-2 leading-tight">
+                            {coupon.name}
+                          </h2>
+                          <p className="text-sm text-gray-700 mb-3 leading-relaxed">
+                            {coupon.content}
+                          </p>
+                          <div className="text-xs text-gray-500 border-t border-gray-100 pt-3">
+                            利用条件：焼き鳥2本以上のご注文
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* アクションボタン */}
+                      <div className="space-y-3 pt-4">
+                        <button
+                          onClick={handleClosePreview}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl text-lg shadow-sm transition-colors"
+                        >
+                          承認する
+                        </button>
+                        <button
+                          onClick={handleClosePreview}
+                          className="w-full bg-white border-2 border-gray-300 text-gray-700 font-medium py-3 rounded-2xl text-base hover:bg-gray-50 transition-colors"
+                        >
+                          キャンセル
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                {/* ホームインジケーター */}
+                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-white rounded-full opacity-60"></div>
               </div>
 
-              {/* アプリヘッダー */}
-              <div className="bg-white border-b border-gray-100 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                      <span className="text-green-600 text-sm font-bold">た</span>
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">クーポン詳細</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleClosePreview}
-                    className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-
-              {/* プレビュー内容 */}
-              <div className="p-4 space-y-4 bg-gray-50">
-                {/* クーポン画像 */}
-                <div className="relative">
-                  <img 
-                    src={coupon.imageUrl} 
-                    alt={coupon.name}
-                    className="w-full h-48 object-cover rounded-xl shadow-sm"
-                  />
-                  <div className="absolute top-3 right-3 bg-white bg-opacity-90 backdrop-blur-sm px-2 py-1 rounded-full">
-                    <span className="text-xs font-medium text-gray-700">
-                      {getTypeLabel(coupon.type)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* クーポン情報カード */}
-                <div className="bg-white rounded-xl p-4 shadow-sm">
-                  <div className="space-y-3">
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900 leading-tight">
-                        {coupon.name}
-                      </h3>
-                    </div>
-
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                      <p className="text-sm text-green-800 leading-relaxed">
-                        {coupon.content}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>発行日: {coupon.createdAt.split(' ')[0]}</span>
-                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
-                        利用可能
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 利用ボタン */}
-                <div className="pt-2">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-4 rounded-xl shadow-sm"
-                    onClick={handleClosePreview}
-                  >
-                    このクーポンを使用する
-                  </Button>
-                </div>
-
-                {/* 注意事項 */}
-                <div className="bg-white rounded-xl p-4 shadow-sm">
-                  <h4 className="text-sm font-medium text-gray-900 mb-2">ご利用上の注意</h4>
-                  <ul className="text-xs text-gray-600 space-y-1">
-                    <li>• 他のクーポンとの併用はできません</li>
-                    <li>• 有効期限内にご利用ください</li>
-                    <li>• 店舗スタッフにこの画面をお見せください</li>
-                  </ul>
-                </div>
-              </div>
+              {/* 閉じるボタン（デバイス外） */}
+              <button
+                onClick={handleClosePreview}
+                className="absolute -top-4 -right-4 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:text-gray-800 text-xl font-bold"
+              >
+                ×
+              </button>
             </div>
           </div>
         )}
