@@ -242,16 +242,6 @@ export default function CouponHistory() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-            {showBackButton && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBack}
-                className="mr-2"
-              >
-                ← 戻る
-              </Button>
-            )}
             <h1 className="text-2xl font-bold text-gray-900">{pageTitle}</h1>
             <p className="text-gray-600">
               {pathname.includes('/coupons/') && pathname.includes('/history') 
@@ -541,6 +531,20 @@ export default function CouponHistory() {
             </div>
           )}
         </div>
+
+        {/* 戻るボタン（画面下部） */}
+        {showBackButton && (
+          <div className="flex justify-start">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={handleBack}
+              className="px-8"
+            >
+              戻る
+            </Button>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
