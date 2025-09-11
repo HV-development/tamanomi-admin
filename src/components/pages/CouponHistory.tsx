@@ -456,12 +456,7 @@ export default function CouponHistory() {
                     {!isFromCouponDetail && (
                       <>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Link 
-                        href={`/coupons/${usage.couponId}`}
-                        className="text-sm text-green-600 hover:text-green-800 underline"
-                      >
-                        {usage.couponId}
-                      </Link>
+                      <div className="text-sm text-gray-900">{usage.couponId}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{usage.couponName}</div>
@@ -470,12 +465,7 @@ export default function CouponHistory() {
                     )}
                     {isFromCouponDetail && (
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <Link 
-                          href={`/coupons/${usage.couponId}`}
-                          className="text-sm text-green-600 hover:text-green-800 underline"
-                        >
-                          {usage.couponName}
-                        </Link>
+                        <div className="text-sm text-gray-900">{usage.couponName}</div>
                       </td>
                     )}
                     <td className="px-6 py-4 whitespace-nowrap">
