@@ -403,7 +403,15 @@ export default function UserManagement() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                   />
                 </div>
-                <div className="md:col-span-2">
+              </div>
+            </div>
+            </div>
+
+            {/* ランクと性別を横並びに配置 */}
+            <div className="md:col-span-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* ランク（複数選択可） */}
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     ランク（複数選択可）
                   </label>
@@ -446,61 +454,60 @@ export default function UserManagement() {
                     </label>
                   </div>
                 </div>
-              </div>
 
-              {/* 性別 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  性別
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="gender"
-                      value=""
-                      checked={searchForm.gender === ''}
-                      onChange={(e) => handleInputChange('gender', e.target.value)}
-                      className="mr-2 text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-sm text-gray-700">すべて</span>
+                {/* 性別 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    性別
                   </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="gender"
-                      value="1"
-                      checked={searchForm.gender === '1'}
-                      onChange={(e) => handleInputChange('gender', e.target.value)}
-                      className="mr-2 text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-sm text-gray-700">男性</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="gender"
-                      value="2"
-                      checked={searchForm.gender === '2'}
-                      onChange={(e) => handleInputChange('gender', e.target.value)}
-                      className="mr-2 text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-sm text-gray-700">女性</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="gender"
-                      value="3"
-                      checked={searchForm.gender === '3'}
-                      onChange={(e) => handleInputChange('gender', e.target.value)}
-                      className="mr-2 text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-sm text-gray-700">未回答</span>
-                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value=""
+                        checked={searchForm.gender === ''}
+                        onChange={(e) => handleInputChange('gender', e.target.value)}
+                        className="mr-2 text-green-600 focus:ring-green-500"
+                      />
+                      <span className="text-sm text-gray-700">すべて</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="1"
+                        checked={searchForm.gender === '1'}
+                        onChange={(e) => handleInputChange('gender', e.target.value)}
+                        className="mr-2 text-green-600 focus:ring-green-500"
+                      />
+                      <span className="text-sm text-gray-700">男性</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="2"
+                        checked={searchForm.gender === '2'}
+                        onChange={(e) => handleInputChange('gender', e.target.value)}
+                        className="mr-2 text-green-600 focus:ring-green-500"
+                      />
+                      <span className="text-sm text-gray-700">女性</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="3"
+                        checked={searchForm.gender === '3'}
+                        onChange={(e) => handleInputChange('gender', e.target.value)}
+                        className="mr-2 text-green-600 focus:ring-green-500"
+                      />
+                      <span className="text-sm text-gray-700">未回答</span>
+                    </label>
+                  </div>
                 </div>
               </div>
-            </div>
             </div>
 
 
