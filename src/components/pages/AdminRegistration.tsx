@@ -6,6 +6,12 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '../templates/DashboardLayout';
 import Button from '../atoms/Button';
 import Icon from '../atoms/Icon';
+import { 
+  validateRequired, 
+  validateMaxLength, 
+  validateEmail, 
+  validatePassword 
+} from '../../utils/validation';
 
 interface AdminFormData {
   role: string;
@@ -60,44 +66,36 @@ export default function AdminRegistration() {
 
     switch (field) {
       case 'role':
-        if (!value) {
-          newErrors.role = '権限を選択してください';
+        const roleError = validateRequired(value, '権限');
+        if (roleError) {
+          newErrors.role = roleError;
         } else {
           delete newErrors.role;
         }
         break;
 
       case 'name':
-        if (!value.trim()) {
-          newErrors.name = '氏名を入力してください';
-        } else if (value.length > 50) {
-          newErrors.name = '氏名は50文字以内で入力してください';
+        const nameError = validateRequired(value, '氏名') || validateMaxLength(value, 50, '氏名');
+        if (nameError) {
+          newErrors.name = nameError;
         } else {
           delete newErrors.name;
         }
         break;
 
       case 'email':
-        if (!value.trim()) {
-          newErrors.email = 'メールアドレスを入力してください';
-        } else if (value.length > 255) {
-          newErrors.email = 'メールアドレスは255文字以内で入力してください';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          newErrors.email = 'メールアドレスの形式が正しくありません';
+        const emailError = validateRequired(value, 'メールアドレス') || validateMaxLength(value, 255, 'メールアドレス') || validateEmail(value);
+        if (emailError) {
+          newErrors.email = emailError;
         } else {
           delete newErrors.email;
         }
         break;
 
       case 'password':
-        if (!value.trim()) {
-          newErrors.password = 'パスワードを入力してください';
-        } else if (value.length < 8) {
-          newErrors.password = '8文字以上で入力してください';
-        } else if (value.length > 255) {
-          newErrors.password = 'パスワードは255文字以内で入力してください';
-        } else if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$/.test(value)) {
-          newErrors.password = '英数字混在で入力してください';
+        const passwordError = validateRequired(value, 'パスワード') || validateMaxLength(value, 255, 'パスワード') || validatePassword(value);
+        if (passwordError) {
+          newErrors.password = passwordError;
         } else {
           delete newErrors.password;
         }
@@ -111,28 +109,17 @@ export default function AdminRegistration() {
     const newErrors: Partial<AdminFormData> = {};
 
     // 必須チェック
-    if (!formData.role) newErrors.role = '権限を選択してください';
-    if (!formData.name.trim()) newErrors.name = '氏名を入力してください';
-    if (!formData.email.trim()) newErrors.email = 'メールアドレスを入力してください';
-    if (!formData.password.trim()) newErrors.password = 'パスワードを入力してください';
+    const roleError = validateRequired(formData.role, '権限');
+    if (roleError) newErrors.role = roleError;
 
-    // 文字数チェック
-    if (formData.name.length > 50) newErrors.name = '氏名は50文字以内で入力してください';
-    if (formData.email.length > 255) newErrors.email = 'メールアドレスは255文字以内で入力してください';
-    if (formData.password.length > 255) newErrors.password = 'パスワードは255文字以内で入力してください';
+    const nameError = validateRequired(formData.name, '氏名') || validateMaxLength(formData.name, 50, '氏名');
+    if (nameError) newErrors.name = nameError;
 
-    // フォーマットチェック
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'メールアドレスの形式が正しくありません';
-    }
+    const emailError = validateRequired(formData.email, 'メールアドレス') || validateMaxLength(formData.email, 255, 'メールアドレス') || validateEmail(formData.email);
+    if (emailError) newErrors.email = emailError;
 
-    if (formData.password && formData.password.length < 8) {
-      newErrors.password = '8文字以上で入力してください';
-    }
-
-    if (formData.password && !/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$/.test(formData.password)) {
-      newErrors.password = '英数字混在で入力してください';
-    }
+    const passwordError = validateRequired(formData.password, 'パスワード') || validateMaxLength(formData.password, 255, 'パスワード') || validatePassword(formData.password);
+    if (passwordError) newErrors.password = passwordError;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;

@@ -5,6 +5,14 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '../templates/DashboardLayout';
 import Button from '../atoms/Button';
 import Icon from '../atoms/Icon';
+import { 
+  validateRequired, 
+  validateMaxLength, 
+  validatePostalCode, 
+  validatePhone, 
+  validateUrl, 
+  validateStoreCode 
+} from '../../utils/validation';
 
 interface StoreFormData {
   storeName: string;
@@ -137,108 +145,99 @@ export default function StoreEdit() {
 
     switch (field) {
       case 'storeName':
-        if (!value.trim()) {
-          newErrors.storeName = '店舗名は必須です';
-        } else if (value.length > 30) {
-          newErrors.storeName = '店舗名は30文字以内で入力してください';
+        const storeNameError = validateRequired(value, '店舗名') || validateMaxLength(value, 30, '店舗名');
+        if (storeNameError) {
+          newErrors.storeName = storeNameError;
         } else {
           delete newErrors.storeName;
         }
         break;
 
       case 'storeDescription':
-        if (!value.trim()) {
-          newErrors.storeDescription = '店舗紹介内容は必須です';
-        } else if (value.length > 100) {
-          newErrors.storeDescription = '店舗紹介内容は100文字以内で入力してください';
+        const descriptionError = validateRequired(value, '店舗紹介内容') || validateMaxLength(value, 100, '店舗紹介内容');
+        if (descriptionError) {
+          newErrors.storeDescription = descriptionError;
         } else {
           delete newErrors.storeDescription;
         }
         break;
 
       case 'postalCode':
-        if (!value.trim()) {
-          newErrors.postalCode = '郵便番号は必須です';
-        } else if (value.length !== 7 || !/^\d{7}$/.test(value)) {
-          newErrors.postalCode = '郵便番号は7桁の数字で入力してください';
+        const postalCodeError = validateRequired(value, '郵便番号') || validatePostalCode(value);
+        if (postalCodeError) {
+          newErrors.postalCode = postalCodeError;
         } else {
           delete newErrors.postalCode;
         }
         break;
 
       case 'prefecture':
-        if (!value) {
-          newErrors.prefecture = '都道府県は必須です';
+        const prefectureError = validateRequired(value, '都道府県');
+        if (prefectureError) {
+          newErrors.prefecture = prefectureError;
         } else {
           delete newErrors.prefecture;
         }
         break;
 
       case 'city':
-        if (!value.trim()) {
-          newErrors.city = '市区町村は必須です';
-        } else if (value.length > 20) {
-          newErrors.city = '市区町村は20文字以内で入力してください';
+        const cityError = validateRequired(value, '市区町村') || validateMaxLength(value, 20, '市区町村');
+        if (cityError) {
+          newErrors.city = cityError;
         } else {
           delete newErrors.city;
         }
         break;
 
       case 'address':
-        if (!value.trim()) {
-          newErrors.address = '番地以降は必須です';
-        } else if (value.length > 100) {
-          newErrors.address = '番地以降は100文字以内で入力してください';
+        const addressError = validateRequired(value, '番地以降') || validateMaxLength(value, 100, '番地以降');
+        if (addressError) {
+          newErrors.address = addressError;
         } else {
           delete newErrors.address;
         }
         break;
 
       case 'building':
-        if (!value.trim()) {
-          newErrors.building = '建物名は必須です';
-        } else if (value.length > 100) {
-          newErrors.building = '建物名は100文字以内で入力してください';
+        const buildingError = validateRequired(value, '建物名') || validateMaxLength(value, 100, '建物名');
+        if (buildingError) {
+          newErrors.building = buildingError;
         } else {
           delete newErrors.building;
         }
         break;
 
       case 'phone':
-        if (!value.trim()) {
-          newErrors.phone = '電話番号は必須です';
-        } else if (value.length > 12) {
-          newErrors.phone = '電話番号は12文字以内で入力してください';
+        const phoneError = validateRequired(value, '電話番号') || validatePhone(value);
+        if (phoneError) {
+          newErrors.phone = phoneError;
         } else {
           delete newErrors.phone;
         }
         break;
 
       case 'homepage':
-        if (value && value.length > 255) {
-          newErrors.homepage = 'ホームページは255文字以内で入力してください';
-        } else if (value && !/^https?:\/\/.+/.test(value)) {
-          newErrors.homepage = 'ホームページはURL形式で入力してください（http://またはhttps://で始まる）';
+        const homepageError = validateMaxLength(value, 255, 'ホームページ') || validateUrl(value);
+        if (homepageError) {
+          newErrors.homepage = homepageError;
         } else {
           delete newErrors.homepage;
         }
         break;
 
       case 'genre':
-        if (!value) {
-          newErrors.genre = 'ジャンルは必須です';
+        const genreError = validateRequired(value, 'ジャンル');
+        if (genreError) {
+          newErrors.genre = genreError;
         } else {
           delete newErrors.genre;
         }
         break;
 
       case 'storeCode':
-        if (!value.trim()) {
-          newErrors.storeCode = '店舗CDは必須です';
-        } else if (value.length < 3 || value.length > 6) {
-          newErrors.storeCode = '店舗CDは3-6文字で入力してください';
-        } else if (!/^[A-Z0-9]+$/.test(value)) {
-          newErrors.storeCode = '店舗CDは大文字英語または数字で入力してください';
+        const storeCodeError = validateRequired(value, '店舗CD') || validateStoreCode(value);
+        if (storeCodeError) {
+          newErrors.storeCode = storeCodeError;
         } else {
           delete newErrors.storeCode;
         }
@@ -252,38 +251,38 @@ export default function StoreEdit() {
     const newErrors: Partial<StoreFormData> = {};
 
     // 必須チェック
-    if (!formData.storeName.trim()) newErrors.storeName = '店舗名は必須です';
-    if (!formData.storeDescription.trim()) newErrors.storeDescription = '店舗紹介内容は必須です';
-    if (!formData.postalCode.trim()) newErrors.postalCode = '郵便番号は必須です';
-    if (!formData.prefecture) newErrors.prefecture = '都道府県は必須です';
-    if (!formData.city.trim()) newErrors.city = '市区町村は必須です';
-    if (!formData.address.trim()) newErrors.address = '番地以降は必須です';
-    if (!formData.building.trim()) newErrors.building = '建物名は必須です';
-    if (!formData.phone.trim()) newErrors.phone = '電話番号は必須です';
-    if (!formData.genre) newErrors.genre = 'ジャンルは必須です';
-    if (!formData.storeCode.trim()) newErrors.storeCode = '店舗CDは必須です';
+    const storeNameError = validateRequired(formData.storeName, '店舗名') || validateMaxLength(formData.storeName, 30, '店舗名');
+    if (storeNameError) newErrors.storeName = storeNameError;
 
-    // 文字数チェック
-    if (formData.storeName.length > 30) newErrors.storeName = '店舗名は30文字以内で入力してください';
-    if (formData.storeDescription.length > 100) newErrors.storeDescription = '店舗紹介内容は100文字以内で入力してください';
-    if (formData.city.length > 20) newErrors.city = '市区町村は20文字以内で入力してください';
-    if (formData.address.length > 100) newErrors.address = '番地以降は100文字以内で入力してください';
-    if (formData.building.length > 100) newErrors.building = '建物名は100文字以内で入力してください';
-    if (formData.phone.length > 12) newErrors.phone = '電話番号は12文字以内で入力してください';
-    if (formData.homepage.length > 255) newErrors.homepage = 'ホームページは255文字以内で入力してください';
+    const descriptionError = validateRequired(formData.storeDescription, '店舗紹介内容') || validateMaxLength(formData.storeDescription, 100, '店舗紹介内容');
+    if (descriptionError) newErrors.storeDescription = descriptionError;
 
-    // フォーマットチェック
-    if (formData.postalCode && (formData.postalCode.length !== 7 || !/^\d{7}$/.test(formData.postalCode))) {
-      newErrors.postalCode = '郵便番号は7桁の数字で入力してください';
-    }
-    
-    if (formData.homepage && !/^https?:\/\/.+/.test(formData.homepage)) {
-      newErrors.homepage = 'ホームページはURL形式で入力してください（http://またはhttps://で始まる）';
-    }
+    const postalCodeError = validateRequired(formData.postalCode, '郵便番号') || validatePostalCode(formData.postalCode);
+    if (postalCodeError) newErrors.postalCode = postalCodeError;
 
-    if (formData.storeCode && (formData.storeCode.length < 3 || formData.storeCode.length > 6 || !/^[A-Z0-9]+$/.test(formData.storeCode))) {
-      newErrors.storeCode = '店舗CDは3-6文字の大文字英語または数字で入力してください';
-    }
+    const prefectureError = validateRequired(formData.prefecture, '都道府県');
+    if (prefectureError) newErrors.prefecture = prefectureError;
+
+    const cityError = validateRequired(formData.city, '市区町村') || validateMaxLength(formData.city, 20, '市区町村');
+    if (cityError) newErrors.city = cityError;
+
+    const addressError = validateRequired(formData.address, '番地以降') || validateMaxLength(formData.address, 100, '番地以降');
+    if (addressError) newErrors.address = addressError;
+
+    const buildingError = validateRequired(formData.building, '建物名') || validateMaxLength(formData.building, 100, '建物名');
+    if (buildingError) newErrors.building = buildingError;
+
+    const phoneError = validateRequired(formData.phone, '電話番号') || validatePhone(formData.phone);
+    if (phoneError) newErrors.phone = phoneError;
+
+    const homepageError = validateMaxLength(formData.homepage, 255, 'ホームページ') || validateUrl(formData.homepage);
+    if (homepageError) newErrors.homepage = homepageError;
+
+    const genreError = validateRequired(formData.genre, 'ジャンル');
+    if (genreError) newErrors.genre = genreError;
+
+    const storeCodeError = validateRequired(formData.storeCode, '店舗CD') || validateStoreCode(formData.storeCode);
+    if (storeCodeError) newErrors.storeCode = storeCodeError;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;

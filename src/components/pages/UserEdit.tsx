@@ -5,6 +5,12 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '../templates/DashboardLayout';
 import Button from '../atoms/Button';
 import Icon from '../atoms/Icon';
+import { 
+  validateRequired, 
+  validateEmail, 
+  validatePostalCode, 
+  validateDate 
+} from '../../utils/validation';
 
 interface UserFormData {
   nickname: string;
@@ -119,46 +125,45 @@ export default function UserEdit() {
 
     switch (field) {
       case 'nickname':
-        if (!value.trim()) {
-          newErrors.nickname = '入力してください';
+        const nicknameError = validateRequired(value, 'ニックネーム');
+        if (nicknameError) {
+          newErrors.nickname = nicknameError;
         } else {
           delete newErrors.nickname;
         }
         break;
 
       case 'email':
-        if (!value.trim()) {
-          newErrors.email = '入力してください';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          newErrors.email = 'メールアドレスの形式が正しくありません';
+        const emailError = validateRequired(value, 'メールアドレス') || validateEmail(value);
+        if (emailError) {
+          newErrors.email = emailError;
         } else {
           delete newErrors.email;
         }
         break;
 
       case 'postalCode':
-        if (!value.trim()) {
-          newErrors.postalCode = '入力してください';
-        } else if (value.length !== 7 || !/^\d{7}$/.test(value)) {
-          newErrors.postalCode = '7桁で入力してください';
+        const postalCodeError = validateRequired(value, '郵便番号') || validatePostalCode(value);
+        if (postalCodeError) {
+          newErrors.postalCode = postalCodeError;
         } else {
           delete newErrors.postalCode;
         }
         break;
 
       case 'birthDate':
-        if (!value.trim()) {
-          newErrors.birthDate = '入力してください';
-        } else if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-          newErrors.birthDate = '日付の形式が正しくありません';
+        const birthDateError = validateRequired(value, '生年月日') || validateDate(value);
+        if (birthDateError) {
+          newErrors.birthDate = birthDateError;
         } else {
           delete newErrors.birthDate;
         }
         break;
 
       case 'gender':
-        if (!value) {
-          newErrors.gender = '選択してください';
+        const genderError = validateRequired(value, '性別');
+        if (genderError) {
+          newErrors.gender = genderError;
         } else {
           delete newErrors.gender;
         }
@@ -172,24 +177,20 @@ export default function UserEdit() {
     const newErrors: Partial<UserFormData> = {};
 
     // 必須チェック
-    if (!formData.nickname.trim()) newErrors.nickname = '入力してください';
-    if (!formData.email.trim()) newErrors.email = '入力してください';
-    if (!formData.postalCode.trim()) newErrors.postalCode = '入力してください';
-    if (!formData.birthDate.trim()) newErrors.birthDate = '入力してください';
-    if (!formData.gender) newErrors.gender = '選択してください';
+    const nicknameError = validateRequired(formData.nickname, 'ニックネーム');
+    if (nicknameError) newErrors.nickname = nicknameError;
 
-    // フォーマットチェック
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'メールアドレスの形式が正しくありません';
-    }
+    const emailError = validateRequired(formData.email, 'メールアドレス') || validateEmail(formData.email);
+    if (emailError) newErrors.email = emailError;
 
-    if (formData.postalCode && (formData.postalCode.length !== 7 || !/^\d{7}$/.test(formData.postalCode))) {
-      newErrors.postalCode = '7桁で入力してください';
-    }
+    const postalCodeError = validateRequired(formData.postalCode, '郵便番号') || validatePostalCode(formData.postalCode);
+    if (postalCodeError) newErrors.postalCode = postalCodeError;
 
-    if (formData.birthDate && !/^\d{4}-\d{2}-\d{2}$/.test(formData.birthDate)) {
-      newErrors.birthDate = '日付の形式が正しくありません';
-    }
+    const birthDateError = validateRequired(formData.birthDate, '生年月日') || validateDate(formData.birthDate);
+    if (birthDateError) newErrors.birthDate = birthDateError;
+
+    const genderError = validateRequired(formData.gender, '性別');
+    if (genderError) newErrors.gender = genderError;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
