@@ -255,11 +255,11 @@ export default function CouponDetail() {
                   <div className="flex-1 bg-gray-50 h-full overflow-hidden">
                     {/* ヘッダー */}
                     <div className="bg-green-600 text-white px-4 py-3">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-center relative">
                         <h1 className="text-lg font-bold">クーポン使用確認</h1>
                         <button
                           onClick={handleClosePreview}
-                          className="w-8 h-8 flex items-center justify-center rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 text-white"
+                          className="absolute right-0 w-8 h-8 flex items-center justify-center rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 text-white"
                         >
                           ×
                         </button>
