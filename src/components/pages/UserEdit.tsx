@@ -9,7 +9,8 @@ import {
   validateRequired, 
   validateEmail, 
   validatePostalCode, 
-  validateDate 
+  validateDate,
+  validateMaxLength
 } from '../../utils/validation';
 
 interface UserFormData {
