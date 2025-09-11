@@ -458,7 +458,7 @@ export default function CouponHistory() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link 
                         href={`/coupons/${usage.couponId}`}
-                        className="text-sm text-blue-600 hover:text-blue-800 underline"
+                        className="text-sm text-green-600 hover:text-green-800 underline"
                       >
                         {usage.couponId}
                       </Link>
@@ -472,7 +472,7 @@ export default function CouponHistory() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Link 
                           href={`/coupons/${usage.couponId}`}
-                          className="text-sm text-blue-600 hover:text-blue-800 underline"
+                          className="text-sm text-green-600 hover:text-green-800 underline"
                         >
                           {usage.couponName}
                         </Link>
@@ -481,7 +481,7 @@ export default function CouponHistory() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link 
                         href={`/users/${usage.userId}`}
-                        className="text-sm text-blue-600 hover:text-blue-800 underline"
+                        className="text-sm text-green-600 hover:text-green-800 underline"
                       >
                         {usage.userId}
                       </Link>

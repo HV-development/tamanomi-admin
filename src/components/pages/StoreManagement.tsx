@@ -423,7 +423,7 @@ export default function StoreManagement() {
                         href={store.homepage} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:text-blue-800 underline"
+                        className="text-sm text-green-600 hover:text-green-800 underline"
                       >
                         {store.homepage}
                       </a>
@@ -438,7 +438,7 @@ export default function StoreManagement() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <Link href={`/stores/${store.id}/edit`}>
-                        <Button variant="outline" size="sm" className="text-blue-600 border-blue-300 hover:bg-blue-50">
+                        <Button variant="outline" size="sm" className="text-green-600 border-green-300 hover:bg-green-50">
                           編集
                         </Button>
                       </Link>

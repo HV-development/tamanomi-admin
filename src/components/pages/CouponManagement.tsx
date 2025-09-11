@@ -286,7 +286,7 @@ export default function CouponManagement() {
                         </Button>
                       </Link>
                       <Link href={`/coupons/${coupon.id}/edit`}>
-                        <Button variant="outline" size="sm" className="text-blue-600 border-blue-300 hover:bg-blue-50">
+                        <Button variant="outline" size="sm" className="text-green-600 border-green-300 hover:bg-green-50">
                           編集
                         </Button>
                       </Link>
