@@ -58,6 +58,17 @@ export default function CouponRegistration() {
         }));
       }
     }
+    
+    // sessionStorageから画像データを復元
+    const savedImagePreview = sessionStorage.getItem('couponImagePreview');
+    if (savedImagePreview) {
+      setFormData(prev => ({
+        ...prev,
+        imagePreview: savedImagePreview
+      }));
+      // 使用後は削除
+      sessionStorage.removeItem('couponImagePreview');
+    }
   }, [searchParams]);
 
   const handleInputChange = (field: keyof CouponFormData, value: string) => {

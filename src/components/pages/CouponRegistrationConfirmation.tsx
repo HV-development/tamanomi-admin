@@ -61,6 +61,11 @@ export default function CouponRegistrationConfirmation() {
       imagePreview: couponData?.imagePreview || '',
     });
     
+    // 画像データを保持するためにsessionStorageを使用
+    if (couponData?.imagePreview) {
+      sessionStorage.setItem('couponImagePreview', couponData.imagePreview);
+    }
+    
     window.location.href = `/coupons/new?${queryParams.toString()}`;
   };
 
