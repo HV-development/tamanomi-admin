@@ -72,6 +72,19 @@ const sampleStoreData: Record<string, StoreFormData> = {
     genres: ['カフェ'],
     storeCode: 'SJK001',
   },
+  '3': {
+    storeName: 'たまのみ 池袋店',
+    storeDescription: '池袋駅近くの落ち着いたレストランです。',
+    postalCode: '1710022',
+    prefecture: '東京都',
+    city: '豊島区',
+    address: '池袋3-3-3',
+    building: '',
+    phone: '03-3456-7890',
+    homepage: 'https://tamanomi-ikebukuro.com',
+    genres: ['レストラン'],
+    storeCode: 'IKB001',
+  },
 };
 
 export default function StoreEdit() {
