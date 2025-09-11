@@ -63,21 +63,19 @@ export default function Sidebar() {
       {/* フッター */}
       <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200">
         {/* ログアウトボタン */}
-        {!isCollapsed && (
-          <div className="px-4 py-2">
-            <button
-              onClick={() => {
-                if (confirm('ログアウトしますか？')) {
-                  window.location.href = '/';
-                }
-              }}
-              className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-            >
-              <Icon name="logout" size="md" />
-              <span>ログアウト</span>
-            </button>
-          </div>
-        )}
+        <div className="px-4 py-2">
+          <button
+            onClick={() => {
+              if (confirm('ログアウトしますか？')) {
+                window.location.href = '/';
+              }
+            }}
+            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900`}
+          >
+            <Icon name="logout" size="md" />
+            {!isCollapsed && <span>ログアウト</span>}
+          </button>
+        </div>
         
         <div className="p-4 flex justify-end">
           <button
