@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '../templates/DashboardLayout';
 import Button from '../atoms/Button';
+import Icon from '../atoms/Icon';
 
 interface AdminData {
   role: string;
