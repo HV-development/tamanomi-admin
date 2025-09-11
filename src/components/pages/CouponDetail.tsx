@@ -222,74 +222,110 @@ export default function CouponDetail() {
         {/* プレビューモーダル */}
         {showPreview && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-sm w-full mx-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full mx-4 overflow-hidden">
               {/* スマホデバイス風のヘッダー */}
-              <div className="bg-gray-900 text-white p-4 rounded-t-lg relative">
+              <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-4 relative">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-1 h-1 bg-white rounded-full opacity-60"></div>
+                    <div className="w-1 h-1 bg-white rounded-full opacity-60"></div>
+                    <div className="w-1 h-1 bg-white rounded-full opacity-60"></div>
+                    <div className="w-1 h-1 bg-white rounded-full"></div>
+                    <div className="w-1 h-1 bg-white rounded-full"></div>
+                  </div>
+                  <div className="text-center flex-1">
+                    <div className="text-sm font-medium">たまのみ</div>
+                    <div className="text-xs opacity-80">9:41</div>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="text-xs opacity-80">100%</div>
+                    <div className="w-6 h-3 border border-white rounded-sm opacity-80">
+                      <div className="w-full h-full bg-white rounded-sm"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* アプリヘッダー */}
+              <div className="bg-white border-b border-gray-100 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <span className="text-green-600 text-sm font-bold">た</span>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">クーポン詳細</div>
+                    </div>
                   </div>
                   <button
                     onClick={handleClosePreview}
-                    className="text-white hover:text-gray-300 text-xl font-bold"
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
                   >
                     ×
                   </button>
                 </div>
-                <div className="text-center mt-2">
-                  <p className="text-sm">たまのみアプリ</p>
-                </div>
               </div>
 
               {/* プレビュー内容 */}
-              <div className="p-6 space-y-4">
-                <div className="text-center">
+              <div className="p-4 space-y-4 bg-gray-50">
+                {/* クーポン画像 */}
+                <div className="relative">
                   <img 
                     src={coupon.imageUrl} 
                     alt={coupon.name}
-                    className="w-full h-32 object-cover rounded-lg mb-4"
+                    className="w-full h-48 object-cover rounded-xl shadow-sm"
                   />
+                  <div className="absolute top-3 right-3 bg-white bg-opacity-90 backdrop-blur-sm px-2 py-1 rounded-full">
+                    <span className="text-xs font-medium text-gray-700">
+                      {getTypeLabel(coupon.type)}
+                    </span>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    クーポン種別
-                  </label>
-                  <p className="text-sm text-gray-900">{getTypeLabel(coupon.type)}</p>
+                {/* クーポン情報カード */}
+                <div className="bg-white rounded-xl p-4 shadow-sm">
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 leading-tight">
+                        {coupon.name}
+                      </h3>
+                    </div>
+
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <p className="text-sm text-green-800 leading-relaxed">
+                        {coupon.content}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>発行日: {coupon.createdAt.split(' ')[0]}</span>
+                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                        利用可能
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    クーポン名
-                  </label>
-                  <p className="text-sm font-medium text-gray-900">{coupon.name}</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    クーポン内容
-                  </label>
-                  <p className="text-sm text-gray-900">{coupon.content}</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    作成日時
-                  </label>
-                  <p className="text-xs text-gray-600">{coupon.createdAt}</p>
-                </div>
-
-                <div className="pt-4">
+                {/* 利用ボタン */}
+                <div className="pt-2">
                   <Button
                     variant="primary"
-                    size="sm"
-                    className="w-full"
+                    size="lg"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-4 rounded-xl shadow-sm"
                     onClick={handleClosePreview}
                   >
                     このクーポンを使用する
                   </Button>
+                </div>
+
+                {/* 注意事項 */}
+                <div className="bg-white rounded-xl p-4 shadow-sm">
+                  <h4 className="text-sm font-medium text-gray-900 mb-2">ご利用上の注意</h4>
+                  <ul className="text-xs text-gray-600 space-y-1">
+                    <li>• 他のクーポンとの併用はできません</li>
+                    <li>• 有効期限内にご利用ください</li>
+                    <li>• 店舗スタッフにこの画面をお見せください</li>
+                  </ul>
                 </div>
               </div>
             </div>
