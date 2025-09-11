@@ -366,11 +366,11 @@ export default function CouponHistory() {
 
             {/* 検索・クリアボタン */}
             <div className="flex justify-end gap-2 mt-6">
-              <Button variant="primary" onClick={handleSearch}>
-                検索
-              </Button>
               <Button variant="outline" onClick={handleClear}>
                 クリア
+              </Button>
+              <Button variant="primary" onClick={handleSearch}>
+                検索
               </Button>
             </div>
           </div>
