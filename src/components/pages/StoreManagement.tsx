@@ -307,6 +307,22 @@ export default function StoreManagement() {
               />
             </div>
 
+            {/* ステータス */}
+            <div>
+              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                ステータス
+              </label>
+              <select
+                id="status"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              >
+                <option value="all">すべて</option>
+                <option value="active">営業中</option>
+                <option value="inactive">休業中</option>
+              </select>
+            </div>
             </div>
 
             {/* ジャンル（複数選択） */}
@@ -329,24 +345,6 @@ export default function StoreManagement() {
               </div>
             </div>
 
-            {/* ステータスフィルター */}
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                  ステータス
-                </label>
-                <select
-                  id="status"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                >
-                  <option value="all">すべて</option>
-                  <option value="active">営業中</option>
-                  <option value="inactive">休業中</option>
-                </select>
-              </div>
-            </div>
 
             {/* 検索・クリアボタン */}
             <div className="flex justify-end gap-2 mt-6">
