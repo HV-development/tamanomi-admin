@@ -112,14 +112,23 @@ export default function StoreEdit() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('StoreEdit useEffect - storeId:', storeId);
+    console.log('StoreEdit useEffect - sampleStoreData:', sampleStoreData);
+    
     // 実際はAPIから店舗データを取得
     const storeData = sampleStoreData[storeId];
+    console.log('StoreEdit useEffect - found storeData:', storeData);
+    
     if (storeData) {
       setFormData(storeData);
+      console.log('StoreEdit useEffect - formData set to:', storeData);
+    } else {
+      console.log('StoreEdit useEffect - No store data found for ID:', storeId);
     }
     
     // URLパラメータから値を取得してフォームに設定（修正ボタンからの遷移時）
     if (searchParams) {
+      console.log('StoreEdit useEffect - searchParams found');
       const urlData = {
         storeName: searchParams.get('storeName') || '',
         storeDescription: searchParams.get('storeDescription') || '',
@@ -134,12 +143,18 @@ export default function StoreEdit() {
         storeCode: searchParams.get('storeCode') || '',
       };
       
+      console.log('StoreEdit useEffect - urlData:', urlData);
+      
       // いずれかの値が存在する場合のみフォームデータを更新
       if (Object.values(urlData).some(value => value !== '')) {
+        console.log('StoreEdit useEffect - Updating formData with urlData');
         setFormData(urlData);
+      } else {
+        console.log('StoreEdit useEffect - No urlData to apply');
       }
     }
     
+    console.log('StoreEdit useEffect - Setting isLoading to false');
     setIsLoading(false);
   }, [storeId, searchParams]);
 
