@@ -159,6 +159,22 @@ export default function StoreEdit() {
   }, [storeId, searchParams]);
 
   const handleInputChange = (field: keyof StoreFormData, value: string) => {
+    // 最大文字数チェック
+    const maxLengths: Record<string, number> = {
+      storeName: 30,
+      storeDescription: 100,
+      city: 20,
+      address: 100,
+      building: 100,
+      phone: 12,
+      homepage: 255,
+      storeCode: 6,
+    };
+
+    if (maxLengths[field] && value.length > maxLengths[field]) {
+      return; // 最大文字数を超える場合は入力を受け付けない
+    }
+
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -434,8 +450,10 @@ export default function StoreEdit() {
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                   errors.storeName ? 'border-red-500' : 'border-gray-300'
                 }`}
-                maxLength={30}
               />
+              <div className="mt-1 text-xs text-gray-500">
+                {formData.storeName.length}/30文字
+              </div>
               {errors.storeName && (
                 <p className="mt-1 text-sm text-red-500">{errors.storeName}</p>
               )}
@@ -455,8 +473,10 @@ export default function StoreEdit() {
                   errors.storeDescription ? 'border-red-500' : 'border-gray-300'
                 }`}
                 rows={3}
-                maxLength={100}
               />
+              <div className="mt-1 text-xs text-gray-500">
+                {formData.storeDescription.length}/100文字
+              </div>
               {errors.storeDescription && (
                 <p className="mt-1 text-sm text-red-500">{errors.storeDescription}</p>
               )}
