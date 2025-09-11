@@ -126,8 +126,8 @@ export default function CouponHistory() {
       // ユーザー詳細からの遷移
       const userId = pathname.split('/')[2];
       setShowBackButton(true);
-      setBackUrl(`/users/${userId}`);
-      setPageTitle('クーポン利用履歴');
+      setBackUrl('/users');
+      setPageTitle(`ユーザー ${userId} のクーポン利用履歴`);
       setIsFromCouponDetail(false);
       
       // 該当ユーザーの利用履歴のみを表示
@@ -244,7 +244,11 @@ export default function CouponHistory() {
             <div className="flex items-center space-x-4">
             <h1 className="text-2xl font-bold text-gray-900">{pageTitle}</h1>
             <p className="text-gray-600">
-              {isFromCouponDetail ? 'このクーポンの利用履歴を表示します' : 'クーポンの利用履歴を管理します'}
+              {pathname.includes('/coupons/') && pathname.includes('/history') 
+                ? 'このクーポンの利用履歴を表示します' 
+                : pathname.includes('/users/') && pathname.includes('/coupon-history')
+                ? 'このユーザーのクーポン利用履歴を表示します'
+                : 'クーポンの利用履歴を管理します'}
             </p>
             </div>
             <div className="text-sm text-gray-600">
@@ -257,7 +261,7 @@ export default function CouponHistory() {
         </div>
 
         {/* 検索フォーム（クーポン詳細からの遷移時は簡略化） */}
-        {!isFromCouponDetail && (
+        {!(pathname.includes('/coupons/') && pathname.includes('/history')) && (
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="pb-3 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
@@ -401,7 +405,11 @@ export default function CouponHistory() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-medium text-gray-900">
-              {isFromCouponDetail ? 'クーポン利用履歴' : 'クーポン利用履歴一覧'} ({filteredUsages.length}件)
+              {pathname.includes('/coupons/') && pathname.includes('/history') 
+                ? 'クーポン利用履歴' 
+                : pathname.includes('/users/') && pathname.includes('/coupon-history')
+                ? 'ユーザーのクーポン利用履歴'
+                : 'クーポン利用履歴一覧'} ({filteredUsages.length}件)
             </h3>
           </div>
           
@@ -412,7 +420,7 @@ export default function CouponHistory() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     クーポン利用ID
                   </th>
-                  {!isFromCouponDetail && (
+                  {!(pathname.includes('/coupons/') && pathname.includes('/history')) && (
                     <>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     クーポンID
@@ -422,7 +430,7 @@ export default function CouponHistory() {
                   </th>
                     </>
                   )}
-                  {isFromCouponDetail && (
+                  {pathname.includes('/coupons/') && pathname.includes('/history') && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       クーポン名
                     </th>
@@ -453,7 +461,7 @@ export default function CouponHistory() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{usage.id}</div>
                     </td>
-                    {!isFromCouponDetail && (
+                    {!(pathname.includes('/coupons/') && pathname.includes('/history')) && (
                       <>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{usage.couponId}</div>
@@ -463,7 +471,7 @@ export default function CouponHistory() {
                     </td>
                       </>
                     )}
-                    {isFromCouponDetail && (
+                    {pathname.includes('/coupons/') && pathname.includes('/history') && (
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{usage.couponName}</div>
                       </td>
