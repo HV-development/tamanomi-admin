@@ -21,7 +21,7 @@ export const validateMinLength = (value: string, minLength: number, fieldName: s
 };
 
 export const validateEmail = (value: string): string | null => {
-  if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
     return 'メールアドレスの形式が正しくありません';
   }
   return null;

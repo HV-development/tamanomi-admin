@@ -134,7 +134,7 @@ export default function UserEdit() {
         break;
 
       case 'email':
-        const emailError = validateRequired(value, 'メールアドレス') || validateEmail(value);
+        const emailError = validateRequired(value, 'メールアドレス') || validateMaxLength(value, 255, 'メールアドレス') || validateEmail(value);
         if (emailError) {
           newErrors.email = emailError;
         } else {
@@ -180,7 +180,7 @@ export default function UserEdit() {
     const nicknameError = validateRequired(formData.nickname, 'ニックネーム');
     if (nicknameError) newErrors.nickname = nicknameError;
 
-    const emailError = validateRequired(formData.email, 'メールアドレス') || validateEmail(formData.email);
+    const emailError = validateRequired(formData.email, 'メールアドレス') || validateMaxLength(formData.email, 255, 'メールアドレス') || validateEmail(formData.email);
     if (emailError) newErrors.email = emailError;
 
     const postalCodeError = validateRequired(formData.postalCode, '郵便番号') || validatePostalCode(formData.postalCode);

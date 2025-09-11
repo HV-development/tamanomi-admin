@@ -122,7 +122,7 @@ export default function AdminEdit() {
         break;
 
       case 'email':
-        const emailError = validateRequired(value, 'メールアドレス') || validateMaxLength(value, 255, 'メールアドレス') || validateEmail(value);
+        const emailError = validateRequired(value, 'メールアドレス') || validateMaxLength(value, 255, 'メールアドレス') || (value ? validateEmail(value) : null);
         if (emailError) {
           newErrors.email = emailError;
         } else {
@@ -153,7 +153,7 @@ export default function AdminEdit() {
     const nameError = validateRequired(formData.name, '氏名') || validateMaxLength(formData.name, 50, '氏名');
     if (nameError) newErrors.name = nameError;
 
-    const emailError = validateRequired(formData.email, 'メールアドレス') || validateMaxLength(formData.email, 255, 'メールアドレス') || validateEmail(formData.email);
+    const emailError = validateRequired(formData.email, 'メールアドレス') || validateMaxLength(formData.email, 255, 'メールアドレス') || (formData.email ? validateEmail(formData.email) : null);
     if (emailError) newErrors.email = emailError;
 
     const passwordError = validateRequired(formData.password, 'パスワード') || validateMaxLength(formData.password, 255, 'パスワード') || validatePassword(formData.password);
