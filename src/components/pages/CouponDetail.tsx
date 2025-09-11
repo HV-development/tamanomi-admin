@@ -294,7 +294,6 @@ export default function CouponDetail() {
                           このクーポンで乾杯！
                         </button>
                         <button
-                          onClick={handleClosePreview}
                           className="w-full bg-white border-2 border-gray-300 text-gray-700 font-medium py-3 rounded-2xl text-base hover:bg-gray-50 transition-colors"
                         >
                           キャンセル
