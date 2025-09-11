@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -11,12 +13,12 @@ export default function Logo({ size = 'md', className = '' }: LogoProps) {
   };
 
   return (
-    <div className={`flex items-center w-full ${className}`}>
+    <Link href="/coupons" className={`flex items-center w-full ${className}`}>
       <img 
         src="/tamanomi_logo.svg" 
         alt="たまのみロゴ" 
-        className={`w-full ${sizeClasses[size]} object-contain`}
+        className={`w-full ${sizeClasses[size]} object-contain cursor-pointer hover:opacity-80 transition-opacity`}
       />
-    </div>
+    </Link>
   );
 }
