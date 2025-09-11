@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '../templates/DashboardLayout';
 import Button from '../atoms/Button';
@@ -15,6 +16,7 @@ interface AdminFormData {
 
 export default function AdminRegistration() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   
   const [formData, setFormData] = useState<AdminFormData>({
     role: '',
@@ -25,6 +27,23 @@ export default function AdminRegistration() {
 
   const [errors, setErrors] = useState<Partial<AdminFormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    // URLパラメータから値を取得してフォームに設定
+    if (searchParams) {
+      const urlData = {
+        role: searchParams.get('role') || '',
+        name: searchParams.get('name') || '',
+        email: searchParams.get('email') || '',
+        password: searchParams.get('password') || '',
+      };
+      
+      // いずれかの値が存在する場合のみフォームデータを更新
+      if (Object.values(urlData).some(value => value !== '')) {
+        setFormData(urlData);
+      }
+    }
+  }, [searchParams]);
 
   const handleInputChange = (field: keyof AdminFormData, value: string) => {
     setFormData(prev => ({

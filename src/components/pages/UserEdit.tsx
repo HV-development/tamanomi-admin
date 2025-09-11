@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '../templates/DashboardLayout';
 import Button from '../atoms/Button';
+import Icon from '../atoms/Icon';
 
 interface UserFormData {
   nickname: string;
@@ -58,6 +59,7 @@ const sampleUserData: Record<string, UserFormData> = {
 export default function UserEdit() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const userId = params.id as string;
 
   const [formData, setFormData] = useState<UserFormData>({
@@ -80,8 +82,27 @@ export default function UserEdit() {
     if (userData) {
       setFormData(userData);
     }
+    
+    // URLパラメータから値を取得してフォームに設定（修正ボタンからの遷移時）
+    if (searchParams) {
+      const urlData = {
+        nickname: searchParams.get('nickname') || '',
+        email: searchParams.get('email') || '',
+        postalCode: searchParams.get('postalCode') || '',
+        address: searchParams.get('address') || '',
+        birthDate: searchParams.get('birthDate') || '',
+        gender: searchParams.get('gender') || '',
+        saitamaAppId: searchParams.get('saitamaAppId') || '',
+      };
+      
+      // いずれかの値が存在する場合のみフォームデータを更新
+      if (Object.values(urlData).some(value => value !== '')) {
+        setFormData(urlData);
+      }
+    }
+    
     setIsLoading(false);
-  }, [userId]);
+  }, [userId, searchParams]);
 
   const handleInputChange = (field: keyof UserFormData, value: string) => {
     setFormData(prev => ({

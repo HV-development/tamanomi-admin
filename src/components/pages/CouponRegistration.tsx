@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '../templates/DashboardLayout';
 import Button from '../atoms/Button';
+import Icon from '../atoms/Icon';
 
 interface CouponFormData {
   couponName: string;
@@ -16,6 +18,7 @@ interface CouponFormData {
 
 export default function CouponRegistration() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   
   const [formData, setFormData] = useState<CouponFormData>({
     couponName: '',
@@ -28,6 +31,28 @@ export default function CouponRegistration() {
 
   const [errors, setErrors] = useState<Partial<Record<keyof CouponFormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    // URLパラメータから値を取得してフォームに設定
+    if (searchParams) {
+      const urlData = {
+        couponName: searchParams.get('couponName') || '',
+        couponContent: searchParams.get('couponContent') || '',
+        couponType: searchParams.get('couponType') || '',
+        publishStatus: searchParams.get('publishStatus') || '',
+        imagePreview: searchParams.get('imagePreview') || '',
+      };
+      
+      // いずれかの値が存在する場合のみフォームデータを更新
+      if (Object.values(urlData).some(value => value !== '')) {
+        setFormData(prev => ({
+          ...prev,
+          ...urlData,
+          couponImage: null, // ファイルはURLパラメータでは復元できない
+        }));
+      }
+    }
+  }, [searchParams]);
 
   const handleInputChange = (field: keyof CouponFormData, value: string) => {
     setFormData(prev => ({

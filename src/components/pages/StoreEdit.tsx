@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '../templates/DashboardLayout';
 import Button from '../atoms/Button';
+import Icon from '../atoms/Icon';
 
 interface StoreFormData {
   storeName: string;
@@ -68,6 +69,7 @@ const sampleStoreData: Record<string, StoreFormData> = {
 export default function StoreEdit() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const storeId = params.id as string;
 
   const [formData, setFormData] = useState<StoreFormData>({
@@ -94,8 +96,31 @@ export default function StoreEdit() {
     if (storeData) {
       setFormData(storeData);
     }
+    
+    // URLパラメータから値を取得してフォームに設定（修正ボタンからの遷移時）
+    if (searchParams) {
+      const urlData = {
+        storeName: searchParams.get('storeName') || '',
+        storeDescription: searchParams.get('storeDescription') || '',
+        postalCode: searchParams.get('postalCode') || '',
+        prefecture: searchParams.get('prefecture') || '',
+        city: searchParams.get('city') || '',
+        address: searchParams.get('address') || '',
+        building: searchParams.get('building') || '',
+        phone: searchParams.get('phone') || '',
+        homepage: searchParams.get('homepage') || '',
+        genre: searchParams.get('genre') || '',
+        storeCode: searchParams.get('storeCode') || '',
+      };
+      
+      // いずれかの値が存在する場合のみフォームデータを更新
+      if (Object.values(urlData).some(value => value !== '')) {
+        setFormData(urlData);
+      }
+    }
+    
     setIsLoading(false);
-  }, [storeId]);
+  }, [storeId, searchParams]);
 
   const handleInputChange = (field: keyof StoreFormData, value: string) => {
     setFormData(prev => ({

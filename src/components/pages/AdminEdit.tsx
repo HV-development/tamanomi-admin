@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '../templates/DashboardLayout';
 import Button from '../atoms/Button';
+import Icon from '../atoms/Icon';
 
 interface AdminFormData {
   role: string;
@@ -43,6 +44,7 @@ const sampleAdminData: Record<string, AdminFormData> = {
 export default function AdminEdit() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const adminId = params.id as string;
 
   const [formData, setFormData] = useState<AdminFormData>({
@@ -62,8 +64,24 @@ export default function AdminEdit() {
     if (adminData) {
       setFormData(adminData);
     }
+    
+    // URLパラメータから値を取得してフォームに設定（修正ボタンからの遷移時）
+    if (searchParams) {
+      const urlData = {
+        role: searchParams.get('role') || '',
+        name: searchParams.get('name') || '',
+        email: searchParams.get('email') || '',
+        password: searchParams.get('password') || '',
+      };
+      
+      // いずれかの値が存在する場合のみフォームデータを更新
+      if (Object.values(urlData).some(value => value !== '')) {
+        setFormData(urlData);
+      }
+    }
+    
     setIsLoading(false);
-  }, [adminId]);
+  }, [adminId, searchParams]);
 
   const handleInputChange = (field: keyof AdminFormData, value: string) => {
     setFormData(prev => ({

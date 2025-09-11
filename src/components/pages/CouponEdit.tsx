@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '../templates/DashboardLayout';
 import Button from '../atoms/Button';
+import Icon from '../atoms/Icon';
 
 interface CouponFormData {
   couponName: string;
@@ -53,6 +54,7 @@ const sampleCouponData: Record<string, CouponFormData> = {
 export default function CouponEdit() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const couponId = params.id as string;
 
   const [formData, setFormData] = useState<CouponFormData>({
@@ -74,8 +76,29 @@ export default function CouponEdit() {
     if (couponData) {
       setFormData(couponData);
     }
+    
+    // URLパラメータから値を取得してフォームに設定（修正ボタンからの遷移時）
+    if (searchParams) {
+      const urlData = {
+        couponName: searchParams.get('couponName') || '',
+        couponContent: searchParams.get('couponContent') || '',
+        couponType: searchParams.get('couponType') || '',
+        publishStatus: searchParams.get('publishStatus') || '',
+        imagePreview: searchParams.get('imagePreview') || '',
+      };
+      
+      // いずれかの値が存在する場合のみフォームデータを更新
+      if (Object.values(urlData).some(value => value !== '')) {
+        setFormData(prev => ({
+          ...prev,
+          ...urlData,
+          couponImage: null, // ファイルはURLパラメータでは復元できない
+        }));
+      }
+    }
+    
     setIsLoading(false);
-  }, [couponId]);
+  }, [couponId, searchParams]);
 
   const handleInputChange = (field: keyof CouponFormData, value: string) => {
     setFormData(prev => ({

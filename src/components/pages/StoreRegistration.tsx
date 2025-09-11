@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '../templates/DashboardLayout';
 import Button from '../atoms/Button';
+import Icon from '../atoms/Icon';
 
 interface StoreFormData {
   storeName: string;
@@ -35,6 +37,7 @@ const genres = [
 ];
 
 export default function StoreRegistration() {
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState<StoreFormData>({
     storeName: '',
     storeDescription: '',
@@ -51,6 +54,30 @@ export default function StoreRegistration() {
 
   const [errors, setErrors] = useState<Partial<StoreFormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    // URLパラメータから値を取得してフォームに設定
+    if (searchParams) {
+      const urlData = {
+        storeName: searchParams.get('storeName') || '',
+        storeDescription: searchParams.get('storeDescription') || '',
+        postalCode: searchParams.get('postalCode') || '',
+        prefecture: searchParams.get('prefecture') || '',
+        city: searchParams.get('city') || '',
+        address: searchParams.get('address') || '',
+        building: searchParams.get('building') || '',
+        phone: searchParams.get('phone') || '',
+        homepage: searchParams.get('homepage') || '',
+        genre: searchParams.get('genre') || '',
+        storeCode: searchParams.get('storeCode') || '',
+      };
+      
+      // いずれかの値が存在する場合のみフォームデータを更新
+      if (Object.values(urlData).some(value => value !== '')) {
+        setFormData(urlData);
+      }
+    }
+  }, [searchParams]);
 
   const handleInputChange = (field: keyof StoreFormData, value: string) => {
     setFormData(prev => ({

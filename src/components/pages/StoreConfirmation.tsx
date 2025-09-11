@@ -45,8 +45,22 @@ export default function StoreConfirmation() {
   };
 
   const handleModify = () => {
-    // 店舗登録画面に戻る
-    window.history.back();
+    // 店舗登録画面に戻る（データを保持）
+    const queryParams = new URLSearchParams({
+      storeName: storeData?.storeName || '',
+      storeDescription: storeData?.storeDescription || '',
+      postalCode: storeData?.postalCode || '',
+      prefecture: storeData?.prefecture || '',
+      city: storeData?.city || '',
+      address: storeData?.address || '',
+      building: storeData?.building || '',
+      phone: storeData?.phone || '',
+      homepage: storeData?.homepage || '',
+      genre: storeData?.genre || '',
+      storeCode: storeData?.storeCode || '',
+    });
+    
+    window.location.href = `/stores/new?${queryParams.toString()}`;
   };
 
   const handleRegister = () => {

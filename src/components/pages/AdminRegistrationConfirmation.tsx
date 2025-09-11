@@ -39,8 +39,15 @@ export default function AdminRegistrationConfirmation() {
   };
 
   const handleModify = () => {
-    // 管理者アカウント登録画面に戻る
-    window.history.back();
+    // 管理者アカウント登録画面に戻る（データを保持）
+    const queryParams = new URLSearchParams({
+      role: adminData?.role || '',
+      name: adminData?.name || '',
+      email: adminData?.email || '',
+      password: adminData?.password || '',
+    });
+    
+    window.location.href = `/admins/new?${queryParams.toString()}`;
   };
 
   const handleRegister = () => {

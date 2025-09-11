@@ -4,73 +4,77 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useParams } from 'next/navigation';
 import DashboardLayout from '../templates/DashboardLayout';
 import Button from '../atoms/Button';
+import Icon from '../atoms/Icon';
 
-interface UserData {
-  nickname: string;
-  email: string;
-  postalCode: string;
-  address: string;
-  birthDate: string;
-  gender: string;
-  saitamaAppId: string;
+interface CouponData {
+  couponName: string;
+  couponContent: string;
+  couponType: string;
+  publishStatus: string;
+  imagePreview: string;
 }
 
-export default function UserEditConfirmation() {
+export default function CouponEditConfirmation() {
   const searchParams = useSearchParams();
   const params = useParams();
-  const userId = params.id as string;
-  const [userData, setUserData] = useState<UserData | null>(null);
+  const couponId = params.id as string;
+  const [couponData, setCouponData] = useState<CouponData | null>(null);
 
   useEffect(() => {
-    const data: UserData = {
-      nickname: searchParams.get('nickname') || '',
-      email: searchParams.get('email') || '',
-      postalCode: searchParams.get('postalCode') || '',
-      address: searchParams.get('address') || '',
-      birthDate: searchParams.get('birthDate') || '',
-      gender: searchParams.get('gender') || '',
-      saitamaAppId: searchParams.get('saitamaAppId') || '',
+    const data: CouponData = {
+      couponName: searchParams.get('couponName') || '',
+      couponContent: searchParams.get('couponContent') || '',
+      couponType: searchParams.get('couponType') || '',
+      publishStatus: searchParams.get('publishStatus') || '',
+      imagePreview: searchParams.get('imagePreview') || '',
     };
-    setUserData(data);
+    setCouponData(data);
   }, [searchParams]);
 
-  const getGenderLabel = (gender: string) => {
-    switch (gender) {
+  const getCouponTypeLabel = (type: string) => {
+    switch (type) {
       case '1':
-        return '男性';
+        return 'アルコール';
       case '2':
-        return '女性';
-      case '3':
-        return '未回答';
+        return 'ソフトドリンク';
       default:
-        return '未回答';
+        return '';
+    }
+  };
+
+  const getPublishStatusLabel = (status: string) => {
+    switch (status) {
+      case '1':
+        return '公開する';
+      case '2':
+        return '公開しない';
+      default:
+        return '';
     }
   };
 
   const handleModify = () => {
-    // ユーザー編集画面に戻る（データを保持）
+    // クーポン編集画面に戻る（データを保持）
     const queryParams = new URLSearchParams({
-      nickname: userData?.nickname || '',
-      email: userData?.email || '',
-      postalCode: userData?.postalCode || '',
-      address: userData?.address || '',
-      birthDate: userData?.birthDate || '',
-      gender: userData?.gender || '',
-      saitamaAppId: userData?.saitamaAppId || '',
+      couponName: couponData?.couponName || '',
+      couponContent: couponData?.couponContent || '',
+      couponType: couponData?.couponType || '',
+      publishStatus: couponData?.publishStatus || '',
+      imagePreview: couponData?.imagePreview || '',
     });
     
-    window.location.href = `/users/${userId}/edit?${queryParams.toString()}`;
+    window.location.href = `/coupons/${couponId}/edit?${queryParams.toString()}`;
   };
 
   const handleUpdate = () => {
     // 実際の更新処理（APIコール等）
-    console.log('ユーザー更新:', userData);
-    alert('ユーザー情報を更新しました');
-    // 更新後はユーザー一覧画面に遷移
-    window.location.href = '/users';
+    console.log('クーポン更新:', couponData);
+    alert('クーポン情報を更新しました');
+    // 更新後はクーポン一覧画面に遷移
+    window.location.href = '/coupons';
   };
 
-  if (!userData) {
+  if (!couponData) {
     return (
       <DashboardLayout>
         <div className="text-center py-12">
@@ -87,7 +91,7 @@ export default function UserEditConfirmation() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-900">ユーザー変更内容確認</h1>
+            <h1 className="text-2xl font-bold text-gray-900">クーポン変更内容確認</h1>
             <p className="text-gray-600">
               変更内容を確認してください
             </p>
@@ -106,53 +110,47 @@ export default function UserEditConfirmation() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                ニックネーム
+                クーポン名
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{userData.nickname}</p>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{couponData.couponName}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                メールアドレス
+                クーポン内容
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{userData.email}</p>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{couponData.couponContent}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                郵便番号
+                クーポン種別
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{userData.postalCode}</p>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{getCouponTypeLabel(couponData.couponType)}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                住所
+                クーポン画像
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{userData.address}</p>
+              <div className="bg-gray-50 p-2 rounded">
+                {couponData.imagePreview ? (
+                  <img
+                    src={couponData.imagePreview}
+                    alt="クーポン画像プレビュー"
+                    className="w-64 h-48 object-cover rounded-lg"
+                  />
+                ) : (
+                  <p className="text-gray-500">画像がアップロードされていません</p>
+                )}
+              </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                生年月日
+                公開 / 非公開
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{userData.birthDate}</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                性別
-              </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{getGenderLabel(userData.gender)}</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                さいたま市みんなのアプリID
-              </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">
-                {userData.saitamaAppId || '（未入力）'}
-              </p>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{getPublishStatusLabel(couponData.publishStatus)}</p>
             </div>
           </div>
 

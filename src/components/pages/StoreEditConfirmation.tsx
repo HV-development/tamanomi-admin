@@ -43,8 +43,22 @@ export default function StoreEditConfirmation() {
   }, [searchParams]);
 
   const handleModify = () => {
-    // 店舗編集画面に戻る
-    window.history.back();
+    // 店舗編集画面に戻る（データを保持）
+    const queryParams = new URLSearchParams({
+      storeName: storeData?.storeName || '',
+      storeDescription: storeData?.storeDescription || '',
+      postalCode: storeData?.postalCode || '',
+      prefecture: storeData?.prefecture || '',
+      city: storeData?.city || '',
+      address: storeData?.address || '',
+      building: storeData?.building || '',
+      phone: storeData?.phone || '',
+      homepage: storeData?.homepage || '',
+      genre: storeData?.genre || '',
+      storeCode: storeData?.storeCode || '',
+    });
+    
+    window.location.href = `/stores/${storeId}/edit?${queryParams.toString()}`;
   };
 
   const handleUpdate = () => {

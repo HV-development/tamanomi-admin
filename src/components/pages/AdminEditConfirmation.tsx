@@ -40,8 +40,15 @@ export default function AdminEditConfirmation() {
   };
 
   const handleModify = () => {
-    // 管理者アカウント編集画面に戻る
-    window.history.back();
+    // 管理者アカウント編集画面に戻る（データを保持）
+    const queryParams = new URLSearchParams({
+      role: adminData?.role || '',
+      name: adminData?.name || '',
+      email: adminData?.email || '',
+      password: adminData?.password || '',
+    });
+    
+    window.location.href = `/admins/${adminId}/edit?${queryParams.toString()}`;
   };
 
   const handleUpdate = () => {
