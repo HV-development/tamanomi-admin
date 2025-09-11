@@ -534,7 +534,7 @@ export default function CouponHistory() {
 
         {/* 戻るボタン（画面下部） */}
         {showBackButton && (
-          <div className="flex justify-start">
+          <div className="flex justify-end">
             <Button
               variant="outline"
               size="lg"
