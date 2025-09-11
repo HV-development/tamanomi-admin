@@ -15,7 +15,7 @@ interface StoreData {
   building: string;
   phone: string;
   homepage: string;
-  genre: string;
+  genres: string;
   storeCode: string;
 }
 
@@ -36,7 +36,7 @@ export default function StoreEditConfirmation() {
       building: searchParams.get('building') || '',
       phone: searchParams.get('phone') || '',
       homepage: searchParams.get('homepage') || '',
-      genre: searchParams.get('genre') || '',
+      genres: searchParams.get('genres') || '',
       storeCode: searchParams.get('storeCode') || '',
     };
     setStoreData(data);
@@ -54,7 +54,7 @@ export default function StoreEditConfirmation() {
       building: storeData?.building || '',
       phone: storeData?.phone || '',
       homepage: storeData?.homepage || '',
-      genre: storeData?.genre || '',
+      genres: storeData?.genres || '',
       storeCode: storeData?.storeCode || '',
     });
     
@@ -172,7 +172,7 @@ export default function StoreEditConfirmation() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 ジャンル
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.genre}</p>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.genres}</p>
             </div>
 
             <div>

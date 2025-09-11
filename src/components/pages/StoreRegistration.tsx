@@ -24,7 +24,7 @@ interface StoreFormData {
   building: string;
   phone: string;
   homepage: string;
-  genre: string;
+  genres: string[];
   storeCode: string;
 }
 
@@ -56,7 +56,7 @@ export default function StoreRegistration() {
     building: '',
     phone: '',
     homepage: '',
-    genre: '',
+    genres: [],
     storeCode: '',
   });
 
@@ -76,7 +76,7 @@ export default function StoreRegistration() {
         building: searchParams.get('building') || '',
         phone: searchParams.get('phone') || '',
         homepage: searchParams.get('homepage') || '',
-        genre: searchParams.get('genre') || '',
+        genres: searchParams.get('genres')?.split(',').filter(g => g) || [],
         storeCode: searchParams.get('storeCode') || '',
       };
       
@@ -95,6 +95,28 @@ export default function StoreRegistration() {
     
     // リアルタイムバリデーション（input時）
     validateField(field, value);
+  };
+
+  const handleGenreChange = (genre: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      genres: checked 
+        ? [...prev.genres, genre]
+        : prev.genres.filter(g => g !== genre)
+    }));
+    
+    // ジャンルのバリデーション
+    const newGenres = checked 
+      ? [...formData.genres, genre]
+      : formData.genres.filter(g => g !== genre);
+    
+    const newErrors = { ...errors };
+    if (newGenres.length === 0) {
+      newErrors.genre = 'ジャンルを1つ以上選択してください';
+    } else {
+      delete newErrors.genre;
+    }
+    setErrors(newErrors);
   };
 
   const validateField = (field: keyof StoreFormData, value: string) => {
@@ -156,7 +178,7 @@ export default function StoreRegistration() {
         break;
 
       case 'building':
-        const buildingError = validateRequired(value, '建物名') || validateMaxLength(value, 100, '建物名');
+        const buildingError = validateMaxLength(value, 100, '建物名');
         if (buildingError) {
           newErrors.building = buildingError;
         } else {
@@ -179,15 +201,6 @@ export default function StoreRegistration() {
           newErrors.homepage = homepageError;
         } else {
           delete newErrors.homepage;
-        }
-        break;
-
-      case 'genre':
-        const genreError = validateRequired(value, 'ジャンル');
-        if (genreError) {
-          newErrors.genre = genreError;
-        } else {
-          delete newErrors.genre;
         }
         break;
 
@@ -226,7 +239,7 @@ export default function StoreRegistration() {
     const addressError = validateRequired(formData.address, '番地以降') || validateMaxLength(formData.address, 100, '番地以降');
     if (addressError) newErrors.address = addressError;
 
-    const buildingError = validateRequired(formData.building, '建物名') || validateMaxLength(formData.building, 100, '建物名');
+    const buildingError = validateMaxLength(formData.building, 100, '建物名');
     if (buildingError) newErrors.building = buildingError;
 
     const phoneError = validateRequired(formData.phone, '電話番号') || validatePhone(formData.phone);
@@ -235,7 +248,7 @@ export default function StoreRegistration() {
     const homepageError = validateMaxLength(formData.homepage, 255, 'ホームページ') || validateUrl(formData.homepage);
     if (homepageError) newErrors.homepage = homepageError;
 
-    const genreError = validateRequired(formData.genre, 'ジャンル');
+    const genreError = formData.genres.length === 0 ? 'ジャンルを1つ以上選択してください' : null;
     if (genreError) newErrors.genre = genreError;
 
     const storeCodeError = validateRequired(formData.storeCode, '店舗CD') || validateStoreCode(formData.storeCode);
@@ -302,7 +315,7 @@ export default function StoreRegistration() {
         building: formData.building,
         phone: formData.phone,
         homepage: formData.homepage,
-        genre: formData.genre,
+        genres: formData.genres.join(','),
         storeCode: formData.storeCode,
       });
       
@@ -479,7 +492,7 @@ export default function StoreRegistration() {
             {/* 建物名 */}
             <div>
               <label htmlFor="building" className="block text-sm font-medium text-gray-700 mb-2">
-                建物名 <span className="text-red-500">*</span>
+                建物名
               </label>
               <input
                 type="text"
@@ -541,22 +554,22 @@ export default function StoreRegistration() {
 
             {/* ジャンル */}
             <div>
-              <label htmlFor="genre" className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 ジャンル <span className="text-red-500">*</span>
               </label>
-              <select
-                id="genre"
-                value={formData.genre}
-                onChange={(e) => handleInputChange('genre', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-                  errors.genre ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="">ジャンルを選択してください</option>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 {genres.map((genre) => (
-                  <option key={genre} value={genre}>{genre}</option>
+                  <label key={genre} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.genres.includes(genre)}
+                      onChange={(e) => handleGenreChange(genre, e.target.checked)}
+                      className="mr-2 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">{genre}</span>
+                  </label>
                 ))}
-              </select>
+              </div>
               {errors.genre && (
                 <p className="mt-1 text-sm text-red-500">{errors.genre}</p>
               )}
