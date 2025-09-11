@@ -408,7 +408,7 @@ export default function UserManagement() {
             </div>
 
             {/* ランクと性別を横並びに配置 */}
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 mt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* ランク（複数選択可） */}
                 <div>
