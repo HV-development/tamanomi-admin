@@ -334,11 +334,7 @@ export default function UserDetail() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 ランク
               </label>
-              <div className="bg-gray-50 p-3 rounded">
-                <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getRankColor(user.rank)}`}>
-                  {getRankLabel(user.rank)}
-                </span>
-              </div>
+              <p className="text-gray-900 bg-gray-50 p-3 rounded">{getRankLabel(user.rank)}</p>
             </div>
 
             {/* 登録店舗 */}
@@ -362,11 +358,7 @@ export default function UserDetail() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 契約ステータス
               </label>
-              <div className="bg-gray-50 p-3 rounded">
-                <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getContractStatusColor(user.contractStatus)}`}>
-                  {getContractStatusLabel(user.contractStatus)}
-                </span>
-              </div>
+              <p className="text-gray-900 bg-gray-50 p-3 rounded">{getContractStatusLabel(user.contractStatus)}</p>
             </div>
 
             {/* アクションボタン */}
