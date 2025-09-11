@@ -183,6 +183,7 @@ export default function CouponHistory() {
     
     setFilteredUsages(filtered);
   }, [appliedSearchForm, pathname]);
+
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {
     setSearchForm(prev => ({
       ...prev,
