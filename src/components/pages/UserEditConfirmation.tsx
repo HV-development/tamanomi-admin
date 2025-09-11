@@ -146,14 +146,6 @@ export default function UserEditConfirmation() {
               <p className="text-gray-900 bg-gray-50 p-2 rounded">{getGenderLabel(userData.gender)}</p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                さいたま市みんなのアプリID
-              </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">
-                {userData.saitamaAppId || '（未入力）'}
-              </p>
-            </div>
           </div>
 
           {/* アクションボタン */}

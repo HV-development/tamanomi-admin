@@ -433,21 +433,6 @@ export default function UserEdit() {
               )}
             </div>
 
-            {/* さいたま市みんなのアプリID */}
-            <div>
-              <label htmlFor="saitamaAppId" className="block text-sm font-medium text-gray-700 mb-2">
-                さいたま市みんなのアプリID
-              </label>
-              <input
-                type="text"
-                id="saitamaAppId"
-                placeholder="アプリIDを入力"
-                value={formData.saitamaAppId}
-                onChange={(e) => handleInputChange('saitamaAppId', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-
             {/* アクションボタン */}
             <div className="flex justify-center space-x-4 pt-6">
               <Button

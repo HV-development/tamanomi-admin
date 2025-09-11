@@ -321,14 +321,6 @@ export default function UserDetail() {
               <p className="text-gray-900 bg-gray-50 p-3 rounded">{getGenderLabel(user.gender)}</p>
             </div>
 
-            {/* さいたま市みんなのアプリID */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                さいたま市みんなのアプリID
-              </label>
-              <p className="text-gray-900 bg-gray-50 p-3 rounded">{user.saitamaAppId}</p>
-            </div>
-
             {/* ランク */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
