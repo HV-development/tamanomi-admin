@@ -115,7 +115,7 @@ export default function CouponHistory() {
       // クーポン詳細からの遷移
       const couponId = pathname.split('/')[2];
       setShowBackButton(true);
-      setBackUrl('/coupons');
+      setBackUrl(`/coupons/${couponId}`);
       setPageTitle('クーポン利用履歴');
       setIsFromCouponDetail(true);
       
@@ -126,8 +126,8 @@ export default function CouponHistory() {
       // ユーザー詳細からの遷移
       const userId = pathname.split('/')[2];
       setShowBackButton(true);
-      setBackUrl('/users');
-      setPageTitle(`ユーザー ${userId} のクーポン利用履歴`);
+      setBackUrl(`/users/${userId}`);
+      setPageTitle('クーポン利用履歴');
       setIsFromCouponDetail(false);
       
       // 該当ユーザーの利用履歴のみを表示
@@ -247,7 +247,7 @@ export default function CouponHistory() {
               {pathname.includes('/coupons/') && pathname.includes('/history') 
                 ? 'このクーポンの利用履歴を表示します' 
                 : pathname.includes('/users/') && pathname.includes('/coupon-history')
-                ? 'このユーザーのクーポン利用履歴を表示します'
+                ? 'このユーザーが使用したクーポンの利用履歴を表示します'
                 : 'クーポンの利用履歴を管理します'}
             </p>
             </div>
@@ -261,7 +261,7 @@ export default function CouponHistory() {
         </div>
 
         {/* 検索フォーム（クーポン詳細からの遷移時は簡略化） */}
-        {!(pathname.includes('/coupons/') && pathname.includes('/history')) && (
+        {!(pathname.includes('/coupons/') && pathname.includes('/history')) && !(pathname.includes('/users/') && pathname.includes('/coupon-history')) && (
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="pb-3 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
@@ -408,7 +408,7 @@ export default function CouponHistory() {
               {pathname.includes('/coupons/') && pathname.includes('/history') 
                 ? 'クーポン利用履歴' 
                 : pathname.includes('/users/') && pathname.includes('/coupon-history')
-                ? 'ユーザーのクーポン利用履歴'
+                ? 'クーポン利用履歴'
                 : 'クーポン利用履歴一覧'} ({filteredUsages.length}件)
             </h3>
           </div>
@@ -420,7 +420,7 @@ export default function CouponHistory() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     クーポン利用ID
                   </th>
-                  {!(pathname.includes('/coupons/') && pathname.includes('/history')) && (
+                  {!(pathname.includes('/coupons/') && pathname.includes('/history')) && !(pathname.includes('/users/') && pathname.includes('/coupon-history')) && (
                     <>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     クーポンID
@@ -430,17 +430,26 @@ export default function CouponHistory() {
                   </th>
                     </>
                   )}
-                  {pathname.includes('/coupons/') && pathname.includes('/history') && (
+                  {(pathname.includes('/coupons/') && pathname.includes('/history')) || (pathname.includes('/users/') && pathname.includes('/coupon-history')) ? (
+                    <>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    クーポンID
+                  </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       クーポン名
                     </th>
-                  )}
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    </>
+                  ) : null}
+                  {!(pathname.includes('/users/') && pathname.includes('/coupon-history')) && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ユーザーID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    </th>
+                  )}
+                  {!(pathname.includes('/users/') && pathname.includes('/coupon-history')) && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ニックネーム
-                  </th>
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     性別
                   </th>
@@ -461,7 +470,7 @@ export default function CouponHistory() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{usage.id}</div>
                     </td>
-                    {!(pathname.includes('/coupons/') && pathname.includes('/history')) && (
+                    {!(pathname.includes('/coupons/') && pathname.includes('/history')) && !(pathname.includes('/users/') && pathname.includes('/coupon-history')) && (
                       <>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{usage.couponId}</div>
@@ -471,22 +480,31 @@ export default function CouponHistory() {
                     </td>
                       </>
                     )}
-                    {pathname.includes('/coupons/') && pathname.includes('/history') && (
+                    {(pathname.includes('/coupons/') && pathname.includes('/history')) || (pathname.includes('/users/') && pathname.includes('/coupon-history')) ? (
+                      <>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{usage.couponId}</div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{usage.couponName}</div>
                       </td>
-                    )}
-                    <td className="px-6 py-4 whitespace-nowrap">
+                      </>
+                    ) : null}
+                    {!(pathname.includes('/users/') && pathname.includes('/coupon-history')) && (
+                      <td className="px-6 py-4 whitespace-nowrap">
                       <Link 
                         href={`/users/${usage.userId}`}
                         className="text-sm text-green-600 hover:text-green-800 underline"
                       >
                         {usage.userId}
                       </Link>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                      </td>
+                    )}
+                    {!(pathname.includes('/users/') && pathname.includes('/coupon-history')) && (
+                      <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{usage.nickname}</div>
-                    </td>
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{getGenderLabel(usage.gender)}</div>
                     </td>
