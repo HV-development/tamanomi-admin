@@ -5,6 +5,12 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '../templates/DashboardLayout';
 import Button from '../atoms/Button';
 import Icon from '../atoms/Icon';
+import { 
+  validateRequired, 
+  validateMaxLength, 
+  validateFileSize, 
+  validateFileType 
+} from '../../utils/validation';
 
 interface CouponFormData {
   couponName: string;
@@ -115,36 +121,36 @@ export default function CouponEdit() {
 
     switch (field) {
       case 'couponName':
-        if (!value.trim()) {
-          newErrors.couponName = 'クーポン名を入力してください';
-        } else if (value.length > 15) {
-          newErrors.couponName = 'クーポン名は15文字以内で入力してください';
+        const couponNameError = validateRequired(value, 'クーポン名') || validateMaxLength(value, 15, 'クーポン名');
+        if (couponNameError) {
+          newErrors.couponName = couponNameError;
         } else {
           delete newErrors.couponName;
         }
         break;
 
       case 'couponContent':
-        if (!value.trim()) {
-          newErrors.couponContent = 'クーポン内容を入力してください';
-        } else if (value.length > 100) {
-          newErrors.couponContent = 'クーポン内容は100文字以内で入力してください';
+        const couponContentError = validateRequired(value, 'クーポン内容') || validateMaxLength(value, 100, 'クーポン内容');
+        if (couponContentError) {
+          newErrors.couponContent = couponContentError;
         } else {
           delete newErrors.couponContent;
         }
         break;
 
       case 'couponType':
-        if (!value) {
-          newErrors.couponType = 'クーポン種別を選択してください';
+        const couponTypeError = validateRequired(value, 'クーポン種別');
+        if (couponTypeError) {
+          newErrors.couponType = couponTypeError;
         } else {
           delete newErrors.couponType;
         }
         break;
 
       case 'publishStatus':
-        if (!value) {
-          newErrors.publishStatus = '公開 / 非公開を選択してください';
+        const publishStatusError = validateRequired(value, '公開 / 非公開');
+        if (publishStatusError) {
+          newErrors.publishStatus = publishStatusError;
         } else {
           delete newErrors.publishStatus;
         }
@@ -160,15 +166,17 @@ export default function CouponEdit() {
 
     if (file) {
       // 画像形式チェック
-      if (!file.type.startsWith('image/jpeg')) {
-        newErrors.couponImage = 'このファイル形式はサポートされていません';
+      const fileTypeError = validateFileType(file, ['image/jpeg']);
+      const fileSizeError = validateFileSize(file, 5);
+      
+      if (fileTypeError) {
+        newErrors.couponImage = fileTypeError;
         setErrors(newErrors);
         return;
       }
-
-      // ファイルサイズチェック（5MB以下）
-      if (file.size > 5 * 1024 * 1024) {
-        newErrors.couponImage = 'ファイルサイズは5MB以下にしてください';
+      
+      if (fileSizeError) {
+        newErrors.couponImage = fileSizeError;
         setErrors(newErrors);
         return;
       }
@@ -193,29 +201,21 @@ export default function CouponEdit() {
     const newErrors: Partial<Record<keyof CouponFormData, string>> = {};
 
     // 必須チェック
-    if (!formData.couponName.trim()) {
-      newErrors.couponName = 'クーポン名を入力してください';
-    }
-    if (!formData.couponContent.trim()) {
-      newErrors.couponContent = 'クーポン内容を入力してください';
-    }
-    if (!formData.couponType) {
-      newErrors.couponType = 'クーポン種別を選択してください';
-    }
+    const couponNameError = validateRequired(formData.couponName, 'クーポン名') || validateMaxLength(formData.couponName, 15, 'クーポン名');
+    if (couponNameError) newErrors.couponName = couponNameError;
+
+    const couponContentError = validateRequired(formData.couponContent, 'クーポン内容') || validateMaxLength(formData.couponContent, 100, 'クーポン内容');
+    if (couponContentError) newErrors.couponContent = couponContentError;
+
+    const couponTypeError = validateRequired(formData.couponType, 'クーポン種別');
+    if (couponTypeError) newErrors.couponType = couponTypeError;
+
     if (!formData.imagePreview && !formData.couponImage) {
       newErrors.couponImage = 'クーポン画像をアップロードしてください';
     }
-    if (!formData.publishStatus) {
-      newErrors.publishStatus = '公開 / 非公開を選択してください';
-    }
 
-    // 文字数チェック
-    if (formData.couponName.length > 15) {
-      newErrors.couponName = 'クーポン名は15文字以内で入力してください';
-    }
-    if (formData.couponContent.length > 100) {
-      newErrors.couponContent = 'クーポン内容は100文字以内で入力してください';
-    }
+    const publishStatusError = validateRequired(formData.publishStatus, '公開 / 非公開');
+    if (publishStatusError) newErrors.publishStatus = publishStatusError;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
