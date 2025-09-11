@@ -115,8 +115,8 @@ export default function CouponHistory() {
       // クーポン詳細からの遷移
       const couponId = pathname.split('/')[2];
       setShowBackButton(true);
-      setBackUrl(`/coupons/${couponId}`);
-      setPageTitle('クーポン一覧詳細');
+      setBackUrl('/coupons');
+      setPageTitle('クーポン利用履歴');
       setIsFromCouponDetail(true);
       
       // 該当クーポンの利用履歴のみを表示
@@ -182,8 +182,7 @@ export default function CouponHistory() {
     });
     
     setFilteredUsages(filtered);
-  }, [searchForm, pathname]);
-
+  }, [appliedSearchForm, pathname]);
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {
     setSearchForm(prev => ({
       ...prev,
