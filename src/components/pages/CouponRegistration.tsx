@@ -164,9 +164,6 @@ export default function CouponRegistration() {
     const couponTypeError = validateRequired(formData.couponType, 'クーポン種別');
     if (couponTypeError) newErrors.couponType = couponTypeError;
 
-    if (!formData.couponImage) {
-      newErrors.couponImage = 'クーポン画像をアップロードしてください';
-    }
 
     const publishStatusError = validateRequired(formData.publishStatus, '公開 / 非公開');
     if (publishStatusError) newErrors.publishStatus = publishStatusError;
@@ -301,7 +298,7 @@ export default function CouponRegistration() {
             {/* クーポン画像 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                クーポン画像 <span className="text-red-500">*</span>
+                クーポン画像
               </label>
               <div className="space-y-4">
                 {/* 画像プレビュー */}
