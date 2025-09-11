@@ -135,7 +135,7 @@ export default function UserEdit() {
         break;
 
       case 'email':
-        const emailError = validateRequired(value, 'メールアドレス') || validateMaxLength(value, 255, 'メールアドレス') || validateEmail(value);
+        const emailError = validateRequired(value, 'メールアドレス') || validateMaxLength(value, 255, 'メールアドレス') || (value ? validateEmail(value) : null);
         if (emailError) {
           newErrors.email = emailError;
         } else {
