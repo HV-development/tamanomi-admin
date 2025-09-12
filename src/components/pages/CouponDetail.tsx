@@ -293,6 +293,11 @@ export default function CouponDetail() {
                         >
                           このクーポンで乾杯！
                         </button>
+                        <button
+                          className="w-full bg-white border border-gray-300 text-gray-700 font-bold py-4 rounded-2xl text-lg shadow-sm transition-colors"
+                        >
+                          キャンセル
+                        </button>
                       </div>
                     </div>
                   </div>
