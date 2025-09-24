@@ -1,0 +1,28 @@
+services:
+  admin:
+    build:
+      context: ../../../
+      dockerfile: tamanomi-admin/infrastructure/docker/Dockerfile
+      target: dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - API_BASE_URL=http://tamanomi-api-api-1:3001/api/v1
+      - JWT_SECRET=your-super-secret-jwt-key-here
+      - NEXT_TELEMETRY_DISABLED=1
+      - WATCHPACK_POLLING=true
+      - NEXT_CACHE_DISABLED=1
+    volumes:
+      - ../../../tamanomi-admin/frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - tamanomi-network
+    external_links:
+      - tamanomi-api_api-1
+
+networks:
+  tamanomi-network:
+    external: true
+    name: tamanomi-api_tamanomi-network
