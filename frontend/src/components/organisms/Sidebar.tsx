@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import SidebarHeader from '@/molecules/SidebarHeader';
 import MenuItem from '@/molecules/MenuItem';
@@ -13,17 +13,37 @@ interface MenuItemData {
 }
 
 const menuItems: MenuItemData[] = [
-  { name: '事業者管理', href: '/merchants', iconName: 'store' },
-  { name: 'クーポン管理', href: '/coupons', iconName: 'coupon' },
-  { name: 'ユーザー管理', href: '/users', iconName: 'users' },
-  { name: '管理者アカウント', href: '/admins', iconName: 'admin' },
-  { name: 'クーポン利用履歴', href: '/coupon-history', iconName: 'history' },
+  { name: '掲載店管理', href: '/merchants', iconName: 'storefront' },
+  { name: 'クーポン管理', href: '/coupons', iconName: 'confirmation_number' },
+  { name: 'ユーザー管理', href: '/users', iconName: 'groups' },
+  { name: '管理者アカウント', href: '/admins', iconName: 'person' },
+  { name: 'クーポン利用履歴', href: '/coupon-history', iconName: 'history_2' },
 ];
 
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+
+  // ローカルストレージからサイドバーの状態を復元
+  useEffect(() => {
+    // クライアントサイドでのみ実行
+    if (typeof window !== 'undefined') {
+      const savedState = localStorage.getItem('sidebar-collapsed');
+      if (savedState !== null) {
+        setIsCollapsed(JSON.parse(savedState));
+      }
+      setIsLoaded(true);
+    }
+  }, []);
+
+  // サイドバーの状態をローカルストレージに保存
+  useEffect(() => {
+    if (isLoaded && typeof window !== 'undefined') {
+      localStorage.setItem('sidebar-collapsed', JSON.stringify(isCollapsed));
+    }
+  }, [isCollapsed, isLoaded]);
 
   const handleMenuClick = (href: string) => {
     // メニューが閉じている状態では閉じたままページ遷移
@@ -37,9 +57,9 @@ export default function Sidebar() {
   };
 
   return (
-    <div className={`bg-white shadow-lg transition-all duration-300 relative ${
+    <div className={`bg-white shadow-lg transition-all duration-300 relative flex-shrink-0 ${
       isCollapsed ? 'w-16' : 'w-64'
-    }`}>
+    } ${!isLoaded ? 'opacity-0' : 'opacity-100'}`}>
       <SidebarHeader isCollapsed={isCollapsed} />
 
       {/* メニュー */}

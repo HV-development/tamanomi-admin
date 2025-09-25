@@ -10,6 +10,12 @@ const iconMap: Record<string, { type: 'emoji' | 'material'; value: string }> = {
   users: { type: 'material', value: 'groups' },
   admin: { type: 'material', value: 'person' },
   history: { type: 'material', value: 'history_2' },
+  // サイドバーで使用するアイコン名を追加
+  storefront: { type: 'material', value: 'storefront' },
+  confirmation_number: { type: 'material', value: 'confirmation_number' },
+  groups: { type: 'material', value: 'groups' },
+  person: { type: 'material', value: 'person' },
+  history_2: { type: 'material', value: 'history_2' },
   chevronLeft: { type: 'material', value: 'chevron_left' },
   chevronRight: { type: 'material', value: 'chevron_right' },
   chevronUp: { type: 'material', value: 'expand_less' },
@@ -27,6 +33,8 @@ const iconMap: Record<string, { type: 'emoji' | 'material'; value: string }> = {
   'alert-triangle': { type: 'material', value: 'warning' },
   info: { type: 'material', value: 'info' },
   x: { type: 'material', value: 'close' },
+  check: { type: 'material', value: 'check' },
+  remove: { type: 'material', value: 'remove' },
 };
 
 export default function Icon({ name, size = 'md', className = '' }: IconProps) {
@@ -48,7 +56,15 @@ export default function Icon({ name, size = 'md', className = '' }: IconProps) {
 
   if (icon.type === 'material') {
     return (
-      <span className={`material-symbols-outlined inline-block align-text-bottom ${sizeClasses[size]} ${className}`}>
+      <span 
+        className={`material-symbols-outlined inline-block align-text-bottom ${sizeClasses[size]} ${className}`}
+        style={{ 
+          fontFamily: 'Material Symbols Outlined',
+          fontVariationSettings: '"FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24',
+          fontSize: '24px',
+          lineHeight: '1'
+        }}
+      >
         {icon.value}
       </span>
     );
