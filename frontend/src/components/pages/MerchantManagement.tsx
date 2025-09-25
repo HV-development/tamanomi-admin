@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/templates/DashboardLayout';
 import Button from '@/atoms/Button';
-import Icon from '@/atoms/Icon';
 import Checkbox from '@/atoms/Checkbox';
 import ToastContainer from '@/molecules/ToastContainer';
 import FloatingFooter from '@/molecules/FloatingFooter';
@@ -90,8 +89,8 @@ export default function MerchantManagement() {
         const merchantsArray = Array.isArray(data) ? data : data.merchants || [];
         setMerchants(merchantsArray);
       } catch (err: any) {
-        console.error('事業者データの取得に失敗しました:', err);
-        setError('事業者データの取得に失敗しました');
+        console.error('掲載店データの取得に失敗しました:', err);
+        setError('掲載店データの取得に失敗しました');
         setMerchants([]);
       } finally {
         setIsLoading(false);
@@ -272,7 +271,7 @@ export default function MerchantManagement() {
 
     try {
       await apiClient.updateMerchantStatus(merchantId, newStatus);
-      showSuccess(`事業者のステータスを「${statusLabels[newStatus]}」に更新しました`);
+      showSuccess(`掲載店のステータスを「${statusLabels[newStatus]}」に更新しました`);
     } catch (error: any) {
       // エラー時は元のステータスに戻す
       setMerchants(prev => 
@@ -310,7 +309,7 @@ export default function MerchantManagement() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">事業者データを読み込み中...</p>
+            <p className="text-gray-600">掲載店データを読み込み中...</p>
           </div>
         </div>
       </DashboardLayout>
@@ -324,14 +323,13 @@ export default function MerchantManagement() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-900">事業者管理</h1>
+            <h1 className="text-2xl font-bold text-gray-900">掲載店管理</h1>
             <p className="text-gray-600">
-              加盟事業者の管理・編集を行います
+              掲載店の管理・編集を行います
             </p>
             </div>
             <div className="text-sm text-gray-600">
-              <div className="flex items-center space-x-2">
-                <Icon name="admin" size="sm" className="text-gray-600" />
+              <div className="flex items-center">
                 <span className="font-medium text-gray-900">管理者太郎</span>
               </div>
             </div>
@@ -342,7 +340,13 @@ export default function MerchantManagement() {
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center">
-              <Icon name="alert" size="sm" className="text-red-500 mr-2" />
+              <img 
+                src="/alert.svg" 
+                alt="警告" 
+                width={16} 
+                height={16}
+                className="w-4 h-4 text-red-500 mr-2"
+              />
               <p className="text-red-700">{error}</p>
             </div>
           </div>
@@ -358,7 +362,11 @@ export default function MerchantManagement() {
               onClick={() => setIsSearchExpanded(!isSearchExpanded)}
               className="flex items-center focus:outline-none"
             >
-              <Icon name={isSearchExpanded ? 'chevronUp' : 'chevronDown'} size="sm" />
+              <div className="w-4 h-4 flex items-center justify-center">
+                <span className={`text-gray-600 text-sm transition-transform duration-200 ${isSearchExpanded ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </div>
             </Button>
           </div>
           
@@ -520,14 +528,14 @@ export default function MerchantManagement() {
           )}
         </div>
 
-        {/* 事業者一覧 */}
+        {/* 掲載店一覧 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
-              事業者一覧 ({filteredMerchants.length}件)
+              掲載店一覧 ({filteredMerchants.length}件)
             </h3>
             <Link href="/merchants/new">
-              <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
+              <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
                 <span className="mr-2">+</span>
                 新規登録
               </Button>
@@ -535,76 +543,88 @@ export default function MerchantManagement() {
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[1200px]">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                    <Checkbox
-                      checked={isAllSelected}
-                      indeterminate={isIndeterminate}
-                      onChange={handleSelectAll}
-                    />
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40 whitespace-nowrap">
+                    <div className="flex items-center space-x-4">
+                      <Checkbox
+                        checked={isAllSelected}
+                        indeterminate={isIndeterminate}
+                        onChange={handleSelectAll}
+                      />
+                      <span className="text-xs whitespace-nowrap">アクション</span>
+                    </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    事業者名
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
+                    掲載店名
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                     代表者名
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
                     メールアドレス
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    電話番号
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[250px]">
                     住所
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[180px]">
                     ステータス
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                     登録日
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    アクション
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
               {filteredMerchants.map((merchant) => (
                   <tr key={merchant.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Checkbox
-                        checked={selectedMerchants.has(merchant.id)}
-                        onChange={(checked) => handleSelectMerchant(merchant.id, checked)}
-                      />
+                    <td className="px-6 py-4 whitespace-nowrap w-40">
+                      <div className="flex items-center space-x-4">
+                        <Checkbox
+                          checked={selectedMerchants.has(merchant.id)}
+                          onChange={(checked) => handleSelectMerchant(merchant.id, checked)}
+                        />
+                        <div className="flex-1 flex justify-center">
+                          <Link href={`/merchants/${merchant.id}/edit`}>
+                            <button 
+                              className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-colors cursor-pointer"
+                              title="編集"
+                            >
+                              <img 
+                                src="/edit.svg" 
+                                alt="編集" 
+                                width={24} 
+                                height={24}
+                                className="w-6 h-6"
+                              />
+                            </button>
+                          </Link>
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                       <div className="text-sm font-medium text-gray-900">{merchant.name}</div>
                       <div className="text-sm text-gray-500">{merchant.nameKana}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
                       <div className="text-sm text-gray-900">{merchant.representativeName}</div>
                       <div className="text-sm text-gray-500">{merchant.representativePhone}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                       <div className="text-sm text-gray-900">{merchant.email}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{merchant.phone}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[250px]">
                       <div className="text-sm text-gray-900">
                         〒{merchant.postalCode}<br />
                         {merchant.address}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[180px]">
                       <select
                         value={merchant.status}
                         onChange={(e) => handleIndividualStatusChange(merchant.id, e.target.value)}
-                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 min-w-[140px] ${getStatusColor(merchant.status)}`}
+                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full ${getStatusColor(merchant.status)}`}
                       >
                         {statusOptions.map((option) => (
                           <option key={option.value} value={option.value}>
@@ -613,23 +633,16 @@ export default function MerchantManagement() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{merchant.createdAt}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <Link href={`/merchants/${merchant.id}/edit`}>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-green-600 border-green-300 hover:bg-green-50"
-                          onClick={() => console.log('Edit button clicked for merchant:', merchant)}
-                        >
-                          編集
-                        </Button>
-                      </Link>
-                      <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50">
-                        削除
-                      </Button>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
+                      <div className="text-sm text-gray-900">
+                        {new Date(merchant.createdAt).toLocaleDateString('ja-JP', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
                     </td>
                   </tr>
               ))}
@@ -639,8 +652,14 @@ export default function MerchantManagement() {
 
           {filteredMerchants.length === 0 && (
             <div className="text-center py-12">
-              <Icon name="store" size="lg" className="mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">事業者が見つかりません</h3>
+              <img 
+                src="/storefront_35dp_666666_FILL1_wght400_GRAD0_opsz40.svg" 
+                alt="店舗" 
+                width={48} 
+                height={48}
+                className="mx-auto text-gray-400 mb-4"
+              />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">掲載店が見つかりません</h3>
               <p className="text-gray-500">検索条件を変更してお試しください。</p>
             </div>
           )}
