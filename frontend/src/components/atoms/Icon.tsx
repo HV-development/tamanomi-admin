@@ -27,6 +27,8 @@ const iconMap: Record<string, { type: 'emoji' | 'material'; value: string }> = {
   'alert-triangle': { type: 'material', value: 'warning' },
   info: { type: 'material', value: 'info' },
   x: { type: 'material', value: 'close' },
+  check: { type: 'material', value: 'check' },
+  remove: { type: 'material', value: 'remove' },
 };
 
 export default function Icon({ name, size = 'md', className = '' }: IconProps) {
