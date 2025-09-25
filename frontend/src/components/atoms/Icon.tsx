@@ -22,6 +22,11 @@ const iconMap: Record<string, { type: 'emoji' | 'material'; value: string }> = {
   edit: { type: 'emoji', value: '✏️' },
   eye: { type: 'emoji', value: '👁️' },
   clear: { type: 'emoji', value: '🗑️' },
+  'check-circle': { type: 'material', value: 'check_circle' },
+  'alert-circle': { type: 'material', value: 'error' },
+  'alert-triangle': { type: 'material', value: 'warning' },
+  info: { type: 'material', value: 'info' },
+  x: { type: 'material', value: 'close' },
 };
 
 export default function Icon({ name, size = 'md', className = '' }: IconProps) {

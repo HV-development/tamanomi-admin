@@ -1,4 +1,4 @@
-import AdminRegistrationConfirmation from '../../../components/pages/AdminRegistrationConfirmation';
+import AdminRegistrationConfirmation from '@/components/pages/AdminRegistrationConfirmation';
 
 export const dynamic = 'force-dynamic';
 

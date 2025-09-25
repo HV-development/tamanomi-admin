@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import SidebarHeader from '../molecules/SidebarHeader';
-import MenuItem from '../molecules/MenuItem';
-import Icon from '../atoms/Icon';
+import SidebarHeader from '@/molecules/SidebarHeader';
+import MenuItem from '@/molecules/MenuItem';
+import Icon from '@/atoms/Icon';
 
 interface MenuItemData {
   name: string;
@@ -13,7 +13,7 @@ interface MenuItemData {
 }
 
 const menuItems: MenuItemData[] = [
-  { name: '店舗管理', href: '/stores', iconName: 'store' },
+  { name: '事業者管理', href: '/merchants', iconName: 'store' },
   { name: 'クーポン管理', href: '/coupons', iconName: 'coupon' },
   { name: 'ユーザー管理', href: '/users', iconName: 'users' },
   { name: '管理者アカウント', href: '/admins', iconName: 'admin' },

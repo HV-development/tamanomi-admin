@@ -1,4 +1,4 @@
-import CouponRegistrationConfirmation from '../../../components/pages/CouponRegistrationConfirmation';
+import CouponRegistrationConfirmation from '@/components/pages/CouponRegistrationConfirmation';
 
 export const dynamic = 'force-dynamic';
 
