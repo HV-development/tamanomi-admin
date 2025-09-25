@@ -1,4 +1,4 @@
-import Sidebar from '../organisms/Sidebar';
+import Sidebar from '@/components/organisms/Sidebar';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;

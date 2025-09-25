@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import DashboardLayout from '../templates/DashboardLayout';
-import Button from '../atoms/Button';
-import Icon from '../atoms/Icon';
+import DashboardLayout from '@/templates/DashboardLayout';
+import Button from '@/atoms/Button';
+import Icon from '@/atoms/Icon';
 
 interface Coupon {
   id: string;

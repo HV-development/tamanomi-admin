@@ -1,5 +1,5 @@
 import DashboardLayout from '../templates/DashboardLayout';
-import Icon from '../atoms/Icon';
+import Icon from '@/atoms/Icon';
 
 export default function Dashboard() {
   return (

@@ -3,15 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '../templates/DashboardLayout';
-import Button from '../atoms/Button';
-import Icon from '../atoms/Icon';
+import DashboardLayout from '@/templates/DashboardLayout';
+import Button from '@/atoms/Button';
+import Icon from '@/atoms/Icon';
 import { 
   validateRequired, 
   validateMaxLength, 
   validateFileSize, 
   validateFileType 
-} from '../../utils/validation';
+} from '@/utils/validation';
 
 interface CouponFormData {
   couponName: string;

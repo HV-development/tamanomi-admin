@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import DashboardLayout from '../templates/DashboardLayout';
-import Button from '../atoms/Button';
-import Icon from '../atoms/Icon';
+import DashboardLayout from '@/templates/DashboardLayout';
+import Button from '@/atoms/Button';
+import Icon from '@/atoms/Icon';
 import { 
   validateRequired, 
   validateEmail, 
   validatePostalCode, 
   validateDate,
   validateMaxLength
-} from '../../utils/validation';
+} from '@/utils/validation';
 
 interface UserFormData {
   nickname: string;

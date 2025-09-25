@@ -95,53 +95,63 @@ class ApiClient {
     }
   }
 
-  // 店舗関連
-  async getStores(): Promise<any[]> {
-    console.log('🌐 API: getStores called (via Next.js API Route)');
+  // 事業者関連
+  async getMerchants(): Promise<any> {
+    console.log('🌐 API: getMerchants called (via Next.js API Route)');
     console.log('🔗 API Base URL:', this.baseUrl);
-    console.log('🔗 Full URL:', `${this.baseUrl}/stores`);
+    console.log('🔗 Full URL:', `${this.baseUrl}/merchants`);
     
     const token = localStorage.getItem('accessToken');
-    return this.request<any[]>('/stores', {
+    return this.request<any>('/merchants', {
       method: 'GET',
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
-  async getStore(id: string): Promise<any> {
-    console.log('🏪 API: getStore called (via Next.js API Route)', { id });
+  async getMerchant(id: string): Promise<any> {
+    console.log('🏢 API: getMerchant called (via Next.js API Route)', { id });
     const token = localStorage.getItem('accessToken');
-    return this.request<any>(`/stores/${id}`, {
+    return this.request<any>(`/merchants/${id}`, {
       method: 'GET',
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
-  async createStore(storeData: any): Promise<any> {
-    console.log('➕ API: createStore called (via Next.js API Route)');
+  async createMerchant(merchantData: any): Promise<any> {
+    console.log('➕ API: createMerchant called (via Next.js API Route)');
     const token = localStorage.getItem('accessToken');
-    return this.request<any>('/stores', {
+    return this.request<any>('/merchants', {
       method: 'POST',
-      body: JSON.stringify(storeData),
+      body: JSON.stringify(merchantData),
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
-  async updateStore(id: string, storeData: any): Promise<any> {
-    console.log('✏️ API: updateStore called (via Next.js API Route)', { id });
+  async updateMerchant(id: string, merchantData: any): Promise<any> {
+    console.log('✏️ API: updateMerchant called (via Next.js API Route)', { id });
     const token = localStorage.getItem('accessToken');
-    return this.request<any>(`/stores/${id}`, {
+    return this.request<any>(`/merchants/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(storeData),
+      body: JSON.stringify(merchantData),
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
-  async deleteStore(id: string): Promise<void> {
-    console.log('🗑️ API: deleteStore called (via Next.js API Route)', { id });
+  async deleteMerchant(id: string): Promise<void> {
+    console.log('🗑️ API: deleteMerchant called (via Next.js API Route)', { id });
     const token = localStorage.getItem('accessToken');
-    return this.request<void>(`/stores/${id}`, {
+    return this.request<void>(`/merchants/${id}`, {
       method: 'DELETE',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async updateMerchantStatus(id: string, status: string): Promise<any> {
+    console.log('🔄 API: updateMerchantStatus called (via Next.js API Route)', { id, status });
+    const token = localStorage.getItem('accessToken');
+    return this.request<any>(`/merchants/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }

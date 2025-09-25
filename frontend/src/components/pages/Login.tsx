@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Button from '../atoms/Button';
-import Logo from '../atoms/Logo';
-import { useAuth } from '../../contexts/AuthContext';
+import Button from '@/atoms/Button';
+import Logo from '@/atoms/Logo';
+import { useAuth } from '@/contexts/AuthContext';
 import { AdminLoginInput } from '@tamanomi/schemas';
 
 type LoginFormData = AdminLoginInput;
@@ -111,8 +111,8 @@ export default function Login() {
         // API経由でログイン
         await login({ email: formData.email, password: formData.password });
         
-        // 認証成功時は店舗一覧画面に遷移
-        router.push('/stores');
+        // 認証成功時は事業者一覧画面に遷移
+        router.push('/merchants');
       } catch (error: any) {
         console.error('ログインエラー:', error);
         
