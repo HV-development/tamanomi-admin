@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3003/api/v1';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001/api/v1';
 
 function getAuthHeaders(request: Request): HeadersInit {
   const headers: HeadersInit = {
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   try {
     console.log('🌐 API Route: 事業者一覧取得リクエスト受信');
     
-    const response = await fetch(`${API_BASE_URL}/merchants`, {
+    const response = await fetch(`${API_BASE_URL}/admin/merchants`, {
       method: 'GET',
       headers: getAuthHeaders(request),
     });
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log('➕ API Route: 事業者作成リクエスト受信', { name: body.name });
     
-    const response = await fetch(`${API_BASE_URL}/merchants`, {
+    const response = await fetch(`${API_BASE_URL}/admin/merchants`, {
       method: 'POST',
       headers: getAuthHeaders(request),
       body: JSON.stringify(body),
