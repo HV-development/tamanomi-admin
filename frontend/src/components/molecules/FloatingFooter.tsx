@@ -54,7 +54,7 @@ export default function FloatingFooter({
             </span>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center justify-center space-x-4">
             <div className="flex items-center space-x-2">
               <label className="text-sm font-medium text-gray-700">
                 ステータス変更:
