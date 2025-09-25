@@ -3,7 +3,7 @@
 import React from 'react';
 import Button from '@/atoms/Button';
 import Icon from '@/atoms/Icon';
-import { statusOptions } from '@/constants/merchant';
+import { statusOptions, statusLabels } from '@/constants/merchant';
 
 interface FloatingFooterProps {
   selectedCount: number;
@@ -25,6 +25,21 @@ export default function FloatingFooter({
   isExecuting = false,
   isIssuingAccount = false
 }: FloatingFooterProps) {
+  // ステータスカラー関数（MerchantManagementと同じ）
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'registering': return 'text-blue-600';
+      case 'collection_requested': return 'text-purple-600';
+      case 'approval_pending': return 'text-yellow-600';
+      case 'promotional_materials_preparing': return 'text-orange-600';
+      case 'promotional_materials_shipping': return 'text-indigo-600';
+      case 'operating': return 'text-green-600';
+      case 'suspended': return 'text-red-600';
+      case 'terminated': return 'text-gray-600';
+      default: return 'text-gray-600';
+    }
+  };
+
   if (selectedCount === 0) {
     return null;
   }
@@ -37,7 +52,9 @@ export default function FloatingFooter({
             <span className="text-sm font-medium text-gray-700">
               {selectedCount}件選択中
             </span>
-            
+          </div>
+
+          <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <label className="text-sm font-medium text-gray-700">
                 ステータス変更:
@@ -45,7 +62,7 @@ export default function FloatingFooter({
               <select
                 value={selectedStatus}
                 onChange={(e) => onStatusChange(e.target.value)}
-                className="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 min-w-[140px] ${getStatusColor(selectedStatus)}`}
               >
                 {statusOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -54,9 +71,7 @@ export default function FloatingFooter({
                 ))}
               </select>
             </div>
-          </div>
 
-          <div className="flex items-center space-x-3">
             <Button
               onClick={onExecute}
               disabled={isExecuting}
