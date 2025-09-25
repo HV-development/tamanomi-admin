@@ -10,6 +10,7 @@ import ToastContainer from '@/molecules/ToastContainer';
 import FloatingFooter from '@/molecules/FloatingFooter';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/useToast';
+import { statusLabels, statusOptions, prefectures } from '@/constants/merchant';
 
 interface Merchant {
   id: string;
@@ -39,158 +40,6 @@ interface Merchant {
   }>;
 }
 
-// ステータスの日本語マッピング
-const statusLabels: Record<string, string> = {
-  registering: '登録中',
-  collection_requested: '回収依頼中',
-  approval_pending: '承認待ち',
-  promotional_materials_preparing: '販促物準備中',
-  promotional_materials_shipping: '販促物発送中',
-  operating: '運用中',
-  suspended: '停止中',
-  terminated: '解約済み',
-};
-
-// ステータスオプション
-const statusOptions = [
-  { value: 'registering', label: '登録中' },
-  { value: 'collection_requested', label: '回収依頼中' },
-  { value: 'approval_pending', label: '承認待ち' },
-  { value: 'promotional_materials_preparing', label: '販促物準備中' },
-  { value: 'promotional_materials_shipping', label: '販促物発送中' },
-  { value: 'operating', label: '運用中' },
-  { value: 'suspended', label: '停止中' },
-  { value: 'terminated', label: '解約済み' },
-];
-
-const prefectures = [
-  '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
-  '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県',
-  '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県',
-  '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県',
-  '奈良県', '和歌山県', '鳥取県', '島根県', '岡山県', '広島県', '山口県',
-  '徳島県', '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県',
-  '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'
-];
-
-// サンプルデータ
-const sampleMerchants: Merchant[] = [
-  { 
-    id: '550e8400-e29b-41d4-a716-446655440001', 
-    name: '株式会社たまのみ', 
-    nameKana: 'カブシキガイシャタマノミ',
-    representative: '代表取締役',
-    representativeName: '田中太郎',
-    representativePhone: '03-1234-5678',
-    email: 'info@tamanomi.co.jp', 
-    phone: '03-1234-5679', 
-    postalCode: '100-0001', 
-    address: '東京都千代田区千代田1-1-1', 
-    status: 'operating', 
-    createdAt: '2024-01-15',
-    updatedAt: '2024-01-15',
-    deletedAt: null,
-    account: {
-      email: 'info@tamanomi.co.jp',
-      status: 'active',
-      displayName: 'たまのみ',
-      lastLoginAt: '2024-01-15T10:00:00Z'
-    },
-    shops: [] 
-  },
-  { 
-    id: '550e8400-e29b-41d4-a716-446655440002', 
-    name: '株式会社レストラン山田', 
-    nameKana: 'カブシキガイシャレストランヤマダ',
-    representative: '代表取締役',
-    representativeName: '山田花子',
-    representativePhone: '03-2345-6789',
-    email: 'info@yamada-restaurant.co.jp', 
-    phone: '03-2345-6790', 
-    postalCode: '150-0002', 
-    address: '東京都渋谷区渋谷2-2-2', 
-    status: 'operating', 
-    createdAt: '2024-01-20',
-    updatedAt: '2024-01-20',
-    deletedAt: null,
-    account: {
-      email: 'info@yamada-restaurant.co.jp',
-      status: 'active',
-      displayName: 'レストラン山田',
-      lastLoginAt: '2024-01-20T14:30:00Z'
-    },
-    shops: [] 
-  },
-  { 
-    id: '550e8400-e29b-41d4-a716-446655440003', 
-    name: '株式会社カフェ佐藤', 
-    nameKana: 'カブシキガイシャカフェサトウ',
-    representative: '代表取締役',
-    representativeName: '佐藤次郎',
-    representativePhone: '03-3456-7890',
-    email: 'info@sato-cafe.co.jp', 
-    phone: '03-3456-7891', 
-    postalCode: '160-0022', 
-    address: '東京都新宿区新宿3-3-3', 
-    status: 'registering', 
-    createdAt: '2024-02-01',
-    updatedAt: '2024-02-01',
-    deletedAt: null,
-    account: {
-      email: 'info@sato-cafe.co.jp',
-      status: 'active',
-      displayName: 'カフェ佐藤',
-      lastLoginAt: '2024-02-01T09:15:00Z'
-    },
-    shops: [] 
-  },
-  { 
-    id: '550e8400-e29b-41d4-a716-446655440004', 
-    name: '株式会社居酒屋鈴木', 
-    nameKana: 'カブシキガイシャイザカヤスズキ',
-    representative: '代表取締役',
-    representativeName: '鈴木三郎',
-    representativePhone: '03-4567-8901',
-    email: 'info@suzuki-izakaya.co.jp', 
-    phone: '03-4567-8902', 
-    postalCode: '171-0022', 
-    address: '東京都豊島区池袋4-4-4', 
-    status: 'suspended', 
-    createdAt: '2024-02-05',
-    updatedAt: '2024-02-05',
-    deletedAt: null,
-    account: {
-      email: 'info@suzuki-izakaya.co.jp',
-      status: 'inactive',
-      displayName: '居酒屋鈴木',
-      lastLoginAt: '2024-02-05T16:45:00Z'
-    },
-    shops: [] 
-  },
-  { 
-    id: '550e8400-e29b-41d4-a716-446655440005', 
-    name: '株式会社ラーメン高橋', 
-    nameKana: 'カブシキガイシャラーメンタカハシ',
-    representative: '代表取締役',
-    representativeName: '高橋四郎',
-    representativePhone: '03-5678-9012',
-    email: 'info@takahashi-ramen.co.jp', 
-    phone: '03-5678-9013', 
-    postalCode: '108-0075', 
-    address: '東京都港区港南5-5-5', 
-    status: 'operating', 
-    createdAt: '2024-02-10',
-    updatedAt: '2024-02-10',
-    deletedAt: null,
-    account: {
-      email: 'info@takahashi-ramen.co.jp',
-      status: 'active',
-      displayName: 'ラーメン高橋',
-      lastLoginAt: '2024-02-10T11:20:00Z'
-    },
-    shops: [] 
-  },
-];
 
 export default function MerchantManagement() {
   const [merchants, setMerchants] = useState<Merchant[]>([]);
@@ -243,8 +92,7 @@ export default function MerchantManagement() {
       } catch (err: any) {
         console.error('事業者データの取得に失敗しました:', err);
         setError('事業者データの取得に失敗しました');
-        // エラー時はサンプルデータを使用
-        setMerchants(sampleMerchants);
+        setMerchants([]);
       } finally {
         setIsLoading(false);
       }

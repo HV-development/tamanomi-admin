@@ -3,6 +3,7 @@
 import React from 'react';
 import Button from '@/atoms/Button';
 import Icon from '@/atoms/Icon';
+import { statusOptions } from '@/constants/merchant';
 
 interface FloatingFooterProps {
   selectedCount: number;
@@ -14,16 +15,6 @@ interface FloatingFooterProps {
   isIssuingAccount?: boolean;
 }
 
-const statusOptions = [
-  { value: 'registering', label: '登録中' },
-  { value: 'collection_requested', label: '回収依頼中' },
-  { value: 'approval_pending', label: '承認待ち' },
-  { value: 'promotional_materials_preparing', label: '販促物準備中' },
-  { value: 'promotional_materials_shipping', label: '販促物発送中' },
-  { value: 'operating', label: '運用中' },
-  { value: 'suspended', label: '停止中' },
-  { value: 'terminated', label: '解約済み' },
-];
 
 export default function FloatingFooter({
   selectedCount,
