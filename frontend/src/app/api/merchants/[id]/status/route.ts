@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3003/api/v1';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001/api/v1';
 
 function getAuthHeaders(request: Request): HeadersInit {
   const headers: HeadersInit = {
@@ -19,7 +19,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     const body = await request.json();
     console.log('🔄 API Route: 事業者ステータス更新リクエスト受信', { merchantId: id, status: body.status });
 
-    const response = await fetch(`${API_BASE_URL}/merchants/${id}/status`, {
+    const response = await fetch(`${API_BASE_URL}/admin/merchants/${id}/status`, {
       method: 'PATCH',
       headers: getAuthHeaders(request),
       body: JSON.stringify(body),
