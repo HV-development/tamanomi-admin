@@ -5,7 +5,9 @@ import Link from 'next/link';
 import DashboardLayout from '@/templates/DashboardLayout';
 import Button from '@/atoms/Button';
 import Icon from '@/atoms/Icon';
+import Checkbox from '@/atoms/Checkbox';
 import ToastContainer from '@/molecules/ToastContainer';
+import FloatingFooter from '@/molecules/FloatingFooter';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/useToast';
 
@@ -196,6 +198,14 @@ export default function MerchantManagement() {
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
   
+  // チェックボックス関連の状態
+  const [selectedMerchants, setSelectedMerchants] = useState<Set<string>>(new Set());
+  const [isAllSelected, setIsAllSelected] = useState(false);
+  const [isIndeterminate, setIsIndeterminate] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('operating');
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [isIssuingAccount, setIsIssuingAccount] = useState(false);
+  
   const [searchForm, setSearchForm] = useState({
     merchantId: '',
     merchantName: '',
@@ -242,6 +252,104 @@ export default function MerchantManagement() {
 
     fetchMerchants();
   }, []);
+
+  // チェックボックス関連の関数
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = new Set(filteredMerchants.map(merchant => merchant.id));
+      setSelectedMerchants(allIds);
+      setIsAllSelected(true);
+      setIsIndeterminate(false);
+    } else {
+      setSelectedMerchants(new Set());
+      setIsAllSelected(false);
+      setIsIndeterminate(false);
+    }
+  };
+
+  const handleSelectMerchant = (merchantId: string, checked: boolean) => {
+    const newSelected = new Set(selectedMerchants);
+    if (checked) {
+      newSelected.add(merchantId);
+    } else {
+      newSelected.delete(merchantId);
+    }
+    setSelectedMerchants(newSelected);
+
+    // 全選択状態の更新
+    const totalCount = filteredMerchants.length;
+    const selectedCount = newSelected.size;
+    
+    if (selectedCount === 0) {
+      setIsAllSelected(false);
+      setIsIndeterminate(false);
+    } else if (selectedCount === totalCount) {
+      setIsAllSelected(true);
+      setIsIndeterminate(false);
+    } else {
+      setIsAllSelected(false);
+      setIsIndeterminate(true);
+    }
+  };
+
+  const handleStatusChange = (status: string) => {
+    setSelectedStatus(status);
+  };
+
+  const handleExecute = async () => {
+    if (selectedMerchants.size === 0) return;
+
+    setIsExecuting(true);
+    try {
+      // 選択された事業者のステータスを一括更新
+      const updatePromises = Array.from(selectedMerchants).map(merchantId =>
+        apiClient.updateMerchantStatus(merchantId, selectedStatus)
+      );
+      
+      await Promise.all(updatePromises);
+      
+      // ローカル状態を更新
+      setMerchants(prev =>
+        prev.map(merchant =>
+          selectedMerchants.has(merchant.id)
+            ? { ...merchant, status: selectedStatus as any }
+            : merchant
+        )
+      );
+      
+      showSuccess(`${selectedMerchants.size}件の事業者のステータスを「${statusLabels[selectedStatus]}」に更新しました`);
+      
+      // 選択をクリア
+      setSelectedMerchants(new Set());
+      setIsAllSelected(false);
+      setIsIndeterminate(false);
+    } catch (error: any) {
+      showError(`ステータスの一括更新に失敗しました: ${error.message || '不明なエラー'}`);
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
+  const handleIssueAccount = async () => {
+    if (selectedMerchants.size === 0) return;
+
+    setIsIssuingAccount(true);
+    try {
+      // アカウント発行処理（実装は後で）
+      await new Promise(resolve => setTimeout(resolve, 2000)); // 仮の処理
+      
+      showSuccess(`${selectedMerchants.size}件の事業者にアカウントを発行しました`);
+      
+      // 選択をクリア
+      setSelectedMerchants(new Set());
+      setIsAllSelected(false);
+      setIsIndeterminate(false);
+    } catch (error: any) {
+      showError(`アカウント発行に失敗しました: ${error.message || '不明なエラー'}`);
+    } finally {
+      setIsIssuingAccount(false);
+    }
+  };
 
   // フィルタリング処理
   const filteredMerchants = Array.isArray(merchants) ? merchants.filter((merchant) => {
@@ -299,7 +407,7 @@ export default function MerchantManagement() {
     setAppliedStatusFilter('all');
   };
 
-  const handleStatusChange = async (merchantId: string, newStatus: string) => {
+  const handleIndividualStatusChange = async (merchantId: string, newStatus: string) => {
     const originalMerchant = merchants.find(m => m.id === merchantId);
     if (!originalMerchant) return;
 
@@ -582,6 +690,13 @@ export default function MerchantManagement() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                    <Checkbox
+                      checked={isAllSelected}
+                      indeterminate={isIndeterminate}
+                      onChange={handleSelectAll}
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     事業者名
                   </th>
@@ -612,6 +727,12 @@ export default function MerchantManagement() {
               {filteredMerchants.map((merchant) => (
                   <tr key={merchant.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <Checkbox
+                        checked={selectedMerchants.has(merchant.id)}
+                        onChange={(checked) => handleSelectMerchant(merchant.id, checked)}
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{merchant.name}</div>
                       <div className="text-sm text-gray-500">{merchant.nameKana}</div>
                     </td>
@@ -634,7 +755,7 @@ export default function MerchantManagement() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <select
                         value={merchant.status}
-                        onChange={(e) => handleStatusChange(merchant.id, e.target.value)}
+                        onChange={(e) => handleIndividualStatusChange(merchant.id, e.target.value)}
                         className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 min-w-[140px] ${getStatusColor(merchant.status)}`}
                       >
                         {statusOptions.map((option) => (
@@ -677,6 +798,17 @@ export default function MerchantManagement() {
           )}
         </div>
       </div>
+      
+      <FloatingFooter
+        selectedCount={selectedMerchants.size}
+        onStatusChange={handleStatusChange}
+        onExecute={handleExecute}
+        onIssueAccount={handleIssueAccount}
+        selectedStatus={selectedStatus}
+        isExecuting={isExecuting}
+        isIssuingAccount={isIssuingAccount}
+      />
+      
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </DashboardLayout>
   );
