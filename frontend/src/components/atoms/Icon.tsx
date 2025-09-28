@@ -4,7 +4,7 @@ interface IconProps {
   className?: string;
 }
 
-const iconMap: Record<string, { type: 'emoji' | 'material'; value: string }> = {
+const iconMap: Record<string, { type: 'emoji' | 'material' | 'image'; value: string }> = {
   store: { type: 'material', value: 'storefront' },
   coupon: { type: 'material', value: 'confirmation_number' },
   users: { type: 'material', value: 'groups' },
@@ -35,6 +35,7 @@ const iconMap: Record<string, { type: 'emoji' | 'material'; value: string }> = {
   x: { type: 'material', value: 'close' },
   check: { type: 'material', value: 'check' },
   remove: { type: 'material', value: 'remove' },
+  'add-store': { type: 'image', value: '/store-list.svg' },
 };
 
 export default function Icon({ name, size = 'md', className = '' }: IconProps) {
@@ -42,6 +43,12 @@ export default function Icon({ name, size = 'md', className = '' }: IconProps) {
     sm: 'text-sm leading-none',
     md: 'text-lg leading-none',
     lg: 'text-xl leading-none',
+  };
+
+  const imageSizeClasses = {
+    sm: 'w-4 h-4',
+    md: 'w-5 h-5',
+    lg: 'w-6 h-6',
   };
 
   const icon = iconMap[name];
@@ -67,6 +74,16 @@ export default function Icon({ name, size = 'md', className = '' }: IconProps) {
       >
         {icon.value}
       </span>
+    );
+  }
+
+  if (icon.type === 'image') {
+    return (
+      <img 
+        src={icon.value} 
+        alt={name}
+        className={`inline-block ${imageSizeClasses[size]} ${className}`}
+      />
     );
   }
 
