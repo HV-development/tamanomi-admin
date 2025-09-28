@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import DashboardLayout from '@/components/templates/DashboardLayout';
 import Button from '@/components/atoms/Button';
 import Checkbox from '@/components/atoms/Checkbox';
+import Icon from '@/components/atoms/Icon';
 import ToastContainer from '@/components/molecules/ToastContainer';
 import FloatingFooter from '@/components/molecules/FloatingFooter';
 import { apiClient } from '@/lib/api';
@@ -546,7 +548,7 @@ export default function MerchantManagement() {
             <table className="w-full min-w-[1200px]">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40 whitespace-nowrap">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48 whitespace-nowrap">
                     <div className="flex items-center space-x-4">
                       <Checkbox
                         checked={isAllSelected}
@@ -579,27 +581,39 @@ export default function MerchantManagement() {
               <tbody className="bg-white divide-y divide-gray-200">
               {filteredMerchants.map((merchant) => (
                   <tr key={merchant.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap w-40">
+                    <td className="px-6 py-4 whitespace-nowrap w-48">
                       <div className="flex items-center space-x-4">
                         <Checkbox
                           checked={selectedMerchants.has(merchant.id)}
                           onChange={(checked) => handleSelectMerchant(merchant.id, checked)}
                         />
-                        <div className="flex-1 flex justify-center">
+                        <div className="flex-1 flex justify-center space-x-2">
                           <Link href={`/merchants/${merchant.id}/edit`}>
                             <button 
-                              className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-colors cursor-pointer"
+                              className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-colors cursor-pointer flex items-center justify-center"
                               title="編集"
                             >
-                              <img 
+                              <Image 
                                 src="/edit.svg" 
                                 alt="編集" 
-                                width={24} 
-                                height={24}
-                                className="w-6 h-6"
+                                width={32}
+                                height={32}
+                                className="w-8 h-8"
                               />
                             </button>
                           </Link>
+                          <button 
+                            className="p-1 text-blue-600 hover:text-blue-800 hover:bg-transparent rounded-md transition-colors cursor-pointer flex items-center justify-center"
+                            title="店舗一覧"
+                          >
+                            <Image 
+                              src="/store-list.svg" 
+                              alt="店舗一覧" 
+                              width={32}
+                              height={32}
+                              className="w-8 h-8"
+                            />
+                          </button>
                         </div>
                       </div>
                     </td>
