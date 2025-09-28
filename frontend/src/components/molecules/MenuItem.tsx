@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import Icon from '@/atoms/Icon';
+import Icon from '@/components/atoms/Icon';
 
 interface MenuItemProps {
   name: string;

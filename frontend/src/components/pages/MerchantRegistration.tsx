@@ -1,30 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
-import DashboardLayout from '@/templates/DashboardLayout';
-import Button from '@/atoms/Button';
-import Icon from '@/atoms/Icon';
-import { 
-  validateRequired, 
-  validateMaxLength, 
-  validatePostalCode, 
-  validatePhone, 
-  validateEmail
-} from '@/utils/validation';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import DashboardLayout from '@/components/templates/DashboardLayout';
+import Button from '@/components/atoms/Button';
+import Icon from '@/components/atoms/Icon';
+import { useZipcodeSearch } from '@/lib/hooks/useZipcodeSearch';
+import { validateMerchantField, validateMerchantForm, type MerchantFormData } from '@tamanomi/schemas';
 
-interface MerchantFormData {
-  accountEmail: string;
-  name: string;
-  nameKana: string;
-  representative: string;
-  representativeName: string;
-  representativePhone: string;
-  email: string;
-  phone: string;
-  postalCode: string;
-  address: string;
-}
+
 
 const prefectures = [
   '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
@@ -37,131 +21,182 @@ const prefectures = [
 ];
 
 export default function MerchantRegistration() {
-  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { searchZipcode, isLoading: zipcodeLoading, error: zipcodeError } = useZipcodeSearch();
+  
   const [formData, setFormData] = useState<MerchantFormData>({
-    accountEmail: '',
     name: '',
     nameKana: '',
-    representative: '',
-    representativeName: '',
+    representativeNameLast: '',
+    representativeNameFirst: '',
+    representativeNameLastKana: '',
+    representativeNameFirstKana: '',
     representativePhone: '',
     email: '',
-    phone: '',
     postalCode: '',
-    address: '',
+    prefecture: '',
+    city: '',
+    address1: '',
+    address2: '',
   });
 
-  const [errors, setErrors] = useState<Partial<MerchantFormData>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string>('');
+  
+  const fieldRefs = useRef<{ [key: string]: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null }>({});
 
-  // URLパラメータから初期値を設定
-  useEffect(() => {
-    const accountEmail = searchParams.get('accountEmail');
-    if (accountEmail) {
-      setFormData(prev => ({ ...prev, accountEmail }));
-    }
-  }, [searchParams]);
 
   const handleInputChange = (field: keyof MerchantFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev: MerchantFormData) => ({ ...prev, [field]: value }));
     
-    // エラーをクリア
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+    // リアルタイムバリデーション
+    const error = validateMerchantField(field, value || '');
+    if (error) {
+      setErrors((prev: Record<string, string>) => ({ ...prev, [field]: error }));
+    } else {
+      setErrors((prev: Record<string, string>) => {
+        const newErrors = { ...prev };
+        delete newErrors[field as string];
+        return newErrors;
+      });
     }
   };
 
-  const validateForm = (): boolean => {
-    const newErrors: Partial<MerchantFormData> = {};
-
-    // アカウントメールアドレス
-    const accountEmailError = validateRequired(formData.accountEmail, 'アカウントメールアドレス') || validateEmail(formData.accountEmail);
-    if (accountEmailError) {
-      newErrors.accountEmail = accountEmailError;
+  const handleBlur = (field: keyof MerchantFormData) => {
+    const value = formData[field];
+    const error = validateMerchantField(field, value || '');
+    if (error) {
+      setErrors((prev: Record<string, string>) => ({ ...prev, [field]: error }));
+    } else {
+      setErrors((prev: Record<string, string>) => {
+        const newErrors = { ...prev };
+        delete newErrors[field as string];
+        return newErrors;
+      });
     }
-
-    // 事業者名
-    const nameError = validateRequired(formData.name, '事業者名') || validateMaxLength(formData.name, 100, '事業者名');
-    if (nameError) {
-      newErrors.name = nameError;
-    }
-
-    // 事業者名（カナ）
-    const nameKanaError = validateRequired(formData.nameKana, '事業者名（カナ）') || validateMaxLength(formData.nameKana, 100, '事業者名（カナ）');
-    if (nameKanaError) {
-      newErrors.nameKana = nameKanaError;
-    }
-
-    // 代表者
-    const representativeError = validateRequired(formData.representative, '代表者') || validateMaxLength(formData.representative, 50, '代表者');
-    if (representativeError) {
-      newErrors.representative = representativeError;
-    }
-
-    // 代表者名
-    const representativeNameError = validateRequired(formData.representativeName, '代表者名') || validateMaxLength(formData.representativeName, 50, '代表者名');
-    if (representativeNameError) {
-      newErrors.representativeName = representativeNameError;
-    }
-
-    // 代表者電話番号
-    const representativePhoneError = validateRequired(formData.representativePhone, '代表者電話番号') || validatePhone(formData.representativePhone);
-    if (representativePhoneError) {
-      newErrors.representativePhone = representativePhoneError;
-    }
-
-    // メールアドレス
-    const emailError = validateRequired(formData.email, 'メールアドレス') || validateEmail(formData.email);
-    if (emailError) {
-      newErrors.email = emailError;
-    }
-
-    // 電話番号
-    const phoneError = validateRequired(formData.phone, '電話番号') || validatePhone(formData.phone);
-    if (phoneError) {
-      newErrors.phone = phoneError;
-    }
-
-    // 郵便番号
-    const postalCodeError = validateRequired(formData.postalCode, '郵便番号') || validatePostalCode(formData.postalCode);
-    if (postalCodeError) {
-      newErrors.postalCode = postalCodeError;
-    }
-
-    // 住所
-    const addressError = validateRequired(formData.address, '住所') || validateMaxLength(formData.address, 200, '住所');
-    if (addressError) {
-      newErrors.address = addressError;
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
+
+  const handleZipcodeSearch = async () => {
+    if (!formData.postalCode) return;
+    
+    const result = await searchZipcode(formData.postalCode);
+    if (result) {
+      setFormData((prev: MerchantFormData) => ({
+        ...prev,
+        prefecture: result.prefecture,
+        city: result.city,
+        address1: result.address1,
+      }));
+      
+      // エラーをクリア
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.prefecture;
+        delete newErrors.city;
+        delete newErrors.address1;
+        return newErrors;
+      });
+    }
+  };
+
+  const validateFormData = (): boolean => {
+    const { isValid, errors: validationErrors } = validateMerchantForm(formData);
+    setErrors(validationErrors);
+    
+    if (!isValid) {
+      const firstErrorField = Object.keys(validationErrors)[0];
+      if (firstErrorField && fieldRefs.current[firstErrorField as keyof typeof fieldRefs.current]) {
+        const element = fieldRefs.current[firstErrorField as keyof typeof fieldRefs.current];
+        element?.focus();
+        element?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }
+    }
+    
+    return isValid;
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setServerError('');
     
-    if (!validateForm()) {
+    if (!validateFormData()) {
       return;
     }
 
     setIsSubmitting(true);
     
     try {
-      // API呼び出しをシミュレート
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      console.log('事業者登録データ:', formData);
-      
-      // 成功時の処理（実際の実装では適切なページにリダイレクト）
-      alert('事業者の登録が完了しました。');
+      // emailフィールドをaccountEmailにマッピング
+      const requestData: Omit<MerchantFormData, 'email'> & { accountEmail: string } = {
+        name: formData.name,
+        nameKana: formData.nameKana,
+        representativeNameLast: formData.representativeNameLast,
+        representativeNameFirst: formData.representativeNameFirst,
+        representativeNameLastKana: formData.representativeNameLastKana,
+        representativeNameFirstKana: formData.representativeNameFirstKana,
+        representativePhone: formData.representativePhone,
+        accountEmail: formData.email,
+        postalCode: formData.postalCode,
+        prefecture: formData.prefecture,
+        city: formData.city,
+        address1: formData.address1,
+        address2: formData.address2,
+      };
+
+      const response = await fetch('/api/merchants', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        
+        if (response.status === 400) {
+          // パラメータエラーの場合
+          if (errorData.errors) {
+            setErrors(errorData.errors);
+            // 最初のエラーフィールドにスクロール
+            const firstErrorField = Object.keys(errorData.errors)[0];
+            if (firstErrorField && fieldRefs.current[firstErrorField as keyof typeof fieldRefs.current]) {
+              const element = fieldRefs.current[firstErrorField as keyof typeof fieldRefs.current];
+              element?.focus();
+              element?.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+              });
+            }
+          } else {
+            setServerError(errorData.message || '入力内容に誤りがあります');
+          }
+        } else {
+          // その他のエラーの場合
+          alert(errorData.message || '登録中にエラーが発生しました');
+        }
+        return;
+      }
+
+      // 成功時の処理
+      router.push('/merchants');
       
     } catch (error) {
       console.error('登録エラー:', error);
-      alert('登録中にエラーが発生しました。');
+      alert('登録中にエラーが発生しました');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const getCharacterCount = (field: keyof MerchantFormData, maxLength: number) => {
+    const currentLength = (formData[field] || '').length;
+    return `${currentLength} / ${maxLength}`;
   };
 
   return (
@@ -171,9 +206,9 @@ export default function MerchantRegistration() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">事業者新規登録</h1>
+              <h1 className="text-2xl font-bold text-gray-900">掲載店新規登録</h1>
               <p className="text-gray-600">
-                新しい事業者を登録します
+                新しい掲載店を登録します
               </p>
             </div>
             <div className="text-sm text-gray-600">
@@ -185,210 +220,393 @@ export default function MerchantRegistration() {
           </div>
         </div>
 
+        {/* サーバーエラー表示 */}
+        {serverError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex">
+              <Icon name="alert" size="sm" className="text-red-400 mt-0.5" />
+              <div className="ml-3">
+                <p className="text-sm text-red-800">{serverError}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* フォーム */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-lg font-medium text-gray-900 mb-6">基本情報</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* アカウントメールアドレス */}
-              <div className="md:col-span-2">
-                <label htmlFor="accountEmail" className="block text-sm font-medium text-gray-700 mb-2">
-                  アカウントメールアドレス <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  id="accountEmail"
-                  value={formData.accountEmail}
-                  onChange={(e) => handleInputChange('accountEmail', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-                    errors.accountEmail ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="アカウントのメールアドレスを入力"
-                />
-                {errors.accountEmail && (
-                  <p className="mt-1 text-sm text-red-600">{errors.accountEmail}</p>
-                )}
-              </div>
-
-              {/* 事業者名 */}
+            <div className="space-y-6">
+              {/* 掲載店名 / 会社名 */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  事業者名 <span className="text-red-500">*</span>
+                  掲載店名 / 会社名 <span className="text-red-500">*</span>
                 </label>
                 <input
+                  ref={(el) => { fieldRefs.current.name = el; }}
                   type="text"
                   id="name"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
+                  onBlur={() => handleBlur('name')}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.name ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="事業者名を入力"
+                  placeholder="掲載店名 / 会社名を入力してください"
                 />
-                {errors.name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-                )}
+                <div className="mt-1 flex justify-between items-center">
+                  {errors.name ? (
+                    <p className="text-sm text-red-600">{errors.name}</p>
+                  ) : (
+                    <div></div>
+                  )}
+                  <p className="text-sm text-gray-500">{getCharacterCount('name', 50)}</p>
+                </div>
               </div>
 
-              {/* 事業者名（カナ） */}
+              {/* 掲載店名（カナ） */}
               <div>
                 <label htmlFor="nameKana" className="block text-sm font-medium text-gray-700 mb-2">
-                  事業者名（カナ） <span className="text-red-500">*</span>
+                  掲載店名（カナ） <span className="text-red-500">*</span>
                 </label>
                 <input
+                  ref={(el) => { fieldRefs.current.nameKana = el; }}
                   type="text"
                   id="nameKana"
                   value={formData.nameKana}
                   onChange={(e) => handleInputChange('nameKana', e.target.value)}
+                  onBlur={() => handleBlur('nameKana')}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.nameKana ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="事業者名（カナ）を入力"
+                  placeholder="掲載店名（カナ）を入力してください"
                 />
-                {errors.nameKana && (
-                  <p className="mt-1 text-sm text-red-600">{errors.nameKana}</p>
-                )}
+                <div className="mt-1 flex justify-between items-center">
+                  {errors.nameKana ? (
+                    <p className="text-sm text-red-600">{errors.nameKana}</p>
+                  ) : (
+                    <div></div>
+                  )}
+                  <p className="text-sm text-gray-500">{getCharacterCount('nameKana', 100)}</p>
+                </div>
               </div>
 
-              {/* 代表者 */}
-              <div>
-                <label htmlFor="representative" className="block text-sm font-medium text-gray-700 mb-2">
-                  代表者 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="representative"
-                  value={formData.representative}
-                  onChange={(e) => handleInputChange('representative', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-                    errors.representative ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="代表者を入力"
-                />
-                {errors.representative && (
-                  <p className="mt-1 text-sm text-red-600">{errors.representative}</p>
-                )}
+              {/* 代表者名（姓・名） */}
+              <div className="flex gap-4">
+                <div className="w-50">
+                  <label htmlFor="representativeNameLast" className="block text-sm font-medium text-gray-700 mb-2">
+                    代表者名（姓） <span className="text-red-500">*</span>
+                  </label>
+                    <input
+                      ref={(el) => { fieldRefs.current.representativeNameLast = el; }}
+                      type="text"
+                      id="representativeNameLast"
+                      value={formData.representativeNameLast}
+                      onChange={(e) => handleInputChange('representativeNameLast', e.target.value)}
+                      onBlur={() => handleBlur('representativeNameLast')}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                        errors.representativeNameLast ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="姓を入力してください"
+                      maxLength={25}
+                    />
+                  <div className="mt-1 flex justify-between items-center">
+                    {errors.representativeNameLast ? (
+                      <p className="text-sm text-red-600">{errors.representativeNameLast}</p>
+                    ) : (
+                      <div></div>
+                    )}
+                    <p className="text-sm text-gray-500">{getCharacterCount('representativeNameLast', 25)}</p>
+                  </div>
+                </div>
+
+                <div className="w-50">
+                  <label htmlFor="representativeNameFirst" className="block text-sm font-medium text-gray-700 mb-2">
+                    代表者名（名） <span className="text-red-500">*</span>
+                  </label>
+                    <input
+                      ref={(el) => { fieldRefs.current.representativeNameFirst = el; }}
+                      type="text"
+                      id="representativeNameFirst"
+                      value={formData.representativeNameFirst}
+                      onChange={(e) => handleInputChange('representativeNameFirst', e.target.value)}
+                      onBlur={() => handleBlur('representativeNameFirst')}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                        errors.representativeNameFirst ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="名を入力してください"
+                      maxLength={25}
+                    />
+                    <div className="mt-1 flex justify-between items-center">
+                      {errors.representativeNameFirst ? (
+                        <p className="text-sm text-red-600">{errors.representativeNameFirst}</p>
+                      ) : (
+                        <div></div>
+                      )}
+                      <p className="text-sm text-gray-500">{getCharacterCount('representativeNameFirst', 25)}</p>
+                    </div>
+                </div>
               </div>
 
-              {/* 代表者名 */}
-              <div>
-                <label htmlFor="representativeName" className="block text-sm font-medium text-gray-700 mb-2">
-                  代表者名 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="representativeName"
-                  value={formData.representativeName}
-                  onChange={(e) => handleInputChange('representativeName', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-                    errors.representativeName ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="代表者名を入力"
-                />
-                {errors.representativeName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.representativeName}</p>
-                )}
+              {/* 代表者名（姓・名 / カナ） */}
+              <div className="flex gap-4">
+                <div className="w-50">
+                  <label htmlFor="representativeNameLastKana" className="block text-sm font-medium text-gray-700 mb-2">
+                    代表者名（姓 / カナ） <span className="text-red-500">*</span>
+                  </label>
+                    <input
+                      ref={(el) => { fieldRefs.current.representativeNameLastKana = el; }}
+                      type="text"
+                      id="representativeNameLastKana"
+                      value={formData.representativeNameLastKana}
+                      onChange={(e) => handleInputChange('representativeNameLastKana', e.target.value)}
+                      onBlur={() => handleBlur('representativeNameLastKana')}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                        errors.representativeNameLastKana ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="姓（カナ）を入力してください"
+                      maxLength={50}
+                    />
+                    <div className="mt-1 flex justify-between items-center">
+                      {errors.representativeNameLastKana ? (
+                        <p className="text-sm text-red-600">{errors.representativeNameLastKana}</p>
+                      ) : (
+                        <div></div>
+                      )}
+                      <p className="text-sm text-gray-500">{getCharacterCount('representativeNameLastKana', 50)}</p>
+                    </div>
+                </div>
+
+                <div className="w-50">
+                  <label htmlFor="representativeNameFirstKana" className="block text-sm font-medium text-gray-700 mb-2">
+                    代表者名（名 / カナ） <span className="text-red-500">*</span>
+                  </label>
+                    <input
+                      ref={(el) => { fieldRefs.current.representativeNameFirstKana = el; }}
+                      type="text"
+                      id="representativeNameFirstKana"
+                      value={formData.representativeNameFirstKana}
+                      onChange={(e) => handleInputChange('representativeNameFirstKana', e.target.value)}
+                      onBlur={() => handleBlur('representativeNameFirstKana')}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                        errors.representativeNameFirstKana ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="名（カナ）を入力してください"
+                      maxLength={50}
+                    />
+                  <div className="mt-1 flex justify-between items-center">
+                    {errors.representativeNameFirstKana ? (
+                      <p className="text-sm text-red-600">{errors.representativeNameFirstKana}</p>
+                    ) : (
+                      <div></div>
+                    )}
+                    <p className="text-sm text-gray-500">{getCharacterCount('representativeNameFirstKana', 50)}</p>
+                  </div>
+                </div>
               </div>
 
               {/* 代表者電話番号 */}
-              <div>
+              <div className="w-100">
                 <label htmlFor="representativePhone" className="block text-sm font-medium text-gray-700 mb-2">
                   代表者電話番号 <span className="text-red-500">*</span>
                 </label>
                 <input
+                  ref={(el) => { fieldRefs.current.representativePhone = el; }}
                   type="tel"
                   id="representativePhone"
                   value={formData.representativePhone}
-                  onChange={(e) => handleInputChange('representativePhone', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  onChange={(e) => handleInputChange('representativePhone', e.target.value.replace(/\D/g, ''))}
+                  onBlur={() => handleBlur('representativePhone')}
+                  className={`w-100 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.representativePhone ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="代表者電話番号を入力"
+                  placeholder="電話番号を入力してください（ハイフン無し）"
                 />
-                {errors.representativePhone && (
-                  <p className="mt-1 text-sm text-red-600">{errors.representativePhone}</p>
-                )}
+                <div className="mt-1 flex justify-between">
+                  {errors.representativePhone && (
+                    <p className="text-sm text-red-600">{errors.representativePhone}</p>
+                  )}
+                </div>
               </div>
 
               {/* メールアドレス */}
-              <div>
+              <div className="w-100">
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                   メールアドレス <span className="text-red-500">*</span>
                 </label>
                 <input
+                  ref={(el) => { fieldRefs.current.email = el; }}
                   type="email"
                   id="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  onBlur={() => handleBlur('email')}
+                  className={`w-100 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="メールアドレスを入力"
+                  placeholder="メールアドレスを入力してください"
                 />
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-                )}
+                <div className="mt-1 flex justify-between items-center">
+                  {errors.email ? (
+                    <p className="text-sm text-red-600">{errors.email}</p>
+                  ) : (
+                    <div></div>
+                  )}
+                  <p className="text-sm text-gray-500">{getCharacterCount('email', 255)}</p>
+                </div>
               </div>
+            </div>
+          </div>
 
-              {/* 電話番号 */}
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                  電話番号 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-                    errors.phone ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="電話番号を入力"
-                />
-                {errors.phone && (
-                  <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-                )}
-              </div>
-
+          {/* 住所情報 */}
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 mb-6">住所情報</h3>
+            
+            <div className="space-y-6 w-72">
               {/* 郵便番号 */}
               <div>
                 <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
                   郵便番号 <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  id="postalCode"
-                  value={formData.postalCode}
-                  onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-                    errors.postalCode ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="XXX-XXXX"
-                />
-                {errors.postalCode && (
-                  <p className="mt-1 text-sm text-red-600">{errors.postalCode}</p>
+                <div className="flex space-x-2">
+                    <input
+                      ref={(el) => { fieldRefs.current.postalCode = el; }}
+                      type="text"
+                      id="postalCode"
+                      value={formData.postalCode}
+                      onChange={(e) => handleInputChange('postalCode', e.target.value.replace(/\D/g, ''))}
+                      onBlur={() => handleBlur('postalCode')}
+                      className={`w-40 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                        errors.postalCode ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="1234567"
+                      maxLength={7}
+                    />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleZipcodeSearch}
+                    disabled={zipcodeLoading || !formData.postalCode}
+                    className="whitespace-nowrap"
+                  >
+                    {zipcodeLoading ? '検索中...' : '郵便番号検索'}
+                  </Button>
+                </div>
+                <div className="mt-1 flex justify-between">
+                  {errors.postalCode && (
+                    <p className="text-sm text-red-600">{errors.postalCode}</p>
+                  )}
+                  {zipcodeError && (
+                    <p className="text-sm text-red-600">{zipcodeError.message}</p>
+                  )}  
+                </div>
+              </div>
+
+              {/* 都道府県 */}
+              <div>
+                <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
+                  都道府県 <span className="text-red-500">*</span>
+                </label>
+                  <select
+                    ref={(el) => { fieldRefs.current.prefecture = el; }}
+                    id="prefecture"
+                    value={formData.prefecture}
+                    onChange={(e) => handleInputChange('prefecture', e.target.value)}
+                    onBlur={() => handleBlur('prefecture')}
+                    className={`w-40 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                      errors.prefecture ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                  <option value="">都道府県を選択</option>
+                  {prefectures.map(pref => (
+                    <option key={pref} value={pref}>{pref}</option>
+                  ))}
+                </select>
+                {errors.prefecture && (
+                  <p className="mt-1 text-sm text-red-600">{errors.prefecture}</p>
                 )}
               </div>
 
-              {/* 住所 */}
-              <div className="md:col-span-2">
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                  住所 <span className="text-red-500">*</span>
+              {/* 市区町村 */}
+              <div className="w-100">
+                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                  市区町村 <span className="text-red-500">*</span>
                 </label>
-                <textarea
-                  id="address"
-                  rows={3}
-                  value={formData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-                    errors.address ? 'border-red-500' : 'border-gray-300'
+                <input
+                  ref={(el) => { fieldRefs.current.city = el; }}
+                  type="text"
+                  id="city"
+                  value={formData.city}
+                  onChange={(e) => handleInputChange('city', e.target.value)}
+                  onBlur={() => handleBlur('city')}
+                  className={`w-100 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    errors.city ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="住所を入力"
+                  placeholder="市区町村を入力してください"
                 />
-                {errors.address && (
-                  <p className="mt-1 text-sm text-red-600">{errors.address}</p>
-                )}
+                <div className="mt-1 flex justify-between items-center">
+                  {errors.city ? (
+                    <p className="text-sm text-red-600">{errors.city}</p>
+                  ) : (
+                    <div></div>
+                  )}
+                  <p className="text-sm text-gray-500">{getCharacterCount('city', 255)}</p>
+                </div>
+              </div>
+
+              {/* 番地以降 */}
+              <div className="w-100">
+                <label htmlFor="address1" className="block text-sm font-medium text-gray-700 mb-2">
+                  番地以降 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  ref={(el) => { fieldRefs.current.address1 = el; }}
+                  type="text"
+                  id="address1"
+                  value={formData.address1}
+                  onChange={(e) => handleInputChange('address1', e.target.value)}
+                  onBlur={() => handleBlur('address1')}
+                  className={`w-100 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    errors.address1 ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="番地以降を入力してください"
+                />
+                <div className="mt-1 flex justify-between items-center">
+                  {errors.address1 ? (
+                    <p className="text-sm text-red-600">{errors.address1}</p>
+                  ) : (
+                    <div></div>
+                  )}
+                  <p className="text-sm text-gray-500">{getCharacterCount('address1', 255)}</p>
+                </div>
+              </div>
+
+              {/* 建物名 / 部屋番号 */}
+              <div className="w-100">
+                <label htmlFor="address2" className="block text-sm font-medium text-gray-700 mb-2">
+                  建物名 / 部屋番号
+                </label>
+                <input
+                  ref={(el) => { fieldRefs.current.address2 = el; }}
+                  type="text"
+                  id="address2"
+                  value={formData.address2}
+                  onChange={(e) => handleInputChange('address2', e.target.value)}
+                  onBlur={() => handleBlur('address2')}
+                  className={`w-100 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    errors.address2 ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="建物名 / 部屋番号を入力してください（任意）"
+                />
+                <div className="mt-1 flex justify-between items-center">
+                  {errors.address2 ? (
+                    <p className="text-sm text-red-600">{errors.address2}</p>
+                  ) : (
+                    <div></div>
+                  )}
+                  <p className="text-sm text-gray-500">{getCharacterCount('address2', 255)}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -398,7 +616,7 @@ export default function MerchantRegistration() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => window.history.back()}
+              onClick={() => router.back()}
             >
               キャンセル
             </Button>

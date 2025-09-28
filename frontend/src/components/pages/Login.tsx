@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Button from '@/atoms/Button';
-import Logo from '@/atoms/Logo';
+import Button from '@/components/atoms/Button';
+import Logo from '@/components/atoms/Logo';
 import { useAuth } from '@/contexts/AuthContext';
 import { AdminLoginInput } from '@tamanomi/schemas';
 
