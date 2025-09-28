@@ -17,6 +17,7 @@ services:
       - ../../../tamanomi-admin/frontend:/app
       - /app/node_modules
       - /app/.next
+      - ../../../tamanomi-schemas:/app/tamanomi-schemas
     networks:
       - tamanomi-network
     external_links:
