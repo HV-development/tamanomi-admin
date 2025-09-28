@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next out dist",
-    "install:clean": "rm -rf node_modules pnpm-lock.yaml && pnpm install"
+    "install:clean": "rm -rf node_modules pnpm-lock.yaml && pnpm install",
+    "schema:update": "cd ../../tamanomi-schemas && pnpm build && cd ../tamanomi-admin/infrastructure/docker && docker-compose restart admin"
   },
   "dependencies": {
     "@tamanomi/schemas": "file:../../tamanomi-schemas",

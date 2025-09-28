@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/templates/DashboardLayout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-import { useZipcodeSearch } from '@/lib/hooks/useZipcodeSearch';
 import { validateMerchantField, validateMerchantForm, type MerchantFormData } from '@tamanomi/schemas';
 
 
@@ -22,7 +21,6 @@ const prefectures = [
 
 export default function MerchantRegistration() {
   const router = useRouter();
-  const { searchZipcode, isLoading: zipcodeLoading, error: zipcodeError } = useZipcodeSearch();
   
   const [formData, setFormData] = useState<MerchantFormData>({
     name: '',
@@ -43,6 +41,7 @@ export default function MerchantRegistration() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string>('');
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   
   const fieldRefs = useRef<{ [key: string]: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null }>({});
 
@@ -78,25 +77,47 @@ export default function MerchantRegistration() {
   };
 
   const handleZipcodeSearch = async () => {
-    if (!formData.postalCode) return;
-    
-    const result = await searchZipcode(formData.postalCode);
-    if (result) {
-      setFormData((prev: MerchantFormData) => ({
-        ...prev,
-        prefecture: result.prefecture,
-        city: result.city,
-        address1: result.address1,
-      }));
-      
-      // エラーをクリア
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors.prefecture;
-        delete newErrors.city;
-        delete newErrors.address1;
-        return newErrors;
-      });
+    // 郵便番号の存在チェック
+    if (formData.postalCode.length !== 7) {
+      alert('郵便番号を正しく入力してください（7桁の数字）');
+      return;
+    }
+
+    setIsSearchingAddress(true);
+
+    try {
+      const response = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${formData.postalCode}`);
+      const data = await response.json();
+
+      if (data.status === 200 && data.results && data.results.length > 0) {
+        const result = data.results[0];
+        setFormData((prev: MerchantFormData) => ({
+          ...prev,
+          prefecture: result.address1,
+          city: result.address2,
+          address1: result.address3,
+        }));
+        
+        // エラーをクリア
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.prefecture;
+          delete newErrors.city;
+          delete newErrors.address1;
+          return newErrors;
+        });
+        alert('住所を取得しました');
+      } else {
+        const newErrors = { ...errors };
+        newErrors.postalCode = '入力された郵便番号は存在しません';
+        setErrors(newErrors);
+        alert('該当する住所が見つかりませんでした');
+      }
+    } catch (error) {
+      console.error('住所検索エラー:', error);
+      alert('住所検索に失敗しました');
+    } finally {
+      setIsSearchingAddress(false);
     }
   };
 
@@ -463,73 +484,74 @@ export default function MerchantRegistration() {
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-lg font-medium text-gray-900 mb-6">住所情報</h3>
             
-            <div className="space-y-6 w-72">
-              {/* 郵便番号 */}
-              <div>
-                <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
-                  郵便番号 <span className="text-red-500">*</span>
-                </label>
-                <div className="flex space-x-2">
-                    <input
-                      ref={(el) => { fieldRefs.current.postalCode = el; }}
-                      type="text"
-                      id="postalCode"
-                      value={formData.postalCode}
-                      onChange={(e) => handleInputChange('postalCode', e.target.value.replace(/\D/g, ''))}
-                      onBlur={() => handleBlur('postalCode')}
-                      className={`w-40 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-                        errors.postalCode ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="1234567"
-                      maxLength={7}
-                    />
+            <div className="space-y-6">
+              {/* 郵便番号と住所検索 */}
+              <div className="flex gap-4">
+                <div className="w-40">
+                  <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
+                    郵便番号 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    ref={(el) => { fieldRefs.current.postalCode = el; }}
+                    type="text"
+                    id="postalCode"
+                    value={formData.postalCode}
+                    onChange={(e) => handleInputChange('postalCode', e.target.value.replace(/\D/g, ''))}
+                    onBlur={() => handleBlur('postalCode')}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                      errors.postalCode ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="1234567"
+                    maxLength={7}
+                  />
+                  <div className="mt-1 flex justify-between">
+                    {errors.postalCode && (
+                      <p className="text-sm text-red-600">{errors.postalCode}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-end">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={handleZipcodeSearch}
-                    disabled={zipcodeLoading || !formData.postalCode}
-                    className="whitespace-nowrap"
+                    disabled={formData.postalCode.length !== 7 || isSearchingAddress}
+                    className="w-32"
                   >
-                    {zipcodeLoading ? '検索中...' : '郵便番号検索'}
+                    {isSearchingAddress ? '検索中...' : '住所検索'}
                   </Button>
-                </div>
-                <div className="mt-1 flex justify-between">
-                  {errors.postalCode && (
-                    <p className="text-sm text-red-600">{errors.postalCode}</p>
-                  )}
-                  {zipcodeError && (
-                    <p className="text-sm text-red-600">{zipcodeError.message}</p>
-                  )}  
                 </div>
               </div>
 
               {/* 都道府県 */}
-              <div>
+              <div className="w-60">
                 <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
                   都道府県 <span className="text-red-500">*</span>
                 </label>
-                  <select
-                    ref={(el) => { fieldRefs.current.prefecture = el; }}
-                    id="prefecture"
-                    value={formData.prefecture}
-                    onChange={(e) => handleInputChange('prefecture', e.target.value)}
-                    onBlur={() => handleBlur('prefecture')}
-                    className={`w-40 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-                      errors.prefecture ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  >
+                <select
+                  ref={(el) => { fieldRefs.current.prefecture = el; }}
+                  id="prefecture"
+                  value={formData.prefecture}
+                  onChange={(e) => handleInputChange('prefecture', e.target.value)}
+                  onBlur={() => handleBlur('prefecture')}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    errors.prefecture ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                >
                   <option value="">都道府県を選択</option>
                   {prefectures.map(pref => (
                     <option key={pref} value={pref}>{pref}</option>
                   ))}
                 </select>
-                {errors.prefecture && (
-                  <p className="mt-1 text-sm text-red-600">{errors.prefecture}</p>
-                )}
+                <div className="mt-1 flex justify-between">
+                  {errors.prefecture && (
+                    <p className="text-sm text-red-600">{errors.prefecture}</p>
+                  )}
+                </div>
               </div>
 
               {/* 市区町村 */}
-              <div className="w-100">
+              <div>
                 <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
                   市区町村 <span className="text-red-500">*</span>
                 </label>
@@ -540,7 +562,7 @@ export default function MerchantRegistration() {
                   value={formData.city}
                   onChange={(e) => handleInputChange('city', e.target.value)}
                   onBlur={() => handleBlur('city')}
-                  className={`w-100 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.city ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="市区町村を入力してください"
@@ -556,7 +578,7 @@ export default function MerchantRegistration() {
               </div>
 
               {/* 番地以降 */}
-              <div className="w-100">
+              <div>
                 <label htmlFor="address1" className="block text-sm font-medium text-gray-700 mb-2">
                   番地以降 <span className="text-red-500">*</span>
                 </label>
@@ -567,7 +589,7 @@ export default function MerchantRegistration() {
                   value={formData.address1}
                   onChange={(e) => handleInputChange('address1', e.target.value)}
                   onBlur={() => handleBlur('address1')}
-                  className={`w-100 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.address1 ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="番地以降を入力してください"
@@ -583,7 +605,7 @@ export default function MerchantRegistration() {
               </div>
 
               {/* 建物名 / 部屋番号 */}
-              <div className="w-100">
+              <div>
                 <label htmlFor="address2" className="block text-sm font-medium text-gray-700 mb-2">
                   建物名 / 部屋番号
                 </label>
@@ -594,7 +616,7 @@ export default function MerchantRegistration() {
                   value={formData.address2}
                   onChange={(e) => handleInputChange('address2', e.target.value)}
                   onBlur={() => handleBlur('address2')}
-                  className={`w-100 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.address2 ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="建物名 / 部屋番号を入力してください（任意）"
