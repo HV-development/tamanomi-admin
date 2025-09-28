@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import DashboardLayout from '@/templates/DashboardLayout';
-import Button from '@/atoms/Button';
-import Checkbox from '@/atoms/Checkbox';
-import ToastContainer from '@/molecules/ToastContainer';
-import FloatingFooter from '@/molecules/FloatingFooter';
+import DashboardLayout from '@/components/templates/DashboardLayout';
+import Button from '@/components/atoms/Button';
+import Checkbox from '@/components/atoms/Checkbox';
+import ToastContainer from '@/components/molecules/ToastContainer';
+import FloatingFooter from '@/components/molecules/FloatingFooter';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/useToast';
 import { statusLabels, statusOptions, prefectures } from '@/constants/merchant';

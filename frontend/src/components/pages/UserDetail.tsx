@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import DashboardLayout from '@/templates/DashboardLayout';
-import Button from '@/atoms/Button';
-import Icon from '@/atoms/Icon';
+import DashboardLayout from '@/components/templates/DashboardLayout';
+import Button from '@/components/atoms/Button';
+import Icon from '@/components/atoms/Icon';
 
 interface User {
   id: string;

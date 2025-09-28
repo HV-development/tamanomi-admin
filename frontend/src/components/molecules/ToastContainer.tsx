@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Toast from '@/atoms/Toast';
+import Toast from '@/components/atoms/Toast';
 
 export interface ToastData {
   id: string;
