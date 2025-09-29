@@ -11,7 +11,9 @@
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next out dist",
     "install:clean": "rm -rf node_modules pnpm-lock.yaml && pnpm install",
-    "schema:update": "cd ../../tamanomi-schemas && pnpm build && cd ../tamanomi-admin/infrastructure/docker && docker-compose restart admin"
+    "schema:update": "cd ../../tamanomi-schemas && pnpm build && cd ../tamanomi-admin/infrastructure/docker && docker-compose restart admin",
+    "start:all": "concurrently \"pnpm dev\" \"cd ../../tamanomi-api && pnpm dev\" \"cd ../tamanomi-web/frontend && pnpm dev\"",
+    "stop:all": "pkill -f 'concurrently' || true && pkill -f 'tsx watch' || true && pkill -f 'next dev' || true && echo 'All services stopped'"
   },
   "dependencies": {
     "@tamanomi/schemas": "file:../../tamanomi-schemas",
@@ -38,6 +40,7 @@
     "eslint-plugin-unused-imports": "4.2.0",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "typescript-eslint": "8.44.1"
+    "typescript-eslint": "8.44.1",
+    "concurrently": "^8.2.2"
   }
 }
