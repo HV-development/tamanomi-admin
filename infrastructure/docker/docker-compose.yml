@@ -5,14 +5,12 @@ services:
       dockerfile: tamanomi-admin/infrastructure/docker/Dockerfile
       target: dev
     ports:
-      - "3000:3000"
+      - "3001:3000"
+    env_file:
+      - ../../../tamanomi-admin/frontend/.env
     environment:
       - NODE_ENV=development
-      - API_BASE_URL=http://tamanomi-api-api-1:3001/api/v1
-      - JWT_SECRET=your-super-secret-jwt-key-here
-      - NEXT_TELEMETRY_DISABLED=1
-      - WATCHPACK_POLLING=true
-      - NEXT_CACHE_DISABLED=1
+      - API_BASE_URL=http://tamanomi-api-api-1:3002/api/v1
     volumes:
       - ../../../tamanomi-admin/frontend:/app
       - /app/node_modules
