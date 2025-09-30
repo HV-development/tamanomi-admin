@@ -7,56 +7,14 @@ import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/ToastContainer';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/useToast';
-
-interface Shop {
-  id: string;
-  merchantId: string;
-  name: string;
-  nameKana: string;
-  email: string;
-  phone: string;
-  postalCode: string;
-  address: string;
-  latitude: string;
-  longitude: string;
-  businessHours: string;
-  holidays: string;
-  budgetLunch: number;
-  budgetDinner: number;
-  smokingType: string;
-  paymentSaicoin: boolean;
-  paymentTamapon: boolean;
-  paymentCash: boolean;
-  paymentCredit: string;
-  paymentCode: string;
-  scenes: string;
-  status: 'active' | 'inactive' | 'suspended';
-  createdAt: string;
-  updatedAt: string;
-  merchant: {
-    id: string;
-    name: string;
-    account: {
-      email: string;
-      displayName: string;
-    };
-  };
-  coupons: Array<{
-    id: string;
-    title: string;
-    description: string;
-    conditions: string;
-    status: string;
-    createdAt: string;
-  }>;
-}
+import { StoreDetailResponse } from '@tamanomi/schemas';
 
 export default function ShopDetail() {
   const params = useParams();
   const router = useRouter();
   const shopId = params.id as string;
   
-  const [shop, setShop] = useState<Shop | null>(null);
+  const [shop, setShop] = useState<StoreDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
@@ -67,7 +25,7 @@ export default function ShopDetail() {
         setIsLoading(true);
         setError(null);
         const data = await apiClient.getShop(shopId);
-        setShop(data as Shop);
+        setShop(data as StoreDetailResponse);
       } catch (err: unknown) {
         console.error('Failed to fetch shop:', err);
         setError(err instanceof Error ? err.message : '店舗データの取得に失敗しました');
@@ -91,7 +49,7 @@ export default function ShopDetail() {
       
       // データを再取得
       const data = await apiClient.getShop(shopId);
-      setShop(data as Shop);
+      setShop(data as ShopDetailResponse);
     } catch (err: unknown) {
       console.error('Failed to update shop status:', err);
       showError('ステータス更新に失敗しました');

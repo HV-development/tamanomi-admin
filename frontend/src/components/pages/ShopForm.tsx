@@ -6,30 +6,7 @@ import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/ToastContainer';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/useToast';
-
-interface ShopFormData {
-  merchantId: string;
-  name: string;
-  nameKana: string;
-  email: string;
-  phone: string;
-  postalCode: string;
-  address: string;
-  latitude: string;
-  longitude: string;
-  businessHours: string;
-  holidays: string;
-  budgetLunch: number;
-  budgetDinner: number;
-  smokingType: string;
-  paymentSaicoin: boolean;
-  paymentTamapon: boolean;
-  paymentCash: boolean;
-  paymentCredit: string;
-  paymentCode: string;
-  scenes: string;
-  status: 'active' | 'inactive' | 'suspended';
-}
+import { StoreCreateRequest, StoreUpdateRequest } from '@tamanomi/schemas';
 
 interface Merchant {
   id: string;
@@ -46,7 +23,7 @@ export default function ShopForm() {
   const shopId = params.id as string;
   const isEdit = !!shopId;
   
-  const [formData, setFormData] = useState<ShopFormData>({
+  const [formData, setFormData] = useState<StoreCreateRequest>({
     merchantId: '',
     name: '',
     nameKana: '',
@@ -90,7 +67,7 @@ export default function ShopForm() {
         // 編集モードの場合は店舗データを取得
         if (isEdit) {
           const shopData = await apiClient.getShop(shopId);
-          setFormData(shopData as ShopFormData);
+          setFormData(shopData as StoreCreateRequest);
         }
       } catch (err: unknown) {
         console.error('Failed to fetch data:', err);
@@ -104,7 +81,7 @@ export default function ShopForm() {
     fetchData();
   }, [shopId, isEdit]);
 
-  const handleInputChange = (field: keyof ShopFormData, value: string | number | boolean) => {
+  const handleInputChange = (field: keyof StoreCreateRequest, value: string | number | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
