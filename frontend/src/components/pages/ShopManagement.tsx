@@ -8,57 +8,11 @@ import ToastContainer from '@/components/molecules/ToastContainer';
 import FloatingFooter from '@/components/molecules/FloatingFooter';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/useToast';
-
-interface Shop {
-  id: string;
-  merchantId: string;
-  name: string;
-  nameKana: string;
-  email: string;
-  phone: string;
-  postalCode: string;
-  address: string;
-  latitude: string;
-  longitude: string;
-  businessHours: string;
-  holidays: string;
-  budgetLunch: number;
-  budgetDinner: number;
-  smokingType: string;
-  paymentSaicoin: boolean;
-  paymentTamapon: boolean;
-  paymentCash: boolean;
-  paymentCredit: string;
-  paymentCode: string;
-  scenes: string;
-  status: 'active' | 'inactive' | 'suspended';
-  createdAt: string;
-  updatedAt: string;
-  merchant: {
-    id: string;
-    name: string;
-    account: {
-      email: string;
-      displayName: string;
-    };
-  };
-}
-
-interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
-interface ShopListResponse {
-  shops: Shop[];
-  pagination: Pagination;
-}
+import { Store, StoreListResponse } from '@tamanomi/schemas';
 
 export default function ShopManagement() {
-  const [shops, setShops] = useState<Shop[]>([]);
-  const [pagination, setPagination] = useState<Pagination>({
+  const [shops, setShops] = useState<Store[]>([]);
+  const [pagination, setPagination] = useState<StoreListResponse['pagination']>({
     page: 1,
     limit: 10,
     total: 0,
@@ -112,7 +66,7 @@ export default function ShopManagement() {
         }
         
         const data = await apiClient.getShops(queryParams.toString());
-        const response = data as ShopListResponse;
+        const response = data as StoreListResponse;
         setShops(response.shops || []);
         setPagination(response.pagination || pagination);
       } catch (err: unknown) {
@@ -200,7 +154,7 @@ export default function ShopManagement() {
       }
       
       const data = await apiClient.getShops(queryParams.toString());
-      const response = data as ShopListResponse;
+      const response = data as StoreListResponse;
       setShops(response.shops || []);
       setPagination(response.pagination || pagination);
     } catch (err: unknown) {
@@ -232,7 +186,7 @@ export default function ShopManagement() {
       }
       
       const data = await apiClient.getShops(queryParams.toString());
-      const response = data as ShopListResponse;
+      const response = data as StoreListResponse;
       setShops(response.shops || []);
       setPagination(response.pagination || pagination);
     } catch (err: unknown) {
