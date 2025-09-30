@@ -18,11 +18,19 @@ interface Merchant {
   nameKana: string;
   representative: string;
   representativeName: string;
+  representativeNameLast: string;
+  representativeNameFirst: string;
+  representativeNameLastKana: string;
+  representativeNameFirstKana: string;
   representativePhone: string;
   email: string;
   phone: string;
   postalCode: string;
   address: string;
+  prefecture: string;
+  city: string;
+  address1: string;
+  address2: string;
   status: 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated';
   createdAt: string;
   updatedAt: string;
@@ -206,12 +214,14 @@ export default function MerchantManagement() {
     const matchesSearch = 
       (appliedSearchForm.merchantId === '' || merchant.id.includes(appliedSearchForm.merchantId)) &&
       (appliedSearchForm.merchantName === '' || merchant.name.toLowerCase().includes(appliedSearchForm.merchantName.toLowerCase())) &&
-      (appliedSearchForm.representativeName === '' || merchant.representativeName.toLowerCase().includes(appliedSearchForm.representativeName.toLowerCase())) &&
+      (appliedSearchForm.representativeName === '' || 
+        `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(appliedSearchForm.representativeName.toLowerCase())) &&
       (appliedSearchForm.email === '' || merchant.email.toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
       (appliedSearchForm.phone === '' || merchant.phone.includes(appliedSearchForm.phone)) &&
       (appliedSearchForm.postalCode === '' || merchant.postalCode.includes(appliedSearchForm.postalCode)) &&
-      (appliedSearchForm.address === '' || merchant.address.toLowerCase().includes(appliedSearchForm.address.toLowerCase())) &&
-      (appliedSearchForm.prefecture === '' || merchant.address.toLowerCase().includes(appliedSearchForm.prefecture.toLowerCase()));
+      (appliedSearchForm.address === '' || 
+        `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(appliedSearchForm.address.toLowerCase())) &&
+      (appliedSearchForm.prefecture === '' || merchant.prefecture.toLowerCase().includes(appliedSearchForm.prefecture.toLowerCase()));
     
     const matchesStatus = appliedStatusFilter === 'all' || merchant.status === appliedStatusFilter;
     
@@ -623,7 +633,7 @@ export default function MerchantManagement() {
                       <div className="text-sm text-gray-500">{merchant.nameKana}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
-                      <div className="text-sm text-gray-900">{merchant.representativeName}</div>
+                      <div className="text-sm text-gray-900">{merchant.representativeNameLast} {merchant.representativeNameFirst}</div>
                       <div className="text-sm text-gray-500">{merchant.representativePhone}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
@@ -632,7 +642,7 @@ export default function MerchantManagement() {
                     <td className="px-6 py-4 whitespace-nowrap min-w-[250px]">
                       <div className="text-sm text-gray-900">
                         〒{merchant.postalCode}<br />
-                        {merchant.address}
+                        {merchant.prefecture}{merchant.city}{merchant.address1}{merchant.address2}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[180px]">
