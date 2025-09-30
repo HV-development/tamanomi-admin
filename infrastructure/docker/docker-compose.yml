@@ -7,7 +7,7 @@ services:
     ports:
       - "3001:3000"
     env_file:
-      - ../../../tamanomi-admin/frontend/.env
+      - ../../../tamanomi-admin/.env
     environment:
       - NODE_ENV=development
       - API_BASE_URL=http://tamanomi-api-api-1:3002/api/v1

@@ -3,7 +3,7 @@
 import React from 'react';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-import { statusOptions, statusLabels } from '@/constants/merchant';
+import { statusOptions } from '@/constants/merchant';
 
 interface FloatingFooterProps {
   selectedCount: number;
@@ -26,7 +26,7 @@ export default function FloatingFooter({
   isIssuingAccount = false
 }: FloatingFooterProps) {
   // ステータスカラー関数（MerchantManagementと同じ）
-  const getStatusColor = (status: string) => {
+  const _getStatusColor = (status: string) => {
     switch (status) {
       case 'registering': return 'text-blue-600';
       case 'collection_requested': return 'text-purple-600';
@@ -60,7 +60,7 @@ export default function FloatingFooter({
               <select
                 value={selectedStatus}
                 onChange={(e) => onStatusChange(e.target.value)}
-                className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 min-w-[140px] ${getStatusColor(selectedStatus)}`}
+                className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 min-w-[140px] ${_getStatusColor(selectedStatus)}`}
               >
                 {statusOptions.map((option) => (
                   <option key={option.value} value={option.value}>

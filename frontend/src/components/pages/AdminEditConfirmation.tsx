@@ -29,7 +29,7 @@ export default function AdminEditConfirmation() {
     setAdminData(data);
   }, [searchParams]);
 
-  const getRoleLabel = (role: string) => {
+  const _getRoleLabel = (role: string) => {
     switch (role) {
       case '1':
         return '管理者';
@@ -98,7 +98,7 @@ export default function AdminEditConfirmation() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 権限
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{getRoleLabel(adminData.role)}</p>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{_getRoleLabel(adminData.role)}</p>
             </div>
 
             <div>

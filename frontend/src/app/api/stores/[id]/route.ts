@@ -32,9 +32,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
     const data = await response.json();
     console.log('✅ API Route: Get store successful', { storeId: id });
     return NextResponse.json(data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`❌ API Route: Get store ${params.id} error`, error);
-    return NextResponse.json({ message: 'Internal Server Error', error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }
 
@@ -59,9 +60,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const data = await response.json();
     console.log('✅ API Route: Update store successful', { storeId: id });
     return NextResponse.json(data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`❌ API Route: Update store ${params.id} error`, error);
-    return NextResponse.json({ message: 'Internal Server Error', error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }
 
@@ -83,8 +85,9 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
     console.log('✅ API Route: Delete store successful', { storeId: id });
     return NextResponse.json({ message: 'Store deleted successfully' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`❌ API Route: Delete store ${params.id} error`, error);
-    return NextResponse.json({ message: 'Internal Server Error', error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }

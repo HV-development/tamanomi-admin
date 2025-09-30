@@ -34,8 +34,9 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     const data = await response.json();
     console.log('✅ API Route: 事業者ステータス更新成功', { merchantId: id });
     return NextResponse.json(data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`❌ API Route: 事業者ステータス更新エラー ${params.id}`, error);
-    return NextResponse.json({ message: '内部サーバーエラー', error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
   }
 }

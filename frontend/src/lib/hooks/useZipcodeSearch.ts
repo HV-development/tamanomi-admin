@@ -43,7 +43,7 @@ export const useZipcodeSearch = () => {
         city: result.address2,
         address1: result.address3,
       };
-    } catch (err) {
+    } catch (_err) {
       setError({ message: '郵便番号検索でエラーが発生しました' });
       return null;
     } finally {

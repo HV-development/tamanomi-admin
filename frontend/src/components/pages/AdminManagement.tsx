@@ -102,7 +102,7 @@ export default function AdminManagement() {
     });
   };
 
-  const getRoleLabel = (role: number) => {
+  const _getRoleLabel = (role: number) => {
     switch (role) {
       case 1:
         return '管理者';
@@ -113,7 +113,7 @@ export default function AdminManagement() {
     }
   };
 
-  const getRoleColor = (role: number) => {
+  const _getRoleColor = (role: number) => {
     switch (role) {
       case 1:
         return 'bg-blue-100 text-blue-800';
@@ -294,7 +294,7 @@ export default function AdminManagement() {
                       <div className="text-sm text-gray-900">{admin.email}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{getRoleLabel(admin.role)}</div>
+                      <div className="text-sm text-gray-900">{_getRoleLabel(admin.role)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <Link href={`/admins/${admin.id}/edit`}>

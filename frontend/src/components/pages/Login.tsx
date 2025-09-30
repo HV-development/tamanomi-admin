@@ -113,15 +113,18 @@ export default function Login() {
         
         // 認証成功時は事業者一覧画面に遷移
         router.push('/merchants');
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('ログインエラー:', error);
         
         // エラーメッセージを設定
         let errorMessage = 'ログインに失敗しました。メールアドレスまたはパスワードを確認してください。';
         
-        if (error?.response?.data?.error?.message) {
-          errorMessage = error.response.data.error.message;
-        } else if (error?.message) {
+        if (error && typeof error === 'object' && 'response' in error) {
+          const errorWithResponse = error as { response?: { data?: { error?: { message?: string } } } };
+          if (errorWithResponse.response?.data?.error?.message) {
+            errorMessage = errorWithResponse.response.data.error.message;
+          }
+        } else if (error instanceof Error) {
           errorMessage = error.message;
         }
         

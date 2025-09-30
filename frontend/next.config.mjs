@@ -13,7 +13,7 @@ const nextConfig = {
       pagesBufferLength: 2,
     },
     // 開発環境でのキャッシュを無効化
-    webpack: (config, { dev, isServer }) => {
+    webpack: (config, { dev }) => {
       if (dev) {
         config.cache = false;
         // ファイル監視の設定

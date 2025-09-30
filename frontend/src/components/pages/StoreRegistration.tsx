@@ -262,7 +262,7 @@ export default function StoreRegistration() {
     return validateAllFields();
   };
 
-  const clearFieldError = (field: keyof StoreFormData) => {
+  const _clearFieldError = (field: keyof StoreFormData) => {
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,

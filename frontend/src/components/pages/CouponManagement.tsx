@@ -99,7 +99,7 @@ export default function CouponManagement() {
     setAppliedStatusFilter('all');
   };
 
-  const getStatusLabel = (status: string) => {
+  const _getStatusLabel = (status: string) => {
     switch (status) {
       case 'active':
         return '有効';
@@ -112,7 +112,7 @@ export default function CouponManagement() {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const _getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
         return 'bg-green-100 text-green-800';
@@ -273,7 +273,7 @@ export default function CouponManagement() {
                       <div className="text-sm text-gray-900">{coupon.name}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{getStatusLabel(coupon.status)}</div>
+                      <div className="text-sm text-gray-900">{_getStatusLabel(coupon.status)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{coupon.createdAt}</div>

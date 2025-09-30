@@ -27,8 +27,9 @@ export async function POST(request: Request) {
 
     console.log('✅ API Route: Logout successful');
     return NextResponse.json({ message: 'Logout successful' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ API Route: Logout error', error);
-    return NextResponse.json({ message: 'Internal Server Error', error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }
