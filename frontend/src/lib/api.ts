@@ -40,7 +40,7 @@ class ApiClient {
         
         // エラーオブジェクトを作成して投げる
         const error = new Error(errorData.message || `HTTP error! status: ${response.status}`);
-        (error as any).response = {
+        (error as Error & { response?: { status: number; data: unknown } }).response = {
           status: response.status,
           data: errorData
         };
@@ -96,41 +96,41 @@ class ApiClient {
   }
 
   // 事業者関連
-  async getMerchants(): Promise<any> {
+  async getMerchants(): Promise<unknown> {
     console.log('🌐 API: getMerchants called (via Next.js API Route)');
     console.log('🔗 API Base URL:', this.baseUrl);
     console.log('🔗 Full URL:', `${this.baseUrl}/merchants`);
     
     const token = localStorage.getItem('accessToken');
-    return this.request<any>('/merchants', {
+    return this.request<unknown>('/merchants', {
       method: 'GET',
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
-  async getMerchant(id: string): Promise<any> {
+  async getMerchant(id: string): Promise<unknown> {
     console.log('🏢 API: getMerchant called (via Next.js API Route)', { id });
     const token = localStorage.getItem('accessToken');
-    return this.request<any>(`/merchants/${id}`, {
+    return this.request<unknown>(`/merchants/${id}`, {
       method: 'GET',
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
-  async createMerchant(merchantData: any): Promise<any> {
+  async createMerchant(merchantData: unknown): Promise<unknown> {
     console.log('➕ API: createMerchant called (via Next.js API Route)');
     const token = localStorage.getItem('accessToken');
-    return this.request<any>('/merchants', {
+    return this.request<unknown>('/merchants', {
       method: 'POST',
       body: JSON.stringify(merchantData),
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
-  async updateMerchant(id: string, merchantData: any): Promise<any> {
+  async updateMerchant(id: string, merchantData: unknown): Promise<unknown> {
     console.log('✏️ API: updateMerchant called (via Next.js API Route)', { id });
     const token = localStorage.getItem('accessToken');
-    return this.request<any>(`/merchants/${id}`, {
+    return this.request<unknown>(`/merchants/${id}`, {
       method: 'PUT',
       body: JSON.stringify(merchantData),
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
@@ -146,10 +146,10 @@ class ApiClient {
     });
   }
 
-  async updateMerchantStatus(id: string, status: string): Promise<any> {
+  async updateMerchantStatus(id: string, status: string): Promise<unknown> {
     console.log('🔄 API: updateMerchantStatus called (via Next.js API Route)', { id, status });
     const token = localStorage.getItem('accessToken');
-    return this.request<any>(`/merchants/${id}/status`, {
+    return this.request<unknown>(`/merchants/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},

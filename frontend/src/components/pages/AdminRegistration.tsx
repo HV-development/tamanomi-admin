@@ -146,7 +146,7 @@ export default function AdminRegistration() {
     router.push('/admins');
   };
 
-  const getRoleLabel = (role: string) => {
+  const _getRoleLabel = (role: string) => {
     switch (role) {
       case '1':
         return '管理者';

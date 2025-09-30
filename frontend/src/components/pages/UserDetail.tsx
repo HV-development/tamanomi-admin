@@ -190,7 +190,7 @@ export default function UserDetail() {
     }
   };
 
-  const getRankColor = (rank: number) => {
+  const _getRankColor = (rank: number) => {
     switch (rank) {
       case 1:
         return 'bg-orange-100 text-orange-800';
@@ -218,7 +218,7 @@ export default function UserDetail() {
     }
   };
 
-  const getContractStatusColor = (status: number) => {
+  const _getContractStatusColor = (status: number) => {
     switch (status) {
       case 1:
         return 'bg-green-100 text-green-800';

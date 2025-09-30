@@ -72,13 +72,13 @@ export default function MerchantEditConfirmation() {
     }
   };
 
-  const handleBack = () => {
+  const _handleBack = () => {
     // 前のページに戻る際にデータを保持
     const data = encodeURIComponent(JSON.stringify(formData));
     window.history.back();
   };
 
-  const getStatusLabel = (status: string) => {
+  const _getStatusLabel = (status: string) => {
     switch (status) {
       case 'pending': return '審査中';
       case 'active': return '営業中';
@@ -195,7 +195,7 @@ export default function MerchantEditConfirmation() {
                     ステータス
                   </label>
                   <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
-                    {getStatusLabel(formData.status)}
+                    {_getStatusLabel(formData.status)}
                   </div>
                 </div>
                 
@@ -217,7 +217,7 @@ export default function MerchantEditConfirmation() {
           <Button
             type="button"
             variant="outline"
-            onClick={handleBack}
+            onClick={_handleBack}
           >
             戻る
           </Button>

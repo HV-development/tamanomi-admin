@@ -24,8 +24,9 @@ export async function POST(request: Request) {
     const data = await response.json();
     console.log('✅ API Route: Login successful', { userId: data.user?.id });
     return NextResponse.json(data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ API Route: Login error', error);
-    return NextResponse.json({ message: 'Internal Server Error', error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }

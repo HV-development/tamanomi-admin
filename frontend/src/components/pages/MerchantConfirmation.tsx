@@ -69,7 +69,7 @@ export default function MerchantConfirmation() {
     }
   };
 
-  const handleBack = () => {
+  const _handleBack = () => {
     // 前のページに戻る際にデータを保持
     const data = encodeURIComponent(JSON.stringify(formData));
     window.history.back();
@@ -204,7 +204,7 @@ export default function MerchantConfirmation() {
           <Button
             type="button"
             variant="outline"
-            onClick={handleBack}
+            onClick={_handleBack}
           >
             戻る
           </Button>

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
 import { apiClient } from '../lib/api';
 import { AdminLoginInput, RegisterInput, AuthResponse } from '@tamanomi/schemas';
 
@@ -38,7 +37,6 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
 
   const isAuthenticated = !!user;
 

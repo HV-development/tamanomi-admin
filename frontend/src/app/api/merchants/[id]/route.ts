@@ -32,9 +32,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
     const data = await response.json();
     console.log('✅ API Route: 事業者詳細取得成功', { merchantId: id });
     return NextResponse.json(data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`❌ API Route: 事業者詳細取得エラー ${params.id}`, error);
-    return NextResponse.json({ message: '内部サーバーエラー', error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
   }
 }
 
@@ -59,9 +60,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const data = await response.json();
     console.log('✅ API Route: 事業者更新成功', { merchantId: id });
     return NextResponse.json(data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`❌ API Route: 事業者更新エラー ${params.id}`, error);
-    return NextResponse.json({ message: '内部サーバーエラー', error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
   }
 }
 
@@ -83,8 +85,9 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
     console.log('✅ API Route: 事業者削除成功', { merchantId: id });
     return NextResponse.json({ message: '事業者が削除されました' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`❌ API Route: 事業者削除エラー ${params.id}`, error);
-    return NextResponse.json({ message: '内部サーバーエラー', error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
   }
 }

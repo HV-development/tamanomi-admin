@@ -81,7 +81,7 @@ export default function CouponHistory() {
   const [backUrl, setBackUrl] = useState('');
   const [pageTitle, setPageTitle] = useState('クーポン利用履歴');
   const [filteredUsages, setFilteredUsages] = useState<CouponUsage[]>([]);
-  const [isFromCouponDetail, setIsFromCouponDetail] = useState(false);
+  const [_isFromCouponDetail, setIsFromCouponDetail] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   useEffect(() => {
@@ -193,7 +193,7 @@ export default function CouponHistory() {
     });
   };
 
-  const handleBack = () => {
+  const _handleBack = () => {
     router.push(backUrl);
   };
 
@@ -513,7 +513,7 @@ export default function CouponHistory() {
             <Button
               variant="outline"
               size="lg"
-              onClick={handleBack}
+              onClick={_handleBack}
               className="px-8"
             >
               戻る

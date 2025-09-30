@@ -203,7 +203,7 @@ export default function UserManagement() {
     }
   };
 
-  const getRankColor = (rank: number) => {
+  const _getRankColor = (rank: number) => {
     switch (rank) {
       case 1:
         return 'bg-orange-100 text-orange-800';

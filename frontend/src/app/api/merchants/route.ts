@@ -31,9 +31,10 @@ export async function GET(request: Request) {
     const data = await response.json();
     console.log('✅ API Route: 事業者一覧取得成功', { count: data.merchants?.length || data.length });
     return NextResponse.json(data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ API Route: 事業者一覧取得エラー', error);
-    return NextResponse.json({ message: '内部サーバーエラー', error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
   }
 }
 
@@ -57,8 +58,9 @@ export async function POST(request: Request) {
     const data = await response.json();
     console.log('✅ API Route: 事業者作成成功', { merchantId: data.id });
     return NextResponse.json(data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ API Route: 事業者作成エラー', error);
-    return NextResponse.json({ message: '内部サーバーエラー', error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
   }
 }

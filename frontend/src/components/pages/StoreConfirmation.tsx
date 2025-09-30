@@ -41,7 +41,7 @@ export default function StoreConfirmation() {
     setStoreData(data);
   }, [searchParams]);
 
-  const handleBack = () => {
+  const _handleBack = () => {
     window.history.back();
   };
 

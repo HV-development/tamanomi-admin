@@ -64,11 +64,11 @@ export default function CouponDetail() {
     setIsLoading(false);
   }, [couponId]);
 
-  const getStatusLabel = (status: number) => {
+  const _getStatusLabel = (status: number) => {
     return status === 1 ? '公開中' : '非公開';
   };
 
-  const getStatusColor = (status: number) => {
+  const _getStatusColor = (status: number) => {
     return status === 1 
       ? 'bg-green-100 text-green-800' 
       : 'bg-gray-100 text-gray-800';
@@ -147,7 +147,7 @@ export default function CouponDetail() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 ステータス
               </label>
-              <p className="text-gray-900 bg-gray-50 p-3 rounded">{getStatusLabel(coupon.status)}</p>
+              <p className="text-gray-900 bg-gray-50 p-3 rounded">{_getStatusLabel(coupon.status)}</p>
             </div>
 
             {/* クーポン種別 */}

@@ -6,7 +6,6 @@ import Image from 'next/image';
 import DashboardLayout from '@/components/templates/DashboardLayout';
 import Button from '@/components/atoms/Button';
 import Checkbox from '@/components/atoms/Checkbox';
-import Icon from '@/components/atoms/Icon';
 import ToastContainer from '@/components/molecules/ToastContainer';
 import FloatingFooter from '@/components/molecules/FloatingFooter';
 import { apiClient } from '@/lib/api';
@@ -88,9 +87,9 @@ export default function MerchantManagement() {
         setError(null);
         const data = await apiClient.getMerchants();
         // APIレスポンスが {merchants: [], pagination: {}} の形式の場合
-        const merchantsArray = Array.isArray(data) ? data : data.merchants || [];
+        const merchantsArray = Array.isArray(data) ? data : (data && typeof data === 'object' && 'merchants' in data) ? (data as { merchants: unknown[] }).merchants || [] : [];
         setMerchants(merchantsArray);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('掲載店データの取得に失敗しました:', err);
         setError('掲載店データの取得に失敗しました');
         setMerchants([]);
@@ -161,7 +160,7 @@ export default function MerchantManagement() {
       setMerchants(prev =>
         prev.map(merchant =>
           selectedMerchants.has(merchant.id)
-            ? { ...merchant, status: selectedStatus as any }
+            ? { ...merchant, status: selectedStatus as Merchant['status'] }
             : merchant
         )
       );
@@ -172,8 +171,9 @@ export default function MerchantManagement() {
       setSelectedMerchants(new Set());
       setIsAllSelected(false);
       setIsIndeterminate(false);
-    } catch (error: any) {
-      showError(`ステータスの一括更新に失敗しました: ${error.message || '不明なエラー'}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error instanceof Error ? error.message : "Unknown error" : '不明なエラー';
+      showError(`ステータスの一括更新に失敗しました: ${errorMessage}`);
     } finally {
       setIsExecuting(false);
     }
@@ -193,8 +193,9 @@ export default function MerchantManagement() {
       setSelectedMerchants(new Set());
       setIsAllSelected(false);
       setIsIndeterminate(false);
-    } catch (error: any) {
-      showError(`アカウント発行に失敗しました: ${error.message || '不明なエラー'}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      showError(`アカウント発行に失敗しました: ${errorMessage}`);
     } finally {
       setIsIssuingAccount(false);
     }
@@ -266,7 +267,7 @@ export default function MerchantManagement() {
     setMerchants(prev => 
       prev.map(merchant => 
         merchant.id === merchantId 
-          ? { ...merchant, status: newStatus as any }
+          ? { ...merchant, status: newStatus as Merchant['status'] }
           : merchant
       )
     );
@@ -274,7 +275,7 @@ export default function MerchantManagement() {
     try {
       await apiClient.updateMerchantStatus(merchantId, newStatus);
       showSuccess(`掲載店のステータスを「${statusLabels[newStatus]}」に更新しました`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // エラー時は元のステータスに戻す
       setMerchants(prev => 
         prev.map(merchant => 
@@ -283,11 +284,11 @@ export default function MerchantManagement() {
             : merchant
         )
       );
-      showError(`ステータスの更新に失敗しました: ${error.message || '不明なエラー'}`);
+      showError(`ステータスの更新に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
     }
   };
 
-  const getStatusLabel = (status: string) => {
+  const _getStatusLabel = (status: string) => {
     return statusLabels[status] || status;
   };
 
@@ -506,7 +507,7 @@ export default function MerchantManagement() {
               <select
                 id="status"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'active' | 'inactive' | 'suspended')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               >
                 <option value="all">すべて</option>
