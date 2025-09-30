@@ -14,6 +14,7 @@ interface MenuItemData {
 
 const menuItems: MenuItemData[] = [
   { name: '掲載店管理', href: '/merchants', iconName: 'storefront' },
+  { name: '店舗管理', href: '/shops', iconName: 'store' },
   { name: 'クーポン管理', href: '/coupons', iconName: 'confirmation_number' },
   { name: 'ユーザー管理', href: '/users', iconName: 'groups' },
   { name: '管理者アカウント', href: '/admins', iconName: 'person' },
