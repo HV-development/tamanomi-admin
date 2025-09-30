@@ -155,6 +155,65 @@ class ApiClient {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
+
+  // 店舗関連
+  async getShops(queryParams?: string): Promise<unknown> {
+    console.log('🏪 API: getShops called (via Next.js API Route)');
+    const token = localStorage.getItem('accessToken');
+    const endpoint = queryParams ? `/shops?${queryParams}` : '/shops';
+    return this.request<unknown>(endpoint, {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async getShop(id: string): Promise<unknown> {
+    console.log('🏪 API: getShop called (via Next.js API Route)', { id });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/shops/${id}`, {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async createShop(shopData: unknown): Promise<unknown> {
+    console.log('➕ API: createShop called (via Next.js API Route)');
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>('/shops', {
+      method: 'POST',
+      body: JSON.stringify(shopData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async updateShop(id: string, shopData: unknown): Promise<unknown> {
+    console.log('✏️ API: updateShop called (via Next.js API Route)', { id });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/shops/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(shopData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async deleteShop(id: string): Promise<void> {
+    console.log('🗑️ API: deleteShop called (via Next.js API Route)', { id });
+    const token = localStorage.getItem('accessToken');
+    return this.request<void>(`/shops/${id}`, {
+      method: 'DELETE',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async updateShopStatus(id: string, statusData: { status: string }): Promise<unknown> {
+    console.log('🔄 API: updateShopStatus called (via Next.js API Route)', { id, statusData });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/shops/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(statusData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
 }
 
 export const apiClient = new ApiClient();
