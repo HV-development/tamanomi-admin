@@ -16,7 +16,6 @@
     "stop:all": "pkill -f 'concurrently' || true && pkill -f 'tsx watch' || true && pkill -f 'next dev' || true && echo 'All services stopped'"
   },
   "dependencies": {
-    "@tamanomi/schemas": "file:../../tamanomi-schemas",
     "autoprefixer": "10.4.21",
     "next": "^14.2.5",
     "react": "^18.3.1",
