@@ -17,9 +17,15 @@ export async function GET(request: Request) {
   try {
     console.log('🌐 API Route: 事業者一覧取得リクエスト受信');
     
+    const authHeaders = getAuthHeaders(request);
+    console.log('🔐 API Route: 認証ヘッダー', { 
+      hasAuth: !!authHeaders.Authorization,
+      authHeader: authHeaders.Authorization ? 'Bearer ***' : 'none'
+    });
+    
     const response = await fetch(`${API_BASE_URL}/admin/merchants`, {
       method: 'GET',
-      headers: getAuthHeaders(request),
+      headers: authHeaders,
     });
 
     if (!response.ok) {
