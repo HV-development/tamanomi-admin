@@ -94,8 +94,16 @@ export default function MerchantManagement() {
         setIsLoading(true);
         setError(null);
         const data = await apiClient.getMerchants();
+        console.log('🔍 MerchantManagement: API Response received', { 
+          data, 
+          dataType: typeof data, 
+          isArray: Array.isArray(data),
+          hasMerchants: data && typeof data === 'object' && 'merchants' in data
+        });
+        
         // APIレスポンスが {merchants: [], pagination: {}} の形式の場合
         const merchantsArray = Array.isArray(data) ? data : (data && typeof data === 'object' && 'merchants' in data) ? (data as { merchants: unknown[] }).merchants || [] : [];
+        console.log('🔍 MerchantManagement: Processed merchants array', { merchantsArray, length: merchantsArray.length });
         setMerchants(merchantsArray);
       } catch (err: unknown) {
         console.error('掲載店データの取得に失敗しました:', err);

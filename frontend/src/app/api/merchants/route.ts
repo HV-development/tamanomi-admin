@@ -29,7 +29,11 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
-    console.log('✅ API Route: 事業者一覧取得成功', { count: data.merchants?.length || data.length });
+    console.log('✅ API Route: 事業者一覧取得成功', { 
+      count: data.merchants?.length || data.length,
+      dataStructure: Object.keys(data),
+      merchantsStructure: data.merchants ? Object.keys(data.merchants[0] || {}) : 'no merchants'
+    });
     return NextResponse.json(data);
   } catch (error: unknown) {
     console.error('❌ API Route: 事業者一覧取得エラー', error);
