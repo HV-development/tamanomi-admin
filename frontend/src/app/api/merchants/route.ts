@@ -38,7 +38,8 @@ export async function GET(request: Request) {
     console.log('✅ API Route: 事業者一覧取得成功', { 
       count: data.merchants?.length || data.length,
       dataStructure: Object.keys(data),
-      merchantsStructure: data.merchants ? Object.keys(data.merchants[0] || {}) : 'no merchants'
+      merchantsStructure: data.merchants ? Object.keys(data.merchants[0] || {}) : 'no merchants',
+      fullResponse: JSON.stringify(data, null, 2)
     });
     return NextResponse.json(data);
   } catch (error: unknown) {
