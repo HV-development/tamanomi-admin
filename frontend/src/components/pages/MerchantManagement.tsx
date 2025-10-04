@@ -98,7 +98,9 @@ export default function MerchantManagement() {
           data, 
           dataType: typeof data, 
           isArray: Array.isArray(data),
-          hasMerchants: data && typeof data === 'object' && 'merchants' in data
+          hasMerchants: data && typeof data === 'object' && 'merchants' in data,
+          dataKeys: data && typeof data === 'object' ? Object.keys(data) : 'not object',
+          dataStructure: JSON.stringify(data, null, 2)
         });
         
         // APIレスポンスが {merchants: [], pagination: {}} の形式の場合
