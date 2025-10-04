@@ -103,8 +103,20 @@ export default function MerchantManagement() {
           dataStructure: JSON.stringify(data, null, 2)
         });
         
-        // APIレスポンスが {merchants: [], pagination: {}} の形式の場合
-        const merchantsArray = Array.isArray(data) ? data : (data && typeof data === 'object' && 'merchants' in data) ? (data as { merchants: unknown[] }).merchants || [] : [];
+        // APIレスポンスが {success: true, data: {merchants: [], pagination: {}}} の形式の場合
+        let merchantsArray: unknown[] = [];
+        if (Array.isArray(data)) {
+          merchantsArray = data;
+        } else if (data && typeof data === 'object') {
+          // 新しいAPIレスポンス形式: {success: true, data: {merchants: [...], pagination: {...}}}
+          if ('data' in data && data.data && typeof data.data === 'object' && 'merchants' in data.data) {
+            merchantsArray = (data.data as { merchants: unknown[] }).merchants || [];
+          }
+          // 古いAPIレスポンス形式: {merchants: [...], pagination: {...}}
+          else if ('merchants' in data) {
+            merchantsArray = (data as { merchants: unknown[] }).merchants || [];
+          }
+        }
         console.log('🔍 MerchantManagement: Processed merchants array', { merchantsArray, length: merchantsArray.length });
         setMerchants(merchantsArray);
       } catch (err: unknown) {
