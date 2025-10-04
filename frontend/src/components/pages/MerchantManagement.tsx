@@ -99,7 +99,9 @@ export default function MerchantManagement() {
           dataType: typeof data, 
           isArray: Array.isArray(data),
           hasMerchants: data && typeof data === 'object' && 'merchants' in data,
+          hasDataMerchants: data && typeof data === 'object' && 'data' in data && data.data && typeof data.data === 'object' && 'merchants' in data.data,
           dataKeys: data && typeof data === 'object' ? Object.keys(data) : 'not object',
+          dataDataKeys: data && typeof data === 'object' && 'data' in data && data.data && typeof data.data === 'object' ? Object.keys(data.data) : 'no data.data',
           dataStructure: JSON.stringify(data, null, 2)
         });
         
@@ -117,7 +119,22 @@ export default function MerchantManagement() {
             merchantsArray = (data as { merchants: unknown[] }).merchants || [];
           }
         }
-        console.log('🔍 MerchantManagement: Processed merchants array', { merchantsArray, length: merchantsArray.length });
+        console.log('🔍 MerchantManagement: Processed merchants array', { 
+          merchantsArray, 
+          length: merchantsArray.length,
+          firstMerchant: merchantsArray[0] ? {
+            id: (merchantsArray[0] as any).id,
+            name: (merchantsArray[0] as any).name,
+            representativeNameLast: (merchantsArray[0] as any).representativeNameLast,
+            representativeNameFirst: (merchantsArray[0] as any).representativeNameFirst,
+            phone: (merchantsArray[0] as any).phone,
+            postalCode: (merchantsArray[0] as any).postalCode,
+            prefecture: (merchantsArray[0] as any).prefecture,
+            city: (merchantsArray[0] as any).city,
+            address1: (merchantsArray[0] as any).address1,
+            address2: (merchantsArray[0] as any).address2
+          } : 'no merchants'
+        });
         setMerchants(merchantsArray);
       } catch (err: unknown) {
         console.error('掲載店データの取得に失敗しました:', err);
