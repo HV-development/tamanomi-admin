@@ -35,6 +35,13 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
+    console.log('🔍 API Route: APIサーバーからの生レスポンス', { 
+      responseStatus: response.status,
+      dataType: typeof data,
+      dataKeys: Object.keys(data),
+      merchantsCount: data.data?.merchants?.length || data.merchants?.length || 0,
+      firstMerchant: data.data?.merchants?.[0] || data.merchants?.[0] || null
+    });
     console.log('✅ API Route: 事業者一覧取得成功', { 
       count: data.merchants?.length || data.length,
       dataStructure: Object.keys(data),
