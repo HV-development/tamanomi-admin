@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbo",
     "dev:no-cache": "NEXT_CACHE_DISABLED=1 next dev --turbo",
+    "prebuild": "echo '@hv-development:registry=https://npm.pkg.github.com' >> .npmrc && echo '//npm.pkg.github.com/:_authToken='$GITHUB_TOKEN >> .npmrc && echo '//npm.pkg.github.com/:always-auth=true' >> .npmrc",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
