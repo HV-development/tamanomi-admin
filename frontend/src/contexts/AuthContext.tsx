@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { apiClient } from '../lib/api';
-import { AdminLoginInput, RegisterInput, AuthResponse } from '@tamanomi/schemas';
+import { AdminLoginInput, RegisterInput, AuthResponse } from '@hv-development/schemas';
 
 interface User {
   id: string;

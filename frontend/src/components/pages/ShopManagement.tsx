@@ -8,7 +8,7 @@ import ToastContainer from '@/components/molecules/ToastContainer';
 import FloatingFooter from '@/components/molecules/FloatingFooter';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/useToast';
-import { Store, StoreListResponse } from '@tamanomi/schemas';
+import { Store, StoreListResponse } from '@hv-development/schemas';
 
 export default function ShopManagement() {
   const [shops, setShops] = useState<Store[]>([]);

@@ -1,5 +1,5 @@
 // APIクライアント - Next.js APIルート経由
-import { AdminLoginInput, RegisterInput, RefreshTokenInput, AuthResponse, RefreshResponse } from '@tamanomi/schemas';
+import { AdminLoginInput, RegisterInput, RefreshTokenInput, AuthResponse, RefreshResponse } from '@hv-development/schemas';
 
 const API_BASE_URL = '/api';
 
