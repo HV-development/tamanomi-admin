@@ -135,7 +135,7 @@ export default function MerchantManagement() {
             address2: (merchantsArray[0] as any).address2
           } : 'no merchants'
         });
-        setMerchants(merchantsArray);
+        setMerchants(merchantsArray as Merchant[]);
       } catch (err: unknown) {
         console.error('掲載店データの取得に失敗しました:', err);
         setError('掲載店データの取得に失敗しました');
