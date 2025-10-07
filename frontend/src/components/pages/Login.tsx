@@ -23,7 +23,7 @@ export default function Login() {
   const [loginError, setLoginError] = useState<string>('');
 
   const handleInputChange = (field: keyof LoginFormData, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev: LoginFormData) => ({
       ...prev,
       [field]: value
     }));
