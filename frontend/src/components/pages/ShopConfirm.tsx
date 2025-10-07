@@ -7,7 +7,15 @@ import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/ToastContainer';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/useToast';
-import { StoreDetailResponse } from '@hv-development/schemas';
+// import { StoreDetailResponse } from '@hv-development/schemas';
+
+// 一時的な型定義
+type StoreDetailResponse = {
+  id: string;
+  name: string;
+  status: string;
+  [key: string]: any;
+};
 
 export default function ShopConfirm() {
   const params = useParams();
@@ -69,7 +77,7 @@ export default function ShopConfirm() {
   if (error || !shop) {
     return (
       <div className="space-y-6">
-        <ToastContainer toasts={toasts} onRemove={removeToast} />
+        <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <div className="text-red-600">{error || '店舗が見つかりません'}</div>
           <Link href="/shops">
@@ -84,7 +92,7 @@ export default function ShopConfirm() {
 
   return (
     <div className="space-y-6">
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
       
       {/* ヘッダー */}
       <div className="flex justify-between items-center">

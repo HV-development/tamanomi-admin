@@ -1,5 +1,41 @@
 // APIクライアント - Next.js APIルート経由
-import { AdminLoginInput, RegisterInput, RefreshTokenInput, AuthResponse, RefreshResponse } from '@hv-development/schemas';
+// import { AdminLoginInput, RegisterInput, RefreshTokenInput, AuthResponse, RefreshResponse } from '@hv-development/schemas';
+
+// 一時的な型定義
+type AdminLoginInput = {
+  email: string;
+  password: string;
+};
+
+type RegisterInput = {
+  email: string;
+  password: string;
+  name: string;
+};
+
+type RefreshTokenInput = {
+  refreshToken: string;
+};
+
+type AuthResponse = {
+  user: any;
+  token: string;
+  accessToken: string;
+  refreshToken: string;
+  account: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    displayName: string;
+  };
+};
+
+type RefreshResponse = {
+  token: string;
+  accessToken: string;
+  refreshToken: string;
+};
 
 const API_BASE_URL = '/api';
 

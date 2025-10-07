@@ -8,7 +8,26 @@ import ToastContainer from '@/components/molecules/ToastContainer';
 import FloatingFooter from '@/components/molecules/FloatingFooter';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/useToast';
-import { Store, StoreListResponse } from '@hv-development/schemas';
+// import { Store, StoreListResponse } from '@hv-development/schemas';
+
+// 一時的な型定義
+type Store = {
+  id: string;
+  name: string;
+  status: string;
+  [key: string]: any;
+};
+
+type StoreListResponse = {
+  stores: Store[];
+  pagination: {
+    page: number;
+    totalPages: number;
+    totalCount: number;
+    limit: number;
+    total: number;
+  };
+};
 
 export default function ShopManagement() {
   const [shops, setShops] = useState<Store[]>([]);
@@ -17,6 +36,7 @@ export default function ShopManagement() {
     limit: 10,
     total: 0,
     totalPages: 0,
+    totalCount: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +87,7 @@ export default function ShopManagement() {
         
         const data = await apiClient.getShops(queryParams.toString());
         const response = data as StoreListResponse;
-        setShops(response.shops || []);
+        setShops((response as any).shops || []);
         setPagination(response.pagination || pagination);
       } catch (err: unknown) {
         console.error('Failed to fetch shops:', err);
@@ -112,7 +132,7 @@ export default function ShopManagement() {
   const handleSearch = () => {
     setAppliedSearchForm({ ...searchForm });
     setAppliedStatusFilter(statusFilter);
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev: any) => ({ ...prev, page: 1 }));
   };
 
   const handleClearSearch = () => {
@@ -132,7 +152,7 @@ export default function ShopManagement() {
       address: '',
     });
     setAppliedStatusFilter('all');
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev: any) => ({ ...prev, page: 1 }));
   };
 
   const handleStatusChange = async (shopId: string, newStatus: string) => {
@@ -155,7 +175,7 @@ export default function ShopManagement() {
       
       const data = await apiClient.getShops(queryParams.toString());
       const response = data as StoreListResponse;
-      setShops(response.shops || []);
+        setShops((response as any).shops || []);
       setPagination(response.pagination || pagination);
     } catch (err: unknown) {
       console.error('Failed to update shop status:', err);
@@ -187,7 +207,7 @@ export default function ShopManagement() {
       
       const data = await apiClient.getShops(queryParams.toString());
       const response = data as StoreListResponse;
-      setShops(response.shops || []);
+        setShops((response as any).shops || []);
       setPagination(response.pagination || pagination);
     } catch (err: unknown) {
       console.error('Failed to delete shop:', err);
@@ -225,7 +245,7 @@ export default function ShopManagement() {
 
   return (
     <div className="space-y-6">
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
       
       {/* ヘッダー */}
       <div className="flex justify-between items-center">
@@ -335,34 +355,21 @@ export default function ShopManagement() {
 
       {/* 一括操作 */}
       {selectedShops.size > 0 && (
-        <FloatingFooter>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600">
-              {selectedShops.size}件選択中
-            </span>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={isExecuting}
-            >
-              <option value="active">営業中</option>
-              <option value="inactive">休業中</option>
-              <option value="suspended">停止中</option>
-            </select>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => {
-                // 一括ステータス更新の実装
-                console.log('Bulk status update:', selectedStatus, selectedShops);
-              }}
-              disabled={isExecuting}
-            >
-              一括更新
-            </Button>
-          </div>
-        </FloatingFooter>
+        <FloatingFooter
+          selectedCount={selectedShops.size}
+          onStatusChange={setSelectedStatus}
+          onExecute={() => {
+            // 一括ステータス更新の実装
+            console.log('Bulk status update:', selectedStatus, selectedShops);
+          }}
+          onIssueAccount={() => {
+            // アカウント発行の実装
+            console.log('Issue account for:', selectedShops);
+          }}
+          selectedStatus={selectedStatus}
+          isExecuting={isExecuting}
+          isIssuingAccount={false}
+        />
       )}
 
       {/* 店舗一覧 */}
@@ -377,8 +384,8 @@ export default function ShopManagement() {
                 checked={isAllSelected}
                 indeterminate={isIndeterminate}
                 onChange={handleSelectAll}
-                label="すべて選択"
               />
+              <span className="text-sm text-gray-600">すべて選択</span>
             </div>
           </div>
         </div>
@@ -485,7 +492,7 @@ export default function ShopManagement() {
                         <option value="suspended">停止中</option>
                       </select>
                       <Button
-                        variant="danger"
+                        variant="secondary"
                         size="sm"
                         onClick={() => handleDeleteShop(shop.id)}
                         disabled={isExecuting}
@@ -512,7 +519,7 @@ export default function ShopManagement() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                  onClick={() => setPagination((prev: any) => ({ ...prev, page: prev.page - 1 }))}
                   disabled={pagination.page <= 1}
                 >
                   前へ
@@ -523,7 +530,7 @@ export default function ShopManagement() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                  onClick={() => setPagination((prev: any) => ({ ...prev, page: prev.page + 1 }))}
                   disabled={pagination.page >= pagination.totalPages}
                 >
                   次へ

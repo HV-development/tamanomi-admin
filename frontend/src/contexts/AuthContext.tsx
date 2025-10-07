@@ -2,7 +2,39 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { apiClient } from '../lib/api';
-import { AdminLoginInput, RegisterInput, AuthResponse } from '@hv-development/schemas';
+// import { AdminLoginInput, RegisterInput, AuthResponse } from '@hv-development/schemas';
+
+// 一時的な型定義
+type AdminLoginInput = {
+  email: string;
+  password: string;
+};
+
+type RegisterInput = {
+  email: string;
+  password: string;
+  name: string;
+};
+
+type AuthResponse = {
+  user: User;
+  token: string;
+  accessToken: string;
+  refreshToken: string;
+  account: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    displayName: string;
+  };
+};
+
+type RefreshResponse = {
+  token: string;
+  accessToken: string;
+  refreshToken: string;
+};
 
 interface User {
   id: string;

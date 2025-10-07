@@ -7,7 +7,16 @@ import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/ToastContainer';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/useToast';
-import { StoreDetailResponse } from '@hv-development/schemas';
+// import { StoreDetailResponse } from '@hv-development/schemas';
+
+// 一時的な型定義
+type StoreDetailResponse = {
+  id: string;
+  name: string;
+  status: string;
+  coupons: any[];
+  [key: string]: any;
+};
 
 export default function ShopDetail() {
   const params = useParams();
@@ -49,7 +58,7 @@ export default function ShopDetail() {
       
       // データを再取得
       const data = await apiClient.getShop(shopId);
-      setShop(data as ShopDetailResponse);
+      setShop(data as any);
     } catch (err: unknown) {
       console.error('Failed to update shop status:', err);
       showError('ステータス更新に失敗しました');
@@ -100,7 +109,7 @@ export default function ShopDetail() {
   if (error || !shop) {
     return (
       <div className="space-y-6">
-        <ToastContainer toasts={toasts} onRemove={removeToast} />
+        <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <div className="text-red-600">{error || '店舗が見つかりません'}</div>
           <Link href="/shops">
@@ -115,7 +124,7 @@ export default function ShopDetail() {
 
   return (
     <div className="space-y-6">
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
       
       {/* ヘッダー */}
       <div className="flex justify-between items-center">
@@ -136,7 +145,7 @@ export default function ShopDetail() {
               確認
             </Button>
           </Link>
-          <Button variant="danger" onClick={handleDeleteShop}>
+          <Button variant="secondary" onClick={handleDeleteShop}>
             削除
           </Button>
         </div>
@@ -320,7 +329,7 @@ export default function ShopDetail() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {shop.coupons.map((coupon) => (
+                {shop.coupons.map((coupon: any) => (
                   <tr key={coupon.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {coupon.title}

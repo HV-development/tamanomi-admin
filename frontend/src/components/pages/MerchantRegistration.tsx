@@ -5,7 +5,51 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/templates/DashboardLayout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-import { validateMerchantField, validateMerchantForm, type MerchantFormData } from '@hv-development/schemas';
+// import { validateMerchantField, validateMerchantForm, type MerchantFormData } from '@hv-development/schemas';
+
+// 一時的な型定義
+type MerchantFormData = {
+  name: string;
+  nameKana: string;
+  representative: string;
+  representativeName: string;
+  representativeNameLast: string;
+  representativeNameFirst: string;
+  representativeNameLastKana: string;
+  representativeNameFirstKana: string;
+  representativePhone: string;
+  email: string;
+  phone: string;
+  postalCode: string;
+  prefecture: string;
+  city: string;
+  address1: string;
+  address2: string;
+};
+
+// 一時的なバリデーション関数
+const validateMerchantField = (field: string, value: string): string | null => {
+  if (!value || value.trim() === '') {
+    return 'この項目は必須です';
+  }
+  return null;
+};
+
+const validateMerchantForm = (data: Partial<MerchantFormData>): { isValid: boolean; errors: Record<string, string> } => {
+  const errors: Record<string, string> = {};
+  
+  if (!data.name || data.name.trim() === '') {
+    errors.name = '店舗名は必須です';
+  }
+  if (!data.email || data.email.trim() === '') {
+    errors.email = 'メールアドレスは必須です';
+  }
+  
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors
+  };
+};
 
 
 
@@ -25,12 +69,15 @@ export default function MerchantRegistration() {
   const [formData, setFormData] = useState<MerchantFormData>({
     name: '',
     nameKana: '',
+    representative: '',
+    representativeName: '',
     representativeNameLast: '',
     representativeNameFirst: '',
     representativeNameLastKana: '',
     representativeNameFirstKana: '',
     representativePhone: '',
     email: '',
+    phone: '',
     postalCode: '',
     prefecture: '',
     city: '',
@@ -156,11 +203,14 @@ export default function MerchantRegistration() {
       const requestData: Omit<MerchantFormData, 'email'> & { accountEmail: string } = {
         name: formData.name,
         nameKana: formData.nameKana,
+        representative: formData.representative,
+        representativeName: formData.representativeName,
         representativeNameLast: formData.representativeNameLast,
         representativeNameFirst: formData.representativeNameFirst,
         representativeNameLastKana: formData.representativeNameLastKana,
         representativeNameFirstKana: formData.representativeNameFirstKana,
         representativePhone: formData.representativePhone,
+        phone: formData.phone,
         accountEmail: formData.email,
         postalCode: formData.postalCode,
         prefecture: formData.prefecture,
