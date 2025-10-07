@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
-function getAuthHeaders(request: Request): HeadersInit {
-  const headers: HeadersInit = {
+function getAuthHeaders(request: Request): Record<string, string> {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
   const authHeader = request.headers.get('Authorization');
