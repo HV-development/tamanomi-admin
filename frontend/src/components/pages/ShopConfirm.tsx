@@ -7,7 +7,7 @@ import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/ToastContainer';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/useToast';
-import { StoreDetailResponse } from '@tamanomi/schemas';
+import { StoreDetailResponse } from '@hv-development/schemas';
 
 export default function ShopConfirm() {
   const params = useParams();

@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import DashboardLayout from '@/components/templates/DashboardLayout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-import { validateMerchantField, validateMerchantForm, type MerchantFormData, type MerchantStatus } from '@tamanomi/schemas';
+import { validateMerchantField, validateMerchantForm, type MerchantFormData, type MerchantStatus } from '@hv-development/schemas';
 
 // 編集画面用のフォームデータ型（statusフィールドを含む）
 type MerchantEditFormData = MerchantFormData & {

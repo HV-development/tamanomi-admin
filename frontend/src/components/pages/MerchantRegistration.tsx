@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/templates/DashboardLayout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-import { validateMerchantField, validateMerchantForm, type MerchantFormData } from '@tamanomi/schemas';
+import { validateMerchantField, validateMerchantForm, type MerchantFormData } from '@hv-development/schemas';
 
 
 

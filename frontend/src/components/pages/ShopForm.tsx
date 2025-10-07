@@ -6,7 +6,7 @@ import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/ToastContainer';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/useToast';
-import { StoreCreateRequest, StoreUpdateRequest } from '@tamanomi/schemas';
+import { StoreCreateRequest, StoreUpdateRequest } from '@hv-development/schemas';
 
 interface Merchant {
   id: string;

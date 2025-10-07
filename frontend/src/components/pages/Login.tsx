@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/atoms/Button';
 import Logo from '@/components/atoms/Logo';
 import { useAuth } from '@/contexts/AuthContext';
-import { AdminLoginInput } from '@tamanomi/schemas';
+import { AdminLoginInput } from '@hv-development/schemas';
 
 type LoginFormData = AdminLoginInput;
 
