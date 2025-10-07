@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useParams } from 'next/navigation';
-import DashboardLayout from '@/components/templates/DashboardLayout';
-import Button from '@/components/atoms/Button';
-import Icon from '@/components/atoms/Icon';
+import DashboardLayout from '@/components/templates/dashboard-layout';
+import Button from '@/components/atoms/button';
+import Icon from '@/components/atoms/icon';
 
 interface UserData {
   nickname: string;

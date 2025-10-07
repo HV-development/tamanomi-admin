@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import SidebarHeader from '@/components/molecules/SidebarHeader';
-import MenuItem from '@/components/molecules/MenuItem';
-import Icon from '@/components/atoms/Icon';
+import SidebarHeader from '@/components/molecules/sidebar-header';
+import MenuItem from '@/components/molecules/menu-item';
+import Icon from '@/components/atoms/icon';
 
 interface MenuItemData {
   name: string;

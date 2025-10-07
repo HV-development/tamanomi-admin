@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Button from '@/components/atoms/Button';
-import Checkbox from '@/components/atoms/Checkbox';
-import ToastContainer from '@/components/molecules/ToastContainer';
-import FloatingFooter from '@/components/molecules/FloatingFooter';
+import Button from '@/components/atoms/button';
+import Checkbox from '@/components/atoms/checkbox';
+import ToastContainer from '@/components/molecules/toast-container';
+import FloatingFooter from '@/components/molecules/floating-footer';
 import { apiClient } from '@/lib/api';
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/hooks/use-toast';
 // import { Store, StoreListResponse } from '@hv-development/schemas';
 
 // 一時的な型定義

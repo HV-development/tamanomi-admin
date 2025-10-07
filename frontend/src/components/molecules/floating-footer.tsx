@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import Button from '@/components/atoms/Button';
-import Icon from '@/components/atoms/Icon';
-import { statusOptions } from '@/constants/merchant';
+import Button from '@/components/atoms/button';
+import Icon from '@/components/atoms/icon';
+import { statusOptions } from '@/lib/constants/merchant';
 
 interface FloatingFooterProps {
   selectedCount: number;

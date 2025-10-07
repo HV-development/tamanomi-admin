@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import DashboardLayout from '@/components/templates/DashboardLayout';
-import Button from '@/components/atoms/Button';
-import Checkbox from '@/components/atoms/Checkbox';
-import ToastContainer from '@/components/molecules/ToastContainer';
-import FloatingFooter from '@/components/molecules/FloatingFooter';
+import DashboardLayout from '@/components/templates/dashboard-layout';
+import Button from '@/components/atoms/button';
+import Checkbox from '@/components/atoms/checkbox';
+import ToastContainer from '@/components/molecules/toast-container';
+import FloatingFooter from '@/components/molecules/floating-footer';
 import { apiClient } from '@/lib/api';
-import { useToast } from '@/hooks/useToast';
-import { statusLabels, statusOptions, prefectures } from '@/constants/merchant';
+import { useToast } from '@/hooks/use-toast';
+import { statusLabels, statusOptions, prefectures } from '@/lib/constants/merchant';
 
 interface Merchant {
   id: string;
