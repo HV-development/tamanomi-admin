@@ -56,7 +56,7 @@ const sampleCouponUsages: CouponUsage[] = [
 export default function CouponHistory() {
   const pathname = usePathname();
   const router = useRouter();
-  const params = useParams();
+  const _params = useParams(); // 将来的に使用予定
   
   const [searchForm, setSearchForm] = useState({
     usageId: '',

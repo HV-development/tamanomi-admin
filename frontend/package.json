@@ -4,26 +4,19 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbo",
-    "dev:no-cache": "NEXT_CACHE_DISABLED=1 next dev --turbo",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf .next out dist",
-    "install:clean": "rm -rf node_modules pnpm-lock.yaml && pnpm install",
-    "setup:local": "./setup-local-dev.sh",
-    "docker:up": "cd ../infrastructure/docker && docker-compose up -d admin",
-    "docker:down": "cd ../infrastructure/docker && docker-compose down",
-    "docker:logs": "cd ../infrastructure/docker && docker-compose logs -f admin",
-    "schema:update": "cd ../../tamanomi-schemas && pnpm build && cd ../tamanomi-admin/infrastructure/docker && docker-compose restart admin",
-    "start:all": "concurrently \"pnpm dev\" \"cd ../../tamanomi-api && pnpm dev\" \"cd ../tamanomi-web/frontend && pnpm dev\"",
-    "stop:all": "pkill -f 'concurrently' || true && pkill -f 'tsx watch' || true && pkill -f 'next dev' || true && echo 'All services stopped'"
+    "clean": "rm -rf .next out dist"
   },
   "dependencies": {
+    "@hv-development/schemas": "^1.4.3",
     "autoprefixer": "10.4.21",
     "next": "^14.2.5",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -35,6 +28,7 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@typescript-eslint/eslint-plugin": "8.44.1",
+    "concurrently": "^8.2.2",
     "eslint": "^9",
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-jsx-a11y": "6.10.2",
@@ -43,9 +37,10 @@
     "eslint-plugin-unused-imports": "4.2.0",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "typescript-eslint": "8.44.1",
-    "concurrently": "^8.2.2"
+    "typescript-eslint": "8.44.1"
   },
-  "engines": { "node": "20.x" },
+  "engines": {
+    "node": "20.x"
+  },
   "packageManager": "pnpm@8.15.8"
 }

@@ -11,27 +11,10 @@ import FloatingFooter from '@/components/molecules/floating-footer';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { statusLabels, statusOptions, prefectures } from '@/lib/constants/merchant';
+import { type MerchantWithDetails } from '@hv-development/schemas';
 
-interface Merchant {
-  id: string;
-  name: string;
-  nameKana: string;
-  representative: string;
-  representativeName: string;
-  representativeNameLast: string;
-  representativeNameFirst: string;
-  representativeNameLastKana: string;
-  representativeNameFirstKana: string;
-  representativePhone: string;
-  email: string;
-  phone: string;
-  postalCode: string;
-  address: string;
-  prefecture: string;
-  city: string;
-  address1: string;
-  address2: string;
-  status: 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated';
+// APIレスポンス用の型（日付がstringとして返される）
+type Merchant = Omit<MerchantWithDetails, 'createdAt' | 'updatedAt' | 'deletedAt' | 'account'> & {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -41,12 +24,7 @@ interface Merchant {
     displayName: string | null;
     lastLoginAt: string | null;
   };
-  shops: Array<{
-    id: string;
-    name: string;
-    status: string;
-  }>;
-}
+};
 
 
 export default function MerchantManagement() {
@@ -62,6 +40,7 @@ export default function MerchantManagement() {
   const [selectedStatus, setSelectedStatus] = useState('operating');
   const [isExecuting, setIsExecuting] = useState(false);
   const [isIssuingAccount, setIsIssuingAccount] = useState(false);
+  const [resendingEmails, setResendingEmails] = useState<Set<string>>(new Set());
   
   const [searchForm, setSearchForm] = useState({
     merchantId: '',
@@ -122,18 +101,7 @@ export default function MerchantManagement() {
         console.log('🔍 MerchantManagement: Processed merchants array', { 
           merchantsArray, 
           length: merchantsArray.length,
-          firstMerchant: merchantsArray[0] ? {
-            id: (merchantsArray[0] as any).id,
-            name: (merchantsArray[0] as any).name,
-            representativeNameLast: (merchantsArray[0] as any).representativeNameLast,
-            representativeNameFirst: (merchantsArray[0] as any).representativeNameFirst,
-            phone: (merchantsArray[0] as any).phone,
-            postalCode: (merchantsArray[0] as any).postalCode,
-            prefecture: (merchantsArray[0] as any).prefecture,
-            city: (merchantsArray[0] as any).city,
-            address1: (merchantsArray[0] as any).address1,
-            address2: (merchantsArray[0] as any).address2
-          } : 'no merchants'
+          firstMerchant: merchantsArray[0] || 'no merchants'
         });
         setMerchants(merchantsArray as Merchant[]);
       } catch (err: unknown) {
@@ -245,6 +213,40 @@ export default function MerchantManagement() {
       showError(`アカウント発行に失敗しました: ${errorMessage}`);
     } finally {
       setIsIssuingAccount(false);
+    }
+  };
+
+  const handleResendPasswordEmail = async (merchantId: string, email: string) => {
+    if (!confirm(`${email} 宛にパスワード設定メールを再送しますか？`)) {
+      return;
+    }
+
+    setResendingEmails(prev => new Set(prev).add(merchantId));
+
+    try {
+      const response = await fetch(`/api/merchants/${merchantId}/resend-password-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'メール再送に失敗しました');
+      }
+
+      showSuccess('パスワード設定メールを再送しました');
+    } catch (err: unknown) {
+      console.error('Failed to resend password email:', err);
+      showError(err instanceof Error ? err.message : 'メール再送に失敗しました');
+    } finally {
+      setResendingEmails(prev => {
+        const next = new Set(prev);
+        next.delete(merchantId);
+        return next;
+      });
     }
   };
 
@@ -664,6 +666,16 @@ export default function MerchantManagement() {
                               className="w-8 h-8"
                             />
                           </button>
+                          {!merchant.account?.lastLoginAt && (
+                            <button 
+                              onClick={() => handleResendPasswordEmail(merchant.id, merchant.email)}
+                              disabled={resendingEmails.has(merchant.id)}
+                              className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-md transition-colors cursor-pointer flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="パスワード設定メール再送"
+                            >
+                              <span className="text-xl">📧</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -717,7 +729,7 @@ export default function MerchantManagement() {
           {filteredMerchants.length === 0 && (
             <div className="text-center py-12">
               <img 
-                src="/storefront_35dp_666666_FILL1_wght400_GRAD0_opsz40.svg" 
+                src="/storefront-icon.svg" 
                 alt="店舗" 
                 width={48} 
                 height={48}

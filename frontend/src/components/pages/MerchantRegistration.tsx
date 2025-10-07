@@ -5,51 +5,7 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/button';
 import Icon from '@/components/atoms/icon';
-// import { validateMerchantField, validateMerchantForm, type MerchantFormData } from '@hv-development/schemas';
-
-// 一時的な型定義
-type MerchantFormData = {
-  name: string;
-  nameKana: string;
-  representative: string;
-  representativeName: string;
-  representativeNameLast: string;
-  representativeNameFirst: string;
-  representativeNameLastKana: string;
-  representativeNameFirstKana: string;
-  representativePhone: string;
-  email: string;
-  phone: string;
-  postalCode: string;
-  prefecture: string;
-  city: string;
-  address1: string;
-  address2: string;
-};
-
-// 一時的なバリデーション関数
-const validateMerchantField = (field: string, value: string): string | null => {
-  if (!value || value.trim() === '') {
-    return 'この項目は必須です';
-  }
-  return null;
-};
-
-const validateMerchantForm = (data: Partial<MerchantFormData>): { isValid: boolean; errors: Record<string, string> } => {
-  const errors: Record<string, string> = {};
-  
-  if (!data.name || data.name.trim() === '') {
-    errors.name = '店舗名は必須です';
-  }
-  if (!data.email || data.email.trim() === '') {
-    errors.email = 'メールアドレスは必須です';
-  }
-  
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors
-  };
-};
+import { validateMerchantField, validateMerchantForm, type MerchantFormData } from '@hv-development/schemas';
 
 
 
@@ -66,18 +22,16 @@ const prefectures = [
 export default function MerchantRegistration() {
   const router = useRouter();
   
-  const [formData, setFormData] = useState<MerchantFormData>({
+  // フォームデータに追加のフィールドを含める
+  const [formData, setFormData] = useState<MerchantFormData & { email: string }>({
     name: '',
     nameKana: '',
-    representative: '',
-    representativeName: '',
     representativeNameLast: '',
     representativeNameFirst: '',
     representativeNameLastKana: '',
     representativeNameFirstKana: '',
     representativePhone: '',
-    email: '',
-    phone: '',
+    email: '', // アカウント用メールアドレス
     postalCode: '',
     prefecture: '',
     city: '',
@@ -93,33 +47,64 @@ export default function MerchantRegistration() {
   const fieldRefs = useRef<{ [key: string]: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null }>({});
 
 
-  const handleInputChange = (field: keyof MerchantFormData, value: string) => {
-    setFormData((prev: MerchantFormData) => ({ ...prev, [field]: value }));
+  const handleInputChange = (field: keyof (MerchantFormData & { email: string }), value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
     
-    // リアルタイムバリデーション
-    const error = validateMerchantField(field, value || '');
-    if (error) {
-      setErrors((prev: Record<string, string>) => ({ ...prev, [field]: error }));
+    // リアルタイムバリデーション（emailフィールドは個別にバリデーション）
+    if (field === 'email') {
+      // emailの簡易バリデーション
+      if (!value.trim()) {
+        setErrors((prev) => ({ ...prev, email: 'メールアドレスは必須です' }));
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        setErrors((prev) => ({ ...prev, email: '有効なメールアドレスを入力してください' }));
+      } else {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.email;
+          return newErrors;
+        });
+      }
     } else {
-      setErrors((prev: Record<string, string>) => {
-        const newErrors = { ...prev };
-        delete newErrors[field as string];
-        return newErrors;
-      });
+      const error = validateMerchantField(field, value || '');
+      if (error) {
+        setErrors((prev) => ({ ...prev, [field]: error }));
+      } else {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[field as string];
+          return newErrors;
+        });
+      }
     }
   };
 
-  const handleBlur = (field: keyof MerchantFormData) => {
+  const handleBlur = (field: keyof (MerchantFormData & { email: string })) => {
     const value = formData[field];
-    const error = validateMerchantField(field, value || '');
-    if (error) {
-      setErrors((prev: Record<string, string>) => ({ ...prev, [field]: error }));
+    
+    if (field === 'email') {
+      // emailの簡易バリデーション
+      if (!value || !value.trim()) {
+        setErrors((prev) => ({ ...prev, email: 'メールアドレスは必須です' }));
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        setErrors((prev) => ({ ...prev, email: '有効なメールアドレスを入力してください' }));
+      } else {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.email;
+          return newErrors;
+        });
+      }
     } else {
-      setErrors((prev: Record<string, string>) => {
-        const newErrors = { ...prev };
-        delete newErrors[field as string];
-        return newErrors;
-      });
+      const error = validateMerchantField(field as keyof MerchantFormData, value || '');
+      if (error) {
+        setErrors((prev) => ({ ...prev, [field]: error }));
+      } else {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[field as string];
+          return newErrors;
+        });
+      }
     }
   };
 
@@ -138,7 +123,7 @@ export default function MerchantRegistration() {
 
       if (data.status === 200 && data.results && data.results.length > 0) {
         const result = data.results[0];
-        setFormData((prev: MerchantFormData) => ({
+        setFormData((prev) => ({
           ...prev,
           prefecture: result.address1,
           city: result.address2,
@@ -200,24 +185,24 @@ export default function MerchantRegistration() {
     
     try {
       // emailフィールドをaccountEmailにマッピング
-      const requestData: Omit<MerchantFormData, 'email'> & { accountEmail: string } = {
+      // APIスキーマに合わせてフィールドをマッピング
+      const requestData = {
+        accountEmail: formData.email,
         name: formData.name,
         nameKana: formData.nameKana,
-        representative: formData.representative,
-        representativeName: formData.representativeName,
         representativeNameLast: formData.representativeNameLast,
         representativeNameFirst: formData.representativeNameFirst,
         representativeNameLastKana: formData.representativeNameLastKana,
         representativeNameFirstKana: formData.representativeNameFirstKana,
         representativePhone: formData.representativePhone,
-        phone: formData.phone,
-        accountEmail: formData.email,
         postalCode: formData.postalCode,
         prefecture: formData.prefecture,
         city: formData.city,
         address1: formData.address1,
-        address2: formData.address2,
+        address2: formData.address2 || undefined,
       };
+      
+      console.log('📤 Sending merchant data:', requestData);
 
       const response = await fetch('/api/merchants', {
         method: 'POST',
@@ -232,7 +217,31 @@ export default function MerchantRegistration() {
         
         if (response.status === 400) {
           // パラメータエラーの場合
-          if (errorData.errors) {
+          console.log('🔍 Error data structure:', errorData);
+          if (errorData.error?.details) {
+            // 新しいエラー形式: { error: { details: [...] } }
+            const fieldErrors: Record<string, string> = {};
+            errorData.error.details.forEach((detail: { path: string[]; message: string }) => {
+              if (detail.path && detail.path.length > 0) {
+                const fieldName = detail.path[0];
+                fieldErrors[fieldName] = detail.message;
+              }
+            });
+            setErrors(fieldErrors);
+            console.log('🔍 Parsed field errors:', fieldErrors);
+            
+            // 最初のエラーフィールドにスクロール
+            const firstErrorField = Object.keys(fieldErrors)[0];
+            if (firstErrorField && fieldRefs.current[firstErrorField as keyof typeof fieldRefs.current]) {
+              const element = fieldRefs.current[firstErrorField as keyof typeof fieldRefs.current];
+              element?.focus();
+              element?.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+              });
+            }
+          } else if (errorData.errors) {
+            // 古いエラー形式: { errors: {...} }
             setErrors(errorData.errors);
             // 最初のエラーフィールドにスクロール
             const firstErrorField = Object.keys(errorData.errors)[0];
@@ -245,7 +254,7 @@ export default function MerchantRegistration() {
               });
             }
           } else {
-            setServerError(errorData.message || '入力内容に誤りがあります');
+            setServerError(errorData.error?.message || errorData.message || '入力内容に誤りがあります');
           }
         } else {
           // その他のエラーの場合
@@ -294,9 +303,9 @@ export default function MerchantRegistration() {
         {/* サーバーエラー表示 */}
         {serverError && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex">
-              <Icon name="alert" size="sm" className="text-red-400 mt-0.5" />
-              <div className="ml-3">
+            <div className="flex items-center">
+              <span className="text-xl mr-2">⚠️</span>
+              <div>
                 <p className="text-sm text-red-800">{serverError}</p>
               </div>
             </div>
@@ -511,8 +520,8 @@ export default function MerchantRegistration() {
                   type="email"
                   id="email"
                   value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  onBlur={() => handleBlur('email')}
+                  onChange={(e) => handleInputChange('email' as keyof (MerchantFormData & { email: string }), e.target.value)}
+                  onBlur={() => handleBlur('email' as keyof (MerchantFormData & { email: string }))}
                   className={`w-100 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -524,7 +533,7 @@ export default function MerchantRegistration() {
                   ) : (
                     <div></div>
                   )}
-                  <p className="text-sm text-gray-500">{getCharacterCount('email', 255)}</p>
+                  <p className="text-sm text-gray-500">{formData.email.length} / 255</p>
                 </div>
               </div>
             </div>

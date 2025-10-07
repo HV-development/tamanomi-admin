@@ -5,23 +5,16 @@ import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/button';
 import Icon from '@/components/atoms/icon';
+import { type MerchantFormData } from '@hv-development/schemas';
 
-interface MerchantFormData {
-  accountEmail: string;
-  name: string;
-  nameKana: string;
-  representative: string;
-  representativeName: string;
-  representativePhone: string;
-  email: string;
-  phone: string;
-  postalCode: string;
-  address: string;
+// 確認画面用の型（フォームデータと同じ構造）
+interface MerchantConfirmationData extends Partial<MerchantFormData> {
+  accountEmail?: string;
 }
 
 export default function MerchantConfirmation() {
   const searchParams = useSearchParams();
-  const [formData, setFormData] = useState<MerchantFormData>({
+  const [formData, setFormData] = useState<MerchantConfirmationData>({
     accountEmail: '',
     name: '',
     nameKana: '',
@@ -71,7 +64,7 @@ export default function MerchantConfirmation() {
 
   const _handleBack = () => {
     // 前のページに戻る際にデータを保持
-    const data = encodeURIComponent(JSON.stringify(formData));
+    const _data = encodeURIComponent(JSON.stringify(formData));
     window.history.back();
   };
 

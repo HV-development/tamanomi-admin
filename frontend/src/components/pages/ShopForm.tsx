@@ -12,12 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 type StoreCreateRequest = {
   name: string;
   merchantId: string;
-  [key: string]: any;
-};
-
-type StoreUpdateRequest = {
-  name?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 interface Merchant {
@@ -94,7 +89,7 @@ export default function ShopForm() {
   }, [shopId, isEdit]);
 
   const handleInputChange = (field: keyof StoreCreateRequest, value: string | number | boolean) => {
-    setFormData((prev: any) => ({
+    setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
