@@ -5,11 +5,59 @@ import { useParams } from 'next/navigation';
 import DashboardLayout from '@/components/templates/DashboardLayout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-import { validateMerchantField, validateMerchantForm, type MerchantFormData, type MerchantStatus } from '@hv-development/schemas';
+// import { validateMerchantField, validateMerchantForm, type MerchantFormData, type MerchantStatus } from '@hv-development/schemas';
+
+// 一時的な型定義
+type MerchantFormData = {
+  name: string;
+  nameKana: string;
+  representative: string;
+  representativeName: string;
+  representativeNameLast: string;
+  representativeNameFirst: string;
+  representativeNameLastKana: string;
+  representativeNameFirstKana: string;
+  representativePhone: string;
+  email: string;
+  phone: string;
+  postalCode: string;
+  prefecture: string;
+  city: string;
+  address1: string;
+  address2: string;
+};
+
+type MerchantStatus = 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated';
 
 // 編集画面用のフォームデータ型（statusフィールドを含む）
 type MerchantEditFormData = MerchantFormData & {
   status: MerchantStatus;
+};
+
+// 一時的なバリデーション関数
+const validateMerchantField = (field: string, value: string): string | null => {
+  // 基本的なバリデーション
+  if (!value || value.trim() === '') {
+    return 'この項目は必須です';
+  }
+  return null;
+};
+
+const validateMerchantForm = (data: Partial<MerchantFormData>): { isValid: boolean; errors: Record<string, string> } => {
+  const errors: Record<string, string> = {};
+  
+  // 基本的なバリデーション
+  if (!data.name || data.name.trim() === '') {
+    errors.name = '店舗名は必須です';
+  }
+  if (!data.email || data.email.trim() === '') {
+    errors.email = 'メールアドレスは必須です';
+  }
+  
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors
+  };
 };
 
 const prefectures = [
@@ -30,12 +78,15 @@ export default function MerchantEdit() {
   const [formData, setFormData] = useState<MerchantEditFormData>({
     name: '',
     nameKana: '',
+    representative: '',
+    representativeName: '',
     representativeNameLast: '',
     representativeNameFirst: '',
     representativeNameLastKana: '',
     representativeNameFirstKana: '',
     representativePhone: '',
     email: '',
+    phone: '',
     postalCode: '',
     prefecture: '',
     city: '',
@@ -65,12 +116,15 @@ export default function MerchantEdit() {
           setFormData({
             name: merchantData.name || '',
             nameKana: merchantData.nameKana || '',
+            representative: merchantData.representative || '',
+            representativeName: merchantData.representativeName || '',
             representativeNameLast: merchantData.representativeNameLast || '',
             representativeNameFirst: merchantData.representativeNameFirst || '',
             representativeNameLastKana: merchantData.representativeNameLastKana || '',
             representativeNameFirstKana: merchantData.representativeNameFirstKana || '',
             representativePhone: merchantData.representativePhone || '',
             email: merchantData.email || '',
+            phone: merchantData.phone || '',
             postalCode: merchantData.postalCode || '',
             prefecture: merchantData.prefecture || '',
             city: merchantData.city || '',
@@ -84,12 +138,15 @@ export default function MerchantEdit() {
           const sampleData: MerchantEditFormData = {
             name: '株式会社たまのみ',
             nameKana: 'カブシキガイシャタマノミ',
+            representative: '田中太郎',
+            representativeName: '田中太郎',
             representativeNameLast: '田中',
             representativeNameFirst: '太郎',
             representativeNameLastKana: 'タナカ',
             representativeNameFirstKana: 'タロウ',
             representativePhone: '0312345678',
             email: 'info@tamanomi.co.jp',
+            phone: '0312345678',
             postalCode: '1000001',
             prefecture: '東京都',
             city: '千代田区',
@@ -105,12 +162,15 @@ export default function MerchantEdit() {
         const sampleData: MerchantEditFormData = {
           name: '株式会社たまのみ',
           nameKana: 'カブシキガイシャタマノミ',
+          representative: '田中太郎',
+          representativeName: '田中太郎',
           representativeNameLast: '田中',
           representativeNameFirst: '太郎',
           representativeNameLastKana: 'タナカ',
           representativeNameFirstKana: 'タロウ',
           representativePhone: '0312345678',
           email: 'info@tamanomi.co.jp',
+          phone: '0312345678',
           postalCode: '1000001',
           prefecture: '東京都',
           city: '千代田区',
@@ -185,7 +245,7 @@ export default function MerchantEdit() {
 
       if (data.status === 200 && data.results && data.results.length > 0) {
         const result = data.results[0];
-        setFormData(prev => ({
+        setFormData((prev: any) => ({
           ...prev,
           prefecture: result.address1,
           city: result.address2,
@@ -208,8 +268,8 @@ export default function MerchantEdit() {
 
   const validateFormData = (): boolean => {
     // MerchantFormDataの部分のみをバリデーション
-    const { name, nameKana, representativeNameLast, representativeNameFirst, representativeNameLastKana, representativeNameFirstKana, representativePhone, email, postalCode, prefecture, city, address1, address2 } = formData;
-    const merchantData: MerchantFormData = { name, nameKana, representativeNameLast, representativeNameFirst, representativeNameLastKana, representativeNameFirstKana, representativePhone, email, postalCode, prefecture, city, address1, address2 };
+    const { name, nameKana, representative, representativeName, representativeNameLast, representativeNameFirst, representativeNameLastKana, representativeNameFirstKana, representativePhone, email, phone, postalCode, prefecture, city, address1, address2 } = formData;
+    const merchantData: MerchantFormData = { name, nameKana, representative, representativeName, representativeNameLast, representativeNameFirst, representativeNameLastKana, representativeNameFirstKana, representativePhone, email, phone, postalCode, prefecture, city, address1, address2 };
     
     const { isValid, errors: validationErrors } = validateMerchantForm(merchantData as Partial<MerchantFormData>);
     setErrors(validationErrors);

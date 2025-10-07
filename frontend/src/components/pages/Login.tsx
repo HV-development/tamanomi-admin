@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/atoms/Button';
 import Logo from '@/components/atoms/Logo';
 import { useAuth } from '@/contexts/AuthContext';
-import { AdminLoginInput } from '@hv-development/schemas';
+// import { AdminLoginInput } from '@hv-development/schemas';
 
-type LoginFormData = AdminLoginInput;
+type LoginFormData = {
+  email: string;
+  password: string;
+};
 
 export default function Login() {
   const router = useRouter();

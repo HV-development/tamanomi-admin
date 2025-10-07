@@ -6,7 +6,19 @@ import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/ToastContainer';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/useToast';
-import { StoreCreateRequest, StoreUpdateRequest } from '@hv-development/schemas';
+// import { StoreCreateRequest, StoreUpdateRequest } from '@hv-development/schemas';
+
+// 一時的な型定義
+type StoreCreateRequest = {
+  name: string;
+  merchantId: string;
+  [key: string]: any;
+};
+
+type StoreUpdateRequest = {
+  name?: string;
+  [key: string]: any;
+};
 
 interface Merchant {
   id: string;
@@ -82,7 +94,7 @@ export default function ShopForm() {
   }, [shopId, isEdit]);
 
   const handleInputChange = (field: keyof StoreCreateRequest, value: string | number | boolean) => {
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       [field]: value,
     }));
@@ -126,7 +138,7 @@ export default function ShopForm() {
   if (error) {
     return (
       <div className="space-y-6">
-        <ToastContainer toasts={toasts} onRemove={removeToast} />
+        <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <div className="text-red-600">{error}</div>
           <Button variant="secondary" onClick={handleCancel} className="mt-4">
@@ -139,7 +151,7 @@ export default function ShopForm() {
 
   return (
     <div className="space-y-6">
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
       
       {/* ヘッダー */}
       <div className="flex justify-between items-center">
