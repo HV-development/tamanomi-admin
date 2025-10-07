@@ -11,6 +11,10 @@
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next out dist",
     "install:clean": "rm -rf node_modules pnpm-lock.yaml && pnpm install",
+    "setup:local": "./setup-local-dev.sh",
+    "docker:up": "cd ../infrastructure/docker && docker-compose up -d admin",
+    "docker:down": "cd ../infrastructure/docker && docker-compose down",
+    "docker:logs": "cd ../infrastructure/docker && docker-compose logs -f admin",
     "schema:update": "cd ../../tamanomi-schemas && pnpm build && cd ../tamanomi-admin/infrastructure/docker && docker-compose restart admin",
     "start:all": "concurrently \"pnpm dev\" \"cd ../../tamanomi-api && pnpm dev\" \"cd ../tamanomi-web/frontend && pnpm dev\"",
     "stop:all": "pkill -f 'concurrently' || true && pkill -f 'tsx watch' || true && pkill -f 'next dev' || true && echo 'All services stopped'"
