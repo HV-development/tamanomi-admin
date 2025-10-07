@@ -14,8 +14,8 @@ type StoreDetailResponse = {
   id: string;
   name: string;
   status: string;
-  coupons: any[];
-  [key: string]: any;
+  coupons: unknown[];
+  [key: string]: unknown;
 };
 
 export default function ShopDetail() {
@@ -58,7 +58,7 @@ export default function ShopDetail() {
       
       // データを再取得
       const data = await apiClient.getShop(shopId);
-      setShop(data as any);
+      setShop(data as StoreDetailResponse);
     } catch (err: unknown) {
       console.error('Failed to update shop status:', err);
       showError('ステータス更新に失敗しました');
@@ -328,8 +328,8 @@ export default function ShopDetail() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {shop.coupons.map((coupon: any) => (
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {shop.coupons.map((coupon: Record<string, unknown>) => (
                   <tr key={coupon.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {coupon.title}

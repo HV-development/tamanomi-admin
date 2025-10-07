@@ -5,59 +5,11 @@ import { useParams } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/button';
 import Icon from '@/components/atoms/icon';
-// import { validateMerchantField, validateMerchantForm, type MerchantFormData, type MerchantStatus } from '@hv-development/schemas';
-
-// 一時的な型定義
-type MerchantFormData = {
-  name: string;
-  nameKana: string;
-  representative: string;
-  representativeName: string;
-  representativeNameLast: string;
-  representativeNameFirst: string;
-  representativeNameLastKana: string;
-  representativeNameFirstKana: string;
-  representativePhone: string;
-  email: string;
-  phone: string;
-  postalCode: string;
-  prefecture: string;
-  city: string;
-  address1: string;
-  address2: string;
-};
-
-type MerchantStatus = 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated';
+import { validateMerchantField, validateMerchantForm, type MerchantFormData, type MerchantStatus } from '@hv-development/schemas';
 
 // 編集画面用のフォームデータ型（statusフィールドを含む）
 type MerchantEditFormData = MerchantFormData & {
   status: MerchantStatus;
-};
-
-// 一時的なバリデーション関数
-const validateMerchantField = (field: string, value: string): string | null => {
-  // 基本的なバリデーション
-  if (!value || value.trim() === '') {
-    return 'この項目は必須です';
-  }
-  return null;
-};
-
-const validateMerchantForm = (data: Partial<MerchantFormData>): { isValid: boolean; errors: Record<string, string> } => {
-  const errors: Record<string, string> = {};
-  
-  // 基本的なバリデーション
-  if (!data.name || data.name.trim() === '') {
-    errors.name = '店舗名は必須です';
-  }
-  if (!data.email || data.email.trim() === '') {
-    errors.email = 'メールアドレスは必須です';
-  }
-  
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors
-  };
 };
 
 const prefectures = [
@@ -245,7 +197,7 @@ export default function MerchantEdit() {
 
       if (data.status === 200 && data.results && data.results.length > 0) {
         const result = data.results[0];
-        setFormData((prev: any) => ({
+        setFormData((prev) => ({
           ...prev,
           prefecture: result.address1,
           city: result.address2,

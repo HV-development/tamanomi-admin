@@ -1,35 +1,12 @@
 // APIクライアント - Next.js APIルート経由
-// import { AdminLoginInput, RegisterInput, RefreshTokenInput, AuthResponse, RefreshResponse } from '@hv-development/schemas';
+import { 
+  type AdminLoginInput, 
+  type AdminRegisterInput,
+  type AuthResponse,
+  type RefreshTokenInput,
+} from '@hv-development/schemas';
 
-// 一時的な型定義
-type AdminLoginInput = {
-  email: string;
-  password: string;
-};
-
-type RegisterInput = {
-  email: string;
-  password: string;
-  name: string;
-};
-
-type RefreshTokenInput = {
-  refreshToken: string;
-};
-
-type AuthResponse = {
-  user: any;
-  token: string;
-  accessToken: string;
-  refreshToken: string;
-  account: {
-    id: string;
-    email: string;
-    name: string;
-    role: string;
-    displayName: string;
-  };
-};
+type RegisterInput = AdminRegisterInput;
 
 type RefreshResponse = {
   token: string;

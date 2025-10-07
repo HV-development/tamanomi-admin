@@ -14,18 +14,18 @@ type StoreDetailResponse = {
   id: string;
   name: string;
   status: string;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 export default function ShopConfirm() {
   const params = useParams();
-  const router = useRouter();
+  const _router = useRouter();
   const shopId = params.id as string;
   
   const [shop, setShop] = useState<StoreDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { toasts, removeToast, showSuccess, showError } = useToast();
+  const { toasts, removeToast, showError } = useToast();
 
   useEffect(() => {
     const fetchShop = async () => {

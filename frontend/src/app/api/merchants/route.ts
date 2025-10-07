@@ -76,7 +76,11 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    console.log('➕ API Route: 事業者作成リクエスト受信', { name: body.name });
+    console.log('➕ API Route: 事業者作成リクエスト受信', { 
+      name: body.name,
+      fullBody: body,
+      bodyKeys: Object.keys(body)
+    });
     
     const response = await fetch(`${API_BASE_URL}/admin/merchants`, {
       method: 'POST',

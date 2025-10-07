@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 // 動的レンダリングを強制（静的生成エラー回避）
 export const dynamic = 'force-dynamic';
 
@@ -16,21 +18,21 @@ export default function NotFound() {
         </div>
         
         <div className="space-y-4">
-          <a 
+          <Link 
             href="/"
             className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
           >
             ホームに戻る
-          </a>
+          </Link>
           
           <div className="text-sm text-gray-500">
-            <a href="/login" className="hover:text-blue-600">
+            <Link href="/login" className="hover:text-blue-600">
               ログインページ
-            </a>
+            </Link>
             {' | '}
-            <a href="/merchants" className="hover:text-blue-600">
+            <Link href="/merchants" className="hover:text-blue-600">
               事業者管理
-            </a>
+            </Link>
           </div>
         </div>
       </div>

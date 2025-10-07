@@ -13,9 +13,8 @@ FROM base AS deps
 WORKDIR /app
 RUN node -v && npm -v
 COPY tamanomi-admin/frontend/package.json tamanomi-admin/frontend/pnpm-lock.yaml ./
-# Copy schemas package for local reference
-COPY tamanomi-schemas ./tamanomi-schemas
-# Install dependencies (no GitHub Packages needed)
+COPY tamanomi-admin/frontend/.npmrc ./
+# Install dependencies from GitHub Packages
 RUN pnpm install
 
 # Development
@@ -27,5 +26,4 @@ COPY tamanomi-admin/frontend/ .
 EXPOSE 3000
 ENV NODE_ENV=development
 ENV PORT=3000
-# キャッシュを無効化してホットリロードを確実にする
-CMD ["pnpm", "run", "dev:no-cache"]
+CMD ["pnpm", "run", "dev"]

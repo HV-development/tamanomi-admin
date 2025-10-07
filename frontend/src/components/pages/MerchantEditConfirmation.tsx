@@ -5,18 +5,11 @@ import { useParams, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/button';
 import Icon from '@/components/atoms/icon';
+import { type MerchantFormData, type MerchantStatus } from '@hv-development/schemas';
 
-interface MerchantFormData {
-  name: string;
-  nameKana: string;
-  representative: string;
-  representativeName: string;
-  representativePhone: string;
-  email: string;
-  phone: string;
-  postalCode: string;
-  address: string;
-  status: 'pending' | 'active' | 'inactive' | 'suspended';
+// 編集確認画面用の型
+interface MerchantEditConfirmationData extends Partial<MerchantFormData> {
+  status: MerchantStatus;
 }
 
 export default function MerchantEditConfirmation() {
@@ -24,7 +17,7 @@ export default function MerchantEditConfirmation() {
   const searchParams = useSearchParams();
   const merchantId = params.id as string;
   
-  const [formData, setFormData] = useState<MerchantFormData>({
+  const [formData, setFormData] = useState<MerchantEditConfirmationData>({
     name: '',
     nameKana: '',
     representative: '',
@@ -34,7 +27,7 @@ export default function MerchantEditConfirmation() {
     phone: '',
     postalCode: '',
     address: '',
-    status: 'pending',
+    status: 'registering',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,7 +67,7 @@ export default function MerchantEditConfirmation() {
 
   const _handleBack = () => {
     // 前のページに戻る際にデータを保持
-    const data = encodeURIComponent(JSON.stringify(formData));
+    const _data = encodeURIComponent(JSON.stringify(formData));
     window.history.back();
   };
 

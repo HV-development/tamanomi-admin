@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import Link from 'next/link';
 
 // 動的レンダリングを強制（静的生成エラー回避）
 export const dynamic = 'force-dynamic';
@@ -42,13 +43,13 @@ export default function GlobalError({
           </button>
           
           <div className="text-sm text-gray-500">
-            <a href="/" className="hover:text-blue-600">
+            <Link href="/" className="hover:text-blue-600">
               ホームに戻る
-            </a>
+            </Link>
             {' | '}
-            <a href="/login" className="hover:text-blue-600">
+            <Link href="/login" className="hover:text-blue-600">
               ログインページ
-            </a>
+            </Link>
           </div>
         </div>
       </div>

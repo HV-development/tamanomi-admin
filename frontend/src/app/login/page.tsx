@@ -5,15 +5,12 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/atoms/button';
 import Logo from '@/components/atoms/logo';
 import { useAuth } from '@/components/contexts/auth-context';
-// import { AdminLoginInput } from '@hv-development/schemas';
+import { type AdminLoginInput, adminLoginSchema } from '@hv-development/schemas';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
 
-type LoginFormData = {
-  email: string;
-  password: string;
-};
+type LoginFormData = AdminLoginInput;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -47,64 +44,45 @@ export default function LoginPage() {
   const validateField = (field: keyof LoginFormData, value: string) => {
     const newErrors = { ...errors };
 
-    switch (field) {
-      case 'email':
-        if (!value.trim()) {
-          newErrors.email = 'メールアドレスを入力してください';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          newErrors.email = '有効なメールアドレスを入力してください';
-        } else if (value.length > 255) {
-          newErrors.email = 'メールアドレスは255文字以内で入力してください';
-        } else {
-          delete newErrors.email;
-        }
-        break;
-
-      case 'password':
-        if (!value.trim()) {
-          newErrors.password = 'パスワードを入力してください';
-        } else if (value.length < 8) {
-          newErrors.password = 'パスワードは8文字以上で入力してください';
-        } else if (value.length > 255) {
-          newErrors.password = 'パスワードは255文字以内で入力してください';
-        } else {
-          delete newErrors.password;
-        }
-        break;
+    try {
+      // Zodスキーマを使用した個別フィールドバリデーション
+      const fieldSchema = adminLoginSchema.shape[field];
+      fieldSchema.parse(value);
+      delete newErrors[field];
+    } catch (error) {
+      if (error instanceof Error && 'errors' in error) {
+        const zodError = error as { errors: Array<{ message: string }> };
+        newErrors[field] = zodError.errors[0]?.message || 'バリデーションエラー';
+      }
     }
 
     setErrors(newErrors);
   };
 
   const validateAllFields = (): boolean => {
-    const newErrors: Partial<LoginFormData> = {};
-
-    // 必須チェック
-    if (!formData.email.trim()) {
-      newErrors.email = 'メールアドレスを入力してください';
+    try {
+      // Zodスキーマを使用した全フィールドバリデーション
+      adminLoginSchema.parse(formData);
+      setErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof Error && 'errors' in error) {
+        const zodError = error as { errors: Array<{ path: string[]; message: string }> };
+        const newErrors: Partial<LoginFormData> = {};
+        
+        zodError.errors.forEach((err) => {
+          const field = err.path[0] as keyof LoginFormData;
+          if (field) {
+            newErrors[field] = err.message;
+          }
+        });
+        
+        setErrors(newErrors);
+        return false;
+      }
+      
+      return false;
     }
-    if (!formData.password.trim()) {
-      newErrors.password = 'パスワードを入力してください';
-    }
-
-    // フォーマットチェック
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = '有効なメールアドレスを入力してください';
-    }
-
-    // 文字数チェック
-    if (formData.email && formData.email.length > 255) {
-      newErrors.email = 'メールアドレスは255文字以内で入力してください';
-    }
-    if (formData.password && formData.password.length < 8) {
-      newErrors.password = 'パスワードは8文字以上で入力してください';
-    }
-    if (formData.password && formData.password.length > 255) {
-      newErrors.password = 'パスワードは255文字以内で入力してください';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   const handleLogin = async () => {

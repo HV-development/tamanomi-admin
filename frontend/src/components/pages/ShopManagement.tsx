@@ -15,7 +15,7 @@ type Store = {
   id: string;
   name: string;
   status: string;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 type StoreListResponse = {
@@ -87,7 +87,7 @@ export default function ShopManagement() {
         
         const data = await apiClient.getShops(queryParams.toString());
         const response = data as StoreListResponse;
-        setShops((response as any).shops || []);
+        setShops(response.shops || []);
         setPagination(response.pagination || pagination);
       } catch (err: unknown) {
         console.error('Failed to fetch shops:', err);
@@ -132,7 +132,7 @@ export default function ShopManagement() {
   const handleSearch = () => {
     setAppliedSearchForm({ ...searchForm });
     setAppliedStatusFilter(statusFilter);
-    setPagination((prev: any) => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   const handleClearSearch = () => {
@@ -152,7 +152,7 @@ export default function ShopManagement() {
       address: '',
     });
     setAppliedStatusFilter('all');
-    setPagination((prev: any) => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   const handleStatusChange = async (shopId: string, newStatus: string) => {
@@ -175,7 +175,7 @@ export default function ShopManagement() {
       
       const data = await apiClient.getShops(queryParams.toString());
       const response = data as StoreListResponse;
-        setShops((response as any).shops || []);
+        setShops(response.shops || []);
       setPagination(response.pagination || pagination);
     } catch (err: unknown) {
       console.error('Failed to update shop status:', err);
@@ -207,7 +207,7 @@ export default function ShopManagement() {
       
       const data = await apiClient.getShops(queryParams.toString());
       const response = data as StoreListResponse;
-        setShops((response as any).shops || []);
+        setShops(response.shops || []);
       setPagination(response.pagination || pagination);
     } catch (err: unknown) {
       console.error('Failed to delete shop:', err);
@@ -302,7 +302,7 @@ export default function ShopManagement() {
             </label>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive' | 'suspended')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">すべて</option>
@@ -519,7 +519,7 @@ export default function ShopManagement() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => setPagination((prev: any) => ({ ...prev, page: prev.page - 1 }))}
+                  onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
                   disabled={pagination.page <= 1}
                 >
                   前へ
@@ -530,7 +530,7 @@ export default function ShopManagement() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => setPagination((prev: any) => ({ ...prev, page: prev.page + 1 }))}
+                  onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
                   disabled={pagination.page >= pagination.totalPages}
                 >
                   次へ
