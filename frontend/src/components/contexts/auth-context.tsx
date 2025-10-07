@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { apiClient } from '../lib/api';
+import { apiClient } from '../../lib/api';
 // import { AdminLoginInput, RegisterInput, AuthResponse } from '@hv-development/schemas';
 
 // 一時的な型定義
@@ -57,6 +57,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
+    // 静的生成時やSSR時のエラーを防ぐため、nullを返す
+    if (typeof window === 'undefined') {
+      return null;
+    }
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;

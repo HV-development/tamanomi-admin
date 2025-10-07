@@ -1,14 +1,21 @@
-FROM node:20-alpine AS base
+ARG NODE_VERSION=20.17.0
+FROM node:${NODE_VERSION}-alpine AS base
+
+# Print Node and npm versions for verification
+RUN node -v && npm -v
 
 # Install pnpm 
 RUN npm install -g pnpm
+RUN pnpm -v
 
 # Dependencies
 FROM base AS deps
 WORKDIR /app
+RUN node -v && npm -v
 COPY tamanomi-admin/frontend/package.json tamanomi-admin/frontend/pnpm-lock.yaml ./
-# Copy schemas package
+# Copy schemas package for local reference
 COPY tamanomi-schemas ./tamanomi-schemas
+# Install dependencies (no GitHub Packages needed)
 RUN pnpm install
 
 # Development

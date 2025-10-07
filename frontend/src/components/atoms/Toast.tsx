@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import Icon from '@/components/atoms/Icon';
+import Icon from '@/components/atoms/icon';
 
 export interface ToastProps {
   id: string;

@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Button from '@/components/atoms/Button';
-import ToastContainer from '@/components/molecules/ToastContainer';
+import Button from '@/components/atoms/button';
+import ToastContainer from '@/components/molecules/toast-container';
 import { apiClient } from '@/lib/api';
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/hooks/use-toast';
 // import { StoreDetailResponse } from '@hv-development/schemas';
 
 // 一時的な型定義

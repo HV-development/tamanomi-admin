@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Icon from '@/components/atoms/Icon';
+import Icon from '@/components/atoms/icon';
 
 interface CheckboxProps {
   checked: boolean;

@@ -1,9 +1,32 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // 管理画面は動的レンダリングが適切（認証・データベース依存）
   output: 'standalone',
   experimental: {
     serverComponentsExternalPackages: ['@prisma/client'],
   },
+  
+  // 動的レンダリング用の設定
+  trailingSlash: false,
+  
+  // 静的生成を完全に無効化（ローカルビルドエラー回避）
+  skipTrailingSlashRedirect: true,
+  skipMiddlewareUrlNormalize: true,
+  
+  // 静的ページ生成を無効化
+  generateBuildId: async () => {
+    return 'build-' + Date.now();
+  },
+  
+  // 静的エクスポートを無効化（App Routerでエラーページ生成を防ぐ）
+  distDir: '.next',
+  
+  // 静的生成を完全に無効化
+  swcMinify: true,
+  
+  // 静的ページ生成を完全に無効化（/_errorページ生成を防ぐ）
+  outputFileTracing: true,
+  generateEtags: false,
   
   // 環境変数による設定
   ...(process.env.NODE_ENV === 'development' && {

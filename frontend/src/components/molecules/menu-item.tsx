@@ -1,4 +1,4 @@
-import Icon from '@/components/atoms/Icon';
+import Icon from '@/components/atoms/icon';
 
 interface MenuItemProps {
   name: string;
