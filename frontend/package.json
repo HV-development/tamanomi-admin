@@ -9,7 +9,6 @@
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next out dist",
-    "setup:env": "bash ../scripts/setup-env.sh",
     "secret:generate": "tsx ../scripts/generate-secret.ts"
   },
   "dependencies": {

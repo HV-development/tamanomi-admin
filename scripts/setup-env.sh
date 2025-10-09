@@ -51,29 +51,48 @@ echo "✅ .env.exampleから.envを作成しました"
 echo ""
 
 # ===================================
-# 2. JWT_SECRETの生成と置換
+# 2. JWT_SECRETの設定（共有環境変数から）
 # ===================================
-echo "🔐 Step 2: JWT_SECRETの生成"
+echo "🔐 Step 2: JWT_SECRETの設定"
 echo "-----------------------------------"
 
-# Node.jsで64バイトのランダムなHex文字列を生成
-JWT_SECRET=$(node -e "console.log(require('crypto').randomBytes(64).toString('hex'))")
+SHARED_ENV="$PROJECT_ROOT/../.env.shared"
 
-if [ -z "$JWT_SECRET" ]; then
-  echo "❌ JWT_SECRETの生成に失敗しました"
+# 共有環境ファイルからJWT_SECRETを読み込む
+if [ -f "$SHARED_ENV" ]; then
+  SHARED_JWT_SECRET=$(grep "^JWT_SECRET=" "$SHARED_ENV" | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+  
+  if [ -n "$SHARED_JWT_SECRET" ]; then
+    JWT_SECRET="$SHARED_JWT_SECRET"
+    echo "✅ 共有環境ファイルからJWT_SECRETを読み込みました"
+    echo "   ファイル: .env.shared"
+  else
+    echo "⚠️  共有環境ファイルにJWT_SECRETが設定されていません"
+    echo ""
+    echo "以下のコマンドで共通環境変数をセットアップしてください:"
+    echo "   $ cd $REPO_ROOT"
+    echo "   $ bash scripts/setup-shared-env.sh"
+    echo ""
+    exit 1
+  fi
+else
+  echo "⚠️  共有環境ファイルが見つかりません: $SHARED_ENV"
+  echo ""
+  echo "以下のコマンドで共通環境変数をセットアップしてください:"
+  echo "   $ cd $REPO_ROOT"
+  echo "   $ bash scripts/setup-shared-env.sh"
+  echo ""
   exit 1
 fi
 
 # .envファイル内のJWT_SECRETを置換
 if [[ "$OSTYPE" == "darwin"* ]]; then
-  # macOS
   sed -i '' "s/JWT_SECRET=.*/JWT_SECRET=${JWT_SECRET}/" .env
 else
-  # Linux
   sed -i "s/JWT_SECRET=.*/JWT_SECRET=${JWT_SECRET}/" .env
 fi
 
-echo "✅ JWT_SECRETを生成して設定しました"
+echo "✅ .envファイルにJWT_SECRETを設定しました"
 echo "   生成されたキー: ${JWT_SECRET:0:20}...（128文字）"
 echo ""
 
@@ -83,7 +102,16 @@ echo ""
 echo "🔑 Step 3: GITHUB_TOKENの設定"
 echo "-----------------------------------"
 
-# .envファイルからGITHUB_TOKENを読み込む
+# 共有環境ファイルからGITHUB_TOKENを読み込む（優先）
+if [ -f "$SHARED_ENV" ] && [ -z "$GITHUB_TOKEN" ]; then
+  SHARED_GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" "$SHARED_ENV" | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+  if [ -n "$SHARED_GITHUB_TOKEN" ]; then
+    GITHUB_TOKEN="$SHARED_GITHUB_TOKEN"
+    echo "✅ 共有環境ファイルからGITHUB_TOKENを読み込みました"
+  fi
+fi
+
+# .envファイルからGITHUB_TOKENを読み込む（フォールバック）
 if [ -f ".env" ] && [ -z "$GITHUB_TOKEN" ]; then
   EXISTING_TOKEN=$(grep "^GITHUB_TOKEN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'")
   if [ -n "$EXISTING_TOKEN" ] && [ "$EXISTING_TOKEN" != "your_github_token_here" ]; then

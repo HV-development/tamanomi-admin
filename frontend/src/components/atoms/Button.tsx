@@ -11,7 +11,6 @@ interface ButtonProps {
 }
 
 export default function Button({
-  children,
   variant = 'primary',
   size = 'md',
   disabled = false,
