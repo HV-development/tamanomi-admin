@@ -642,7 +642,7 @@ export default function MerchantManagement() {
                         <div className="flex-1 flex justify-center space-x-2">
                           <Link href={`/merchants/${merchant.id}/edit`}>
                             <button 
-                              className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-colors cursor-pointer flex items-center justify-center"
+                              className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
                               title="編集"
                             >
                               <Image 
@@ -655,7 +655,7 @@ export default function MerchantManagement() {
                             </button>
                           </Link>
                           <button 
-                            className="p-1 text-blue-600 hover:text-blue-800 hover:bg-transparent rounded-md transition-colors cursor-pointer flex items-center justify-center"
+                            className="p-2.5 text-blue-600 hover:text-blue-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
                             title="店舗一覧"
                           >
                             <Image 
@@ -670,10 +670,10 @@ export default function MerchantManagement() {
                             <button 
                               onClick={() => handleResendPasswordEmail(merchant.id, merchant.email)}
                               disabled={resendingEmails.has(merchant.id)}
-                              className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-md transition-colors cursor-pointer flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="p-2.5 text-purple-600 hover:text-purple-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
                               title="パスワード設定メール再送"
                             >
-                              <span className="text-xl">📧</span>
+                              <span className="text-2xl leading-none">📧</span>
                             </button>
                           )}
                         </div>
@@ -684,8 +684,9 @@ export default function MerchantManagement() {
                       <div className="text-sm text-gray-500">{merchant.nameKana}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
-                      <div className="text-sm text-gray-900">{merchant.representativeNameLast} {merchant.representativeNameFirst}</div>
-                      <div className="text-sm text-gray-500">{merchant.representativePhone}</div>
+                      <div className="text-sm font-medium text-gray-900">{merchant.representativeNameLast} {merchant.representativeNameFirst}</div>
+                      <div className="text-sm text-gray-500">{merchant.representativeNameLastKana} {merchant.representativeNameFirstKana}</div>
+                      <div className="text-sm text-gray-500 mt-1">{merchant.representativePhone}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                       <div className="text-sm text-gray-900">{merchant.email}</div>
