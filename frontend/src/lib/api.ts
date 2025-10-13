@@ -58,9 +58,9 @@ class ApiClient {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('userData');
-          // ログイン画面へリダイレクト
+          // ログイン画面へリダイレクト（セッション切れのメッセージ付き）
           if (typeof window !== 'undefined') {
-            window.location.href = '/login';
+            window.location.href = '/login?session=expired';
           }
           // リダイレクト後はPromiseを返して処理を止める
           return new Promise(() => {}) as Promise<T>;
