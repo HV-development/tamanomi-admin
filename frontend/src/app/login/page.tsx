@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Button from '@/components/atoms/Button';
 import Logo from '@/components/atoms/Logo';
 import { useAuth } from '@/components/contexts/auth-context';
@@ -14,6 +14,7 @@ type LoginFormData = AdminLoginInput;
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const auth = useAuth();
   const { login } = auth || {};
   
@@ -25,6 +26,16 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loginError, setLoginError] = useState<string>('');
+
+  // セッション切れメッセージの表示
+  useEffect(() => {
+    const sessionExpired = searchParams.get('session');
+    if (sessionExpired === 'expired') {
+      setLoginError('セッションの有効期限が切れました。再度ログインしてください。');
+      // URLからクエリパラメータを削除
+      router.replace('/login');
+    }
+  }, [searchParams, router]);
 
   const handleInputChange = (field: keyof LoginFormData, value: string) => {
     setFormData((prev: LoginFormData) => ({
