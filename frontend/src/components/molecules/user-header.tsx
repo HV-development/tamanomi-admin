@@ -1,8 +1,16 @@
+'use client';
+
+import { useAuth } from '@/components/contexts/auth-context';
+import { useRouter } from 'next/navigation';
+
 interface UserHeaderProps {
   className?: string;
 }
 
 export default function UserHeader({ className = '' }: UserHeaderProps) {
+  const { logout } = useAuth();
+  const router = useRouter();
+  
   // 実際の実装では認証コンテキストやセッションから取得
   const currentUser = {
     name: '管理者太郎',
@@ -10,10 +18,10 @@ export default function UserHeader({ className = '' }: UserHeaderProps) {
     loginTime: '2024/01/15 10:30'
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (confirm('ログアウトしますか？')) {
-      // 実際の実装では認証状態をクリア
-      window.location.href = '/';
+      await logout();
+      router.push('/login');
     }
   };
 
