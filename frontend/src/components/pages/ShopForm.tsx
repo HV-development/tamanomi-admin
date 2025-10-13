@@ -80,6 +80,9 @@ export default function ShopForm() {
   const { toasts, removeToast, showSuccess, showError } = useToast();
 
   useEffect(() => {
+    let isMounted = true;
+    const abortController = new AbortController();
+
     const fetchData = async () => {
       try {
         setIsLoading(true);
@@ -87,25 +90,47 @@ export default function ShopForm() {
         
         // 加盟店一覧を取得
         const merchantsData = await apiClient.getMerchants();
+        
+        // コンポーネントがアンマウントされている場合は処理を中断
+        if (!isMounted) return;
+        
         const merchantsArray = Array.isArray(merchantsData) ? merchantsData : (merchantsData as { merchants: unknown[] }).merchants || [];
         setMerchants(merchantsArray);
         
         // 編集モードの場合は店舗データを取得
-        if (isEdit) {
+        if (isEdit && isMounted) {
           const shopData = await apiClient.getShop(shopId);
-          setFormData(shopData as ShopCreateRequest);
+          
+          if (isMounted) {
+            setFormData(shopData as ShopCreateRequest);
+          }
         }
       } catch (err: unknown) {
-        console.error('Failed to fetch data:', err);
-        setError(err instanceof Error ? err.message : 'データの取得に失敗しました');
-        showError('データの取得に失敗しました');
+        // アボート時のエラーは無視
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
+        
+        if (isMounted) {
+          console.error('Failed to fetch data:', err);
+          setError(err instanceof Error ? err.message : 'データの取得に失敗しました');
+          showError('データの取得に失敗しました');
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchData();
-  }, [shopId, isEdit]);
+
+    // クリーンアップ: コンポーネントのアンマウント時または再実行時にリクエストをキャンセル
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
+  }, [shopId, isEdit, showError]);
 
   const handleInputChange = (field: keyof ShopCreateRequest, value: string | number | boolean) => {
     setFormData((prev) => ({

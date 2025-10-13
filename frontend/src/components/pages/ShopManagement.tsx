@@ -81,6 +81,9 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
 
   // データ取得
   useEffect(() => {
+    let isMounted = true;
+    const abortController = new AbortController();
+
     const fetchShops = async () => {
       try {
         setIsLoading(true);
@@ -89,6 +92,10 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
         // 店舗一覧を取得（merchantIdがあればフィルタ）
         const queryParams = merchantId ? new URLSearchParams({ merchantId }) : undefined;
         const data = await apiClient.getShops(queryParams?.toString());
+        
+        // コンポーネントがアンマウントされている場合は処理を中断
+        if (!isMounted) return;
+        
         console.log('🔍 ShopManagement: API Response received', { 
           data, 
           dataType: typeof data, 
@@ -125,14 +132,16 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
           merchantInfo = shopsArray[0].merchant;
         }
         
-        setShops(shopsArray);
+        if (isMounted) {
+          setShops(shopsArray);
+        }
         
         // merchantIdがある場合のみmerchant情報を取得
-        if (merchantId) {
+        if (merchantId && isMounted) {
           if (!merchantInfo) {
             try {
               const merchantData = await apiClient.getMerchant(merchantId);
-              if (merchantData && typeof merchantData === 'object' && 'name' in merchantData) {
+              if (isMounted && merchantData && typeof merchantData === 'object' && 'name' in merchantData) {
                 setMerchantName((merchantData as { name: string }).name);
               }
             } catch (err) {
@@ -143,15 +152,30 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
           }
         }
       } catch (err: unknown) {
-        console.error('店舗データの取得に失敗しました:', err);
-        setError('店舗データの取得に失敗しました');
-        setShops([]);
+        // アボート時のエラーは無視
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
+        
+        if (isMounted) {
+          console.error('店舗データの取得に失敗しました:', err);
+          setError('店舗データの取得に失敗しました');
+          setShops([]);
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchShops();
+
+    // クリーンアップ: コンポーネントのアンマウント時または再実行時にリクエストをキャンセル
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, [merchantId]);
 
   // フィルタリング処理
