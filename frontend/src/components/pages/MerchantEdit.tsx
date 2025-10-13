@@ -3,13 +3,30 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
-import Button from '@/components/atoms/button';
-import Icon from '@/components/atoms/icon';
+import Button from '@/components/atoms/Button';
+import Icon from '@/components/atoms/Icon';
 import { validateMerchantField, validateMerchantForm, type MerchantFormData, type MerchantStatus } from '@hv-development/schemas';
 
 // 編集画面用のフォームデータ型（statusフィールドを含む）
-type MerchantEditFormData = MerchantFormData & {
+type MerchantEditFormData = Partial<MerchantFormData> & {
   status: MerchantStatus;
+  name: string;
+  nameKana: string;
+  representative?: string;
+  representativeName?: string;
+  representativeNameLast: string;
+  representativeNameFirst: string;
+  representativeNameLastKana: string;
+  representativeNameFirstKana: string;
+  representativePhone: string;
+  email: string;
+  phone: string;
+  postalCode: string;
+  prefecture: string;
+  city: string;
+  address1: string;
+  address2?: string;
+  [key: string]: unknown;
 };
 
 const prefectures = [
@@ -164,7 +181,7 @@ export default function MerchantEdit() {
     const value = formData[field];
     // statusフィールドは除く
     if (field !== 'status') {
-      const error = validateMerchantField(field as keyof MerchantFormData, value || '');
+      const error = validateMerchantField(field as keyof MerchantFormData, (value as string) || '');
       if (error) {
         setErrors((prev: Record<string, string>) => ({ ...prev, [field]: error }));
       } else {
@@ -177,8 +194,8 @@ export default function MerchantEdit() {
     }
   };
 
-  const getCharacterCount = (field: keyof MerchantFormData, maxLength: number) => {
-    const currentLength = (formData[field] || '').length;
+  const getCharacterCount = (field: keyof MerchantEditFormData, maxLength: number) => {
+    const currentLength = ((formData[field] as string) || '').length;
     return `${currentLength} / ${maxLength}`;
   };
 
@@ -220,8 +237,8 @@ export default function MerchantEdit() {
 
   const validateFormData = (): boolean => {
     // MerchantFormDataの部分のみをバリデーション
-    const { name, nameKana, representative, representativeName, representativeNameLast, representativeNameFirst, representativeNameLastKana, representativeNameFirstKana, representativePhone, email, phone, postalCode, prefecture, city, address1, address2 } = formData;
-    const merchantData: MerchantFormData = { name, nameKana, representative, representativeName, representativeNameLast, representativeNameFirst, representativeNameLastKana, representativeNameFirstKana, representativePhone, email, phone, postalCode, prefecture, city, address1, address2 };
+    const { name, nameKana, representativeNameLast, representativeNameFirst, representativeNameLastKana, representativeNameFirstKana, representativePhone, email, phone, postalCode, prefecture, city, address1, address2 } = formData;
+    const merchantData = { name, nameKana, representativeNameLast, representativeNameFirst, representativeNameLastKana, representativeNameFirstKana, representativePhone, email, phone, postalCode, prefecture, city, address1, address2 };
     
     const { isValid, errors: validationErrors } = validateMerchantForm(merchantData as Partial<MerchantFormData>);
     setErrors(validationErrors);

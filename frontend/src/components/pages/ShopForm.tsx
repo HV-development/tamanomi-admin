@@ -2,16 +2,35 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Button from '@/components/atoms/button';
+import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/toast-container';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
-// import { StoreCreateRequest, StoreUpdateRequest } from '@hv-development/schemas';
+// import { ShopCreateRequest, ShopUpdateRequest } from '@hv-development/schemas';
 
 // 一時的な型定義
-type StoreCreateRequest = {
+type ShopCreateRequest = {
   name: string;
   merchantId: string;
+  nameKana?: string;
+  email: string;
+  phone: string;
+  postalCode?: string;
+  address?: string;
+  latitude?: string;
+  longitude?: string;
+  businessHours?: string;
+  holidays?: string;
+  budgetLunch?: number;
+  budgetDinner?: number;
+  smokingType?: string;
+  paymentSaicoin?: boolean;
+  paymentTamapon?: boolean;
+  paymentCash?: boolean;
+  paymentCredit?: string;
+  paymentCode?: string;
+  scenes?: string;
+  status?: string;
   [key: string]: unknown;
 };
 
@@ -30,7 +49,7 @@ export default function ShopForm() {
   const shopId = params.id as string;
   const isEdit = !!shopId;
   
-  const [formData, setFormData] = useState<StoreCreateRequest>({
+  const [formData, setFormData] = useState<ShopCreateRequest>({
     merchantId: '',
     name: '',
     nameKana: '',
@@ -74,7 +93,7 @@ export default function ShopForm() {
         // 編集モードの場合は店舗データを取得
         if (isEdit) {
           const shopData = await apiClient.getShop(shopId);
-          setFormData(shopData as StoreCreateRequest);
+          setFormData(shopData as ShopCreateRequest);
         }
       } catch (err: unknown) {
         console.error('Failed to fetch data:', err);
@@ -88,7 +107,7 @@ export default function ShopForm() {
     fetchData();
   }, [shopId, isEdit]);
 
-  const handleInputChange = (field: keyof StoreCreateRequest, value: string | number | boolean) => {
+  const handleInputChange = (field: keyof ShopCreateRequest, value: string | number | boolean) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,

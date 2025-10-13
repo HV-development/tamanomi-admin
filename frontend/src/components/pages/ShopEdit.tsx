@@ -3,18 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
-import Button from '@/components/atoms/button';
-import Icon from '@/components/atoms/icon';
+import Button from '@/components/atoms/Button';
+import Icon from '@/components/atoms/Icon';
 import { 
   validateRequired, 
   validateMaxLength, 
   validatePostalCode, 
   validatePhone, 
   validateUrl, 
-  validateStoreCode 
+  validateShopCode 
 } from '@/utils/validation';
 
-interface StoreFormData {
+interface ShopFormData {
   storeName: string;
   storeDescription: string;
   postalCode: string;
@@ -25,7 +25,7 @@ interface StoreFormData {
   phone: string;
   homepage: string;
   genres: string[];
-  storeCode: string;
+  shopCode: string;
 }
 
 const prefectures = [
@@ -45,7 +45,7 @@ const genres = [
 ];
 
 // サンプルデータ（実際はAPIから取得）
-const sampleStoreData: Record<string, StoreFormData> = {
+const sampleShopData: Record<string, ShopFormData> = {
   '1': {
     storeName: 'たまのみ 渋谷店',
     storeDescription: '渋谷駅から徒歩3分の居酒屋です。新鮮な魚介類と地酒が自慢です。',
@@ -57,7 +57,7 @@ const sampleStoreData: Record<string, StoreFormData> = {
     phone: '03-1234-5678',
     homepage: 'https://tamanomi-shibuya.com',
     genres: ['居酒屋'],
-    storeCode: 'SBY001',
+    shopCode: 'SBY001',
   },
   '2': {
     storeName: 'たまのみ 新宿店',
@@ -70,7 +70,7 @@ const sampleStoreData: Record<string, StoreFormData> = {
     phone: '03-2345-6789',
     homepage: 'https://tamanomi-shinjuku.com',
     genres: ['カフェ'],
-    storeCode: 'SJK001',
+    shopCode: 'SJK001',
   },
   '3': {
     storeName: 'たまのみ 池袋店',
@@ -83,17 +83,17 @@ const sampleStoreData: Record<string, StoreFormData> = {
     phone: '03-3456-7890',
     homepage: 'https://tamanomi-ikebukuro.com',
     genres: ['レストラン'],
-    storeCode: 'IKB001',
+    shopCode: 'IKB001',
   },
 };
 
-export default function StoreEdit() {
+export default function ShopEdit() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const storeId = params.id as string;
+  const shopId = params.id as string;
 
-  const [formData, setFormData] = useState<StoreFormData>({
+  const [formData, setFormData] = useState<ShopFormData>({
     storeName: '',
     storeDescription: '',
     postalCode: '',
@@ -104,7 +104,7 @@ export default function StoreEdit() {
     phone: '',
     homepage: '',
     genres: [],
-    storeCode: '',
+    shopCode: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -112,23 +112,23 @@ export default function StoreEdit() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log('StoreEdit useEffect - storeId:', storeId);
-    console.log('StoreEdit useEffect - sampleStoreData:', sampleStoreData);
+    console.log('ShopEdit useEffect - shopId:', shopId);
+    console.log('ShopEdit useEffect - sampleShopData:', sampleShopData);
     
     // 実際はAPIから店舗データを取得
-    const storeData = sampleStoreData[storeId];
-    console.log('StoreEdit useEffect - found storeData:', storeData);
+    const shopData = sampleShopData[shopId];
+    console.log('ShopEdit useEffect - found shopData:', shopData);
     
-    if (storeData) {
-      setFormData(storeData);
-      console.log('StoreEdit useEffect - formData set to:', storeData);
+    if (shopData) {
+      setFormData(shopData);
+      console.log('ShopEdit useEffect - formData set to:', shopData);
     } else {
-      console.log('StoreEdit useEffect - No store data found for ID:', storeId);
+      console.log('ShopEdit useEffect - No store data found for ID:', shopId);
     }
     
     // URLパラメータから値を取得してフォームに設定（修正ボタンからの遷移時）
     if (searchParams) {
-      console.log('StoreEdit useEffect - searchParams found');
+      console.log('ShopEdit useEffect - searchParams found');
       const urlData = {
         storeName: searchParams.get('storeName') || '',
         storeDescription: searchParams.get('storeDescription') || '',
@@ -140,25 +140,25 @@ export default function StoreEdit() {
         phone: searchParams.get('phone') || '',
         homepage: searchParams.get('homepage') || '',
         genres: searchParams.get('genres')?.split(',').filter(g => g) || [],
-        storeCode: searchParams.get('storeCode') || '',
+        shopCode: searchParams.get('shopCode') || '',
       };
       
-      console.log('StoreEdit useEffect - urlData:', urlData);
+      console.log('ShopEdit useEffect - urlData:', urlData);
       
       // いずれかの値が存在する場合のみフォームデータを更新
       if (Object.values(urlData).some(value => Array.isArray(value) ? value.length > 0 : value !== '')) {
-        console.log('StoreEdit useEffect - Updating formData with urlData');
+        console.log('ShopEdit useEffect - Updating formData with urlData');
         setFormData(urlData);
       } else {
-        console.log('StoreEdit useEffect - No urlData to apply');
+        console.log('ShopEdit useEffect - No urlData to apply');
       }
     }
     
-    console.log('StoreEdit useEffect - Setting isLoading to false');
+    console.log('ShopEdit useEffect - Setting isLoading to false');
     setIsLoading(false);
-  }, [storeId, searchParams]);
+  }, [shopId, searchParams]);
 
-  const handleInputChange = (field: keyof StoreFormData, value: string) => {
+  const handleInputChange = (field: keyof ShopFormData, value: string) => {
     // 最大文字数チェック
     const maxLengths: Record<string, number> = {
       storeName: 30,
@@ -168,7 +168,7 @@ export default function StoreEdit() {
       building: 100,
       phone: 12,
       homepage: 255,
-      storeCode: 6,
+      shopCode: 6,
     };
 
     if (maxLengths[field] && value.length > maxLengths[field]) {
@@ -206,7 +206,7 @@ export default function StoreEdit() {
     setErrors(newErrors);
   };
 
-  const validateField = (field: keyof StoreFormData, value: string) => {
+  const validateField = (field: keyof ShopFormData, value: string) => {
     const newErrors = { ...errors };
 
     switch (field) {
@@ -291,12 +291,12 @@ export default function StoreEdit() {
         }
         break;
 
-      case 'storeCode':
-        const storeCodeError = validateRequired(value, '店舗CD') || validateStoreCode(value);
-        if (storeCodeError) {
-          newErrors.storeCode = storeCodeError;
+      case 'shopCode':
+        const shopCodeError = validateRequired(value, '店舗CD') || validateShopCode(value);
+        if (shopCodeError) {
+          newErrors.shopCode = shopCodeError;
         } else {
-          delete newErrors.storeCode;
+          delete newErrors.shopCode;
         }
         break;
     }
@@ -338,8 +338,8 @@ export default function StoreEdit() {
     const genreError = formData.genres.length === 0 ? 'ジャンルを1つ以上選択してください' : null;
     if (genreError) newErrors.genres = genreError;
 
-    const storeCodeError = validateRequired(formData.storeCode, '店舗CD') || validateStoreCode(formData.storeCode);
-    if (storeCodeError) newErrors.storeCode = storeCodeError;
+    const shopCodeError = validateRequired(formData.shopCode, '店舗CD') || validateShopCode(formData.shopCode);
+    if (shopCodeError) newErrors.shopCode = shopCodeError;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -378,7 +378,7 @@ export default function StoreEdit() {
     if (validateAllFields()) {
       // 変更内容確認画面に遷移
       const queryParams = new URLSearchParams({
-        id: storeId,
+        id: shopId,
         storeName: formData.storeName,
         storeDescription: formData.storeDescription,
         postalCode: formData.postalCode,
@@ -389,10 +389,10 @@ export default function StoreEdit() {
         phone: formData.phone,
         homepage: formData.homepage,
         genres: formData.genres.join(','),
-        storeCode: formData.storeCode,
+        shopCode: formData.shopCode,
       });
       
-      router.push(`/stores/${storeId}/confirm?${queryParams.toString()}`);
+      router.push(`/stores/${shopId}/confirm?${queryParams.toString()}`);
     } else {
       setIsSubmitting(false);
     }
@@ -668,25 +668,25 @@ export default function StoreEdit() {
 
             {/* 店舗CD */}
             <div>
-              <label htmlFor="storeCode" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="shopCode" className="block text-sm font-medium text-gray-700 mb-2">
                 店舗CD <span className="text-red-500">*</span>
                 <span className="text-sm text-gray-500 ml-2">（店舗のログインID）</span>
               </label>
               <input
                 type="text"
-                id="storeCode"
+                id="shopCode"
                 placeholder="ABC123（3-6文字の大文字英語または数字）"
-                value={formData.storeCode}
-                onChange={(e) => handleInputChange('storeCode', e.target.value.toUpperCase())}
+                value={formData.shopCode}
+                onChange={(e) => handleInputChange('shopCode', e.target.value.toUpperCase())}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-                  errors.storeCode ? 'border-red-500' : 'border-gray-300'
+                  errors.shopCode ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
               <div className="mt-1 text-xs text-gray-500">
-                {formData.storeCode.length}/6文字
+                {formData.shopCode.length}/6文字
               </div>
-              {errors.storeCode && (
-                <p className="mt-1 text-sm text-red-500">{errors.storeCode}</p>
+              {errors.shopCode && (
+                <p className="mt-1 text-sm text-red-500">{errors.shopCode}</p>
               )}
             </div>
 

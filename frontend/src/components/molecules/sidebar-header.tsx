@@ -1,4 +1,4 @@
-import Logo from '@/components/atoms/logo';
+import Logo from '@/components/atoms/Logo';
 
 interface SidebarHeaderProps {
   isCollapsed: boolean;

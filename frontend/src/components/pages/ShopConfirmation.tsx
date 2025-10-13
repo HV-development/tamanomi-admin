@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
-import Button from '@/components/atoms/button';
-import Icon from '@/components/atoms/icon';
+import Button from '@/components/atoms/Button';
+import Icon from '@/components/atoms/Icon';
 
-interface StoreData {
+interface ShopData {
   storeName: string;
   storeDescription: string;
   postalCode: string;
@@ -20,12 +20,12 @@ interface StoreData {
   storeCode: string;
 }
 
-export default function StoreConfirmation() {
+export default function ShopConfirmation() {
   const searchParams = useSearchParams();
-  const [storeData, setStoreData] = useState<StoreData | null>(null);
+  const [shopData, setShopData] = useState<ShopData | null>(null);
 
   useEffect(() => {
-    const data: StoreData = {
+    const data: ShopData = {
       storeName: searchParams.get('storeName') || '',
       storeDescription: searchParams.get('storeDescription') || '',
       postalCode: searchParams.get('postalCode') || '',
@@ -38,7 +38,7 @@ export default function StoreConfirmation() {
       genres: searchParams.get('genres') || '',
       storeCode: searchParams.get('storeCode') || '',
     };
-    setStoreData(data);
+    setShopData(data);
   }, [searchParams]);
 
   const _handleBack = () => {
@@ -48,17 +48,17 @@ export default function StoreConfirmation() {
   const handleModify = () => {
     // 店舗登録画面に戻る（データを保持）
     const queryParams = new URLSearchParams({
-      storeName: storeData?.storeName || '',
-      storeDescription: storeData?.storeDescription || '',
-      postalCode: storeData?.postalCode || '',
-      prefecture: storeData?.prefecture || '',
-      city: storeData?.city || '',
-      address: storeData?.address || '',
-      building: storeData?.building || '',
-      phone: storeData?.phone || '',
-      homepage: storeData?.homepage || '',
-      genres: storeData?.genres || '',
-      storeCode: storeData?.storeCode || '',
+      storeName: shopData?.storeName || '',
+      storeDescription: shopData?.storeDescription || '',
+      postalCode: shopData?.postalCode || '',
+      prefecture: shopData?.prefecture || '',
+      city: shopData?.city || '',
+      address: shopData?.address || '',
+      building: shopData?.building || '',
+      phone: shopData?.phone || '',
+      homepage: shopData?.homepage || '',
+      genres: shopData?.genres || '',
+      storeCode: shopData?.storeCode || '',
     });
     
     window.location.href = `/stores/new?${queryParams.toString()}`;
@@ -66,13 +66,13 @@ export default function StoreConfirmation() {
 
   const handleRegister = () => {
     // 実際の登録処理（APIコール等）
-    console.log('店舗登録:', storeData);
+    console.log('店舗登録:', shopData);
     alert('店舗を登録しました');
     // 登録後は店舗一覧画面に遷移
     window.location.href = '/stores';
   };
 
-  if (!storeData) {
+  if (!shopData) {
     return (
       <DashboardLayout>
         <div className="text-center py-12">
@@ -110,56 +110,56 @@ export default function StoreConfirmation() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 店舗名
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.storeName}</p>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.storeName}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 店舗紹介内容
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.storeDescription}</p>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.storeDescription}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 郵便番号
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.postalCode}</p>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.postalCode}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 都道府県
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.prefecture}</p>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.prefecture}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 市区町村
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.city}</p>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.city}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 番地以降
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.address}</p>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.address}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 建物名
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.building || '（未入力）'}</p>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.building || '（未入力）'}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 電話番号
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.phone}</p>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.phone}</p>
             </div>
 
             <div>
@@ -167,7 +167,7 @@ export default function StoreConfirmation() {
                 ホームページ
               </label>
               <p className="text-gray-900 bg-gray-50 p-2 rounded">
-                {storeData.homepage || '（未入力）'}
+                {shopData.homepage || '（未入力）'}
               </p>
             </div>
 
@@ -175,14 +175,14 @@ export default function StoreConfirmation() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 ジャンル
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.genres}</p>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.genres}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 店舗CD
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{storeData.storeCode}</p>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.storeCode}</p>
             </div>
           </div>
 
