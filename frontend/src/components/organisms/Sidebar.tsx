@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import SidebarHeader from '@/components/molecules/sidebar-header';
 import MenuItem from '@/components/molecules/menu-item';
 import Icon from '@/components/atoms/Icon';
+import { useAuth } from '@/components/contexts/auth-context';
 
 interface MenuItemData {
   name: string;
@@ -23,6 +24,7 @@ const menuItems: MenuItemData[] = [
 
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { logout } = useAuth();
   const [isLoaded, setIsLoaded] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -86,9 +88,10 @@ export default function Sidebar() {
         {/* ログアウトボタン */}
         <div className="px-4 py-2">
           <button
-            onClick={() => {
+            onClick={async () => {
               if (confirm('ログアウトしますか？')) {
-                window.location.href = '/';
+                await logout();
+                router.push('/login');
               }
             }}
             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900`}
