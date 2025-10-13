@@ -73,35 +73,47 @@ export default function MerchantEdit() {
 
   // 事業者データの読み込み
   useEffect(() => {
+    let isMounted = true;
+    const abortController = new AbortController();
+
     const loadMerchantData = async () => {
       try {
         // APIから事業者データを取得
-        const response = await fetch(`/api/merchants/${merchantId}`);
+        const response = await fetch(`/api/merchants/${merchantId}`, {
+          signal: abortController.signal,
+        });
+        
+        // コンポーネントがアンマウントされている場合は処理を中断
+        if (!isMounted) return;
         
         if (response.ok) {
           const merchantData = await response.json();
           
-          // APIレスポンスをフォームデータに変換
-          setFormData({
-            name: merchantData.name || '',
-            nameKana: merchantData.nameKana || '',
-            representative: merchantData.representative || '',
-            representativeName: merchantData.representativeName || '',
-            representativeNameLast: merchantData.representativeNameLast || '',
-            representativeNameFirst: merchantData.representativeNameFirst || '',
-            representativeNameLastKana: merchantData.representativeNameLastKana || '',
-            representativeNameFirstKana: merchantData.representativeNameFirstKana || '',
-            representativePhone: merchantData.representativePhone || '',
-            email: merchantData.email || '',
-            phone: merchantData.phone || '',
-            postalCode: merchantData.postalCode || '',
-            prefecture: merchantData.prefecture || '',
-            city: merchantData.city || '',
-            address1: merchantData.address1 || '',
-            address2: merchantData.address2 || '',
-            status: (merchantData.status as MerchantStatus) || 'registering',
-          });
+          if (isMounted) {
+            // APIレスポンスをフォームデータに変換
+            setFormData({
+              name: merchantData.name || '',
+              nameKana: merchantData.nameKana || '',
+              representative: merchantData.representative || '',
+              representativeName: merchantData.representativeName || '',
+              representativeNameLast: merchantData.representativeNameLast || '',
+              representativeNameFirst: merchantData.representativeNameFirst || '',
+              representativeNameLastKana: merchantData.representativeNameLastKana || '',
+              representativeNameFirstKana: merchantData.representativeNameFirstKana || '',
+              representativePhone: merchantData.representativePhone || '',
+              email: merchantData.email || '',
+              phone: merchantData.phone || '',
+              postalCode: merchantData.postalCode || '',
+              prefecture: merchantData.prefecture || '',
+              city: merchantData.city || '',
+              address1: merchantData.address1 || '',
+              address2: merchantData.address2 || '',
+              status: (merchantData.status as MerchantStatus) || 'registering',
+            });
+          }
         } else {
+          if (!isMounted) return;
+          
           console.error('事業者データの取得に失敗しました:', response.status);
           // エラー時はサンプルデータを使用
           const sampleData: MerchantEditFormData = {
@@ -126,6 +138,13 @@ export default function MerchantEdit() {
           setFormData(sampleData);
         }
       } catch (error) {
+        // アボート時のエラーは無視
+        if (error instanceof Error && error.name === 'AbortError') {
+          return;
+        }
+        
+        if (!isMounted) return;
+        
         console.error('事業者データの読み込みエラー:', error);
         // エラー時はサンプルデータを使用
         const sampleData: MerchantEditFormData = {
@@ -150,13 +169,21 @@ export default function MerchantEdit() {
         setFormData(sampleData);
         alert('事業者データの読み込みに失敗しました。サンプルデータを表示しています。');
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     if (merchantId) {
       loadMerchantData();
     }
+
+    // クリーンアップ: コンポーネントのアンマウント時または再実行時にリクエストをキャンセル
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, [merchantId]);
 
   const handleInputChange = (field: keyof MerchantEditFormData, value: string) => {

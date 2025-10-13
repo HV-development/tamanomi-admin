@@ -84,6 +84,9 @@ export default function UserEdit() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    const abortController = new AbortController();
+
     const fetchUserData = async () => {
       try {
         // APIからユーザーデータを取得
@@ -94,35 +97,50 @@ export default function UserEdit() {
             // 認証トークンが必要な場合は追加
             // 'Authorization': `Bearer ${token}`
           },
+          signal: abortController.signal,
         });
+
+        // コンポーネントがアンマウントされている場合は処理を中断
+        if (!isMounted) return;
 
         if (response.ok) {
           const userData = await response.json();
-          setFormData({
-            nickname: userData.nickname || '',
-            email: userData.email || '',
-            postalCode: userData.postalCode || '',
-            address: userData.address || '',
-            birthDate: userData.birthDate || '',
-            gender: userData.gender || '',
-            saitamaAppId: userData.saitamaAppId || '', // このフィールドはAPIにない場合は空文字
-          });
+          if (isMounted) {
+            setFormData({
+              nickname: userData.nickname || '',
+              email: userData.email || '',
+              postalCode: userData.postalCode || '',
+              address: userData.address || '',
+              birthDate: userData.birthDate || '',
+              gender: userData.gender || '',
+              saitamaAppId: userData.saitamaAppId || '', // このフィールドはAPIにない場合は空文字
+            });
+          }
         } else {
           console.error('ユーザーデータの取得に失敗しました:', response.status);
+          // エラー時はサンプルデータを使用
+          const userData = sampleUserData[userId];
+          if (userData && isMounted) {
+            setFormData(userData);
+          }
+        }
+      } catch (error) {
+        // アボート時のエラーは無視
+        if (error instanceof Error && error.name === 'AbortError') {
+          return;
+        }
+        
+        if (isMounted) {
+          console.error('ユーザーデータの取得エラー:', error);
           // エラー時はサンプルデータを使用
           const userData = sampleUserData[userId];
           if (userData) {
             setFormData(userData);
           }
         }
-      } catch (error) {
-        console.error('ユーザーデータの取得エラー:', error);
-        // エラー時はサンプルデータを使用
-        const userData = sampleUserData[userId];
-        if (userData) {
-          setFormData(userData);
-        }
       }
+      
+      if (!isMounted) return;
       
       // URLパラメータから値を取得してフォームに設定（修正ボタンからの遷移時）
       if (searchParams) {
@@ -137,15 +155,23 @@ export default function UserEdit() {
         };
         
         // いずれかの値が存在する場合のみフォームデータを更新
-        if (Object.values(urlData).some(value => value !== '')) {
+        if (Object.values(urlData).some(value => value !== '') && isMounted) {
           setFormData(urlData);
         }
       }
       
-      setIsLoading(false);
+      if (isMounted) {
+        setIsLoading(false);
+      }
     };
 
     fetchUserData();
+
+    // クリーンアップ: コンポーネントのアンマウント時または再実行時にリクエストをキャンセル
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, [userId, searchParams]);
 
   const handleInputChange = (field: keyof UserFormData, value: string) => {

@@ -69,11 +69,18 @@ export default function MerchantManagement() {
 
   // データ取得
   useEffect(() => {
+    let isMounted = true;
+    const abortController = new AbortController();
+
     const fetchMerchants = async () => {
       try {
         setIsLoading(true);
         setError(null);
         const data = await apiClient.getMerchants();
+        
+        // コンポーネントがアンマウントされている場合は処理を中断
+        if (!isMounted) return;
+        
         console.log('🔍 MerchantManagement: API Response received', { 
           data, 
           dataType: typeof data, 
@@ -104,17 +111,35 @@ export default function MerchantManagement() {
           length: merchantsArray.length,
           firstMerchant: merchantsArray[0] || 'no merchants'
         });
-        setMerchants(merchantsArray as Merchant[]);
+        
+        if (isMounted) {
+          setMerchants(merchantsArray as Merchant[]);
+        }
       } catch (err: unknown) {
-        console.error('掲載店データの取得に失敗しました:', err);
-        setError('掲載店データの取得に失敗しました');
-        setMerchants([]);
+        // アボート時のエラーは無視
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
+        
+        if (isMounted) {
+          console.error('掲載店データの取得に失敗しました:', err);
+          setError('掲載店データの取得に失敗しました');
+          setMerchants([]);
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchMerchants();
+
+    // クリーンアップ: コンポーネントのアンマウント時または再実行時にリクエストをキャンセル
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, []);
 
   // チェックボックス関連の関数

@@ -55,25 +55,47 @@ export default function ShopConfirm() {
   const { toasts, removeToast, showError } = useToast();
 
   useEffect(() => {
+    let isMounted = true;
+    const abortController = new AbortController();
+
     const fetchShop = async () => {
       try {
         setIsLoading(true);
         setError(null);
         const data = await apiClient.getShop(shopId);
-        setShop(data as ShopDetailResponse);
+        
+        // コンポーネントがマウントされている場合のみ状態を更新
+        if (isMounted) {
+          setShop(data as ShopDetailResponse);
+        }
       } catch (err: unknown) {
-        console.error('Failed to fetch shop:', err);
-        setError(err instanceof Error ? err.message : '店舗データの取得に失敗しました');
-        showError('店舗データの取得に失敗しました');
+        // アボート時のエラーは無視
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
+        
+        if (isMounted) {
+          console.error('Failed to fetch shop:', err);
+          setError(err instanceof Error ? err.message : '店舗データの取得に失敗しました');
+          showError('店舗データの取得に失敗しました');
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     if (shopId) {
       fetchShop();
     }
-  }, [shopId]);
+
+    // クリーンアップ: コンポーネントのアンマウント時または再実行時にリクエストをキャンセル
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
+  }, [shopId, showError]);
 
   const getStatusLabel = (status: string) => {
     const statusLabels: Record<string, string> = {
