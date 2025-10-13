@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-import { type MerchantFormData } from '@hv-development/schemas';
 
 // 確認画面用の型（フォームデータと同じ構造）
 interface MerchantConfirmationData {

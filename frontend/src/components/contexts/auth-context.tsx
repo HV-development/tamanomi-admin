@@ -24,7 +24,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType | null => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     // 静的生成時やSSR時のエラーを防ぐため、nullを返す
