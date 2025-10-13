@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import DashboardLayout from '@/components/templates/dashboard-layout';
-import Button from '@/components/atoms/button';
-import Checkbox from '@/components/atoms/checkbox';
+import Button from '@/components/atoms/Button';
+import Checkbox from '@/components/atoms/Checkbox';
 import ToastContainer from '@/components/molecules/toast-container';
 import FloatingFooter from '@/components/molecules/floating-footer';
 import { apiClient } from '@/lib/api';
@@ -18,6 +18,7 @@ type Merchant = Omit<MerchantWithDetails, 'createdAt' | 'updatedAt' | 'deletedAt
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  phone: string;
   account: {
     email: string;
     status: string;
@@ -62,8 +63,8 @@ export default function MerchantManagement() {
     address: '',
     prefecture: '',
   });
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'active' | 'inactive' | 'suspended'>('all');
-  const [appliedStatusFilter, setAppliedStatusFilter] = useState<'all' | 'pending' | 'active' | 'inactive' | 'suspended'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'terminated'>('all');
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState<'all' | 'active' | 'terminated'>('all');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // データ取得
@@ -345,13 +346,7 @@ export default function MerchantManagement() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'registering': return 'text-blue-600';
-      case 'collection_requested': return 'text-purple-600';
-      case 'approval_pending': return 'text-yellow-600';
-      case 'promotional_materials_preparing': return 'text-orange-600';
-      case 'promotional_materials_shipping': return 'text-indigo-600';
-      case 'operating': return 'text-green-600';
-      case 'suspended': return 'text-red-600';
+      case 'active': return 'text-green-600';
       case 'terminated': return 'text-gray-600';
       default: return 'text-gray-600';
     }
@@ -558,7 +553,7 @@ export default function MerchantManagement() {
               <select
                 id="status"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'pending' | 'active' | 'inactive' | 'suspended')}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'terminated')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               >
                 <option value="all">すべて</option>
@@ -654,18 +649,20 @@ export default function MerchantManagement() {
                               />
                             </button>
                           </Link>
-                          <button 
-                            className="p-2.5 text-blue-600 hover:text-blue-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
-                            title="店舗一覧"
-                          >
-                            <Image 
-                              src="/store-list.svg" 
-                              alt="店舗一覧" 
-                              width={32}
-                              height={32}
-                              className="w-8 h-8"
-                            />
-                          </button>
+                          <Link href={`/merchants/${merchant.id}/shops`}>
+                            <button 
+                              className="p-2.5 text-blue-600 hover:text-blue-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                              title="店舗一覧"
+                            >
+                              <Image 
+                                src="/store-list.svg" 
+                                alt="店舗一覧" 
+                                width={32}
+                                height={32}
+                                className="w-8 h-8"
+                              />
+                            </button>
+                          </Link>
                           {!merchant.account?.lastLoginAt && (
                             <button 
                               onClick={() => handleResendPasswordEmail(merchant.id, merchant.email)}

@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
-import Button from '@/components/atoms/button';
-import Icon from '@/components/atoms/icon';
+import Button from '@/components/atoms/Button';
+import Icon from '@/components/atoms/Icon';
 import { 
   validateRequired, 
   validateMaxLength, 

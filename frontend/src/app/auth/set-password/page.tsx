@@ -2,8 +2,8 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Button from '@/components/atoms/button';
-import Icon from '@/components/atoms/icon';
+import Button from '@/components/atoms/Button';
+import Icon from '@/components/atoms/Icon';
 
 function SetPasswordContent() {
   const router = useRouter();

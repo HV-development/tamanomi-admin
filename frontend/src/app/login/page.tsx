@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Button from '@/components/atoms/button';
-import Logo from '@/components/atoms/logo';
+import Button from '@/components/atoms/Button';
+import Logo from '@/components/atoms/Logo';
 import { useAuth } from '@/components/contexts/auth-context';
 import { type AdminLoginInput, adminLoginSchema } from '@hv-development/schemas';
 

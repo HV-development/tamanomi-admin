@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import Button from '@/components/atoms/button';
-import Icon from '@/components/atoms/icon';
+import Button from '@/components/atoms/Button';
+import Icon from '@/components/atoms/Icon';
 import { statusOptions } from '@/lib/constants/merchant';
 
 interface FloatingFooterProps {

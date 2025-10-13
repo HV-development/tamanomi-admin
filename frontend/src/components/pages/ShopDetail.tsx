@@ -3,18 +3,55 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Button from '@/components/atoms/button';
+import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/toast-container';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
-// import { StoreDetailResponse } from '@hv-development/schemas';
+// import { ShopDetailResponse } from '@hv-development/schemas';
 
 // 一時的な型定義
-type StoreDetailResponse = {
+type Coupon = {
+  id: string;
+  title: string;
+  description?: string | null;
+  conditions?: string | null;
+  status: string;
+  createdAt: string;
+  [key: string]: unknown;
+};
+
+type ShopDetailResponse = {
   id: string;
   name: string;
+  nameKana?: string | null;
+  email: string;
+  phone: string;
+  postalCode?: string | null;
+  address?: string | null;
+  latitude?: string | null;
+  longitude?: string | null;
+  businessHours?: string | null;
+  holidays?: string | null;
+  budgetLunch?: number | null;
+  budgetDinner?: number | null;
+  smokingType?: string | null;
+  scenes?: string | null;
+  paymentSaicoin?: boolean;
+  paymentTamapon?: boolean;
+  paymentCash?: boolean;
+  paymentCredit?: string | null;
+  paymentCode?: string | null;
   status: string;
-  coupons: unknown[];
+  createdAt: string;
+  updatedAt: string;
+  merchant: {
+    name: string;
+    account: {
+      displayName: string | null;
+      email: string;
+    };
+  };
+  coupons: Coupon[];
   [key: string]: unknown;
 };
 
@@ -23,7 +60,7 @@ export default function ShopDetail() {
   const router = useRouter();
   const shopId = params.id as string;
   
-  const [shop, setShop] = useState<StoreDetailResponse | null>(null);
+  const [shop, setShop] = useState<ShopDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
@@ -34,7 +71,7 @@ export default function ShopDetail() {
         setIsLoading(true);
         setError(null);
         const data = await apiClient.getShop(shopId);
-        setShop(data as StoreDetailResponse);
+        setShop(data as ShopDetailResponse);
       } catch (err: unknown) {
         console.error('Failed to fetch shop:', err);
         setError(err instanceof Error ? err.message : '店舗データの取得に失敗しました');
@@ -58,7 +95,7 @@ export default function ShopDetail() {
       
       // データを再取得
       const data = await apiClient.getShop(shopId);
-      setShop(data as StoreDetailResponse);
+      setShop(data as ShopDetailResponse);
     } catch (err: unknown) {
       console.error('Failed to update shop status:', err);
       showError('ステータス更新に失敗しました');
@@ -329,7 +366,7 @@ export default function ShopDetail() {
                 </tr>
               </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {shop.coupons.map((coupon: Record<string, unknown>) => (
+                        {shop.coupons.map((coupon) => (
                   <tr key={coupon.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {coupon.title}

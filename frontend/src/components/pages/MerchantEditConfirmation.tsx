@@ -3,13 +3,23 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
-import Button from '@/components/atoms/button';
-import Icon from '@/components/atoms/icon';
+import Button from '@/components/atoms/Button';
+import Icon from '@/components/atoms/Icon';
 import { type MerchantFormData, type MerchantStatus } from '@hv-development/schemas';
 
 // 編集確認画面用の型
-interface MerchantEditConfirmationData extends Partial<MerchantFormData> {
+interface MerchantEditConfirmationData {
   status: MerchantStatus;
+  name?: string;
+  nameKana?: string;
+  representative?: string;
+  representativeName?: string;
+  representativePhone?: string;
+  email?: string;
+  phone?: string;
+  postalCode?: string;
+  address?: string;
+  [key: string]: unknown;
 }
 
 export default function MerchantEditConfirmation() {

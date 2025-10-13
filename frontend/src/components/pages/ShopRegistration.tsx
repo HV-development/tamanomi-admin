@@ -3,18 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
-import Button from '@/components/atoms/button';
-import Icon from '@/components/atoms/icon';
+import Button from '@/components/atoms/Button';
+import Icon from '@/components/atoms/Icon';
 import { 
   validateRequired, 
   validateMaxLength, 
   validatePostalCode, 
   validatePhone, 
   validateUrl, 
-  validateStoreCode 
+  validateShopCode 
 } from '@/utils/validation';
 
-interface StoreFormData {
+interface ShopFormData {
   storeName: string;
   storeDescription: string;
   postalCode: string;
@@ -25,7 +25,7 @@ interface StoreFormData {
   phone: string;
   homepage: string;
   genres: string[];
-  storeCode: string;
+  shopCode: string;
 }
 
 const prefectures = [
@@ -44,9 +44,9 @@ const genres = [
   'その他'
 ];
 
-export default function StoreRegistration() {
+export default function ShopRegistration() {
   const searchParams = useSearchParams();
-  const [formData, setFormData] = useState<StoreFormData>({
+  const [formData, setFormData] = useState<ShopFormData>({
     storeName: '',
     storeDescription: '',
     postalCode: '',
@@ -57,7 +57,7 @@ export default function StoreRegistration() {
     phone: '',
     homepage: '',
     genres: [],
-    storeCode: '',
+    shopCode: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -77,7 +77,7 @@ export default function StoreRegistration() {
         phone: searchParams.get('phone') || '',
         homepage: searchParams.get('homepage') || '',
         genres: searchParams.get('genres')?.split(',').filter(g => g) || [],
-        storeCode: searchParams.get('storeCode') || '',
+        shopCode: searchParams.get('shopCode') || '',
       };
       
       // いずれかの値が存在する場合のみフォームデータを更新
@@ -87,7 +87,7 @@ export default function StoreRegistration() {
     }
   }, [searchParams]);
 
-  const handleInputChange = (field: keyof StoreFormData, value: string) => {
+  const handleInputChange = (field: keyof ShopFormData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -119,7 +119,7 @@ export default function StoreRegistration() {
     setErrors(newErrors);
   };
 
-  const validateField = (field: keyof StoreFormData, value: string) => {
+  const validateField = (field: keyof ShopFormData, value: string) => {
     const newErrors = { ...errors };
 
     switch (field) {
@@ -204,12 +204,12 @@ export default function StoreRegistration() {
         }
         break;
 
-      case 'storeCode':
-        const storeCodeError = validateRequired(value, '店舗CD') || validateStoreCode(value);
-        if (storeCodeError) {
-          newErrors.storeCode = storeCodeError;
+      case 'shopCode':
+        const shopCodeError = validateRequired(value, '店舗CD') || validateShopCode(value);
+        if (shopCodeError) {
+          newErrors.shopCode = shopCodeError;
         } else {
-          delete newErrors.storeCode;
+          delete newErrors.shopCode;
         }
         break;
     }
@@ -251,8 +251,8 @@ export default function StoreRegistration() {
     const genreError = formData.genres.length === 0 ? 'ジャンルを1つ以上選択してください' : null;
     if (genreError) newErrors.genre = genreError;
 
-    const storeCodeError = validateRequired(formData.storeCode, '店舗CD') || validateStoreCode(formData.storeCode);
-    if (storeCodeError) newErrors.storeCode = storeCodeError;
+    const shopCodeError = validateRequired(formData.shopCode, '店舗CD') || validateShopCode(formData.shopCode);
+    if (shopCodeError) newErrors.shopCode = shopCodeError;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -262,7 +262,7 @@ export default function StoreRegistration() {
     return validateAllFields();
   };
 
-  const _clearFieldError = (field: keyof StoreFormData) => {
+  const _clearFieldError = (field: keyof ShopFormData) => {
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -316,7 +316,7 @@ export default function StoreRegistration() {
         phone: formData.phone,
         homepage: formData.homepage,
         genres: formData.genres.join(','),
-        storeCode: formData.storeCode,
+        shopCode: formData.shopCode,
       });
       
       window.location.href = `/stores/confirm?${queryParams.toString()}`;
@@ -577,22 +577,22 @@ export default function StoreRegistration() {
 
             {/* 店舗CD */}
             <div>
-              <label htmlFor="storeCode" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="shopCode" className="block text-sm font-medium text-gray-700 mb-2">
                 店舗CD <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                id="storeCode"
+                id="shopCode"
                 placeholder="ABC123（3-6文字の大文字英語または数字）"
-                value={formData.storeCode}
-                onChange={(e) => handleInputChange('storeCode', e.target.value.toUpperCase())}
+                value={formData.shopCode}
+                onChange={(e) => handleInputChange('shopCode', e.target.value.toUpperCase())}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-                  errors.storeCode ? 'border-red-500' : 'border-gray-300'
+                  errors.shopCode ? 'border-red-500' : 'border-gray-300'
                 }`}
                 maxLength={6}
               />
-              {errors.storeCode && (
-                <p className="mt-1 text-sm text-red-500">{errors.storeCode}</p>
+              {errors.shopCode && (
+                <p className="mt-1 text-sm text-red-500">{errors.shopCode}</p>
               )}
             </div>
 

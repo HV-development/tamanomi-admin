@@ -1,5 +1,5 @@
 import DashboardLayout from '@/components/templates/dashboard-layout';
-import Icon from '@/components/atoms/icon';
+import Icon from '@/components/atoms/Icon';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';

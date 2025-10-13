@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     if (status) queryParams.append('status', status);
     if (merchantId) queryParams.append('merchantId', merchantId);
     
-    const response = await fetch(`${API_BASE_URL}/v1/shops?${queryParams.toString()}`, {
+    const response = await fetch(`${API_BASE_URL}/shops?${queryParams.toString()}`, {
       method: 'GET',
       headers: getAuthHeaders(request),
     });
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log('➕ API Route: Create shop request received', { name: body.name });
     
-    const response = await fetch(`${API_BASE_URL}/v1/shops`, {
+    const response = await fetch(`${API_BASE_URL}/shops`, {
       method: 'POST',
       headers: getAuthHeaders(request),
       body: JSON.stringify(body),

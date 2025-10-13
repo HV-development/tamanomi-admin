@@ -2,69 +2,81 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Button from '@/components/atoms/button';
-import Checkbox from '@/components/atoms/checkbox';
+import Image from 'next/image';
+import DashboardLayout from '@/components/templates/dashboard-layout';
+import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/toast-container';
-import FloatingFooter from '@/components/molecules/floating-footer';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
-// import { Store, StoreListResponse } from '@hv-development/schemas';
+import { statusLabels, statusOptions } from '@/lib/constants/shop';
 
-// 一時的な型定義
-type Store = {
+// APIレスポンス用の型
+type Shop = {
   id: string;
+  merchantId: string;
   name: string;
+  nameKana: string | null;
+  email: string;
+  phone: string;
+  postalCode: string | null;
+  address: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  businessHours: string | null;
+  holidays: string | null;
+  budgetLunch: number | null;
+  budgetDinner: number | null;
+  smokingType: string | null;
+  paymentSaicoin: boolean | null;
+  paymentTamapon: boolean | null;
+  paymentCash: boolean | null;
+  paymentCredit: string | null;
+  paymentCode: string | null;
+  scenes: string | null;
   status: string;
-  [key: string]: unknown;
-};
-
-type StoreListResponse = {
-  stores: Store[];
-  pagination: {
-    page: number;
-    totalPages: number;
-    totalCount: number;
-    limit: number;
-    total: number;
+  createdAt: string;
+  updatedAt: string;
+  merchant?: {
+    id: string;
+    name: string;
+    account?: {
+      email: string;
+      displayName: string | null;
+    };
   };
 };
 
-export default function ShopManagement() {
-  const [shops, setShops] = useState<Store[]>([]);
-  const [pagination, setPagination] = useState<StoreListResponse['pagination']>({
-    page: 1,
-    limit: 10,
-    total: 0,
-    totalPages: 0,
-    totalCount: 0,
-  });
+type ShopManagementProps = {
+  merchantId?: string;
+};
+
+export default function ShopManagement({ merchantId }: ShopManagementProps) {
+  const [shops, setShops] = useState<Shop[]>([]);
+  const [merchantName, setMerchantName] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
   
-  // チェックボックス関連の状態
-  const [selectedShops, setSelectedShops] = useState<Set<string>>(new Set());
-  const [isAllSelected, setIsAllSelected] = useState(false);
-  const [isIndeterminate, setIsIndeterminate] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState('active');
-  const [isExecuting, setIsExecuting] = useState(false);
-  
   const [searchForm, setSearchForm] = useState({
-    merchantId: '',
-    shopName: '',
+    shopId: '',
+    name: '',
+    nameKana: '',
     email: '',
     phone: '',
+    postalCode: '',
     address: '',
   });
   const [appliedSearchForm, setAppliedSearchForm] = useState({
-    merchantId: '',
-    shopName: '',
+    shopId: '',
+    name: '',
+    nameKana: '',
     email: '',
     phone: '',
+    postalCode: '',
     address: '',
   });
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'suspended'>('all');
-  const [appliedStatusFilter, setAppliedStatusFilter] = useState<'all' | 'active' | 'inactive' | 'suspended'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated'>('all');
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState<'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated'>('all');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // データ取得
@@ -74,472 +86,510 @@ export default function ShopManagement() {
         setIsLoading(true);
         setError(null);
         
-        const queryParams = new URLSearchParams();
-        queryParams.append('page', pagination.page.toString());
-        queryParams.append('limit', pagination.limit.toString());
+        // 店舗一覧を取得（merchantIdがあればフィルタ）
+        const queryParams = merchantId ? new URLSearchParams({ merchantId }) : undefined;
+        const data = await apiClient.getShops(queryParams?.toString());
+        console.log('🔍 ShopManagement: API Response received', { 
+          data, 
+          dataType: typeof data, 
+          isArray: Array.isArray(data),
+          hasShops: data && typeof data === 'object' && 'shops' in data,
+          hasDataShops: data && typeof data === 'object' && 'data' in data && data.data && typeof data.data === 'object' && 'shops' in data.data
+        });
         
-        if (appliedStatusFilter !== 'all') {
-          queryParams.append('status', appliedStatusFilter);
-        }
-        if (appliedSearchForm.merchantId) {
-          queryParams.append('merchantId', appliedSearchForm.merchantId);
+        // APIレスポンスの処理
+        let shopsArray: Shop[] = [];
+        let merchantInfo = null;
+        
+        if (Array.isArray(data)) {
+          shopsArray = data as Shop[];
+        } else if (data && typeof data === 'object') {
+          // 新しいAPIレスポンス形式: {success: true, data: {shops: [...], pagination: {...}}}
+          if ('data' in data && data.data && typeof data.data === 'object' && 'shops' in data.data) {
+            shopsArray = ((data.data as { shops: Shop[] }).shops || []) as Shop[];
+          }
+          // 古いAPIレスポンス形式: {shops: [...], pagination: {...}}
+          else if ('shops' in data) {
+            shopsArray = ((data as { shops: Shop[] }).shops || []) as Shop[];
+          }
         }
         
-        const data = await apiClient.getShops(queryParams.toString());
-        const response = data as StoreListResponse;
-        setShops(response.shops || []);
-        setPagination(response.pagination || pagination);
+        console.log('🔍 ShopManagement: Processed shops array', { 
+          shopsArray, 
+          length: shopsArray.length,
+          firstShop: shopsArray[0] || 'no shops'
+        });
+        
+        // 最初の店舗からmerchant情報を取得
+        if (shopsArray.length > 0 && shopsArray[0].merchant) {
+          merchantInfo = shopsArray[0].merchant;
+        }
+        
+        setShops(shopsArray);
+        
+        // merchantIdがある場合のみmerchant情報を取得
+        if (merchantId) {
+          if (!merchantInfo) {
+            try {
+              const merchantData = await apiClient.getMerchant(merchantId);
+              if (merchantData && typeof merchantData === 'object' && 'name' in merchantData) {
+                setMerchantName((merchantData as { name: string }).name);
+              }
+            } catch (err) {
+              console.error('Failed to fetch merchant info:', err);
+            }
+          } else {
+            setMerchantName(merchantInfo.name);
+          }
+        }
       } catch (err: unknown) {
-        console.error('Failed to fetch shops:', err);
-        setError(err instanceof Error ? err.message : '店舗データの取得に失敗しました');
-        showError('店舗データの取得に失敗しました');
+        console.error('店舗データの取得に失敗しました:', err);
+        setError('店舗データの取得に失敗しました');
+        setShops([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchShops();
-  }, [pagination.page, pagination.limit, appliedStatusFilter, appliedSearchForm.merchantId]);
+  }, [merchantId]);
 
-  // チェックボックスの状態管理
-  useEffect(() => {
-    const selectedCount = selectedShops.size;
-    const totalCount = shops.length;
+  // フィルタリング処理
+  const filteredShops = shops.filter((shop) => {
+    const matchesSearch = 
+      (appliedSearchForm.shopId === '' || shop.id.includes(appliedSearchForm.shopId)) &&
+      (appliedSearchForm.name === '' || shop.name.toLowerCase().includes(appliedSearchForm.name.toLowerCase())) &&
+      (appliedSearchForm.nameKana === '' || (shop.nameKana?.toLowerCase() || '').includes(appliedSearchForm.nameKana.toLowerCase())) &&
+      (appliedSearchForm.email === '' || shop.email.toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
+      (appliedSearchForm.phone === '' || shop.phone.includes(appliedSearchForm.phone)) &&
+      (appliedSearchForm.postalCode === '' || (shop.postalCode || '').includes(appliedSearchForm.postalCode)) &&
+      (appliedSearchForm.address === '' || (shop.address?.toLowerCase() || '').includes(appliedSearchForm.address.toLowerCase()));
     
-    setIsAllSelected(selectedCount === totalCount && totalCount > 0);
-    setIsIndeterminate(selectedCount > 0 && selectedCount < totalCount);
-  }, [selectedShops, shops.length]);
+    const matchesStatus = appliedStatusFilter === 'all' || shop.status === appliedStatusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
 
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      const allIds = new Set(shops.map(shop => shop.id));
-      setSelectedShops(allIds);
-    } else {
-      setSelectedShops(new Set());
-    }
-  };
-
-  const handleSelectShop = (shopId: string, checked: boolean) => {
-    const newSelected = new Set(selectedShops);
-    if (checked) {
-      newSelected.add(shopId);
-    } else {
-      newSelected.delete(shopId);
-    }
-    setSelectedShops(newSelected);
+  const handleInputChange = (field: keyof typeof searchForm, value: string) => {
+    setSearchForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   const handleSearch = () => {
     setAppliedSearchForm({ ...searchForm });
     setAppliedStatusFilter(statusFilter);
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    console.log('検索実行:', searchForm);
   };
 
-  const handleClearSearch = () => {
+  const handleClear = () => {
     setSearchForm({
-      merchantId: '',
-      shopName: '',
+      shopId: '',
+      name: '',
+      nameKana: '',
       email: '',
       phone: '',
+      postalCode: '',
       address: '',
     });
     setStatusFilter('all');
     setAppliedSearchForm({
-      merchantId: '',
-      shopName: '',
+      shopId: '',
+      name: '',
+      nameKana: '',
       email: '',
       phone: '',
+      postalCode: '',
       address: '',
     });
     setAppliedStatusFilter('all');
-    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
-  const handleStatusChange = async (shopId: string, newStatus: string) => {
+  const handleIndividualStatusChange = async (shopId: string, newStatus: string) => {
+    const originalShop = shops.find(s => s.id === shopId);
+    if (!originalShop) return;
+
+    const originalStatus = originalShop.status;
+
+    // 楽観的更新: まずUIを更新
+    setShops(prev => 
+      prev.map(shop => 
+        shop.id === shopId 
+          ? { ...shop, status: newStatus }
+          : shop
+      )
+    );
+
     try {
-      setIsExecuting(true);
       await apiClient.updateShopStatus(shopId, { status: newStatus });
-      showSuccess('ステータスを更新しました');
-      
-      // データを再取得
-      const queryParams = new URLSearchParams();
-      queryParams.append('page', pagination.page.toString());
-      queryParams.append('limit', pagination.limit.toString());
-      
-      if (appliedStatusFilter !== 'all') {
-        queryParams.append('status', appliedStatusFilter);
-      }
-      if (appliedSearchForm.merchantId) {
-        queryParams.append('merchantId', appliedSearchForm.merchantId);
-      }
-      
-      const data = await apiClient.getShops(queryParams.toString());
-      const response = data as StoreListResponse;
-        setShops(response.shops || []);
-      setPagination(response.pagination || pagination);
-    } catch (err: unknown) {
-      console.error('Failed to update shop status:', err);
-      showError('ステータス更新に失敗しました');
-    } finally {
-      setIsExecuting(false);
+      showSuccess(`店舗のステータスを「${statusLabels[newStatus]}」に更新しました`);
+    } catch (error: unknown) {
+      // エラー時は元のステータスに戻す
+      setShops(prev => 
+        prev.map(shop => 
+          shop.id === shopId 
+            ? { ...shop, status: originalStatus }
+            : shop
+        )
+      );
+      showError(`ステータスの更新に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
     }
   };
 
-  const handleDeleteShop = async (shopId: string) => {
-    if (!confirm('この店舗を削除しますか？')) return;
-    
-    try {
-      setIsExecuting(true);
-      await apiClient.deleteShop(shopId);
-      showSuccess('店舗を削除しました');
-      
-      // データを再取得
-      const queryParams = new URLSearchParams();
-      queryParams.append('page', pagination.page.toString());
-      queryParams.append('limit', pagination.limit.toString());
-      
-      if (appliedStatusFilter !== 'all') {
-        queryParams.append('status', appliedStatusFilter);
-      }
-      if (appliedSearchForm.merchantId) {
-        queryParams.append('merchantId', appliedSearchForm.merchantId);
-      }
-      
-      const data = await apiClient.getShops(queryParams.toString());
-      const response = data as StoreListResponse;
-        setShops(response.shops || []);
-      setPagination(response.pagination || pagination);
-    } catch (err: unknown) {
-      console.error('Failed to delete shop:', err);
-      showError('店舗削除に失敗しました');
-    } finally {
-      setIsExecuting(false);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'registering': return 'text-blue-600';
+      case 'collection_requested': return 'text-purple-600';
+      case 'approval_pending': return 'text-yellow-600';
+      case 'promotional_materials_preparing': return 'text-orange-600';
+      case 'promotional_materials_shipping': return 'text-indigo-600';
+      case 'operating': return 'text-green-600';
+      case 'suspended': return 'text-red-600';
+      case 'terminated': return 'text-gray-600';
+      default: return 'text-gray-600';
     }
-  };
-
-  const getStatusLabel = (status: string) => {
-    const statusLabels: Record<string, string> = {
-      active: '営業中',
-      inactive: '休業中',
-      suspended: '停止中',
-    };
-    return statusLabels[status] || status;
-  };
-
-  const getStatusBadgeClass = (status: string) => {
-    const statusClasses: Record<string, string> = {
-      active: 'bg-green-100 text-green-800',
-      inactive: 'bg-yellow-100 text-yellow-800',
-      suspended: 'bg-red-100 text-red-800',
-    };
-    return statusClasses[status] || 'bg-gray-100 text-gray-800';
   };
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-gray-500">読み込み中...</div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">店舗データを読み込み中...</p>
+          </div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
-      
-      {/* ヘッダー */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">店舗管理</h1>
-        <Link href="/shops/new">
-          <Button variant="primary" size="md">
-            新規店舗登録
-          </Button>
-        </Link>
-      </div>
-
-      {/* 検索フォーム */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">検索条件</h2>
-          <button
-            onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-            className="text-blue-600 hover:text-blue-800 text-sm"
-          >
-            {isSearchExpanded ? '閉じる' : '詳細検索'}
-          </button>
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* ヘッダー */}
+        <div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-2xl font-bold text-gray-900">店舗一覧</h1>
+              <p className="text-gray-600">
+                店舗の管理・編集を行います
+              </p>
+            </div>
+            <div className="text-sm text-gray-600">
+              <div className="flex items-center">
+                <span className="font-medium text-gray-900">管理者太郎</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* 親会社名の表示 */}
+          {merchantName && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center">
+                <span className="text-sm font-medium text-gray-700 mr-2">会社名:</span>
+                <span className="text-sm font-bold text-gray-900">{merchantName}</span>
+              </div>
+            </div>
+          )}
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              加盟店ID
-            </label>
-            <input
-              type="text"
-              value={searchForm.merchantId}
-              onChange={(e) => setSearchForm(prev => ({ ...prev, merchantId: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="加盟店IDを入力"
-            />
+
+        {/* エラーメッセージ */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <img 
+                src="/alert.svg" 
+                alt="警告" 
+                width={16} 
+                height={16}
+                className="w-4 h-4 text-red-500 mr-2"
+              />
+              <p className="text-red-700">{error}</p>
+            </div>
           </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              店舗名
-            </label>
-            <input
-              type="text"
-              value={searchForm.shopName}
-              onChange={(e) => setSearchForm(prev => ({ ...prev, shopName: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="店舗名を入力"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              ステータス
-            </label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive' | 'suspended')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        )}
+
+        {/* 検索フォーム */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="pb-3 border-b border-gray-200 flex justify-between items-center">
+            <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+              className="flex items-center focus:outline-none"
             >
-              <option value="all">すべて</option>
-              <option value="active">営業中</option>
-              <option value="inactive">休業中</option>
-              <option value="suspended">停止中</option>
-            </select>
+              <div className="w-4 h-4 flex items-center justify-center">
+                <span className={`text-gray-600 text-sm transition-transform duration-200 ${isSearchExpanded ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </div>
+            </Button>
           </div>
-        </div>
-
-        {isSearchExpanded && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          
+          {isSearchExpanded && (
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* 店舗ID */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="shopId" className="block text-sm font-medium text-gray-700 mb-2">
+                店舗ID
+              </label>
+              <input
+                type="text"
+                id="shopId"
+                placeholder="店舗IDを入力"
+                value={searchForm.shopId}
+                onChange={(e) => handleInputChange('shopId', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+
+            {/* 店舗名 */}
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                店舗名
+              </label>
+              <input
+                type="text"
+                id="name"
+                placeholder="店舗名を入力"
+                value={searchForm.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+
+            {/* 店舗名（カナ） */}
+            <div>
+              <label htmlFor="nameKana" className="block text-sm font-medium text-gray-700 mb-2">
+                店舗名（カナ）
+              </label>
+              <input
+                type="text"
+                id="nameKana"
+                placeholder="店舗名（カナ）を入力"
+                value={searchForm.nameKana}
+                onChange={(e) => handleInputChange('nameKana', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+
+            {/* メールアドレス */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 メールアドレス
               </label>
               <input
-                type="email"
-                value={searchForm.email}
-                onChange={(e) => setSearchForm(prev => ({ ...prev, email: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                type="text"
+                id="email"
                 placeholder="メールアドレスを入力"
+                value={searchForm.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
-            
+
+            {/* 電話番号 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
                 電話番号
               </label>
               <input
-                type="tel"
-                value={searchForm.phone}
-                onChange={(e) => setSearchForm(prev => ({ ...prev, phone: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                type="text"
+                id="phone"
                 placeholder="電話番号を入力"
+                value={searchForm.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
-          </div>
-        )}
 
-        <div className="flex space-x-3">
-          <Button variant="primary" onClick={handleSearch}>
-            検索
-          </Button>
-          <Button variant="secondary" onClick={handleClearSearch}>
-            クリア
-          </Button>
-        </div>
-      </div>
-
-      {/* 一括操作 */}
-      {selectedShops.size > 0 && (
-        <FloatingFooter
-          selectedCount={selectedShops.size}
-          onStatusChange={setSelectedStatus}
-          onExecute={() => {
-            // 一括ステータス更新の実装
-            console.log('Bulk status update:', selectedStatus, selectedShops);
-          }}
-          onIssueAccount={() => {
-            // アカウント発行の実装
-            console.log('Issue account for:', selectedShops);
-          }}
-          selectedStatus={selectedStatus}
-          isExecuting={isExecuting}
-          isIssuingAccount={false}
-        />
-      )}
-
-      {/* 店舗一覧 */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
-              店舗一覧 ({pagination.total}件)
-            </h2>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                checked={isAllSelected}
-                indeterminate={isIndeterminate}
-                onChange={handleSelectAll}
+            {/* 郵便番号 */}
+            <div>
+              <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
+                郵便番号
+              </label>
+              <input
+                type="text"
+                id="postalCode"
+                placeholder="郵便番号を入力"
+                value={searchForm.postalCode}
+                onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
-              <span className="text-sm text-gray-600">すべて選択</span>
+            </div>
+
+            {/* 住所 */}
+            <div>
+              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                住所
+              </label>
+              <input
+                type="text"
+                id="address"
+                placeholder="住所を入力"
+                value={searchForm.address}
+                onChange={(e) => handleInputChange('address', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+
+            {/* ステータス */}
+            <div>
+              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                ステータス
+              </label>
+              <select
+                id="status"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              >
+                <option value="all">すべて</option>
+                {statusOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+            </div>
+
+            {/* 検索・クリアボタン */}
+            <div className="flex justify-end gap-2 mt-6">
+              <Button variant="outline" onClick={handleClear}>
+                クリア
+              </Button>
+              <Button variant="primary" onClick={handleSearch}>
+                検索
+              </Button>
             </div>
           </div>
+          )}
         </div>
 
-        {error && (
-          <div className="px-6 py-4 bg-red-50 border-b border-red-200">
-            <div className="text-red-600">{error}</div>
+        {/* 店舗一覧 */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 className="text-lg font-medium text-gray-900">
+              店舗一覧 ({filteredShops.length}件)
+            </h3>
+            {merchantId && (
+              <Link href={`/merchants/${merchantId}/shops/new`}>
+                <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
+                  <span className="mr-2">+</span>
+                  新規登録
+                </Button>
+              </Link>
+            )}
           </div>
-        )}
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  選択
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  店舗名
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  加盟店
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  連絡先
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  住所
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ステータス
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  作成日
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  操作
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {shops.map((shop) => (
-                <tr key={shop.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Checkbox
-                      checked={selectedShops.has(shop.id)}
-                      onChange={(checked) => handleSelectShop(shop.id, checked)}
-                    />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1200px]">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 whitespace-nowrap">
+                    アクション
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
+                    店舗名
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                    郵便番号
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[250px]">
+                    住所
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
+                    メールアドレス
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
+                    電話番号
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
+                    ステータス
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+              {filteredShops.map((shop) => (
+                  <tr key={shop.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap w-24">
+                      <div className="flex justify-center">
+                        <Link href={`/merchants/${merchantId || shop.merchantId}/shops/${shop.id}/edit`}>
+                          <button 
+                            className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                            title="編集"
+                          >
+                            <Image 
+                              src="/edit.svg" 
+                              alt="編集" 
+                              width={32}
+                              height={32}
+                              className="w-8 h-8"
+                            />
+                          </button>
+                        </Link>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                       <div className="text-sm font-medium text-gray-900">{shop.name}</div>
                       {shop.nameKana && (
                         <div className="text-sm text-gray-500">{shop.nameKana}</div>
                       )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{shop.merchant.name}</div>
-                      <div className="text-sm text-gray-500">{shop.merchant.account.displayName}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[120px]">
+                      <div className="text-sm text-gray-900">
+                        {shop.postalCode ? `〒${shop.postalCode}` : '-'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[250px]">
+                      <div className="text-sm text-gray-900">
+                        {shop.address || '-'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                       <div className="text-sm text-gray-900">{shop.email}</div>
-                      <div className="text-sm text-gray-500">{shop.phone}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">
-                      {shop.postalCode && <div>〒{shop.postalCode}</div>}
-                      <div>{shop.address}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClass(shop.status)}`}>
-                      {getStatusLabel(shop.status)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(shop.createdAt).toLocaleDateString('ja-JP')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <Link href={`/shops/${shop.id}`}>
-                        <Button variant="secondary" size="sm">
-                          詳細
-                        </Button>
-                      </Link>
-                      <Link href={`/shops/${shop.id}/edit`}>
-                        <Button variant="secondary" size="sm">
-                          編集
-                        </Button>
-                      </Link>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
+                      <div className="text-sm text-gray-900">{shop.phone}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
                       <select
                         value={shop.status}
-                        onChange={(e) => handleStatusChange(shop.id, e.target.value)}
-                        className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={isExecuting}
+                        onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
+                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full ${getStatusColor(shop.status)}`}
                       >
-                        <option value="active">営業中</option>
-                        <option value="inactive">休業中</option>
-                        <option value="suspended">停止中</option>
+                        {statusOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
                       </select>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => handleDeleteShop(shop.id)}
-                        disabled={isExecuting}
-                      >
-                        削除
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
+                    </td>
+                  </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* ページネーション */}
-        {pagination.totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-700">
-                {pagination.total}件中 {((pagination.page - 1) * pagination.limit) + 1}-
-                {Math.min(pagination.page * pagination.limit, pagination.total)}件を表示
-              </div>
-              <div className="flex space-x-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
-                  disabled={pagination.page <= 1}
-                >
-                  前へ
-                </Button>
-                <span className="px-3 py-1 text-sm text-gray-700">
-                  {pagination.page} / {pagination.totalPages}
-                </span>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
-                  disabled={pagination.page >= pagination.totalPages}
-                >
-                  次へ
-                </Button>
-              </div>
-            </div>
+              </tbody>
+            </table>
           </div>
-        )}
+
+          {filteredShops.length === 0 && (
+            <div className="text-center py-12">
+              <img 
+                src="/storefront-icon.svg" 
+                alt="店舗" 
+                width={48} 
+                height={48}
+                className="mx-auto text-gray-400 mb-4"
+              />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">店舗が見つかりません</h3>
+              <p className="text-gray-500">検索条件を変更してお試しください。</p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+      
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+    </DashboardLayout>
   );
 }

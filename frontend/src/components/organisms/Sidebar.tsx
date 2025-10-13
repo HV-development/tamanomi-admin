@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import SidebarHeader from '@/components/molecules/sidebar-header';
 import MenuItem from '@/components/molecules/menu-item';
-import Icon from '@/components/atoms/icon';
+import Icon from '@/components/atoms/Icon';
 
 interface MenuItemData {
   name: string;
