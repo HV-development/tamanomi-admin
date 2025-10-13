@@ -5,7 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-import { type MerchantFormData, type MerchantStatus } from '@hv-development/schemas';
+import { type MerchantStatus } from '@hv-development/schemas';
 
 // 編集確認画面用の型
 interface MerchantEditConfirmationData {

@@ -8,7 +8,7 @@ interface UserHeaderProps {
 }
 
 export default function UserHeader({ className = '' }: UserHeaderProps) {
-  const { logout } = useAuth();
+  const auth = useAuth();
   const router = useRouter();
   
   // 実際の実装では認証コンテキストやセッションから取得
@@ -19,8 +19,10 @@ export default function UserHeader({ className = '' }: UserHeaderProps) {
   };
 
   const handleLogout = async () => {
+    if (!auth) return;
+    
     if (confirm('ログアウトしますか？')) {
-      await logout();
+      await auth.logout();
       router.push('/login');
     }
   };

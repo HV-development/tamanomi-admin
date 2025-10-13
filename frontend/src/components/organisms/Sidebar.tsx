@@ -24,7 +24,7 @@ const menuItems: MenuItemData[] = [
 
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { logout } = useAuth();
+  const auth = useAuth();
   const [isLoaded, setIsLoaded] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -89,8 +89,10 @@ export default function Sidebar() {
         <div className="px-4 py-2">
           <button
             onClick={async () => {
+              if (!auth) return;
+              
               if (confirm('ログアウトしますか？')) {
-                await logout();
+                await auth.logout();
                 router.push('/login');
               }
             }}
