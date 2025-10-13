@@ -31,9 +31,11 @@ export default function FloatingFooter({
       case 'registering': return 'text-blue-600';
       case 'collection_requested': return 'text-purple-600';
       case 'approval_pending': return 'text-yellow-600';
+      case 'approval_expired': return 'text-red-600';
       case 'promotional_materials_preparing': return 'text-orange-600';
       case 'promotional_materials_shipping': return 'text-indigo-600';
       case 'operating': return 'text-green-600';
+      case 'active': return 'text-green-600'; // 旧ステータス
       case 'suspended': return 'text-red-600';
       case 'terminated': return 'text-gray-600';
       default: return 'text-gray-600';
