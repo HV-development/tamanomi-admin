@@ -51,6 +51,19 @@ class ApiClient {
           error: { message: 'Failed to parse error response' }
         }));
         
+        // 401エラー（認証エラー）の場合はログイン画面へリダイレクト
+        if (response.status === 401) {
+          console.warn('🔒 Session timeout: Redirecting to login page');
+          // ローカルストレージをクリア
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userData');
+          // ログイン画面へリダイレクト
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login';
+          }
+        }
+        
         // エラーオブジェクトを作成して投げる
         const error = new Error(errorData.message || `HTTP error! status: ${response.status}`);
         (error as Error & { response?: { status: number; data: unknown } }).response = {
