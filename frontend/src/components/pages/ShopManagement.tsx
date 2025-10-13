@@ -494,9 +494,6 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
                     店舗名
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
-                    郵便番号
-                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[250px]">
                     住所
                   </th>
@@ -538,13 +535,11 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
                         <div className="text-sm text-gray-500">{shop.nameKana}</div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[120px]">
+                    <td className="px-6 py-4 min-w-[250px]">
                       <div className="text-sm text-gray-900">
                         {shop.postalCode ? `〒${shop.postalCode}` : '-'}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[250px]">
-                      <div className="text-sm text-gray-900">
+                      <div className="text-sm text-gray-900 mt-1">
                         {shop.address || '-'}
                       </div>
                     </td>
