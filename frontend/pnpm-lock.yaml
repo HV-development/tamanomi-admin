@@ -6,7 +6,7 @@ settings:
 
 dependencies:
   '@hv-development/schemas':
-    specifier: ^1.5.2
+    specifier: '*'
     version: 1.5.2
   autoprefixer:
     specifier: 10.4.21
