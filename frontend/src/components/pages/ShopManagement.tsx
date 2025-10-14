@@ -3,48 +3,12 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/toast-container';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { statusLabels, statusOptions } from '@/lib/constants/shop';
-
-// APIレスポンス用の型
-type Shop = {
-  id: string;
-  merchantId: string;
-  name: string;
-  nameKana: string | null;
-  email: string;
-  phone: string;
-  postalCode: string | null;
-  address: string | null;
-  latitude: string | null;
-  longitude: string | null;
-  businessHours: string | null;
-  holidays: string | null;
-  budgetLunch: number | null;
-  budgetDinner: number | null;
-  smokingType: string | null;
-  paymentSaicoin: boolean | null;
-  paymentTamapon: boolean | null;
-  paymentCash: boolean | null;
-  paymentCredit: string | null;
-  paymentCode: string | null;
-  scenes: string | null;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  merchant?: {
-    id: string;
-    name: string;
-    account?: {
-      email: string;
-      displayName: string | null;
-    };
-  };
-};
+import type { Shop } from '@hv-development/schemas';
 
 type ShopManagementProps = {
   merchantId?: string;
@@ -61,7 +25,7 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
     shopId: '',
     name: '',
     nameKana: '',
-    email: '',
+    accountEmail: '',
     phone: '',
     postalCode: '',
     address: '',
@@ -70,7 +34,7 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
     shopId: '',
     name: '',
     nameKana: '',
-    email: '',
+    accountEmail: '',
     phone: '',
     postalCode: '',
     address: '',
@@ -184,9 +148,9 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
       (appliedSearchForm.shopId === '' || shop.id.includes(appliedSearchForm.shopId)) &&
       (appliedSearchForm.name === '' || shop.name.toLowerCase().includes(appliedSearchForm.name.toLowerCase())) &&
       (appliedSearchForm.nameKana === '' || (shop.nameKana?.toLowerCase() || '').includes(appliedSearchForm.nameKana.toLowerCase())) &&
-      (appliedSearchForm.email === '' || shop.email.toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
+      (appliedSearchForm.accountEmail === '' || (shop.accountEmail?.toLowerCase() || '').includes(appliedSearchForm.accountEmail.toLowerCase())) &&
       (appliedSearchForm.phone === '' || shop.phone.includes(appliedSearchForm.phone)) &&
-      (appliedSearchForm.postalCode === '' || (shop.postalCode || '').includes(appliedSearchForm.postalCode)) &&
+      (appliedSearchForm.postalCode === '' || shop.postalCode.includes(appliedSearchForm.postalCode)) &&
       (appliedSearchForm.address === '' || (shop.address?.toLowerCase() || '').includes(appliedSearchForm.address.toLowerCase()));
     
     const matchesStatus = appliedStatusFilter === 'all' || shop.status === appliedStatusFilter;
@@ -212,7 +176,7 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
       shopId: '',
       name: '',
       nameKana: '',
-      email: '',
+      accountEmail: '',
       phone: '',
       postalCode: '',
       address: '',
@@ -222,7 +186,7 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
       shopId: '',
       name: '',
       nameKana: '',
-      email: '',
+      accountEmail: '',
       phone: '',
       postalCode: '',
       address: '',
@@ -240,7 +204,7 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
     setShops(prev => 
       prev.map(shop => 
         shop.id === shopId 
-          ? { ...shop, status: newStatus }
+          ? { ...shop, status: newStatus as Shop['status'] }
           : shop
       )
     );
@@ -277,19 +241,17 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">店舗データを読み込み中...</p>
-          </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">店舗データを読み込み中...</p>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* ヘッダー */}
         <div>
@@ -402,15 +364,15 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
 
             {/* メールアドレス */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="accountEmail" className="block text-sm font-medium text-gray-700 mb-2">
                 メールアドレス
               </label>
               <input
                 type="text"
-                id="email"
+                id="accountEmail"
                 placeholder="メールアドレスを入力"
-                value={searchForm.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
+                value={searchForm.accountEmail}
+                onChange={(e) => handleInputChange('accountEmail', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
@@ -498,23 +460,26 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
             <h3 className="text-lg font-medium text-gray-900">
               店舗一覧 ({filteredShops.length}件)
             </h3>
-            {merchantId && (
-              <Link href={`/merchants/${merchantId}/shops/new`}>
-                <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
-                  <span className="mr-2">+</span>
-                  新規登録
-                </Button>
-              </Link>
-            )}
+            <Link href={merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new'}>
+              <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
+                <span className="mr-2">+</span>
+                新規登録
+              </Button>
+            </Link>
           </div>
           
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1200px]">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 whitespace-nowrap">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
                     アクション
                   </th>
+                  {!merchantId && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
+                      会社名
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
                     店舗名
                   </th>
@@ -535,8 +500,8 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
               <tbody className="bg-white divide-y divide-gray-200">
               {filteredShops.map((shop) => (
                   <tr key={shop.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap w-24">
-                      <div className="flex justify-center">
+                    <td className="px-6 py-4 whitespace-nowrap w-32">
+                      <div className="flex justify-center gap-2">
                         <Link href={`/merchants/${merchantId || shop.merchantId}/shops/${shop.id}/edit`}>
                           <button 
                             className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
@@ -551,8 +516,29 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
                             />
                           </button>
                         </Link>
+                        <Link href={`/shops/${shop.id}/coupons`}>
+                          <button 
+                            className="p-2 text-orange-600 hover:text-orange-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[48px] min-h-[48px]"
+                            title="クーポン管理"
+                          >
+                            <Image 
+                              src="/coupon.svg" 
+                              alt="クーポン" 
+                              width={48}
+                              height={48}
+                              className="w-10 h-10"
+                            />
+                          </button>
+                        </Link>
                       </div>
                     </td>
+                    {!merchantId && (
+                      <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
+                        <div className="text-sm font-medium text-gray-900">
+                          {shop.merchant?.name || '-'}
+                        </div>
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                       <div className="text-sm font-medium text-gray-900">{shop.name}</div>
                       {shop.nameKana && (
@@ -568,7 +554,7 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
-                      <div className="text-sm text-gray-900">{shop.email}</div>
+                      <div className="text-sm text-gray-900">{shop.accountEmail || '-'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
                       <div className="text-sm text-gray-900">{shop.phone}</div>
@@ -609,6 +595,6 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
       </div>
       
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
-    </DashboardLayout>
+    </>
   );
 }

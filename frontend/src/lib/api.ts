@@ -184,6 +184,22 @@ class ApiClient {
     });
   }
 
+  // ジャンルカテゴリー関連
+  async getGenres(): Promise<unknown> {
+    console.log('🏷️ API: getGenres called (via Next.js API Route)');
+    return this.request<unknown>('/genres', {
+      method: 'GET',
+    });
+  }
+
+  // 利用シーン関連
+  async getScenes(): Promise<unknown> {
+    console.log('🎭 API: getScenes called (via Next.js API Route)');
+    return this.request<unknown>('/scenes', {
+      method: 'GET',
+    });
+  }
+
   // 店舗関連
   async getShops(queryParams?: string): Promise<unknown> {
     console.log('🏪 API: getShops called (via Next.js API Route)');
