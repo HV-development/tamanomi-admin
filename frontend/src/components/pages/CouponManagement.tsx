@@ -1,26 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+import { apiClient } from '@/lib/api';
 
 interface Coupon {
   id: string;
   name: string;
+  shopId?: string;
   status: 'active' | 'inactive' | 'expired';
   createdAt: string;
   updatedAt: string;
 }
 
-// サンプルデータ
+interface Shop {
+  id: string;
+  name: string;
+  merchantId: string;
+  merchant?: {
+    name: string;
+  };
+}
+
+interface CouponManagementProps {
+  shopId?: string;
+}
+
+// サンプルデータ（店舗IDを含む）
 const sampleCoupons: Coupon[] = [
-  { id: 'CP001', name: '新規会員限定10%オフクーポン', status: 'active', createdAt: '2024-01-15 10:30:00', updatedAt: '2024-01-20 14:15:00' },
-  { id: 'CP002', name: '誕生日特典20%オフクーポン', status: 'active', createdAt: '2024-01-20 09:00:00', updatedAt: '2024-01-25 16:45:00' },
-  { id: 'CP003', name: '年末年始限定500円オフクーポン', status: 'expired', createdAt: '2024-12-01 12:00:00', updatedAt: '2024-12-31 23:59:59' },
-  { id: 'CP004', name: 'リピーター限定15%オフクーポン', status: 'inactive', createdAt: '2024-02-01 08:30:00', updatedAt: '2024-02-05 11:20:00' },
-  { id: 'CP005', name: '平日限定ドリンク半額クーポン', status: 'active', createdAt: '2024-02-10 11:00:00', updatedAt: '2024-02-15 09:30:00' },
+  { id: 'CP001', shopId: '1', name: '新規会員限定10%オフクーポン', status: 'active', createdAt: '2024-01-15 10:30:00', updatedAt: '2024-01-20 14:15:00' },
+  { id: 'CP002', shopId: '1', name: '誕生日特典20%オフクーポン', status: 'active', createdAt: '2024-01-20 09:00:00', updatedAt: '2024-01-25 16:45:00' },
+  { id: 'CP003', shopId: '2', name: '年末年始限定500円オフクーポン', status: 'expired', createdAt: '2024-12-01 12:00:00', updatedAt: '2024-12-31 23:59:59' },
+  { id: 'CP004', shopId: '2', name: 'リピーター限定15%オフクーポン', status: 'inactive', createdAt: '2024-02-01 08:30:00', updatedAt: '2024-02-05 11:20:00' },
+  { id: 'CP005', shopId: '3', name: '平日限定ドリンク半額クーポン', status: 'active', createdAt: '2024-02-10 11:00:00', updatedAt: '2024-02-15 09:30:00' },
   { id: 'CP006', name: '学生限定20%オフクーポン', status: 'active', createdAt: '2024-02-15 14:20:00', updatedAt: '2024-02-20 16:10:00' },
   { id: 'CP007', name: '週末限定フード30%オフクーポン', status: 'inactive', createdAt: '2024-02-20 16:45:00', updatedAt: '2024-02-25 10:15:00' },
   { id: 'CP008', name: 'ハッピーアワー限定クーポン', status: 'active', createdAt: '2024-02-25 13:30:00', updatedAt: '2024-03-01 11:45:00' },
@@ -48,7 +64,10 @@ const sampleCoupons: Coupon[] = [
   { id: 'CP030', name: '月末感謝祭クーポン', status: 'active', createdAt: '2024-06-05 10:30:00', updatedAt: '2024-06-10 15:10:00' },
 ];
 
-export default function CouponManagement() {
+export default function CouponManagement({ shopId }: CouponManagementProps = {}) {
+  const router = useRouter();
+  const [shop, setShop] = useState<Shop | null>(null);
+  const [loading, setLoading] = useState(!!shopId);
   const [searchForm, setSearchForm] = useState({
     couponId: '',
     couponName: '',
@@ -61,15 +80,35 @@ export default function CouponManagement() {
   const [appliedStatusFilter, setAppliedStatusFilter] = useState<'all' | 'active' | 'inactive' | 'expired'>('all');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
+  // 店舗情報の取得
+  useEffect(() => {
+    if (shopId) {
+      const fetchShop = async () => {
+        try {
+          setLoading(true);
+          const response = await apiClient.get(`/api/shops/${shopId}`);
+          setShop(response.data);
+        } catch (error) {
+          console.error('店舗情報の取得に失敗しました:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchShop();
+    }
+  }, [shopId]);
+
   // フィルタリング処理
   const filteredCoupons = sampleCoupons.filter((coupon) => {
+    const matchesShop = !shopId || coupon.shopId === shopId;
+    
     const matchesSearch = 
       (appliedSearchForm.couponId === '' || coupon.id.toLowerCase().includes(appliedSearchForm.couponId.toLowerCase())) &&
       (appliedSearchForm.couponName === '' || coupon.name.toLowerCase().includes(appliedSearchForm.couponName.toLowerCase()));
     
     const matchesStatus = appliedStatusFilter === 'all' || coupon.status === appliedStatusFilter;
     
-    return matchesSearch && matchesStatus;
+    return matchesShop && matchesSearch && matchesStatus;
   });
 
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {
@@ -125,17 +164,50 @@ export default function CouponManagement() {
     }
   };
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="text-gray-600">読み込み中...</div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
         {/* ヘッダー */}
         <div>
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-900">クーポン管理</h1>
-            <p className="text-gray-600">
-              クーポンの管理・編集を行います
-            </p>
+            <div className="space-y-1">
+              {shopId && shop && (
+                <div className="mb-4">
+                  <button
+                    onClick={() => router.back()}
+                    className="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-2"
+                  >
+                    <Icon name="chevronLeft" size="sm" />
+                    <span className="ml-1">店舗一覧に戻る</span>
+                  </button>
+                  <div className="text-sm text-gray-600">
+                    {shop.merchant?.name && (
+                      <span className="font-medium">{shop.merchant.name}</span>
+                    )}
+                    {shop.merchant?.name && shop.name && ' / '}
+                    {shop.name && <span className="font-medium">{shop.name}</span>}
+                  </div>
+                </div>
+              )}
+              <h1 className="text-2xl font-bold text-gray-900">
+                {shopId ? '店舗クーポン管理' : 'クーポン管理'}
+              </h1>
+              <p className="text-gray-600">
+                {shopId 
+                  ? 'この店舗のクーポンを管理します' 
+                  : 'クーポンの管理・編集を行います'
+                }
+              </p>
             </div>
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">
@@ -231,7 +303,7 @@ export default function CouponManagement() {
             <h3 className="text-lg font-medium text-gray-900">
               クーポン一覧 ({filteredCoupons.length}件)
             </h3>
-            <Link href="/coupons/new">
+            <Link href={shopId ? `/coupons/new?shopId=${shopId}` : '/coupons/new'}>
               <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
                 <span className="mr-2">+</span>
                 新規作成

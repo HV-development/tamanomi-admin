@@ -1,13 +1,14 @@
 import DashboardLayout from '@/components/templates/dashboard-layout';
-import ShopManagement from '@/components/pages/ShopManagement';
+import ShopForm from '@/components/pages/ShopForm';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
 
-export default function ShopsPage() {
+export default function NewShopPage({ params }: { params: { id: string } }) {
   return (
     <DashboardLayout>
-      <ShopManagement />
+      <ShopForm merchantId={params.id} />
     </DashboardLayout>
   );
 }
+
