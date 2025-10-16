@@ -1,5 +1,7 @@
 {
   "version": 2,
-  "installCommand": "echo '@hv-development:registry=https://npm.pkg.github.com' >> .npmrc && echo '//npm.pkg.github.com/:_authToken='$GITHUB_TOKEN >> .npmrc && echo '//npm.pkg.github.com/:always-auth=true' >> .npmrc && pnpm install"
+  "buildCommand": "pnpm run build",
+  "outputDirectory": ".next",
+  "installCommand": "echo '@hv-development:registry=https://npm.pkg.github.com' > .npmrc && echo '//npm.pkg.github.com/:_authToken='\"$GITHUB_TOKEN\" >> .npmrc && pnpm install"
 }
  
