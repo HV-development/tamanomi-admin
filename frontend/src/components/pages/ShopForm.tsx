@@ -8,6 +8,7 @@ import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import type { ShopCreateRequest } from '@hv-development/schemas';
 import { shopCreateRequestSchema, shopUpdateRequestSchema } from '@hv-development/schemas';
+import { CREDIT_CARD_BRANDS, QR_PAYMENT_SERVICES } from '@/lib/constants/payment';
 
 // 都道府県リスト
 const prefectures = [
@@ -112,6 +113,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   
   // 利用シーンの複数選択用
   const [selectedScenes, setSelectedScenes] = useState<string[]>([]);
+  const [customSceneText, setCustomSceneText] = useState<string>('');
+  
+  // 決済方法の複数選択用
+  const [selectedCreditBrands, setSelectedCreditBrands] = useState<string[]>([]);
+  const [customCreditText, setCustomCreditText] = useState<string>('');
+  const [selectedQrBrands, setSelectedQrBrands] = useState<string[]>([]);
+  const [customQrText, setCustomQrText] = useState<string>('');
   
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
@@ -129,16 +137,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   // フィールドが触られたかを追跡（初期表示時は必須エラーを表示しない）
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
   
-  // クレジットカードとQRコードのブランドリスト
-  const [creditBrands, setCreditBrands] = useState<string[]>(['']);
-  const [qrBrands, setQrBrands] = useState<string[]>(['']);
-  
   // 画像関連
   const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
   
   // 定休日チェックボックス用
-  const weekdays = ['月', '火', '水', '木', '金', '土', '日'] as const;
+  const weekdays = ['月', '火', '水', '木', '金', '土', '日', '祝日'] as const;
   const [selectedHolidays, setSelectedHolidays] = useState<string[]>([]);
 
   useEffect(() => {
@@ -260,19 +264,28 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             }
             
             // クレジットカードブランドの設定
-            const creditValue = (shopData as ShopCreateRequest).paymentCredit;
+            const shopDataWithPayment = shopData as ShopCreateRequest & { customCreditText?: string; customQrText?: string };
+            const creditValue = shopDataWithPayment.paymentCredit;
             if (creditValue && creditValue.trim()) {
-              setCreditBrands(creditValue.split(',').map(b => b.trim()));
-            } else {
-              setCreditBrands(['']);
+              const brands = creditValue.split(',').map(b => b.trim());
+              setSelectedCreditBrands(brands);
+              
+              // 「その他」が含まれる場合、カスタムテキストも読み込み
+              if (brands.includes('その他') && shopDataWithPayment.customCreditText) {
+                setCustomCreditText(shopDataWithPayment.customCreditText);
+              }
             }
             
-            // QRコードブランドの設定
-            const qrValue = (shopData as ShopCreateRequest).paymentCode;
+            // QRコード決済の設定
+            const qrValue = shopDataWithPayment.paymentCode;
             if (qrValue && qrValue.trim()) {
-              setQrBrands(qrValue.split(',').map(b => b.trim()));
-            } else {
-              setQrBrands(['']);
+              const services = qrValue.split(',').map(s => s.trim());
+              setSelectedQrBrands(services);
+              
+              // 「その他」が含まれる場合、カスタムテキストも読み込み
+              if (services.includes('その他') && shopDataWithPayment.customQrText) {
+                setCustomQrText(shopDataWithPayment.customQrText);
+              }
             }
             
             // 定休日の設定
@@ -282,9 +295,14 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             }
             
             // 利用シーンの設定
-            const shopDataWithScenes = shopData as ShopCreateRequest & { sceneIds?: string[] };
+            const shopDataWithScenes = shopData as ShopCreateRequest & { sceneIds?: string[]; customSceneText?: string };
             if (shopDataWithScenes.sceneIds && Array.isArray(shopDataWithScenes.sceneIds)) {
               setSelectedScenes(shopDataWithScenes.sceneIds);
+            }
+            
+            // カスタム利用シーンテキストの設定
+            if (shopDataWithScenes.customSceneText) {
+              setCustomSceneText(shopDataWithScenes.customSceneText);
             }
           }
         } else if (merchantId && merchantsArray.length > 0 && isMounted) {
@@ -489,43 +507,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     newExistingImages.splice(index, 1);
     setExistingImages(newExistingImages);
   };
-
-  // クレジットカードブランドの追加
-  const addCreditBrand = () => {
-    setCreditBrands([...creditBrands, '']);
-  };
-
-  // クレジットカードブランドの削除
-  const removeCreditBrand = (index: number) => {
-    const newBrands = creditBrands.filter((_, i) => i !== index);
-    setCreditBrands(newBrands.length > 0 ? newBrands : ['']);
-  };
-
-  // クレジットカードブランドの更新
-  const updateCreditBrand = (index: number, value: string) => {
-    const newBrands = [...creditBrands];
-    newBrands[index] = value;
-    setCreditBrands(newBrands);
-  };
-
-  // QRコードブランドの追加
-  const addQrBrand = () => {
-    setQrBrands([...qrBrands, '']);
-  };
-
-  // QRコードブランドの削除
-  const removeQrBrand = (index: number) => {
-    const newBrands = qrBrands.filter((_, i) => i !== index);
-    setQrBrands(newBrands.length > 0 ? newBrands : ['']);
-  };
-
-  // QRコードブランドの更新
-  const updateQrBrand = (index: number, value: string) => {
-    const newBrands = [...qrBrands];
-    newBrands[index] = value;
-    setQrBrands(newBrands);
-  };
-
   // 郵便番号から住所を検索（zipcloud API使用）
   const handleZipcodeSearch = async () => {
     if (!formData.postalCode || formData.postalCode.length !== 7) {
@@ -626,11 +607,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       const dataToValidate = {
         ...formData,
         holidays: selectedHolidays.join(','),
-        paymentCredit: (formData.paymentCredit || '') !== ''
-          ? creditBrands.filter(b => b.trim()).join(',')
+        paymentCredit: selectedCreditBrands.length > 0
+          ? selectedCreditBrands.filter(b => b !== 'その他').join(',')
           : '',
-        paymentCode: (formData.paymentCode || '') !== ''
-          ? qrBrands.filter(b => b.trim()).join(',')
+        paymentCode: selectedQrBrands.length > 0
+          ? selectedQrBrands.filter(s => s !== 'その他').join(',')
           : '',
       };
       
@@ -700,6 +681,14 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         accountEmail = null;
       }
       
+      // 「その他」シーンのIDを取得
+      const otherScene = scenes.find(s => s.name === 'その他');
+      const isOtherSceneSelected = otherScene && selectedScenes.includes(otherScene.id);
+      
+      // 「その他」決済方法の判定
+      const isCreditOtherSelected = selectedCreditBrands.includes('その他');
+      const isQrOtherSelected = selectedQrBrands.includes('その他');
+      
       // クレジットカードとQRコードの配列をカンマ区切り文字列に変換
       const submitData = {
         ...formData,
@@ -708,12 +697,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         images: allImageUrls.length > 0 ? allImageUrls : undefined,
         holidays: selectedHolidays.join(','),
         sceneIds: selectedScenes,  // 利用シーンの配列を追加
-        paymentCredit: (formData.paymentCredit || '') !== ''
-          ? creditBrands.filter(b => b.trim()).join(',')
+        customSceneText: isOtherSceneSelected ? customSceneText : undefined,  // 「その他」選択時のみ送信
+        paymentCredit: selectedCreditBrands.length > 0
+          ? selectedCreditBrands.filter(b => b !== 'その他').join(',')
           : '',
-        paymentCode: (formData.paymentCode || '') !== ''
-          ? qrBrands.filter(b => b.trim()).join(',')
+        customCreditText: isCreditOtherSelected ? customCreditText : undefined,
+        paymentCode: selectedQrBrands.length > 0
+          ? selectedQrBrands.filter(s => s !== 'その他').join(',')
           : '',
+        customQrText: isQrOtherSelected ? customQrText : undefined,
       };
       
       if (isEdit) {
@@ -1094,7 +1086,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         {/* 利用シーン */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">利用シーン（複数選択可）</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
             {scenes.map((scene) => (
               <label
                 key={scene.id}
@@ -1109,6 +1101,10 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                       setSelectedScenes([...selectedScenes, scene.id]);
                     } else {
                       setSelectedScenes(selectedScenes.filter(id => id !== scene.id));
+                      // 「その他」のチェックを外したらカスタムテキストもクリア
+                      if (scene.name === 'その他') {
+                        setCustomSceneText('');
+                      }
                     }
                   }}
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
@@ -1117,6 +1113,26 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               </label>
             ))}
           </div>
+          
+          {/* 「その他」選択時のカスタムテキスト入力欄 */}
+          {scenes.find(s => s.name === 'その他' && selectedScenes.includes(s.id)) && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                具体的な利用シーン <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={customSceneText}
+                onChange={(e) => setCustomSceneText(e.target.value)}
+                maxLength={100}
+                placeholder="例：ビジネスミーティング、記念日など"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                「その他」を選択した場合は、具体的な利用シーンを入力してください（最大100文字）
+              </p>
+            </div>
+          )}
         </div>
 
         {/* 店舗紹介・詳細情報 */}
@@ -1179,7 +1195,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                       }}
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700">{day}曜日</span>
+                    <span className="text-sm text-gray-700">{day === '祝日' ? day : `${day}曜日`}</span>
                   </label>
                 ))}
               </div>
@@ -1304,64 +1320,53 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             {/* クレジットカード決済 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                クレジットカード決済
+                クレジットカード決済（複数選択可）
               </label>
-              <div className="flex gap-4 mb-3">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="paymentCreditEnabled"
-                    checked={(formData.paymentCredit || '') !== ''}
-                    onChange={() => {
-                      handleInputChange('paymentCredit', 'enabled');
-                    }}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <span className="ml-2 text-sm text-gray-900">可</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="paymentCreditEnabled"
-                    checked={(formData.paymentCredit || '') === ''}
-                    onChange={() => {
-                      handleInputChange('paymentCredit', '');
-                    }}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <span className="ml-2 text-sm text-gray-900">不可</span>
-                </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                {CREDIT_CARD_BRANDS.map((brand) => (
+                  <label
+                    key={brand}
+                    className="flex items-center space-x-2 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      value={brand}
+                      checked={selectedCreditBrands.includes(brand)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCreditBrands([...selectedCreditBrands, brand]);
+                        } else {
+                          setSelectedCreditBrands(selectedCreditBrands.filter(b => b !== brand));
+                          // 「その他」のチェックを外したらカスタムテキストもクリア
+                          if (brand === 'その他') {
+                            setCustomCreditText('');
+                          }
+                        }
+                      }}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{brand}</span>
+                  </label>
+                ))}
               </div>
               
-              {(formData.paymentCredit || '') !== '' && (
-                <div className="ml-6 space-y-2">
-                  {creditBrands.map((brand, index) => (
-                    <div key={index} className="flex gap-2 items-center">
-                      <input
-                        type="text"
-                        value={brand}
-                        onChange={(e) => updateCreditBrand(index, e.target.value)}
-                        placeholder="ブランド名を入力"
-                        className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      {creditBrands.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeCreditBrand(index)}
-                          className="px-3 py-2 text-red-600 hover:text-red-800 border border-red-300 rounded-md hover:bg-red-50"
-                        >
-                          削除
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={addCreditBrand}
-                    className="px-4 py-2 text-blue-600 hover:text-blue-800 border border-blue-300 rounded-md hover:bg-blue-50"
-                  >
-                    + 追加
-                  </button>
+              {/* 「その他」選択時のカスタムテキスト入力欄 */}
+              {selectedCreditBrands.includes('その他') && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    その他のクレジットカードブランド <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={customCreditText}
+                    onChange={(e) => setCustomCreditText(e.target.value)}
+                    maxLength={100}
+                    placeholder="例：銀聯カード、Discoverなど"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    「その他」を選択した場合は、具体的なブランド名を入力してください（最大100文字）
+                  </p>
                 </div>
               )}
             </div>
@@ -1369,64 +1374,53 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             {/* QRコード決済 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                QRコード決済
+                QRコード決済（複数選択可）
               </label>
-              <div className="flex gap-4 mb-3">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="paymentCodeEnabled"
-                    checked={(formData.paymentCode || '') !== ''}
-                    onChange={() => {
-                      handleInputChange('paymentCode', 'enabled');
-                    }}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <span className="ml-2 text-sm text-gray-900">可</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="paymentCodeEnabled"
-                    checked={(formData.paymentCode || '') === ''}
-                    onChange={() => {
-                      handleInputChange('paymentCode', '');
-                    }}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <span className="ml-2 text-sm text-gray-900">不可</span>
-                </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                {QR_PAYMENT_SERVICES.map((service) => (
+                  <label
+                    key={service}
+                    className="flex items-center space-x-2 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      value={service}
+                      checked={selectedQrBrands.includes(service)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedQrBrands([...selectedQrBrands, service]);
+                        } else {
+                          setSelectedQrBrands(selectedQrBrands.filter(s => s !== service));
+                          // 「その他」のチェックを外したらカスタムテキストもクリア
+                          if (service === 'その他') {
+                            setCustomQrText('');
+                          }
+                        }
+                      }}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{service}</span>
+                  </label>
+                ))}
               </div>
               
-              {(formData.paymentCode || '') !== '' && (
-                <div className="ml-6 space-y-2">
-                  {qrBrands.map((brand, index) => (
-                    <div key={index} className="flex gap-2 items-center">
-                      <input
-                        type="text"
-                        value={brand}
-                        onChange={(e) => updateQrBrand(index, e.target.value)}
-                        placeholder="ブランド名を入力"
-                        className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      {qrBrands.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeQrBrand(index)}
-                          className="px-3 py-2 text-red-600 hover:text-red-800 border border-red-300 rounded-md hover:bg-red-50"
-                        >
-                          削除
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={addQrBrand}
-                    className="px-4 py-2 text-blue-600 hover:text-blue-800 border border-blue-300 rounded-md hover:bg-blue-50"
-                  >
-                    + 追加
-                  </button>
+              {/* 「その他」選択時のカスタムテキスト入力欄 */}
+              {selectedQrBrands.includes('その他') && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    その他のQRコード決済サービス <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={customQrText}
+                    onChange={(e) => setCustomQrText(e.target.value)}
+                    maxLength={100}
+                    placeholder="例：Alipay、WeChat Payなど"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    「その他」を選択した場合は、具体的なサービス名を入力してください（最大100文字）
+                  </p>
                 </div>
               )}
             </div>
