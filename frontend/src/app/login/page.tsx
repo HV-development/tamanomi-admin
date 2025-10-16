@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Button from '@/components/atoms/Button';
 import Logo from '@/components/atoms/Logo';
@@ -12,7 +12,8 @@ export const dynamic = 'force-dynamic';
 
 type LoginFormData = AdminLoginInput;
 
-export default function LoginPage() {
+// SearchParamsを使用する部分を分離
+function LoginFormWithParams() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const auth = useAuth();
@@ -238,5 +239,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-600">読み込み中...</div>
+      </div>
+    }>
+      <LoginFormWithParams />
+    </Suspense>
   );
 }

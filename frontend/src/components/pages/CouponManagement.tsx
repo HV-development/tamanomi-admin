@@ -86,8 +86,8 @@ export default function CouponManagement({ shopId }: CouponManagementProps = {})
       const fetchShop = async () => {
         try {
           setLoading(true);
-          const response = await apiClient.get(`/api/shops/${shopId}`);
-          setShop(response.data);
+          const data = await apiClient.getShop(shopId);
+          setShop(data as Shop);
         } catch (error) {
           console.error('店舗情報の取得に失敗しました:', error);
         } finally {
