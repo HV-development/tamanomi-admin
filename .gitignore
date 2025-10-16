@@ -38,6 +38,9 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 
+# npm config (contains GitHub token)
+.npmrc
+
 # vercel
 .vercel
 
