@@ -2,11 +2,22 @@
 import { 
   type AdminLoginInput, 
   type AdminRegisterInput,
-  type AuthResponse,
   type RefreshTokenInput,
 } from '@hv-development/schemas';
 
 type RegisterInput = AdminRegisterInput;
+
+// 認証レスポンスの型定義
+interface AuthResponse {
+  account: {
+    email: string;
+    accountType: string;
+    status: string;
+    displayName?: string;
+  };
+  accessToken: string;
+  refreshToken: string;
+}
 
 type RefreshResponse = {
   token: string;
