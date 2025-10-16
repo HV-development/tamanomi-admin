@@ -110,6 +110,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     password: '',
   });
   
+  // 利用シーンの複数選択用
+  const [selectedScenes, setSelectedScenes] = useState<string[]>([]);
+  
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
   const [scenes, setScenes] = useState<Scene[]>([]);
@@ -276,6 +279,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             const holidaysValue = (shopData as ShopCreateRequest).holidays;
             if (holidaysValue && holidaysValue.trim()) {
               setSelectedHolidays(holidaysValue.split(',').map(h => h.trim()));
+            }
+            
+            // 利用シーンの設定
+            const shopDataWithScenes = shopData as ShopCreateRequest & { sceneIds?: string[] };
+            if (shopDataWithScenes.sceneIds && Array.isArray(shopDataWithScenes.sceneIds)) {
+              setSelectedScenes(shopDataWithScenes.sceneIds);
             }
           }
         } else if (merchantId && merchantsArray.length > 0 && isMounted) {
@@ -698,6 +707,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         address: fullAddress,  // 結合した住所
         images: allImageUrls.length > 0 ? allImageUrls : undefined,
         holidays: selectedHolidays.join(','),
+        sceneIds: selectedScenes,  // 利用シーンの配列を追加
         paymentCredit: (formData.paymentCredit || '') !== ''
           ? creditBrands.filter(b => b.trim()).join(',')
           : '',
@@ -1083,7 +1093,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
 
         {/* 利用シーン */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">利用シーン</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">利用シーン（複数選択可）</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {scenes.map((scene) => (
               <label
@@ -1091,12 +1101,17 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 className="flex items-center space-x-2 cursor-pointer"
               >
                 <input
-                  type="radio"
-                  name="sceneId"
+                  type="checkbox"
                   value={scene.id}
-                  checked={formData.sceneId === scene.id}
-                  onChange={(e) => handleInputChange('sceneId', e.target.value)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  checked={selectedScenes.includes(scene.id)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedScenes([...selectedScenes, scene.id]);
+                    } else {
+                      setSelectedScenes(selectedScenes.filter(id => id !== scene.id));
+                    }
+                  }}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700">{scene.name}</span>
               </label>
