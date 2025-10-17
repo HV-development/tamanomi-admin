@@ -58,10 +58,10 @@ export default function MerchantConfirmation() {
       // API呼び出しをシミュレート
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      console.log('事業者登録データ:', formData);
+      console.log('会社登録データ:', formData);
       
       // 成功時の処理（実際の実装では適切なページにリダイレクト）
-      alert('事業者の登録が完了しました。');
+      alert('会社の登録が完了しました。');
       
     } catch (error) {
       console.error('登録エラー:', error);
@@ -84,7 +84,7 @@ export default function MerchantConfirmation() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">事業者登録確認</h1>
+              <h1 className="text-2xl font-bold text-gray-900">会社登録確認</h1>
               <p className="text-gray-600">
                 入力内容を確認してください
               </p>
@@ -118,7 +118,7 @@ export default function MerchantConfirmation() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    事業者名
+                    会社名
                   </label>
                   <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
                     {formData.name}
@@ -127,7 +127,7 @@ export default function MerchantConfirmation() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    事業者名（カナ）
+                    会社名（カナ）
                   </label>
                   <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
                     {formData.nameKana}

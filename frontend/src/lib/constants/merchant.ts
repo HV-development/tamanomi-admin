@@ -1,4 +1,4 @@
-// 事業者ステータスの日本語マッピング
+// 会社ステータスの日本語マッピング
 export const statusLabels: Record<string, string> = {
   registering: '登録中',
   collection_requested: '資料回収依頼中',

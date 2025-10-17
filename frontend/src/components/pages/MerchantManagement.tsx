@@ -127,8 +127,8 @@ export default function MerchantManagement() {
         }
         
         if (isMounted) {
-          console.error('掲載店データの取得に失敗しました:', err);
-          setError('掲載店データの取得に失敗しました');
+          console.error('会社データの取得に失敗しました:', err);
+          setError('会社データの取得に失敗しました');
           setMerchants([]);
         }
       } finally {
@@ -195,7 +195,7 @@ export default function MerchantManagement() {
 
     setIsExecuting(true);
     try {
-      // 選択された事業者のステータスを一括更新
+      // 選択された会社のステータスを一括更新
       const updatePromises = Array.from(selectedMerchants).map(merchantId =>
         apiClient.updateMerchantStatus(merchantId, selectedStatus)
       );
@@ -211,7 +211,7 @@ export default function MerchantManagement() {
         )
       );
       
-      showSuccess(`${selectedMerchants.size}件の事業者のステータスを「${statusLabels[selectedStatus]}」に更新しました`);
+      showSuccess(`${selectedMerchants.size}件の会社のステータスを「${statusLabels[selectedStatus]}」に更新しました`);
       
       // 選択をクリア
       setSelectedMerchants(new Set());
@@ -233,7 +233,7 @@ export default function MerchantManagement() {
       // アカウント発行処理（実装は後で）
       await new Promise(resolve => setTimeout(resolve, 2000)); // 仮の処理
       
-      showSuccess(`${selectedMerchants.size}件の事業者にアカウントを発行しました`);
+      showSuccess(`${selectedMerchants.size}件の会社にアカウントを発行しました`);
       
       // 選択をクリア
       setSelectedMerchants(new Set());
@@ -368,7 +368,7 @@ export default function MerchantManagement() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">掲載店データを読み込み中...</p>
+            <p className="text-gray-600">会社データを読み込み中...</p>
           </div>
         </div>
       </DashboardLayout>
@@ -382,9 +382,9 @@ export default function MerchantManagement() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-900">掲載店管理</h1>
+            <h1 className="text-2xl font-bold text-gray-900">会社管理</h1>
             <p className="text-gray-600">
-              掲載店の管理・編集を行います
+              会社の管理・編集を行います
             </p>
             </div>
             <div className="text-sm text-gray-600">
@@ -432,30 +432,30 @@ export default function MerchantManagement() {
           {isSearchExpanded && (
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* 事業者ID */}
+            {/* 会社ID */}
             <div>
               <label htmlFor="merchantId" className="block text-sm font-medium text-gray-700 mb-2">
-                事業者ID
+                会社ID
               </label>
               <input
                 type="text"
                 id="merchantId"
-                placeholder="事業者IDを入力"
+                placeholder="会社IDを入力"
                 value={searchForm.merchantId}
                 onChange={(e) => handleInputChange('merchantId', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
 
-            {/* 事業者名 */}
+            {/* 会社名 */}
             <div>
               <label htmlFor="merchantName" className="block text-sm font-medium text-gray-700 mb-2">
-                事業者名
+                会社名
               </label>
               <input
                 type="text"
                 id="merchantName"
-                placeholder="事業者名を入力"
+                placeholder="会社名を入力"
                 value={searchForm.merchantName}
                 onChange={(e) => handleInputChange('merchantName', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -587,11 +587,11 @@ export default function MerchantManagement() {
           )}
         </div>
 
-        {/* 掲載店一覧 */}
+        {/* 会社一覧 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
-              掲載店一覧 ({filteredMerchants.length}件)
+              会社一覧 ({filteredMerchants.length}件)
             </h3>
             <Link href="/merchants/new">
               <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
@@ -616,7 +616,7 @@ export default function MerchantManagement() {
                     </div>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-                    掲載店名
+                    会社名
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                     代表者名
@@ -734,7 +734,7 @@ export default function MerchantManagement() {
                 height={48}
                 className="mx-auto text-gray-400 mb-4"
               />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">掲載店が見つかりません</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">会社が見つかりません</h3>
               <p className="text-gray-500">検索条件を変更してお試しください。</p>
             </div>
           )}
