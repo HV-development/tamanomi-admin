@@ -43,11 +43,11 @@ export default function ResendApprovalModal({
           {/* コンテンツ */}
           <div className="mb-6 space-y-3">
             <p className="text-sm text-gray-700">
-              以下の掲載店に承認メールを再送しますか？
+              以下の会社に承認メールを再送しますか？
             </p>
             <div className="bg-gray-50 rounded-lg p-4 space-y-2">
               <div>
-                <span className="text-xs text-gray-500">掲載店名</span>
+                <span className="text-xs text-gray-500">会社名</span>
                 <p className="text-sm font-medium text-gray-900">{merchantName}</p>
               </div>
               <div>

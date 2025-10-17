@@ -129,7 +129,7 @@ function LoginFormWithParams() {
         }
         
         console.log('🚀 LoginPage: Redirecting to /merchants');
-        // 認証成功時は事業者一覧画面に遷移
+        // 認証成功時は会社一覧画面に遷移
         router.push('/merchants');
       } catch (error: unknown) {
         console.error('❌ LoginPage: Login error', error);

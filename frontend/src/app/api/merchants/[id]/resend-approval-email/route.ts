@@ -21,7 +21,7 @@ export async function POST(
     const { id } = params;
     console.log('➕ API Route: 承認メール再送リクエスト受信', { merchantId: id });
     
-    // 事業者情報を取得してメールアドレスを確認
+    // 会社情報を取得してメールアドレスを確認
     const merchantResponse = await fetch(`${API_BASE_URL}/admin/merchants/${id}`, {
       method: 'GET',
       headers: getAuthHeaders(request),
@@ -29,7 +29,7 @@ export async function POST(
 
     if (!merchantResponse.ok) {
       const errorData = await merchantResponse.json();
-      console.error('❌ API Route: 事業者情報取得失敗', { status: merchantResponse.status, error: errorData });
+      console.error('❌ API Route: 会社情報取得失敗', { status: merchantResponse.status, error: errorData });
       return NextResponse.json(errorData, { status: merchantResponse.status });
     }
 

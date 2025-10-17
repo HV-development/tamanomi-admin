@@ -286,9 +286,9 @@ export default function MerchantRegistration() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">掲載店新規登録</h1>
+              <h1 className="text-2xl font-bold text-gray-900">会社新規登録</h1>
               <p className="text-gray-600">
-                新しい掲載店を登録します
+                新しい会社を登録します
               </p>
             </div>
             <div className="text-sm text-gray-600">
@@ -318,10 +318,10 @@ export default function MerchantRegistration() {
             <h3 className="text-lg font-medium text-gray-900 mb-6">基本情報</h3>
             
             <div className="space-y-6">
-              {/* 掲載店名 / 会社名 */}
+              {/* 会社名 / 会社名 */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  掲載店名 / 会社名 <span className="text-red-500">*</span>
+                  会社名 / 会社名 <span className="text-red-500">*</span>
                 </label>
                 <input
                   ref={(el) => { fieldRefs.current.name = el; }}
@@ -333,7 +333,7 @@ export default function MerchantRegistration() {
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.name ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="掲載店名 / 会社名を入力してください"
+                  placeholder="会社名 / 会社名を入力してください"
                 />
                 <div className="mt-1 flex justify-between items-center">
                   {errors.name ? (
@@ -345,10 +345,10 @@ export default function MerchantRegistration() {
                 </div>
               </div>
 
-              {/* 掲載店名（カナ） */}
+              {/* 会社名（カナ） */}
               <div>
                 <label htmlFor="nameKana" className="block text-sm font-medium text-gray-700 mb-2">
-                  掲載店名（カナ） <span className="text-red-500">*</span>
+                  会社名（カナ） <span className="text-red-500">*</span>
                 </label>
                 <input
                   ref={(el) => { fieldRefs.current.nameKana = el; }}
@@ -360,7 +360,7 @@ export default function MerchantRegistration() {
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.nameKana ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="掲載店名（カナ）を入力してください"
+                  placeholder="会社名（カナ）を入力してください"
                 />
                 <div className="mt-1 flex justify-between items-center">
                   {errors.nameKana ? (

@@ -16,7 +16,7 @@ function getAuthHeaders(request: Request): Record<string, string> {
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
-    console.log('🏢 API Route: 事業者詳細取得リクエスト受信', { merchantId: id });
+    console.log('🏢 API Route: 会社詳細取得リクエスト受信', { merchantId: id });
 
     const response = await fetch(`${API_BASE_URL}/admin/merchants/${id}`, {
       method: 'GET',
@@ -25,15 +25,15 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('❌ API Route: 事業者詳細取得失敗', { status: response.status, error: errorData });
+      console.error('❌ API Route: 会社詳細取得失敗', { status: response.status, error: errorData });
       return NextResponse.json(errorData, { status: response.status });
     }
 
     const data = await response.json();
-    console.log('✅ API Route: 事業者詳細取得成功', { merchantId: id });
+    console.log('✅ API Route: 会社詳細取得成功', { merchantId: id });
     return NextResponse.json(data);
   } catch (error: unknown) {
-    console.error(`❌ API Route: 事業者詳細取得エラー ${params.id}`, error);
+    console.error(`❌ API Route: 会社詳細取得エラー ${params.id}`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
   }
@@ -43,7 +43,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   try {
     const { id } = params;
     const body = await request.json();
-    console.log('✏️ API Route: 事業者更新リクエスト受信', { merchantId: id, name: body.name });
+    console.log('✏️ API Route: 会社更新リクエスト受信', { merchantId: id, name: body.name });
 
     const response = await fetch(`${API_BASE_URL}/admin/merchants/${id}`, {
       method: 'PUT',
@@ -53,15 +53,15 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('❌ API Route: 事業者更新失敗', { status: response.status, error: errorData });
+      console.error('❌ API Route: 会社更新失敗', { status: response.status, error: errorData });
       return NextResponse.json(errorData, { status: response.status });
     }
 
     const data = await response.json();
-    console.log('✅ API Route: 事業者更新成功', { merchantId: id });
+    console.log('✅ API Route: 会社更新成功', { merchantId: id });
     return NextResponse.json(data);
   } catch (error: unknown) {
-    console.error(`❌ API Route: 事業者更新エラー ${params.id}`, error);
+    console.error(`❌ API Route: 会社更新エラー ${params.id}`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
   }
@@ -70,7 +70,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
-    console.log('🗑️ API Route: 事業者削除リクエスト受信', { merchantId: id });
+    console.log('🗑️ API Route: 会社削除リクエスト受信', { merchantId: id });
 
     const response = await fetch(`${API_BASE_URL}/admin/merchants/${id}`, {
       method: 'DELETE',
@@ -79,14 +79,14 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('❌ API Route: 事業者削除失敗', { status: response.status, error: errorData });
+      console.error('❌ API Route: 会社削除失敗', { status: response.status, error: errorData });
       return NextResponse.json(errorData, { status: response.status });
     }
 
-    console.log('✅ API Route: 事業者削除成功', { merchantId: id });
-    return NextResponse.json({ message: '事業者が削除されました' });
+    console.log('✅ API Route: 会社削除成功', { merchantId: id });
+    return NextResponse.json({ message: '会社が削除されました' });
   } catch (error: unknown) {
-    console.error(`❌ API Route: 事業者削除エラー ${params.id}`, error);
+    console.error(`❌ API Route: 会社削除エラー ${params.id}`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
   }

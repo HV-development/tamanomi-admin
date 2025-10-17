@@ -134,7 +134,7 @@ class ApiClient {
     }
   }
 
-  // 事業者関連
+  // 会社関連
   async getMerchants(): Promise<unknown> {
     console.log('🌐 API: getMerchants called (via Next.js API Route)');
     console.log('🔗 API Base URL:', this.baseUrl);

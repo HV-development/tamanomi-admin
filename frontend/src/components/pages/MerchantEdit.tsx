@@ -71,14 +71,14 @@ export default function MerchantEdit() {
   
   const fieldRefs = useRef<{ [key: string]: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null }>({});
 
-  // 事業者データの読み込み
+  // 会社データの読み込み
   useEffect(() => {
     let isMounted = true;
     const abortController = new AbortController();
 
     const loadMerchantData = async () => {
       try {
-        // APIから事業者データを取得
+        // APIから会社データを取得
         const response = await fetch(`/api/merchants/${merchantId}`, {
           signal: abortController.signal,
         });
@@ -114,7 +114,7 @@ export default function MerchantEdit() {
         } else {
           if (!isMounted) return;
           
-          console.error('事業者データの取得に失敗しました:', response.status);
+          console.error('会社データの取得に失敗しました:', response.status);
           // エラー時はサンプルデータを使用
           const sampleData: MerchantEditFormData = {
             name: '株式会社たまのみ',
@@ -145,7 +145,7 @@ export default function MerchantEdit() {
         
         if (!isMounted) return;
         
-        console.error('事業者データの読み込みエラー:', error);
+        console.error('会社データの読み込みエラー:', error);
         // エラー時はサンプルデータを使用
         const sampleData: MerchantEditFormData = {
           name: '株式会社たまのみ',
@@ -167,7 +167,7 @@ export default function MerchantEdit() {
           status: 'operating',
         };
         setFormData(sampleData);
-        alert('事業者データの読み込みに失敗しました。サンプルデータを表示しています。');
+        alert('会社データの読み込みに失敗しました。サンプルデータを表示しています。');
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -317,8 +317,8 @@ export default function MerchantEdit() {
       });
 
       if (response.ok) {
-        console.log('事業者更新データ:', formData);
-        alert('事業者の更新が完了しました。');
+        console.log('会社更新データ:', formData);
+        alert('会社の更新が完了しました。');
         // 成功時の処理（実際の実装では適切なページにリダイレクト）
       } else {
         const errorData = await response.json();
@@ -351,9 +351,9 @@ export default function MerchantEdit() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">事業者編集</h1>
+              <h1 className="text-2xl font-bold text-gray-900">会社編集</h1>
               <p className="text-gray-600">
-                事業者ID: {merchantId}
+                会社ID: {merchantId}
               </p>
             </div>
             <div className="text-sm text-gray-600">
@@ -371,10 +371,10 @@ export default function MerchantEdit() {
             <h3 className="text-lg font-medium text-gray-900 mb-6">基本情報</h3>
             
             <div className="space-y-6">
-              {/* 事業者名 */}
+              {/* 会社名 */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  事業者名 <span className="text-red-500">*</span>
+                  会社名 <span className="text-red-500">*</span>
                 </label>
                 <input
                   ref={(el) => { fieldRefs.current.name = el; }}
@@ -386,7 +386,7 @@ export default function MerchantEdit() {
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.name ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="事業者名を入力"
+                  placeholder="会社名を入力"
                 />
                 <div className="mt-1 flex justify-between items-center">
                   {errors.name ? (
@@ -398,10 +398,10 @@ export default function MerchantEdit() {
                 </div>
               </div>
 
-              {/* 事業者名（カナ） */}
+              {/* 会社名（カナ） */}
               <div>
                 <label htmlFor="nameKana" className="block text-sm font-medium text-gray-700 mb-2">
-                  事業者名（カナ） <span className="text-red-500">*</span>
+                  会社名（カナ） <span className="text-red-500">*</span>
                 </label>
                 <input
                   ref={(el) => { fieldRefs.current.nameKana = el; }}
@@ -413,7 +413,7 @@ export default function MerchantEdit() {
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.nameKana ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="事業者名（カナ）を入力"
+                  placeholder="会社名（カナ）を入力"
                 />
                 <div className="mt-1 flex justify-between items-center">
                   {errors.nameKana ? (

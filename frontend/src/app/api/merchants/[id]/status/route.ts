@@ -17,7 +17,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   try {
     const { id } = params;
     const body = await request.json();
-    console.log('🔄 API Route: 事業者ステータス更新リクエスト受信', { merchantId: id, status: body.status });
+    console.log('🔄 API Route: 会社ステータス更新リクエスト受信', { merchantId: id, status: body.status });
 
     const response = await fetch(`${API_BASE_URL}/admin/merchants/${id}/status`, {
       method: 'PATCH',
@@ -27,15 +27,15 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('❌ API Route: 事業者ステータス更新失敗', { status: response.status, error: errorData });
+      console.error('❌ API Route: 会社ステータス更新失敗', { status: response.status, error: errorData });
       return NextResponse.json(errorData, { status: response.status });
     }
 
     const data = await response.json();
-    console.log('✅ API Route: 事業者ステータス更新成功', { merchantId: id });
+    console.log('✅ API Route: 会社ステータス更新成功', { merchantId: id });
     return NextResponse.json(data);
   } catch (error: unknown) {
-    console.error(`❌ API Route: 事業者ステータス更新エラー ${params.id}`, error);
+    console.error(`❌ API Route: 会社ステータス更新エラー ${params.id}`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
   }
