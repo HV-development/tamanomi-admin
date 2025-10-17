@@ -644,7 +644,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       const uploadImages = async (targetShopId: string): Promise<string[]> => {
         console.log('📤 Starting image upload:', { count: imagePreviews.length, shopId: targetShopId });
         const uploadedImageUrls: string[] = [];
+        
         if (imagePreviews.length > 0) {
+          // 全画像で同じタイムスタンプを使用
+          const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '').split('.')[0];
+          console.log('📅 Using timestamp for all images:', timestamp);
+          
           let index = 0;
           for (const preview of imagePreviews) {
             index++;
@@ -655,6 +660,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             uploadFormData.append('type', 'shop');
             uploadFormData.append('merchantId', formData.merchantId);
             uploadFormData.append('shopId', targetShopId);
+            uploadFormData.append('timestamp', timestamp); // 全画像で同じタイムスタンプを使用
             
             try {
               const response = await fetch('/api/upload', {
