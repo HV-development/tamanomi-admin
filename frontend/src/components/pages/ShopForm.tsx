@@ -221,6 +221,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               merchantId: finalMerchantId,
               shopEmail: accountEmail || '', // アカウントメールを初期値に設定
               createAccount: !!accountEmail, // accountEmailが存在する場合はcreateAccountをtrueに
+              // latitude/longitudeを文字列に変換
+              latitude: shopData.latitude ? String(shopData.latitude) : '',
+              longitude: shopData.longitude ? String(shopData.longitude) : '',
             });
             
             // 編集モード時は必須フィールドを最初から touched として設定
@@ -694,6 +697,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         ...formData,
         accountEmail,
         address: fullAddress,  // 結合した住所
+        // latitude/longitudeを文字列に変換
+        latitude: formData.latitude ? String(formData.latitude) : undefined,
+        longitude: formData.longitude ? String(formData.longitude) : undefined,
         images: allImageUrls.length > 0 ? allImageUrls : undefined,
         holidays: selectedHolidays.join(','),
         sceneIds: selectedScenes,  // 利用シーンの配列を追加
