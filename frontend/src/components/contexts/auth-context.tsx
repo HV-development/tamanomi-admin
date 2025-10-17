@@ -84,10 +84,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('🔐 AuthContext: login called', { email: credentials.email });
       const response = await apiClient.login(credentials);
       
+      console.log('🔑 AuthContext: Received tokens', { 
+        hasAccessToken: !!response.accessToken,
+        hasRefreshToken: !!response.refreshToken,
+        accessTokenLength: response.accessToken?.length,
+        refreshTokenLength: response.refreshToken?.length
+      });
+      
       // トークンを保存
       localStorage.setItem('accessToken', response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
       localStorage.setItem('userData', JSON.stringify(response.account));
+      
+      // 保存を確認
+      const savedAccessToken = localStorage.getItem('accessToken');
+      const savedRefreshToken = localStorage.getItem('refreshToken');
+      console.log('💾 AuthContext: Tokens saved to localStorage', { 
+        accessTokenSaved: !!savedAccessToken,
+        refreshTokenSaved: !!savedRefreshToken,
+        accessTokenMatch: savedAccessToken === response.accessToken,
+        refreshTokenMatch: savedRefreshToken === response.refreshToken
+      });
       
       setUser({
         id: response.account.email, // 仮のIDとしてemailを使用

@@ -215,6 +215,11 @@ class ApiClient {
   async getShops(queryParams?: string): Promise<unknown> {
     console.log('🏪 API: getShops called (via Next.js API Route)');
     const token = localStorage.getItem('accessToken');
+    console.log('🔑 API: getShops - Token check', { 
+      hasToken: !!token, 
+      tokenLength: token?.length,
+      tokenPreview: token ? `${token.substring(0, 20)}...` : 'no token'
+    });
     const endpoint = queryParams ? `/shops?${queryParams}` : '/shops';
     return this.request<unknown>(endpoint, {
       method: 'GET',
