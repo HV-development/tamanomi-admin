@@ -733,7 +733,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         // latitude/longitudeを文字列に変換
         latitude: formData.latitude ? String(formData.latitude) : undefined,
         longitude: formData.longitude ? String(formData.longitude) : undefined,
-        images: allImageUrls.length > 0 ? allImageUrls : undefined,
+        images: allImageUrls,  // 画像削除時にも空配列を送信
         holidays: selectedHolidays.join(','),
         sceneIds: selectedScenes,  // 利用シーンの配列を追加
         customSceneText: isOtherSceneSelected ? customSceneText : undefined,  // 「その他」選択時のみ送信
