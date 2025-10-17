@@ -103,7 +103,7 @@ function LoginFormWithParams() {
     
     if (validateAllFields()) {
       try {
-        console.log('ログイン処理:', formData);
+        console.log('🔑 LoginPage: Starting login process', formData.email);
         
         // login関数が利用可能かチェック
         if (!login) {
@@ -112,11 +112,27 @@ function LoginFormWithParams() {
         
         // API経由でログイン
         await login({ email: formData.email, password: formData.password });
+        console.log('✅ LoginPage: Login successful, waiting for storage...');
         
+        // localStorageへの保存を確実にするため少し待機
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // トークンが保存されたか確認
+        const token = localStorage.getItem('accessToken');
+        console.log('🔍 LoginPage: Token verification before redirect', { 
+          hasToken: !!token,
+          tokenLength: token?.length 
+        });
+        
+        if (!token) {
+          throw new Error('トークンの保存に失敗しました。再度お試しください。');
+        }
+        
+        console.log('🚀 LoginPage: Redirecting to /merchants');
         // 認証成功時は事業者一覧画面に遷移
         router.push('/merchants');
       } catch (error: unknown) {
-        console.error('ログインエラー:', error);
+        console.error('❌ LoginPage: Login error', error);
         
         // エラーメッセージを設定
         let errorMessage = 'ログインに失敗しました。メールアドレスまたはパスワードを確認してください。';
