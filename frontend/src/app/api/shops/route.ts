@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3002/api/v1';
 
 function getAuthHeaders(request: Request): Record<string, string> {
   const authToken = request.headers.get('authorization');
@@ -32,7 +32,11 @@ export async function GET(request: Request) {
     if (status) queryParams.append('status', status);
     if (merchantId) queryParams.append('merchantId', merchantId);
     
-    const response = await fetch(`${API_BASE_URL}/shops?${queryParams.toString()}`, {
+    const fullUrl = `${API_BASE_URL}/shops?${queryParams.toString()}`;
+    console.log('🔗 API Route: Fetching from', fullUrl);
+    console.log('🔑 API Route: API_BASE_URL', API_BASE_URL);
+    
+    const response = await fetch(fullUrl, {
       method: 'GET',
       headers: getAuthHeaders(request),
     });
