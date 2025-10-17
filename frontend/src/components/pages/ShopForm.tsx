@@ -636,31 +636,44 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       }
       
       // 画像をアップロード
-      const uploadedImageUrls: string[] = [];
-      if (imagePreviews.length > 0) {
-        for (const preview of imagePreviews) {
-          const uploadFormData = new FormData();
-          uploadFormData.append('image', preview.file);
-          uploadFormData.append('type', 'shop');
-          
-          try {
-            const response = await fetch('/api/upload', {
-              method: 'POST',
-              body: uploadFormData,
-            });
+      // 画像アップロード処理を関数化
+      const uploadImages = async (targetShopId: string): Promise<string[]> => {
+        const uploadedImageUrls: string[] = [];
+        if (imagePreviews.length > 0) {
+          for (const preview of imagePreviews) {
+            const uploadFormData = new FormData();
+            uploadFormData.append('image', preview.file);
+            uploadFormData.append('type', 'shop');
+            uploadFormData.append('merchantId', formData.merchantId);
+            uploadFormData.append('shopId', targetShopId);
             
-            if (!response.ok) {
-              throw new Error('画像のアップロードに失敗しました');
+            try {
+              const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: uploadFormData,
+              });
+              
+              if (!response.ok) {
+                throw new Error('画像のアップロードに失敗しました');
+              }
+              
+              const result = await response.json();
+              uploadedImageUrls.push(result.url);
+            } catch (uploadErr) {
+              console.error('Image upload failed:', uploadErr);
+              showError('画像のアップロードに失敗しました');
+              throw uploadErr;
             }
-            
-            const result = await response.json();
-            uploadedImageUrls.push(result.url);
-          } catch (uploadErr) {
-            console.error('Image upload failed:', uploadErr);
-            showError('画像のアップロードに失敗しました');
-            throw uploadErr;
           }
         }
+        return uploadedImageUrls;
+      };
+      
+      let uploadedImageUrls: string[] = [];
+      
+      // 編集時のみ画像を先にアップロード
+      if (isEdit && shopId) {
+        uploadedImageUrls = await uploadImages(shopId);
       }
       
       // 住所フィールドを結合
@@ -718,7 +731,21 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         await apiClient.updateShop(shopId, submitData);
         showSuccess('店舗を更新しました');
       } else {
-        await apiClient.createShop(submitData);
+        // 新規作成時は店舗を先に作成
+        const createdShop = await apiClient.createShop(submitData) as { id: string };
+        
+        // 作成された店舗のIDを使って画像をアップロード
+        if (imagePreviews.length > 0 && createdShop?.id) {
+          const newUploadedImageUrls = await uploadImages(createdShop.id);
+          
+          // 画像をアップロードした場合は店舗を更新
+          if (newUploadedImageUrls.length > 0) {
+            await apiClient.updateShop(createdShop.id, {
+              images: newUploadedImageUrls,
+            });
+          }
+        }
+        
         showSuccess('店舗を作成しました');
       }
       
