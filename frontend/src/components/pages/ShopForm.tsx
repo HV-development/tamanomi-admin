@@ -475,7 +475,10 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     if (!files) return;
 
     const newFiles = Array.from(files);
+    console.log('🖼️ Selected files:', newFiles.length, newFiles.map(f => f.name));
+    
     const totalImages = imagePreviews.length + existingImages.length + newFiles.length;
+    console.log('📊 Total images:', { existing: existingImages.length, previews: imagePreviews.length, new: newFiles.length, total: totalImages });
 
     if (totalImages > 3) {
       showError('画像は最大3枚までアップロードできます');
@@ -493,6 +496,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       newPreviews.push({ file, url });
     });
 
+    console.log('✅ New previews created:', newPreviews.length);
     setImagePreviews([...imagePreviews, ...newPreviews]);
   };
 
@@ -638,9 +642,14 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       // 画像をアップロード
       // 画像アップロード処理を関数化
       const uploadImages = async (targetShopId: string): Promise<string[]> => {
+        console.log('📤 Starting image upload:', { count: imagePreviews.length, shopId: targetShopId });
         const uploadedImageUrls: string[] = [];
         if (imagePreviews.length > 0) {
+          let index = 0;
           for (const preview of imagePreviews) {
+            index++;
+            console.log(`📤 Uploading image ${index}/${imagePreviews.length}:`, preview.file.name);
+            
             const uploadFormData = new FormData();
             uploadFormData.append('image', preview.file);
             uploadFormData.append('type', 'shop');
@@ -654,18 +663,22 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               });
               
               if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error(`❌ Upload failed for image ${index}:`, response.status, errorData);
                 throw new Error('画像のアップロードに失敗しました');
               }
               
               const result = await response.json();
+              console.log(`✅ Upload successful ${index}:`, result.url);
               uploadedImageUrls.push(result.url);
             } catch (uploadErr) {
-              console.error('Image upload failed:', uploadErr);
+              console.error(`❌ Image upload failed for ${index}:`, uploadErr);
               showError('画像のアップロードに失敗しました');
               throw uploadErr;
             }
           }
         }
+        console.log('✅ All uploads complete:', uploadedImageUrls.length, 'images');
         return uploadedImageUrls;
       };
       
@@ -686,6 +699,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       
       // 画像URLを結合（既存画像 + 新規アップロード画像）
       const allImageUrls = [...existingImages, ...uploadedImageUrls];
+      console.log('🖼️ All image URLs:', { existing: existingImages.length, uploaded: uploadedImageUrls.length, total: allImageUrls.length, urls: allImageUrls });
       
       // アカウントメールの設定
       let accountEmail: string | null | undefined;
