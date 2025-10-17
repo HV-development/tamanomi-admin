@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://api:3002/api/v1';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
 export async function GET() {
   console.log('🎭 Next.js API Route: GET /api/scenes');
