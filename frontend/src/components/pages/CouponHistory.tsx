@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import DashboardLayout from '@/components/templates/dashboard-layout';
+import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 
@@ -214,7 +214,7 @@ export default function CouponHistory() {
   };
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <div className="space-y-6">
         {/* ヘッダー */}
         <div>
@@ -524,6 +524,6 @@ export default function CouponHistory() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 }

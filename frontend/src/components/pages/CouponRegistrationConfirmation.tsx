@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/templates/dashboard-layout';
+import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { apiClient } from '@/lib/api';
@@ -78,16 +78,16 @@ export default function CouponRegistrationConfirmation() {
 
   if (!couponData) {
     return (
-      <DashboardLayout>
+      <AdminLayout>
         <div className="text-center py-12">
           <p className="text-gray-500">データを読み込んでいます...</p>
         </div>
-      </DashboardLayout>
+      </AdminLayout>
     );
   }
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <div className="space-y-6">
         {/* ページタイトル */}
         <div>
@@ -180,6 +180,6 @@ export default function CouponRegistrationConfirmation() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 }
