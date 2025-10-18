@@ -5,14 +5,7 @@ import Link from 'next/link';
 import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-
-interface Admin {
-  id: string;
-  name: string;
-  email: string;
-  role: number;
-  createdAt: string;
-}
+import { type Admin, type AdminSearchForm } from '@hv-development/schemas';
 
 // サンプルデータ
 const sampleAdmins: Admin[] = [
@@ -49,13 +42,13 @@ const sampleAdmins: Admin[] = [
 ];
 
 export default function AdminManagement() {
-  const [searchForm, setSearchForm] = useState({
+  const [searchForm, setSearchForm] = useState<AdminSearchForm>({
     accountId: '',
     name: '',
     email: '',
     role: '',
   });
-  const [appliedSearchForm, setAppliedSearchForm] = useState({
+  const [appliedSearchForm, setAppliedSearchForm] = useState<AdminSearchForm>({
     accountId: '',
     name: '',
     email: '',
@@ -66,10 +59,10 @@ export default function AdminManagement() {
   // フィルタリング処理
   const filteredAdmins = sampleAdmins.filter((admin) => {
     const matchesSearch = 
-      (appliedSearchForm.accountId === '' || admin.id.toLowerCase().includes(appliedSearchForm.accountId.toLowerCase())) &&
-      (appliedSearchForm.name === '' || admin.name.toLowerCase().includes(appliedSearchForm.name.toLowerCase())) &&
-      (appliedSearchForm.email === '' || admin.email.toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
-      (appliedSearchForm.role === '' || admin.role.toString() === appliedSearchForm.role);
+      (!appliedSearchForm.accountId || appliedSearchForm.accountId === '' || admin.id.toLowerCase().includes(appliedSearchForm.accountId.toLowerCase())) &&
+      (!appliedSearchForm.name || appliedSearchForm.name === '' || admin.name.toLowerCase().includes(appliedSearchForm.name.toLowerCase())) &&
+      (!appliedSearchForm.email || appliedSearchForm.email === '' || admin.email.toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
+      (!appliedSearchForm.role || appliedSearchForm.role === '' || admin.role.toString() === appliedSearchForm.role);
     
     return matchesSearch;
   });
