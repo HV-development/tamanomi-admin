@@ -7,6 +7,9 @@ import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 
+// TODO: 将来的にAPIから取得する際は、@hv-development/schemasから型をインポート
+// import type { CouponUsage } from '@hv-development/schemas';
+
 interface CouponUsage {
   id: string;
   couponId: string;

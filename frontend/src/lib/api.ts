@@ -274,6 +274,55 @@ class ApiClient {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
+
+  // クーポン関連
+  async getCoupons(queryParams?: string): Promise<unknown> {
+    console.log('🎟️ API: getCoupons called (via Next.js API Route)');
+    const token = localStorage.getItem('accessToken');
+    const endpoint = queryParams ? `/coupons?${queryParams}` : '/coupons';
+    return this.request<unknown>(endpoint, {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async getCoupon(id: string): Promise<unknown> {
+    console.log('🎟️ API: getCoupon called (via Next.js API Route)', { id });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/coupons/${id}`, {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async createCoupon(couponData: unknown): Promise<unknown> {
+    console.log('➕ API: createCoupon called (via Next.js API Route)');
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>('/coupons', {
+      method: 'POST',
+      body: JSON.stringify(couponData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async updateCoupon(id: string, couponData: unknown): Promise<unknown> {
+    console.log('✏️ API: updateCoupon called (via Next.js API Route)', { id });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/coupons/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(couponData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async deleteCoupon(id: string): Promise<void> {
+    console.log('🗑️ API: deleteCoupon called (via Next.js API Route)', { id });
+    const token = localStorage.getItem('accessToken');
+    return this.request<void>(`/coupons/${id}`, {
+      method: 'DELETE',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

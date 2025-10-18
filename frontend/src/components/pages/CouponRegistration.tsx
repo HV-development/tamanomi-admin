@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+import { apiClient } from '@/lib/api';
+import type { CouponCreateRequest, CouponStatus } from '@hv-development/schemas';
 import { 
   validateRequired, 
   validateMaxLength, 
@@ -14,11 +16,13 @@ import {
 } from '@/utils/validation';
 
 interface CouponFormData {
+  shopId: string;
   couponName: string;
   couponContent: string;
-  couponType: string;
+  couponConditions: string;
   couponImage: File | null;
   imagePreview: string;
+  imageUrl: string;
   publishStatus: string;
 }
 
@@ -27,16 +31,19 @@ export default function CouponRegistration() {
   const searchParams = useSearchParams();
   
   const [formData, setFormData] = useState<CouponFormData>({
+    shopId: '',
     couponName: '',
     couponContent: '',
-    couponType: '',
+    couponConditions: '',
     couponImage: null,
     imagePreview: '',
-    publishStatus: '',
+    imageUrl: '',
+    publishStatus: 'active',
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof CouponFormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [_isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     // URLパラメータから値を取得してフォームに設定
@@ -44,7 +51,6 @@ export default function CouponRegistration() {
       const urlData = {
         couponName: searchParams.get('couponName') || '',
         couponContent: searchParams.get('couponContent') || '',
-        couponType: searchParams.get('couponType') || '',
         publishStatus: searchParams.get('publishStatus') || '',
         imagePreview: searchParams.get('imagePreview') || '',
       };
@@ -103,15 +109,6 @@ export default function CouponRegistration() {
         }
         break;
 
-      case 'couponType':
-        const couponTypeError = validateRequired(value, 'クーポン種別');
-        if (couponTypeError) {
-          newErrors.couponType = couponTypeError;
-        } else {
-          delete newErrors.couponType;
-        }
-        break;
-
       case 'publishStatus':
         const publishStatusError = validateRequired(value, '公開 / 非公開');
         if (publishStatusError) {
@@ -125,14 +122,14 @@ export default function CouponRegistration() {
     setErrors(newErrors);
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     const newErrors = { ...errors };
 
     if (file) {
       // 画像形式チェック
-      const fileTypeError = validateFileType(file, ['image/jpeg']);
-      const fileSizeError = validateFileSize(file, 5);
+      const fileTypeError = validateFileType(file, ['image/jpeg', 'image/png', 'image/webp']);
+      const fileSizeError = validateFileSize(file, 10);
       
       if (fileTypeError) {
         newErrors.couponImage = fileTypeError;
@@ -157,6 +154,41 @@ export default function CouponRegistration() {
       };
       reader.readAsDataURL(file);
 
+      // 画像をアップロード
+      try {
+        setIsUploading(true);
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', file);
+        uploadFormData.append('type', 'coupon');
+        uploadFormData.append('shopId', formData.shopId || 'temp');
+        uploadFormData.append('merchantId', 'temp');
+        uploadFormData.append('couponId', 'new');
+        
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: uploadFormData,
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('画像のアップロードに失敗しました');
+        }
+        
+        const data = await response.json();
+        setFormData(prev => ({
+          ...prev,
+          imageUrl: data.url
+        }));
+      } catch (error) {
+        console.error('画像アップロードエラー:', error);
+        newErrors.couponImage = '画像のアップロードに失敗しました';
+        setErrors(newErrors);
+      } finally {
+        setIsUploading(false);
+      }
+
       delete newErrors.couponImage;
       setErrors(newErrors);
     }
@@ -172,10 +204,6 @@ export default function CouponRegistration() {
     const couponContentError = validateRequired(formData.couponContent, 'クーポン内容') || validateMaxLength(formData.couponContent, 100, 'クーポン内容');
     if (couponContentError) newErrors.couponContent = couponContentError;
 
-    const couponTypeError = validateRequired(formData.couponType, 'クーポン種別');
-    if (couponTypeError) newErrors.couponType = couponTypeError;
-
-
     const publishStatusError = validateRequired(formData.publishStatus, '公開 / 非公開');
     if (publishStatusError) newErrors.publishStatus = publishStatusError;
 
@@ -183,20 +211,29 @@ export default function CouponRegistration() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setIsSubmitting(true);
     if (validateAllFields()) {
-      // 登録内容確認画面に遷移
-      const queryParams = new URLSearchParams({
-        couponName: formData.couponName,
-        couponContent: formData.couponContent,
-        couponType: formData.couponType,
-        publishStatus: formData.publishStatus,
-        // 画像はBase64エンコードして渡す（実際のアプリではS3 URLなどを使用）
-        imagePreview: formData.imagePreview,
-      });
-      
-      router.push(`/coupons/confirm?${queryParams.toString()}`);
+      try {
+        // クーポンを作成
+        const couponData: CouponCreateRequest = {
+          shopId: formData.shopId,
+          title: formData.couponName,
+          description: formData.couponContent || null,
+          conditions: formData.couponConditions || null,
+          imageUrl: formData.imageUrl || null,
+          status: (formData.publishStatus === '1' ? 'active' : 'inactive') as CouponStatus
+        };
+        
+        await apiClient.createCoupon(couponData);
+        
+        // 作成成功後、一覧画面に遷移
+        router.push('/coupons');
+      } catch (error) {
+        console.error('クーポンの作成に失敗しました:', error);
+        alert('クーポンの作成に失敗しました。もう一度お試しください。');
+        setIsSubmitting(false);
+      }
     } else {
       setIsSubmitting(false);
     }
@@ -272,38 +309,19 @@ export default function CouponRegistration() {
               )}
             </div>
 
-            {/* クーポン種別 */}
+            {/* 店舗選択 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                クーポン種別 <span className="text-red-500">*</span>
+              <label htmlFor="shopId" className="block text-sm font-medium text-gray-700 mb-2">
+                店舗 <span className="text-red-500">*</span>
               </label>
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="couponType"
-                    value="1"
-                    checked={formData.couponType === '1'}
-                    onChange={(e) => handleInputChange('couponType', e.target.value)}
-                    className="mr-2 text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">アルコール</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="couponType"
-                    value="2"
-                    checked={formData.couponType === '2'}
-                    onChange={(e) => handleInputChange('couponType', e.target.value)}
-                    className="mr-2 text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">ソフトドリンク</span>
-                </label>
-              </div>
-              {errors.couponType && (
-                <p className="mt-1 text-sm text-red-500">{errors.couponType}</p>
-              )}
+              <input
+                type="text"
+                id="shopId"
+                placeholder="店舗IDを入力"
+                value={formData.shopId}
+                onChange={(e) => handleInputChange('shopId', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
             </div>
 
             {/* クーポン画像 */}
@@ -328,7 +346,7 @@ export default function CouponRegistration() {
                   <input
                     type="file"
                     id="couponImage"
-                    accept="image/jpeg"
+                    accept="image/jpeg,image/png,image/webp"
                     onChange={handleImageUpload}
                     className="hidden"
                   />

@@ -7,15 +7,7 @@ import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { apiClient } from '@/lib/api';
-
-interface Coupon {
-  id: string;
-  name: string;
-  shopId?: string;
-  status: 'active' | 'inactive' | 'expired';
-  createdAt: string;
-  updatedAt: string;
-}
+import type { CouponWithShop, CouponStatus } from '@hv-development/schemas';
 
 interface Shop {
   id: string;
@@ -30,44 +22,24 @@ interface CouponManagementProps {
   shopId?: string;
 }
 
-// サンプルデータ（店舗IDを含む）
-const sampleCoupons: Coupon[] = [
-  { id: 'CP001', shopId: '1', name: '新規会員限定10%オフクーポン', status: 'active', createdAt: '2024-01-15 10:30:00', updatedAt: '2024-01-20 14:15:00' },
-  { id: 'CP002', shopId: '1', name: '誕生日特典20%オフクーポン', status: 'active', createdAt: '2024-01-20 09:00:00', updatedAt: '2024-01-25 16:45:00' },
-  { id: 'CP003', shopId: '2', name: '年末年始限定500円オフクーポン', status: 'expired', createdAt: '2024-12-01 12:00:00', updatedAt: '2024-12-31 23:59:59' },
-  { id: 'CP004', shopId: '2', name: 'リピーター限定15%オフクーポン', status: 'inactive', createdAt: '2024-02-01 08:30:00', updatedAt: '2024-02-05 11:20:00' },
-  { id: 'CP005', shopId: '3', name: '平日限定ドリンク半額クーポン', status: 'active', createdAt: '2024-02-10 11:00:00', updatedAt: '2024-02-15 09:30:00' },
-  { id: 'CP006', name: '学生限定20%オフクーポン', status: 'active', createdAt: '2024-02-15 14:20:00', updatedAt: '2024-02-20 16:10:00' },
-  { id: 'CP007', name: '週末限定フード30%オフクーポン', status: 'inactive', createdAt: '2024-02-20 16:45:00', updatedAt: '2024-02-25 10:15:00' },
-  { id: 'CP008', name: 'ハッピーアワー限定クーポン', status: 'active', createdAt: '2024-02-25 13:30:00', updatedAt: '2024-03-01 11:45:00' },
-  { id: 'CP009', name: '友達紹介特典クーポン', status: 'active', createdAt: '2024-03-01 09:15:00', updatedAt: '2024-03-05 14:20:00' },
-  { id: 'CP010', name: '季節限定メニュークーポン', status: 'expired', createdAt: '2024-03-05 15:40:00', updatedAt: '2024-03-10 12:30:00' },
-  { id: 'CP011', name: 'グループ利用特典クーポン', status: 'active', createdAt: '2024-03-10 10:20:00', updatedAt: '2024-03-15 16:50:00' },
-  { id: 'CP012', name: 'デザート無料クーポン', status: 'active', createdAt: '2024-03-15 12:10:00', updatedAt: '2024-03-20 09:40:00' },
-  { id: 'CP013', name: 'アプリ限定特別クーポン', status: 'inactive', createdAt: '2024-03-20 14:55:00', updatedAt: '2024-03-25 11:25:00' },
-  { id: 'CP014', name: '初回来店限定クーポン', status: 'active', createdAt: '2024-03-25 16:30:00', updatedAt: '2024-03-30 13:15:00' },
-  { id: 'CP015', name: 'ランチタイム限定クーポン', status: 'active', createdAt: '2024-03-30 11:45:00', updatedAt: '2024-04-01 15:20:00' },
-  { id: 'CP016', name: 'カップル限定ペアクーポン', status: 'expired', createdAt: '2024-04-01 13:20:00', updatedAt: '2024-04-05 10:35:00' },
-  { id: 'CP017', name: 'シニア限定優待クーポン', status: 'active', createdAt: '2024-04-05 09:50:00', updatedAt: '2024-04-10 14:40:00' },
-  { id: 'CP018', name: 'レディースデー特典クーポン', status: 'active', createdAt: '2024-04-10 15:25:00', updatedAt: '2024-04-15 12:10:00' },
-  { id: 'CP019', name: 'メンズデー特典クーポン', status: 'inactive', createdAt: '2024-04-15 10:40:00', updatedAt: '2024-04-20 16:55:00' },
-  { id: 'CP020', name: '雨の日限定クーポン', status: 'active', createdAt: '2024-04-20 12:15:00', updatedAt: '2024-04-25 09:30:00' },
-  { id: 'CP021', name: 'SNS投稿特典クーポン', status: 'active', createdAt: '2024-04-25 14:35:00', updatedAt: '2024-05-01 11:20:00' },
-  { id: 'CP022', name: 'アンケート回答特典クーポン', status: 'expired', createdAt: '2024-05-01 16:10:00', updatedAt: '2024-05-05 13:45:00' },
-  { id: 'CP023', name: 'VIP会員限定クーポン', status: 'active', createdAt: '2024-05-05 11:55:00', updatedAt: '2024-05-10 15:30:00' },
-  { id: 'CP024', name: '早割予約特典クーポン', status: 'active', createdAt: '2024-05-10 13:40:00', updatedAt: '2024-05-15 10:25:00' },
-  { id: 'CP025', name: '深夜限定クーポン', status: 'inactive', createdAt: '2024-05-15 15:20:00', updatedAt: '2024-05-20 12:50:00' },
-  { id: 'CP026', name: 'テイクアウト限定クーポン', status: 'active', createdAt: '2024-05-20 09:35:00', updatedAt: '2024-05-25 14:15:00' },
-  { id: 'CP027', name: 'デリバリー限定クーポン', status: 'active', createdAt: '2024-05-25 11:10:00', updatedAt: '2024-05-30 16:40:00' },
-  { id: 'CP028', name: '記念日特典クーポン', status: 'expired', createdAt: '2024-05-30 14:25:00', updatedAt: '2024-06-01 11:55:00' },
-  { id: 'CP029', name: '夏季限定冷たいドリンククーポン', status: 'active', createdAt: '2024-06-01 16:45:00', updatedAt: '2024-06-05 13:20:00' },
-  { id: 'CP030', name: '月末感謝祭クーポン', status: 'active', createdAt: '2024-06-05 10:30:00', updatedAt: '2024-06-10 15:10:00' },
-];
+interface PaginationData {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
 
 export default function CouponManagement({ shopId }: CouponManagementProps = {}) {
   const router = useRouter();
   const [shop, setShop] = useState<Shop | null>(null);
-  const [loading, setLoading] = useState(!!shopId);
+  const [coupons, setCoupons] = useState<CouponWithShop[]>([]);
+  const [pagination, setPagination] = useState<PaginationData>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+  });
+  const [loading, setLoading] = useState(true);
   const [searchForm, setSearchForm] = useState({
     couponId: '',
     couponName: '',
@@ -76,40 +48,62 @@ export default function CouponManagement({ shopId }: CouponManagementProps = {})
     couponId: '',
     couponName: '',
   });
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'expired'>('all');
-  const [appliedStatusFilter, setAppliedStatusFilter] = useState<'all' | 'active' | 'inactive' | 'expired'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | CouponStatus>('all');
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState<'all' | CouponStatus>('all');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+
+  // クーポン一覧の取得
+  const fetchCoupons = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      params.append('page', pagination.page.toString());
+      params.append('limit', pagination.limit.toString());
+      
+      if (shopId) {
+        params.append('shopId', shopId);
+      }
+      
+      if (appliedSearchForm.couponName) {
+        params.append('title', appliedSearchForm.couponName);
+      }
+      
+      if (appliedStatusFilter !== 'all') {
+        params.append('status', appliedStatusFilter);
+      }
+
+      const data: any = await apiClient.getCoupons(params.toString());
+      setCoupons(data.coupons || []);
+      setPagination(data.pagination || pagination);
+    } catch (error) {
+      console.error('クーポン一覧の取得に失敗しました:', error);
+      setCoupons([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // 店舗情報の取得
   useEffect(() => {
     if (shopId) {
       const fetchShop = async () => {
         try {
-          setLoading(true);
           const data = await apiClient.getShop(shopId);
           setShop(data as Shop);
         } catch (error) {
           console.error('店舗情報の取得に失敗しました:', error);
-        } finally {
-          setLoading(false);
         }
       };
       fetchShop();
     }
   }, [shopId]);
 
-  // フィルタリング処理
-  const filteredCoupons = sampleCoupons.filter((coupon) => {
-    const matchesShop = !shopId || coupon.shopId === shopId;
-    
-    const matchesSearch = 
-      (appliedSearchForm.couponId === '' || coupon.id.toLowerCase().includes(appliedSearchForm.couponId.toLowerCase())) &&
-      (appliedSearchForm.couponName === '' || coupon.name.toLowerCase().includes(appliedSearchForm.couponName.toLowerCase()));
-    
-    const matchesStatus = appliedStatusFilter === 'all' || coupon.status === appliedStatusFilter;
-    
-    return matchesShop && matchesSearch && matchesStatus;
-  });
+  // クーポン一覧を取得
+  useEffect(() => {
+    fetchCoupons();
+  }, [shopId, pagination.page, appliedSearchForm, appliedStatusFilter]);
+
+  const filteredCoupons = coupons;
 
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {
     setSearchForm(prev => ({
@@ -273,7 +267,7 @@ export default function CouponManagement({ shopId }: CouponManagementProps = {})
               <select
                 id="status"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive' | 'expired')}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | CouponStatus)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               >
                 <option value="all">すべて</option>
@@ -339,19 +333,19 @@ export default function CouponManagement({ shopId }: CouponManagementProps = {})
                 {filteredCoupons.map((coupon) => (
                   <tr key={coupon.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{coupon.id}</div>
+                      <div className="text-sm font-medium text-gray-900">{coupon.id.substring(0, 8)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{coupon.name}</div>
+                      <div className="text-sm text-gray-900">{coupon.title}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{_getStatusLabel(coupon.status)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{coupon.createdAt}</div>
+                      <div className="text-sm text-gray-900">{new Date(coupon.createdAt).toLocaleString('ja-JP')}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{coupon.updatedAt}</div>
+                      <div className="text-sm text-gray-900">{new Date(coupon.updatedAt).toLocaleString('ja-JP')}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <Link href={`/coupons/${coupon.id}`}>

@@ -37,7 +37,7 @@ export default function MerchantEditConfirmation() {
     phone: '',
     postalCode: '',
     address: '',
-    status: 'registering',
+    status: 'active',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -1,44 +1,41 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+import { apiClient } from '@/lib/api';
+import type { CouponCreateRequest, CouponStatus } from '@hv-development/schemas';
 
 interface CouponData {
+  shopId: string;
   couponName: string;
   couponContent: string;
-  couponType: string;
+  couponConditions: string;
   publishStatus: string;
   imagePreview: string;
+  imageUrl: string;
 }
 
 export default function CouponRegistrationConfirmation() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [couponData, setCouponData] = useState<CouponData | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const data: CouponData = {
+      shopId: searchParams.get('shopId') || '',
       couponName: searchParams.get('couponName') || '',
       couponContent: searchParams.get('couponContent') || '',
-      couponType: searchParams.get('couponType') || '',
+      couponConditions: searchParams.get('couponConditions') || '',
       publishStatus: searchParams.get('publishStatus') || '',
       imagePreview: searchParams.get('imagePreview') || '',
+      imageUrl: searchParams.get('imageUrl') || '',
     };
     setCouponData(data);
   }, [searchParams]);
-
-  const getCouponTypeLabel = (type: string) => {
-    switch (type) {
-      case '1':
-        return 'アルコール';
-      case '2':
-        return 'ソフトドリンク';
-      default:
-        return '';
-    }
-  };
 
   const getPublishStatusLabel = (status: string) => {
     switch (status) {
@@ -52,29 +49,31 @@ export default function CouponRegistrationConfirmation() {
   };
 
   const handleModify = () => {
-    // クーポン登録画面に戻る（データを保持）
-    const queryParams = new URLSearchParams({
-      couponName: couponData?.couponName || '',
-      couponContent: couponData?.couponContent || '',
-      couponType: couponData?.couponType || '',
-      publishStatus: couponData?.publishStatus || '',
-      imagePreview: couponData?.imagePreview || '',
-    });
-    
-    // 画像データを保持するためにsessionStorageを使用
-    if (couponData?.imagePreview) {
-      sessionStorage.setItem('couponImagePreview', couponData.imagePreview);
-    }
-    
-    window.location.href = `/coupons/new?${queryParams.toString()}`;
+    router.back();
   };
 
-  const handleRegister = () => {
-    // 実際の登録処理（APIコール等）
-    console.log('クーポン登録:', couponData);
-    alert('クーポンを登録しました');
-    // 登録後はクーポン一覧画面に遷移
-    window.location.href = '/coupons';
+  const handleRegister = async () => {
+    if (!couponData) return;
+    
+    setIsSubmitting(true);
+    try {
+      const createData: CouponCreateRequest = {
+        shopId: couponData.shopId,
+        title: couponData.couponName,
+        description: couponData.couponContent || null,
+        conditions: couponData.couponConditions || null,
+        imageUrl: couponData.imageUrl || null,
+        status: (couponData.publishStatus === '1' ? 'active' : 'inactive') as CouponStatus
+      };
+      
+      await apiClient.createCoupon(createData);
+      alert('クーポンを登録しました');
+      router.push('/coupons');
+    } catch (error) {
+      console.error('クーポンの作成に失敗しました:', error);
+      alert('クーポンの作成に失敗しました。もう一度お試しください。');
+      setIsSubmitting(false);
+    }
   };
 
   if (!couponData) {
@@ -125,12 +124,14 @@ export default function CouponRegistrationConfirmation() {
               <p className="text-gray-900 bg-gray-50 p-2 rounded">{couponData.couponContent}</p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                クーポン種別
-              </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{getCouponTypeLabel(couponData.couponType)}</p>
-            </div>
+            {couponData.couponConditions && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  利用条件
+                </label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{couponData.couponConditions}</p>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -171,9 +172,10 @@ export default function CouponRegistrationConfirmation() {
               variant="primary"
               size="lg"
               onClick={handleRegister}
+              disabled={isSubmitting}
               className="px-8"
             >
-              登録する
+              {isSubmitting ? '登録中...' : '登録する'}
             </Button>
           </div>
         </div>

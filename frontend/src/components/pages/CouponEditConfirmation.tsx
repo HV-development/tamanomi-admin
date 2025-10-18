@@ -1,46 +1,41 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams, useParams } from 'next/navigation';
+import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+import { apiClient } from '@/lib/api';
+import type { CouponUpdateRequest, CouponStatus } from '@hv-development/schemas';
 
 interface CouponData {
   couponName: string;
   couponContent: string;
-  couponType: string;
+  couponConditions: string;
   publishStatus: string;
   imagePreview: string;
+  imageUrl: string;
 }
 
 export default function CouponEditConfirmation() {
   const searchParams = useSearchParams();
   const params = useParams();
+  const router = useRouter();
   const couponId = params.id as string;
   const [couponData, setCouponData] = useState<CouponData | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const data: CouponData = {
       couponName: searchParams.get('couponName') || '',
       couponContent: searchParams.get('couponContent') || '',
-      couponType: searchParams.get('couponType') || '',
+      couponConditions: searchParams.get('couponConditions') || '',
       publishStatus: searchParams.get('publishStatus') || '',
       imagePreview: searchParams.get('imagePreview') || '',
+      imageUrl: searchParams.get('imageUrl') || '',
     };
     setCouponData(data);
   }, [searchParams]);
-
-  const getCouponTypeLabel = (type: string) => {
-    switch (type) {
-      case '1':
-        return 'アルコール';
-      case '2':
-        return 'ソフトドリンク';
-      default:
-        return '';
-    }
-  };
 
   const getPublishStatusLabel = (status: string) => {
     switch (status) {
@@ -54,24 +49,30 @@ export default function CouponEditConfirmation() {
   };
 
   const handleModify = () => {
-    // クーポン編集画面に戻る（データを保持）
-    const queryParams = new URLSearchParams({
-      couponName: couponData?.couponName || '',
-      couponContent: couponData?.couponContent || '',
-      couponType: couponData?.couponType || '',
-      publishStatus: couponData?.publishStatus || '',
-      imagePreview: couponData?.imagePreview || '',
-    });
-    
-    window.location.href = `/coupons/${couponId}/edit?${queryParams.toString()}`;
+    router.back();
   };
 
-  const handleUpdate = () => {
-    // 実際の更新処理（APIコール等）
-    console.log('クーポン更新:', couponData);
-    alert('クーポン情報を更新しました');
-    // 更新後はクーポン一覧画面に遷移
-    window.location.href = '/coupons';
+  const handleUpdate = async () => {
+    if (!couponData) return;
+    
+    setIsSubmitting(true);
+    try {
+      const updateData: CouponUpdateRequest = {
+        title: couponData.couponName,
+        description: couponData.couponContent || null,
+        conditions: couponData.couponConditions || null,
+        imageUrl: couponData.imageUrl || null,
+        status: (couponData.publishStatus === '1' ? 'active' : 'inactive') as CouponStatus
+      };
+      
+      await apiClient.updateCoupon(couponId, updateData);
+      alert('クーポン情報を更新しました');
+      router.push('/coupons');
+    } catch (error) {
+      console.error('クーポンの更新に失敗しました:', error);
+      alert('クーポンの更新に失敗しました。もう一度お試しください。');
+      setIsSubmitting(false);
+    }
   };
 
   if (!couponData) {
@@ -122,12 +123,14 @@ export default function CouponEditConfirmation() {
               <p className="text-gray-900 bg-gray-50 p-2 rounded">{couponData.couponContent}</p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                クーポン種別
-              </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{getCouponTypeLabel(couponData.couponType)}</p>
-            </div>
+            {couponData.couponConditions && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  利用条件
+                </label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{couponData.couponConditions}</p>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -168,9 +171,10 @@ export default function CouponEditConfirmation() {
               variant="primary"
               size="lg"
               onClick={handleUpdate}
+              disabled={isSubmitting}
               className="px-8"
             >
-              変更する
+              {isSubmitting ? '更新中...' : '変更する'}
             </Button>
           </div>
         </div>
