@@ -5,21 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-
-// 確認画面用の型（フォームデータと同じ構造）
-interface MerchantConfirmationData {
-  accountEmail?: string;
-  name?: string;
-  nameKana?: string;
-  representative?: string;
-  representativeName?: string;
-  representativePhone?: string;
-  email?: string;
-  phone?: string;
-  postalCode?: string;
-  address?: string;
-  [key: string]: unknown;
-}
+import { type MerchantConfirmationData } from '@hv-development/schemas';
 
 export default function MerchantConfirmation() {
   const searchParams = useSearchParams();

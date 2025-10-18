@@ -5,22 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-import { type MerchantStatus } from '@hv-development/schemas';
-
-// 編集確認画面用の型
-interface MerchantEditConfirmationData {
-  status: MerchantStatus;
-  name?: string;
-  nameKana?: string;
-  representative?: string;
-  representativeName?: string;
-  representativePhone?: string;
-  email?: string;
-  phone?: string;
-  postalCode?: string;
-  address?: string;
-  [key: string]: unknown;
-}
+import { type MerchantEditConfirmationData } from '@hv-development/schemas';
 
 export default function MerchantEditConfirmation() {
   const params = useParams();

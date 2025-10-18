@@ -1,28 +1,13 @@
 // 会社ステータスの日本語マッピング
 export const statusLabels: Record<string, string> = {
-  registering: '登録中',
-  collection_requested: '資料回収依頼中',
-  approval_pending: '承認待ち',
-  approval_expired: '承認期限切れ',
-  promotional_materials_preparing: '販促物準備中',
-  promotional_materials_shipping: '販促物発送中',
-  operating: '稼働中',
-  active: '契約中', // 旧ステータス（後方互換性のため）
-  suspended: '一時停止',
-  terminated: '解約',
+  active: '営業中',
+  terminated: '終了',
 };
 
 // ステータスオプション（ドロップダウン用）
 export const statusOptions = [
-  { value: 'registering', label: '登録中' },
-  { value: 'collection_requested', label: '資料回収依頼中' },
-  { value: 'approval_pending', label: '承認待ち' },
-  { value: 'approval_expired', label: '承認期限切れ' },
-  { value: 'promotional_materials_preparing', label: '販促物準備中' },
-  { value: 'promotional_materials_shipping', label: '販促物発送中' },
-  { value: 'operating', label: '稼働中' },
-  { value: 'suspended', label: '一時停止' },
-  { value: 'terminated', label: '解約' },
+  { value: 'active', label: '営業中' },
+  { value: 'terminated', label: '終了' },
 ];
 
 // 都道府県一覧
