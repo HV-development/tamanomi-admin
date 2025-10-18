@@ -6,76 +6,56 @@ import Link from 'next/link';
 import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-
-interface Coupon {
-  id: string;
-  status: number;
-  type: number;
-  name: string;
-  content: string;
-  imageUrl: string;
-  createdAt: string;
-}
-
-// サンプルデータ
-const sampleCoupons: Record<string, Coupon> = {
-  'CP001': {
-    id: 'CP001',
-    status: 1,
-    type: 1,
-    name: '新規会員限定10%オフクーポン',
-    content: '新規会員登録をしていただいた方限定で、全メニュー10%オフでご提供いたします。',
-    imageUrl: 'https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=400',
-    createdAt: '2024-01-15 10:30:00',
-  },
-  'CP002': {
-    id: 'CP002',
-    status: 1,
-    type: 2,
-    name: '誕生日特典20%オフクーポン',
-    content: 'お誕生日月の方限定で、アルコール類20%オフでご提供いたします。',
-    imageUrl: 'https://images.pexels.com/photos/1283219/pexels-photo-1283219.jpeg?auto=compress&cs=tinysrgb&w=400',
-    createdAt: '2024-01-20 09:00:00',
-  },
-  'CP003': {
-    id: 'CP003',
-    status: 2,
-    type: 1,
-    name: '年末年始限定500円オフクーポン',
-    content: '年末年始期間限定で、ソフトドリンク500円オフでご提供いたします。',
-    imageUrl: 'https://images.pexels.com/photos/544961/pexels-photo-544961.jpeg?auto=compress&cs=tinysrgb&w=400',
-    createdAt: '2024-12-01 12:00:00',
-  },
-};
+import { apiClient } from '@/lib/api';
+import type { CouponWithShop } from '@hv-development/schemas';
 
 export default function CouponDetail() {
   const params = useParams();
   const couponId = params.id as string;
-  const [coupon, setCoupon] = useState<Coupon | null>(null);
+  const [coupon, setCoupon] = useState<CouponWithShop | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 実際はAPIからクーポンデータを取得
-    const couponData = sampleCoupons[couponId];
-    if (couponData) {
-      setCoupon(couponData);
-    }
-    setIsLoading(false);
+    const fetchCoupon = async () => {
+      try {
+        setIsLoading(true);
+        const data = await apiClient.getCoupon(couponId);
+        setCoupon(data as CouponWithShop);
+      } catch (error) {
+        console.error('クーポン情報の取得に失敗しました:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchCoupon();
   }, [couponId]);
 
-  const _getStatusLabel = (status: number) => {
-    return status === 1 ? '公開中' : '非公開';
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active':
+        return '有効';
+      case 'inactive':
+        return '無効';
+      case 'expired':
+        return '期限切れ';
+      default:
+        return status;
+    }
   };
 
-  const _getStatusColor = (status: number) => {
-    return status === 1 
-      ? 'bg-green-100 text-green-800' 
-      : 'bg-gray-100 text-gray-800';
-  };
-
-  const getTypeLabel = (type: number) => {
-    return type === 1 ? 'ソフトドリンク' : 'アルコール';
+  const _getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'inactive':
+        return 'bg-gray-100 text-gray-800';
+      case 'expired':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
   const handlePreview = () => {
@@ -142,20 +122,24 @@ export default function CouponDetail() {
               <p className="text-gray-900 bg-gray-50 p-3 rounded">{coupon.id}</p>
             </div>
 
+            {/* 店舗情報 */}
+            {coupon.shop && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  店舗
+                </label>
+                <p className="text-gray-900 bg-gray-50 p-3 rounded">
+                  {coupon.shop.merchant.name} / {coupon.shop.name}
+                </p>
+              </div>
+            )}
+
             {/* ステータス */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 ステータス
               </label>
-              <p className="text-gray-900 bg-gray-50 p-3 rounded">{_getStatusLabel(coupon.status)}</p>
-            </div>
-
-            {/* クーポン種別 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                クーポン種別
-              </label>
-              <p className="text-gray-900 bg-gray-50 p-3 rounded">{getTypeLabel(coupon.type)}</p>
+              <p className="text-gray-900 bg-gray-50 p-3 rounded">{getStatusLabel(coupon.status)}</p>
             </div>
 
             {/* クーポン名 */}
@@ -163,7 +147,7 @@ export default function CouponDetail() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 クーポン名
               </label>
-              <p className="text-gray-900 bg-gray-50 p-3 rounded">{coupon.name}</p>
+              <p className="text-gray-900 bg-gray-50 p-3 rounded">{coupon.title}</p>
             </div>
 
             {/* クーポン内容 */}
@@ -171,29 +155,49 @@ export default function CouponDetail() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 クーポン内容
               </label>
-              <p className="text-gray-900 bg-gray-50 p-3 rounded">{coupon.content}</p>
+              <p className="text-gray-900 bg-gray-50 p-3 rounded">{coupon.description || '未設定'}</p>
             </div>
 
-            {/* クーポン画像 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                クーポン画像
-              </label>
-              <div className="bg-gray-50 p-3 rounded">
-                <img 
-                  src={coupon.imageUrl} 
-                  alt={coupon.name}
-                  className="w-64 h-48 object-cover rounded-lg shadow-sm"
-                />
+            {/* 利用条件 */}
+            {coupon.conditions && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  利用条件
+                </label>
+                <p className="text-gray-900 bg-gray-50 p-3 rounded">{coupon.conditions}</p>
               </div>
-            </div>
+            )}
+
+            {/* クーポン画像 */}
+            {coupon.imageUrl && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  クーポン画像
+                </label>
+                <div className="bg-gray-50 p-3 rounded">
+                  <img 
+                    src={coupon.imageUrl} 
+                    alt={coupon.title}
+                    className="w-64 h-48 object-cover rounded-lg shadow-sm"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* 作成日時 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 作成日時
               </label>
-              <p className="text-gray-900 bg-gray-50 p-3 rounded">{coupon.createdAt}</p>
+              <p className="text-gray-900 bg-gray-50 p-3 rounded">{new Date(coupon.createdAt).toLocaleString('ja-JP')}</p>
+            </div>
+
+            {/* 更新日時 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                更新日時
+              </label>
+              <p className="text-gray-900 bg-gray-50 p-3 rounded">{new Date(coupon.updatedAt).toLocaleString('ja-JP')}</p>
             </div>
 
             {/* アクションボタン */}
@@ -264,25 +268,29 @@ export default function CouponDetail() {
                       {/* クーポンカード */}
                       <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200">
                         {/* クーポン画像 */}
-                        <div className="relative">
-                          <img 
-                            src={coupon.imageUrl} 
-                            alt={coupon.name}
-                            className="w-full h-40 object-cover"
-                          />
-                        </div>
+                        {coupon.imageUrl && (
+                          <div className="relative">
+                            <img 
+                              src={coupon.imageUrl} 
+                              alt={coupon.title}
+                              className="w-full h-40 object-cover"
+                            />
+                          </div>
+                        )}
 
                         {/* クーポン情報 */}
                         <div className="p-4">
                           <h2 className="text-lg font-bold text-gray-900 mb-2 leading-tight">
-                            {coupon.name}
+                            {coupon.title}
                           </h2>
                           <p className="text-sm text-gray-700 mb-3 leading-relaxed">
-                            {coupon.content}
+                            {coupon.description || ''}
                           </p>
-                          <div className="text-xs text-gray-500 border-t border-gray-100 pt-3">
-                            利用条件：焼き鳥2本以上のご注文
-                          </div>
+                          {coupon.conditions && (
+                            <div className="text-xs text-gray-500 border-t border-gray-100 pt-3">
+                              利用条件：{coupon.conditions}
+                            </div>
+                          )}
                         </div>
                       </div>
 

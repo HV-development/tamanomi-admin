@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
+// 動的レンダリングを強制（静的生成を無効化）
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   console.log('🎭 Next.js API Route: GET /api/scenes');
   

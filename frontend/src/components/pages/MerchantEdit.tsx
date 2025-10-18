@@ -61,7 +61,7 @@ export default function MerchantEdit() {
     city: '',
     address1: '',
     address2: '',
-    status: 'registering',
+    status: 'active',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -133,7 +133,7 @@ export default function MerchantEdit() {
             city: '千代田区',
             address1: '千代田1-1-1',
             address2: '',
-            status: 'operating',
+            status: 'active',
           };
           setFormData(sampleData);
         }
@@ -164,7 +164,7 @@ export default function MerchantEdit() {
           city: '千代田区',
           address1: '千代田1-1-1',
           address2: '',
-          status: 'operating',
+          status: 'active',
         };
         setFormData(sampleData);
         alert('会社データの読み込みに失敗しました。サンプルデータを表示しています。');
@@ -267,17 +267,17 @@ export default function MerchantEdit() {
     const { name, nameKana, representativeNameLast, representativeNameFirst, representativeNameLastKana, representativeNameFirstKana, representativePhone, email, phone, postalCode, prefecture, city, address1, address2 } = formData;
     const merchantData = { name, nameKana, representativeNameLast, representativeNameFirst, representativeNameLastKana, representativeNameFirstKana, representativePhone, email, phone, postalCode, prefecture, city, address1, address2 };
     
-    const { isValid, errors: validationErrors } = validateMerchantForm(merchantData as Partial<MerchantFormData>);
-    setErrors(validationErrors);
+    const validationError = validateMerchantForm(merchantData as Partial<MerchantFormData>);
     
-    if (!isValid) {
-      const firstErrorField = Object.keys(validationErrors)[0];
-      if (firstErrorField && fieldRefs.current[firstErrorField]) {
-        fieldRefs.current[firstErrorField]?.focus();
-      }
+    if (validationError) {
+      // バリデーションエラーがある場合
+      setErrors({ general: validationError });
+      return false;
     }
     
-    return isValid;
+    // バリデーション成功
+    setErrors({});
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

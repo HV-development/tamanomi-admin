@@ -154,22 +154,17 @@ export default function MerchantRegistration() {
   };
 
   const validateFormData = (): boolean => {
-    const { isValid, errors: validationErrors } = validateMerchantForm(formData);
-    setErrors(validationErrors);
+    const validationError = validateMerchantForm(formData);
     
-    if (!isValid) {
-      const firstErrorField = Object.keys(validationErrors)[0];
-      if (firstErrorField && fieldRefs.current[firstErrorField as keyof typeof fieldRefs.current]) {
-        const element = fieldRefs.current[firstErrorField as keyof typeof fieldRefs.current];
-        element?.focus();
-        element?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
-        });
-      }
+    if (validationError) {
+      // バリデーションエラーがある場合
+      setErrors({ general: validationError });
+      return false;
     }
     
-    return isValid;
+    // バリデーション成功
+    setErrors({});
+    return true;
   };
 
 
