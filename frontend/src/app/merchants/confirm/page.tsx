@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { type MerchantConfirmationData } from '@hv-development/schemas';
 
-export default function MerchantConfirmPage() {
+function MerchantConfirmContent() {
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState<MerchantConfirmationData>({
     accountEmail: '',
@@ -207,5 +207,19 @@ export default function MerchantConfirmPage() {
         </div>
       </div>
     </AdminLayout>
+  );
+}
+
+export default function MerchantConfirmPage() {
+  return (
+    <Suspense fallback={
+      <AdminLayout>
+        <div className="flex justify-center items-center h-64">
+          <div className="text-gray-500">読み込み中...</div>
+        </div>
+      </AdminLayout>
+    }>
+      <MerchantConfirmContent />
+    </Suspense>
   );
 }
