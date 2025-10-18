@@ -8,18 +8,17 @@ import Button from '@/components/atoms/Button';
 import Checkbox from '@/components/atoms/Checkbox';
 import ToastContainer from '@/components/molecules/toast-container';
 import FloatingFooter from '@/components/molecules/floating-footer';
-import ResendApprovalModal from '@/components/molecules/resend-approval-modal';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { statusLabels, statusOptions, prefectures } from '@/lib/constants/merchant';
-import { type MerchantWithDetails } from '@hv-development/schemas';
+import { type MerchantWithDetails, type MerchantStatus } from '@hv-development/schemas';
 
 // APIレスポンス用の型（日付がstringとして返される）
-type Merchant = Omit<MerchantWithDetails, 'createdAt' | 'updatedAt' | 'deletedAt' | 'account'> & {
+type Merchant = Omit<MerchantWithDetails, 'createdAt' | 'updatedAt' | 'deletedAt' | 'account' | 'status' | 'shops'> & {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
-  phone: string;
+  status: MerchantStatus;
   account: {
     email: string;
     status: string;
@@ -39,14 +38,9 @@ export default function MerchantManagement() {
   const [selectedMerchants, setSelectedMerchants] = useState<Set<string>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [isIndeterminate, setIsIndeterminate] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState('registering');
+  const [selectedStatus, setSelectedStatus] = useState('active');
   const [isExecuting, setIsExecuting] = useState(false);
   const [isIssuingAccount, setIsIssuingAccount] = useState(false);
-  
-  // 承認メール再送モーダル関連
-  const [resendModalOpen, setResendModalOpen] = useState(false);
-  const [selectedMerchantForResend, setSelectedMerchantForResend] = useState<Merchant | null>(null);
-  const [isResending, setIsResending] = useState(false);
   
   const [searchForm, setSearchForm] = useState({
     merchantId: '',
@@ -68,8 +62,8 @@ export default function MerchantManagement() {
     address: '',
     prefecture: '',
   });
-  const [statusFilter, setStatusFilter] = useState<'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'approval_expired' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated'>('all');
-  const [appliedStatusFilter, setAppliedStatusFilter] = useState<'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'approval_expired' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | MerchantStatus>('all');
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState<'all' | MerchantStatus>('all');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // データ取得
@@ -311,54 +305,9 @@ export default function MerchantManagement() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'registering': return 'text-blue-600';
-      case 'collection_requested': return 'text-purple-600';
-      case 'approval_pending': return 'text-yellow-600';
-      case 'approval_expired': return 'text-red-600';
-      case 'promotional_materials_preparing': return 'text-orange-600';
-      case 'promotional_materials_shipping': return 'text-indigo-600';
-      case 'operating': return 'text-green-600';
-      case 'active': return 'text-green-600'; // 旧ステータス
-      case 'suspended': return 'text-red-600';
+      case 'active': return 'text-green-600';
       case 'terminated': return 'text-gray-600';
       default: return 'text-gray-600';
-    }
-  };
-
-  const handleOpenResendModal = (merchant: Merchant) => {
-    setSelectedMerchantForResend(merchant);
-    setResendModalOpen(true);
-  };
-
-  const handleCloseResendModal = () => {
-    setResendModalOpen(false);
-    setSelectedMerchantForResend(null);
-  };
-
-  const handleResendApprovalEmail = async () => {
-    if (!selectedMerchantForResend) return;
-
-    setIsResending(true);
-    try {
-      const response = await fetch(`/api/merchants/${selectedMerchantForResend.id}/resend-approval-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || '承認メールの再送に失敗しました');
-      }
-
-      showSuccess('承認メールを再送しました');
-      handleCloseResendModal();
-    } catch (error: unknown) {
-      console.error('Failed to resend approval email:', error);
-      showError(error instanceof Error ? error.message : '承認メールの再送に失敗しました');
-    } finally {
-      setIsResending(false);
     }
   };
 
@@ -695,18 +644,9 @@ export default function MerchantManagement() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[180px]">
-                      {merchant.status === 'approval_expired' ? (
-                        <button
-                          onClick={() => handleOpenResendModal(merchant)}
-                          className={`text-sm font-medium ${getStatusColor(merchant.status)} hover:underline cursor-pointer`}
-                        >
-                          {statusLabels[merchant.status] || merchant.status}
-                        </button>
-                      ) : (
-                        <div className={`text-sm font-medium ${getStatusColor(merchant.status)}`}>
-                          {statusLabels[merchant.status] || merchant.status}
-                        </div>
-                      )}
+                      <div className={`text-sm font-medium ${getStatusColor(merchant.status)}`}>
+                        {statusLabels[merchant.status] || merchant.status}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
                       <div className="text-sm text-gray-900">
@@ -752,15 +692,6 @@ export default function MerchantManagement() {
       />
       
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
-      
-      <ResendApprovalModal
-        isOpen={resendModalOpen}
-        merchantName={selectedMerchantForResend?.name || ''}
-        email={selectedMerchantForResend?.email || ''}
-        onClose={handleCloseResendModal}
-        onConfirm={handleResendApprovalEmail}
-        isLoading={isResending}
-      />
     </DashboardLayout>
   );
 }

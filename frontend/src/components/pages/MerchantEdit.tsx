@@ -5,29 +5,7 @@ import { useParams } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-import { validateMerchantField, validateMerchantForm, type MerchantFormData, type MerchantStatus } from '@hv-development/schemas';
-
-// 編集画面用のフォームデータ型（statusフィールドを含む）
-type MerchantEditFormData = Partial<MerchantFormData> & {
-  status: MerchantStatus;
-  name: string;
-  nameKana: string;
-  representative?: string;
-  representativeName?: string;
-  representativeNameLast: string;
-  representativeNameFirst: string;
-  representativeNameLastKana: string;
-  representativeNameFirstKana: string;
-  representativePhone: string;
-  email: string;
-  phone: string;
-  postalCode: string;
-  prefecture: string;
-  city: string;
-  address1: string;
-  address2?: string;
-  [key: string]: unknown;
-};
+import { validateMerchantField, validateMerchantForm, type MerchantFormData, type MerchantStatus, type MerchantEditFormData } from '@hv-development/schemas';
 
 const prefectures = [
   '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
@@ -241,7 +219,7 @@ export default function MerchantEdit() {
 
       if (data.status === 200 && data.results && data.results.length > 0) {
         const result = data.results[0];
-        setFormData((prev) => ({
+        setFormData((prev: MerchantEditFormData) => ({
           ...prev,
           prefecture: result.address1,
           city: result.address2,
@@ -752,13 +730,7 @@ export default function MerchantEdit() {
                   onChange={(e) => handleInputChange('status', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 >
-                  <option value="registering">登録中</option>
-                  <option value="collection_requested">資料収集中</option>
-                  <option value="approval_pending">承認待ち</option>
-                  <option value="promotional_materials_preparing">広告資料準備中</option>
-                  <option value="promotional_materials_shipping">広告資料配送中</option>
-                  <option value="operating">営業中</option>
-                  <option value="suspended">停止中</option>
+                  <option value="active">営業中</option>
                   <option value="terminated">終了</option>
                 </select>
                 <div className="mt-1 flex justify-between">
