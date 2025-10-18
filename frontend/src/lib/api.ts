@@ -135,13 +135,22 @@ class ApiClient {
   }
 
   // 会社関連
-  async getMerchants(): Promise<unknown> {
-    console.log('🌐 API: getMerchants called (via Next.js API Route)');
+  async getMerchants(params?: { search?: string; page?: number; limit?: number; status?: string }): Promise<unknown> {
+    console.log('🌐 API: getMerchants called (via Next.js API Route)', { params });
     console.log('🔗 API Base URL:', this.baseUrl);
-    console.log('🔗 Full URL:', `${this.baseUrl}/merchants`);
+    
+    const queryParams = new URLSearchParams();
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.status) queryParams.append('status', params.status);
+    
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/merchants?${queryString}` : '/merchants';
+    console.log('🔗 Full URL:', `${this.baseUrl}${endpoint}`);
     
     const token = localStorage.getItem('accessToken');
-    return this.request<unknown>('/merchants', {
+    return this.request<unknown>(endpoint, {
       method: 'GET',
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });

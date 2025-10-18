@@ -28,8 +28,8 @@ RUN rm -f .npmrc
 # Development
 FROM base AS dev
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
 COPY tamanomi-admin/frontend/ .
+COPY --from=deps /app/node_modules ./node_modules
 
 EXPOSE 3000
 CMD ["pnpm", "run", "dev"]

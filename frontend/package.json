@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "next dev",
+    "dev:turbo": "next dev --turbo",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
@@ -12,7 +13,7 @@
     "secret:generate": "tsx ../scripts/generate-secret.ts"
   },
   "dependencies": {
-    "@hv-development/schemas": "^1.11.0",
+    "@hv-development/schemas": "1.12.0",
     "autoprefixer": "10.4.21",
     "next": "^14.2.5",
     "react": "^18.3.1",
