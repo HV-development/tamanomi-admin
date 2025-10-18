@@ -644,7 +644,7 @@ export default function MerchantManagement() {
                           checked={selectedMerchants.has(merchant.id)}
                           onChange={(checked) => handleSelectMerchant(merchant.id, checked)}
                         />
-                        <div className="flex-1 flex justify-center space-x-2">
+                        <div className="flex-1 flex justify-center gap-2">
                           <Link href={`/merchants/${merchant.id}/edit`}>
                             <button 
                               className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
@@ -655,7 +655,7 @@ export default function MerchantManagement() {
                                 alt="編集" 
                                 width={32}
                                 height={32}
-                                className="w-8 h-8"
+                                className="w-8 h-8 flex-shrink-0"
                               />
                             </button>
                           </Link>
@@ -669,7 +669,7 @@ export default function MerchantManagement() {
                                 alt="店舗一覧" 
                                 width={32}
                                 height={32}
-                                className="w-8 h-8"
+                                className="w-8 h-8 flex-shrink-0"
                               />
                             </button>
                           </Link>
