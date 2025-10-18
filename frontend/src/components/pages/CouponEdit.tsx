@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import DashboardLayout from '@/components/templates/dashboard-layout';
+import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { apiClient } from '@/lib/api';
@@ -252,16 +252,16 @@ export default function CouponEdit() {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
+      <AdminLayout>
         <div className="text-center py-12">
           <p className="text-gray-500">データを読み込んでいます...</p>
         </div>
-      </DashboardLayout>
+      </AdminLayout>
     );
   }
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <div className="space-y-6">
         {/* ページタイトル */}
         <div>
@@ -443,6 +443,6 @@ export default function CouponEdit() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 }

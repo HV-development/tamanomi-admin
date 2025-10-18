@@ -1,10 +1,10 @@
-import DashboardLayout from '@/components/templates/dashboard-layout';
+import AdminLayout from '@/components/templates/admin-layout';
 import ShopConfirm from '@/components/pages/ShopConfirm';
 
 export default function ShopConfirmPage() {
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <ShopConfirm />
-    </DashboardLayout>
+    </AdminLayout>
   );
 }

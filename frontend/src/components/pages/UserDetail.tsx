@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import DashboardLayout from '@/components/templates/dashboard-layout';
+import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 
@@ -233,17 +233,17 @@ export default function UserDetail() {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
+      <AdminLayout>
         <div className="text-center py-12">
           <p className="text-gray-500">データを読み込んでいます...</p>
         </div>
-      </DashboardLayout>
+      </AdminLayout>
     );
   }
 
   if (!user) {
     return (
-      <DashboardLayout>
+      <AdminLayout>
         <div className="text-center py-12">
           <h3 className="text-lg font-medium text-gray-900 mb-2">ユーザーが見つかりません</h3>
           <p className="text-gray-500 mb-4">指定されたユーザーは存在しません。</p>
@@ -251,12 +251,12 @@ export default function UserDetail() {
             <Button variant="primary">ユーザー一覧に戻る</Button>
           </Link>
         </div>
-      </DashboardLayout>
+      </AdminLayout>
     );
   }
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <div className="space-y-6">
         {/* ページタイトル */}
         <div>
@@ -377,6 +377,6 @@ export default function UserDetail() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 }

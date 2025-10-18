@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/templates/dashboard-layout';
+import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { apiClient } from '@/lib/api';
@@ -160,16 +160,16 @@ export default function CouponManagement({ shopId }: CouponManagementProps = {})
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <AdminLayout>
         <div className="flex justify-center items-center min-h-screen">
           <div className="text-gray-600">読み込み中...</div>
         </div>
-      </DashboardLayout>
+      </AdminLayout>
     );
   }
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <div className="space-y-6">
         {/* ヘッダー */}
         <div>
@@ -379,6 +379,6 @@ export default function CouponManagement({ shopId }: CouponManagementProps = {})
           )}
         </div>
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 }

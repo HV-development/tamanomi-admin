@@ -1,10 +1,10 @@
 import Sidebar from '@/components/organisms/Sidebar';
 
-interface DashboardLayoutProps {
+interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
@@ -18,3 +18,4 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     </div>
   );
 }
+
