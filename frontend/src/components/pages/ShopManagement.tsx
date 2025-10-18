@@ -21,143 +21,117 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
   
+  // 検索フォームの状態（拡張版）
   const [searchForm, setSearchForm] = useState({
-    shopId: '',
+    keyword: '',
     name: '',
     nameKana: '',
-    accountEmail: '',
     phone: '',
-    postalCode: '',
-    address: '',
-  });
-  const [appliedSearchForm, setAppliedSearchForm] = useState({
-    shopId: '',
-    name: '',
-    nameKana: '',
     accountEmail: '',
-    phone: '',
     postalCode: '',
-    address: '',
+    prefecture: '',
+    city: '',
+    status: 'all' as 'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
   });
-  const [statusFilter, setStatusFilter] = useState<'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated'>('all');
-  const [appliedStatusFilter, setAppliedStatusFilter] = useState<'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated'>('all');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
-  // データ取得
-  useEffect(() => {
-    let isMounted = true;
-    const abortController = new AbortController();
-
-    const fetchShops = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+  // データ取得（検索条件を含む）
+  const fetchShops = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // 検索パラメータの構築
+      const queryParams = new URLSearchParams();
+      
+      // merchantIdがあれば追加
+      if (merchantId) {
+        queryParams.append('merchantId', merchantId);
+      }
+      
+      // 検索フォームの各項目を追加
+      if (searchForm.keyword) queryParams.append('keyword', searchForm.keyword);
+      if (searchForm.name) queryParams.append('name', searchForm.name);
+      if (searchForm.nameKana) queryParams.append('nameKana', searchForm.nameKana);
+      if (searchForm.phone) queryParams.append('phone', searchForm.phone);
+      if (searchForm.accountEmail) queryParams.append('accountEmail', searchForm.accountEmail);
+      if (searchForm.postalCode) queryParams.append('postalCode', searchForm.postalCode);
+      if (searchForm.prefecture) queryParams.append('prefecture', searchForm.prefecture);
+      if (searchForm.city) queryParams.append('city', searchForm.city);
+      if (searchForm.status && searchForm.status !== 'all') {
+        queryParams.append('status', searchForm.status);
+      }
+      
+      const data = await apiClient.getShops(queryParams.toString());
         
-        // 店舗一覧を取得（merchantIdがあればフィルタ）
-        const queryParams = merchantId ? new URLSearchParams({ merchantId }) : undefined;
-        const data = await apiClient.getShops(queryParams?.toString());
-        
-        // コンポーネントがアンマウントされている場合は処理を中断
-        if (!isMounted) return;
-        
-        console.log('🔍 ShopManagement: API Response received', { 
-          data, 
-          dataType: typeof data, 
-          isArray: Array.isArray(data),
-          hasShops: data && typeof data === 'object' && 'shops' in data,
-          hasDataShops: data && typeof data === 'object' && 'data' in data && data.data && typeof data.data === 'object' && 'shops' in data.data
-        });
-        
-        // APIレスポンスの処理
-        let shopsArray: Shop[] = [];
-        let merchantInfo = null;
-        
-        if (Array.isArray(data)) {
-          shopsArray = data as Shop[];
-        } else if (data && typeof data === 'object') {
-          // 新しいAPIレスポンス形式: {success: true, data: {shops: [...], pagination: {...}}}
-          if ('data' in data && data.data && typeof data.data === 'object' && 'shops' in data.data) {
-            shopsArray = ((data.data as { shops: Shop[] }).shops || []) as Shop[];
-          }
-          // 古いAPIレスポンス形式: {shops: [...], pagination: {...}}
-          else if ('shops' in data) {
-            shopsArray = ((data as { shops: Shop[] }).shops || []) as Shop[];
-          }
+      console.log('🔍 ShopManagement: API Response received', { 
+        data, 
+        dataType: typeof data, 
+        isArray: Array.isArray(data),
+        hasShops: data && typeof data === 'object' && 'shops' in data,
+        hasDataShops: data && typeof data === 'object' && 'data' in data && data.data && typeof data.data === 'object' && 'shops' in data.data
+      });
+      
+      // APIレスポンスの処理
+      let shopsArray: Shop[] = [];
+      let merchantInfo = null;
+      
+      if (Array.isArray(data)) {
+        shopsArray = data as Shop[];
+      } else if (data && typeof data === 'object') {
+        // 新しいAPIレスポンス形式: {success: true, data: {shops: [...], pagination: {...}}}
+        if ('data' in data && data.data && typeof data.data === 'object' && 'shops' in data.data) {
+          shopsArray = ((data.data as { shops: Shop[] }).shops || []) as Shop[];
         }
-        
-        console.log('🔍 ShopManagement: Processed shops array', { 
-          shopsArray, 
-          length: shopsArray.length,
-          firstShop: shopsArray[0] || 'no shops'
-        });
-        
-        // 最初の店舗からmerchant情報を取得
-        if (shopsArray.length > 0 && shopsArray[0].merchant) {
-          merchantInfo = shopsArray[0].merchant;
-        }
-        
-        if (isMounted) {
-          setShops(shopsArray);
-        }
-        
-        // merchantIdがある場合のみmerchant情報を取得
-        if (merchantId && isMounted) {
-          if (!merchantInfo) {
-            try {
-              const merchantData = await apiClient.getMerchant(merchantId);
-              if (isMounted && merchantData && typeof merchantData === 'object' && 'name' in merchantData) {
-                setMerchantName((merchantData as { name: string }).name);
-              }
-            } catch (err) {
-              console.error('Failed to fetch merchant info:', err);
-            }
-          } else {
-            setMerchantName(merchantInfo.name);
-          }
-        }
-      } catch (err: unknown) {
-        // アボート時のエラーは無視
-        if (err instanceof Error && err.name === 'AbortError') {
-          return;
-        }
-        
-        if (isMounted) {
-          console.error('店舗データの取得に失敗しました:', err);
-          setError('店舗データの取得に失敗しました');
-          setShops([]);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
+        // 古いAPIレスポンス形式: {shops: [...], pagination: {...}}
+        else if ('shops' in data) {
+          shopsArray = ((data as { shops: Shop[] }).shops || []) as Shop[];
         }
       }
-    };
+      
+      console.log('🔍 ShopManagement: Processed shops array', { 
+        shopsArray, 
+        length: shopsArray.length,
+        firstShop: shopsArray[0] || 'no shops'
+      });
+      
+      // 最初の店舗からmerchant情報を取得
+      if (shopsArray.length > 0 && shopsArray[0].merchant) {
+        merchantInfo = shopsArray[0].merchant;
+      }
+      
+      setShops(shopsArray);
+      
+      // merchantIdがある場合のみmerchant情報を取得
+      if (merchantId) {
+        if (!merchantInfo) {
+          try {
+            const merchantData = await apiClient.getMerchant(merchantId);
+            if (merchantData && typeof merchantData === 'object' && 'name' in merchantData) {
+              setMerchantName((merchantData as { name: string }).name);
+            }
+          } catch (err) {
+            console.error('Failed to fetch merchant info:', err);
+          }
+        } else {
+          setMerchantName(merchantInfo.name);
+        }
+      }
+    } catch (err: unknown) {
+      console.error('店舗データの取得に失敗しました:', err);
+      setError('店舗データの取得に失敗しました');
+      setShops([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  // 初回マウント時とmerchantId変更時にデータ取得
+  useEffect(() => {
     fetchShops();
-
-    // クリーンアップ: コンポーネントのアンマウント時または再実行時にリクエストをキャンセル
-    return () => {
-      isMounted = false;
-      abortController.abort();
-    };
   }, [merchantId]);
 
-  // フィルタリング処理
-  const filteredShops = shops.filter((shop) => {
-    const matchesSearch = 
-      (appliedSearchForm.shopId === '' || shop.id.includes(appliedSearchForm.shopId)) &&
-      (appliedSearchForm.name === '' || shop.name.toLowerCase().includes(appliedSearchForm.name.toLowerCase())) &&
-      (appliedSearchForm.nameKana === '' || (shop.nameKana?.toLowerCase() || '').includes(appliedSearchForm.nameKana.toLowerCase())) &&
-      (appliedSearchForm.accountEmail === '' || (shop.accountEmail?.toLowerCase() || '').includes(appliedSearchForm.accountEmail.toLowerCase())) &&
-      (appliedSearchForm.phone === '' || shop.phone.includes(appliedSearchForm.phone)) &&
-      (appliedSearchForm.postalCode === '' || shop.postalCode.includes(appliedSearchForm.postalCode)) &&
-      (appliedSearchForm.address === '' || (shop.address?.toLowerCase() || '').includes(appliedSearchForm.address.toLowerCase()));
-    
-    const matchesStatus = appliedStatusFilter === 'all' || shop.status === appliedStatusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
-
+  // 検索フォームの入力ハンドラー
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {
     setSearchForm(prev => ({
       ...prev,
@@ -165,33 +139,27 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
     }));
   };
 
+  // 検索実行ハンドラー
   const handleSearch = () => {
-    setAppliedSearchForm({ ...searchForm });
-    setAppliedStatusFilter(statusFilter);
     console.log('検索実行:', searchForm);
+    fetchShops();
   };
 
+  // クリアハンドラー
   const handleClear = () => {
     setSearchForm({
-      shopId: '',
+      keyword: '',
       name: '',
       nameKana: '',
-      accountEmail: '',
       phone: '',
-      postalCode: '',
-      address: '',
-    });
-    setStatusFilter('all');
-    setAppliedSearchForm({
-      shopId: '',
-      name: '',
-      nameKana: '',
       accountEmail: '',
-      phone: '',
       postalCode: '',
-      address: '',
+      prefecture: '',
+      city: '',
+      status: 'all',
     });
-    setAppliedStatusFilter('all');
+    // クリア後にデータを再取得
+    setTimeout(() => fetchShops(), 100);
   };
 
   const handleIndividualStatusChange = async (shopId: string, newStatus: string) => {
@@ -316,22 +284,22 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
           
           {isSearchExpanded && (
           <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* 店舗ID */}
-            <div>
-              <label htmlFor="shopId" className="block text-sm font-medium text-gray-700 mb-2">
-                店舗ID
+            {/* フリーワード検索 */}
+            <div className="mb-4">
+              <label htmlFor="keyword" className="block text-sm font-medium text-gray-700 mb-2">
+                フリーワード検索
               </label>
               <input
                 type="text"
-                id="shopId"
-                placeholder="店舗IDを入力"
-                value={searchForm.shopId}
-                onChange={(e) => handleInputChange('shopId', e.target.value)}
+                id="keyword"
+                placeholder="店舗名、住所、電話番号などで検索（2文字以上）"
+                value={searchForm.keyword}
+                onChange={(e) => handleInputChange('keyword', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
-
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* 店舗名 */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -407,17 +375,32 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
               />
             </div>
 
-            {/* 住所 */}
+            {/* 都道府県 */}
             <div>
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                住所
+              <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
+                都道府県
               </label>
               <input
                 type="text"
-                id="address"
-                placeholder="住所を入力"
-                value={searchForm.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
+                id="prefecture"
+                placeholder="都道府県を入力"
+                value={searchForm.prefecture}
+                onChange={(e) => handleInputChange('prefecture', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+
+            {/* 市区町村 */}
+            <div>
+              <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                市区町村
+              </label>
+              <input
+                type="text"
+                id="city"
+                placeholder="市区町村を入力"
+                value={searchForm.city}
+                onChange={(e) => handleInputChange('city', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
@@ -429,8 +412,8 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
               </label>
               <select
                 id="status"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated')}
+                value={searchForm.status}
+                onChange={(e) => handleInputChange('status', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               >
                 <option value="all">すべて</option>
@@ -458,7 +441,7 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
-              店舗一覧 ({filteredShops.length}件)
+              店舗一覧 ({shops.length}件)
             </h3>
             <Link href={merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new'}>
               <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
@@ -498,7 +481,7 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-              {filteredShops.map((shop) => (
+              {shops.map((shop) => (
                   <tr key={shop.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap w-32">
                       <div className="flex justify-center gap-2">
@@ -578,7 +561,7 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
             </table>
           </div>
 
-          {filteredShops.length === 0 && (
+          {shops.length === 0 && (
             <div className="text-center py-12">
               <img 
                 src="/storefront-icon.svg" 

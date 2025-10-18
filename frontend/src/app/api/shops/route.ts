@@ -20,17 +20,16 @@ export async function GET(request: Request) {
     console.log('🌐 API Route: Get shops request received');
     
     const url = new URL(request.url);
-    const page = url.searchParams.get('page') || '1';
-    const limit = url.searchParams.get('limit') || '10';
-    const status = url.searchParams.get('status');
-    const merchantId = url.searchParams.get('merchantId');
     
-    // クエリパラメータを構築
+    // 全てのクエリパラメータをそのまま転送
     const queryParams = new URLSearchParams();
-    queryParams.append('page', page);
-    queryParams.append('limit', limit);
-    if (status) queryParams.append('status', status);
-    if (merchantId) queryParams.append('merchantId', merchantId);
+    url.searchParams.forEach((value, key) => {
+      queryParams.append(key, value);
+    });
+    
+    // デフォルト値の設定
+    if (!queryParams.has('page')) queryParams.append('page', '1');
+    if (!queryParams.has('limit')) queryParams.append('limit', '10');
     
     const fullUrl = `${API_BASE_URL}/shops?${queryParams.toString()}`;
     console.log('🔗 API Route: Fetching from', fullUrl);
