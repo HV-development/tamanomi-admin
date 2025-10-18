@@ -5,20 +5,14 @@ import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/templates/dashboard-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-
-interface AdminData {
-  role: string;
-  name: string;
-  email: string;
-  password: string;
-}
+import { type AdminFormData } from '@hv-development/schemas';
 
 export default function AdminRegistrationConfirmation() {
   const searchParams = useSearchParams();
-  const [adminData, setAdminData] = useState<AdminData | null>(null);
+  const [adminData, setAdminData] = useState<AdminFormData | null>(null);
 
   useEffect(() => {
-    const data: AdminData = {
+    const data: AdminFormData = {
       role: searchParams.get('role') || '',
       name: searchParams.get('name') || '',
       email: searchParams.get('email') || '',

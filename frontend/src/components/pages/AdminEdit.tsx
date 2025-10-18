@@ -11,13 +11,7 @@ import {
   validateEmail, 
   validatePassword 
 } from '@/utils/validation';
-
-interface AdminFormData {
-  role: string;
-  name: string;
-  email: string;
-  password: string;
-}
+import { type AdminFormData } from '@hv-development/schemas';
 
 // サンプルデータ（実際はAPIから取得）
 const sampleAdminData: Record<string, AdminFormData> = {
@@ -90,7 +84,7 @@ export default function AdminEdit() {
   }, [adminId, searchParams]);
 
   const handleInputChange = (field: keyof AdminFormData, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev: AdminFormData) => ({
       ...prev,
       [field]: value
     }));

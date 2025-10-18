@@ -12,13 +12,7 @@ import {
   validateEmail, 
   validatePassword 
 } from '@/utils/validation';
-
-interface AdminFormData {
-  role: string;
-  name: string;
-  email: string;
-  password: string;
-}
+import { type AdminFormData } from '@hv-development/schemas';
 
 export default function AdminRegistration() {
   const router = useRouter();
