@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/toast-container';
+import MerchantSelectModal from '@/components/molecules/MerchantSelectModal';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import type { ShopCreateRequest } from '@hv-development/schemas';
-import { shopCreateRequestSchema, shopUpdateRequestSchema } from '@hv-development/schemas';
+import { shopCreateRequestSchema, shopUpdateRequestSchema, isValidEmail, isValidPhone, isValidPostalCode, isValidKana } from '@hv-development/schemas';
 import { CREDIT_CARD_BRANDS, QR_PAYMENT_SERVICES } from '@/lib/constants/payment';
 
 // 都道府県リスト
@@ -128,6 +129,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  const [isMerchantModalOpen, setIsMerchantModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
   
@@ -363,6 +365,22 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     }
   }, [formData.merchantId, merchants]);
 
+  // 加盟店選択ハンドラー
+  const handleMerchantSelect = (merchant: Merchant) => {
+    console.log('🏢 Merchant selected:', merchant);
+    setFormData(prev => ({
+      ...prev,
+      merchantId: merchant.id,
+      accountEmail: merchant.account.email,
+    }));
+    setMerchantName(merchant.name);
+    // 会社を選択したことを記録
+    setTouchedFields(prev => ({
+      ...prev,
+      merchantId: true,
+    }));
+  };
+
   const handleInputChange = (field: keyof ShopCreateRequest, value: string | number | boolean) => {
     setFormData((prev) => ({
       ...prev,
@@ -412,7 +430,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         // 必須チェックは触られたフィールドのみ
         if (touchedFields[field] && (!value || (typeof value === 'string' && value.trim().length === 0))) {
           errorMessage = 'メールアドレスは必須です';
-        } else if (typeof value === 'string' && value.trim().length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        } else if (typeof value === 'string' && value.trim().length > 0 && !isValidEmail(value)) {
           errorMessage = '有効なメールアドレスを入力してください';
         }
         break;
@@ -421,7 +439,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         // 必須チェックは触られたフィールドのみ
         if (touchedFields[field] && (!value || (typeof value === 'string' && value.trim().length === 0))) {
           errorMessage = '電話番号は必須です';
-        } else if (typeof value === 'string' && value.trim().length > 0 && !/^[0-9]{10,11}$/.test(value)) {
+        } else if (typeof value === 'string' && value.trim().length > 0 && !isValidPhone(value)) {
           errorMessage = '有効な電話番号を入力してください（10-11桁の数字）';
         }
         break;
@@ -430,7 +448,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         // 必須チェックは触られたフィールドのみ
         if (touchedFields[field] && (!value || (typeof value === 'string' && value.trim().length === 0))) {
           errorMessage = '郵便番号は必須です';
-        } else if (typeof value === 'string' && value.trim().length > 0 && !/^[0-9]{7}$/.test(value)) {
+        } else if (typeof value === 'string' && value.trim().length > 0 && !isValidPostalCode(value)) {
           errorMessage = '郵便番号は7桁の数字で入力してください';
         }
         break;
@@ -438,6 +456,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       case 'nameKana':
         if (typeof value === 'string' && value.length > 100) {
           errorMessage = '店舗名（カナ）は100文字以内で入力してください';
+        } else if (typeof value === 'string' && value.trim().length > 0 && !isValidKana(value)) {
+          errorMessage = '店舗名（カナ）は全角カタカナで入力してください';
         }
         break;
 
@@ -812,6 +832,14 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     <div className="space-y-6">
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
       
+      {/* 加盟店選択モーダル */}
+      <MerchantSelectModal
+        isOpen={isMerchantModalOpen}
+        onClose={() => setIsMerchantModalOpen(false)}
+        onSelect={handleMerchantSelect}
+        selectedMerchantId={formData.merchantId}
+      />
+      
       {/* ヘッダー */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">
@@ -824,28 +852,61 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">基本情報</h2>
           <div className="space-y-4">
-            <div className="w-1/2">
+            <div className="w-full">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                会社名 / 店舗名 <span className="text-red-500">*</span>
+                会社名 <span className="text-red-500">*</span>
               </label>
               {(propMerchantId || merchantIdFromParams) ? (
-                <div className="text-gray-900">
-                  {merchantName || '読み込み中...'}
+                <div>
+                  <div className="text-gray-900 mb-2">
+                    {merchantName || '読み込み中...'}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsMerchantModalOpen(true)}
+                    className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
+                    title="会社を変更"
+                  >
+                    設定
+                  </button>
                 </div>
               ) : (
-                <select
-                  value={formData.merchantId}
-                  onChange={(e) => handleInputChange('merchantId', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">選択してください</option>
-                  {merchants.map((merchant) => (
-                    <option key={merchant.id} value={merchant.id}>
-                      {merchant.name}
-                    </option>
-                  ))}
-                </select>
+                <div>
+                  {merchantName ? (
+                    <div>
+                      <div className="text-gray-900 mb-2">
+                        {merchantName}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsMerchantModalOpen(true)}
+                        className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
+                        title="会社を変更"
+                      >
+                        設定
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMerchantModalOpen(true);
+                        // モーダルを開いたことをタッチとして記録
+                        setTouchedFields(prev => ({
+                          ...prev,
+                          merchantId: true,
+                        }));
+                      }}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
+                      title="会社を選択"
+                    >
+                      会社を選択
+                    </button>
+                  )}
+                  {!formData.merchantId && touchedFields.merchantId && (
+                    <p className="mt-2 text-sm text-red-600">会社の選択は必須です</p>
+                  )}
+                </div>
               )}
             </div>
             
@@ -880,10 +941,16 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 type="text"
                 value={formData.nameKana}
                 onChange={(e) => handleInputChange('nameKana', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onBlur={(e) => handleFieldBlur('nameKana', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  validationErrors.nameKana 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
                 maxLength={100}
                 placeholder="例: タマノミショクドウ"
               />
+              <ErrorMessage message={validationErrors.nameKana} />
               <p className="mt-1 text-xs text-gray-500 text-right">
                 {(formData.nameKana || '').length} / 100文字
               </p>
@@ -1490,14 +1557,16 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   現在登録されている画像
                 </label>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   {existingImages.map((imageUrl, index) => (
                     <div key={index} className="relative group">
-                      <img
-                        src={imageUrl}
-                        alt={`店舗画像 ${index + 1}`}
-                        className="w-full h-48 object-cover rounded-md border border-gray-300"
-                      />
+                      <div className="relative w-full aspect-[3/1] rounded-md overflow-hidden border border-gray-300">
+                        <img
+                          src={imageUrl}
+                          alt={`店舗画像 ${index + 1}`}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={() => handleRemoveExistingImage(index)}
@@ -1519,14 +1588,16 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   新しくアップロードする画像
                 </label>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   {imagePreviews.map((preview, index) => (
                     <div key={index} className="relative group">
-                      <img
-                        src={preview.url}
-                        alt={`プレビュー ${index + 1}`}
-                        className="w-full h-48 object-cover rounded-md border border-gray-300"
-                      />
+                      <div className="relative w-full aspect-[3/1] rounded-md overflow-hidden border border-gray-300">
+                        <img
+                          src={preview.url}
+                          alt={`プレビュー ${index + 1}`}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(index)}

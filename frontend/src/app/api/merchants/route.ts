@@ -15,9 +15,14 @@ function getAuthHeaders(request: Request): Record<string, string> {
 
 export async function GET(request: Request) {
   try {
+    // URLからクエリパラメータを取得
+    const url = new URL(request.url);
+    const queryString = url.search; // ?search=xxx&page=1 など
+    
     console.log('🌐 API Route: 会社一覧取得リクエスト受信');
     console.log('🔗 API Route: API_BASE_URL:', API_BASE_URL);
-    console.log('🔗 API Route: Full URL:', `${API_BASE_URL}/admin/merchants`);
+    console.log('🔍 API Route: Query params:', queryString);
+    console.log('🔗 API Route: Full URL:', `${API_BASE_URL}/admin/merchants${queryString}`);
     
     const authHeaders = getAuthHeaders(request);
     console.log('🔐 API Route: 認証ヘッダー', { 
@@ -25,7 +30,7 @@ export async function GET(request: Request) {
       authHeader: authHeaders.Authorization ? 'Bearer ***' : 'none'
     });
     
-    const response = await fetch(`${API_BASE_URL}/admin/merchants`, {
+    const response = await fetch(`${API_BASE_URL}/admin/merchants${queryString}`, {
       method: 'GET',
       headers: authHeaders,
     });
