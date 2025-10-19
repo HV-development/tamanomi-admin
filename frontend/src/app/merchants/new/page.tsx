@@ -691,7 +691,7 @@ export default function MerchantNewPage() {
           </div>
 
           {/* ボタン */}
-          <div className="flex justify-end gap-4">
+          <div className="flex justify-center gap-4">
             <Button
               type="button"
               variant="outline"

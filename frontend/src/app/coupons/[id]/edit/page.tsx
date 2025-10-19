@@ -10,8 +10,7 @@ import type { CouponWithShop, CouponUpdateRequest, CouponStatus } from '@hv-deve
 import { 
   validateRequired, 
   validateMaxLength, 
-  validateFileSize, 
-  validateFileType 
+  validateFileSize
 } from '@/utils/validation';
 
 // 動的レンダリングを強制
@@ -21,7 +20,6 @@ export const dynamicParams = true;
 interface CouponFormData {
   couponName: string;
   couponContent: string;
-  couponConditions: string;
   couponImage: File | null;
   imagePreview: string;
   imageUrl: string;
@@ -37,7 +35,6 @@ function CouponEditPageContent() {
   const [formData, setFormData] = useState<CouponFormData>({
     couponName: '',
     couponContent: '',
-    couponConditions: '',
     couponImage: null,
     imagePreview: '',
     imageUrl: '',
@@ -48,6 +45,10 @@ function CouponEditPageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  
+  // 会社・店舗情報（読み取り専用）
+  const [merchantName, setMerchantName] = useState<string>('');
+  const [shopName, setShopName] = useState<string>('');
 
   useEffect(() => {
     const fetchCoupon = async () => {
@@ -58,12 +59,19 @@ function CouponEditPageContent() {
         setFormData({
           couponName: data.title,
           couponContent: data.description || '',
-          couponConditions: data.conditions || '',
           couponImage: null,
           imagePreview: data.imageUrl || '',
           imageUrl: data.imageUrl || '',
           publishStatus: data.status === 'active' ? '1' : '2',
         });
+        
+        // 会社・店舗情報を設定
+        if (data.shop) {
+          setShopName(data.shop.name);
+          if (data.shop.merchant) {
+            setMerchantName(data.shop.merchant.name);
+          }
+        }
       } catch (error) {
         console.error('クーポン情報の取得に失敗しました:', error);
       } finally {
@@ -76,7 +84,6 @@ function CouponEditPageContent() {
       const urlData = {
         couponName: searchParams.get('couponName') || '',
         couponContent: searchParams.get('couponContent') || '',
-        couponConditions: searchParams.get('couponConditions') || '',
         publishStatus: searchParams.get('publishStatus') || '',
         imagePreview: searchParams.get('imagePreview') || '',
       };
@@ -143,14 +150,13 @@ function CouponEditPageContent() {
 
     if (file) {
       // 画像形式チェック
-      const fileTypeError = validateFileType(file, ['image/jpeg', 'image/png', 'image/webp']);
-      const fileSizeError = validateFileSize(file, 10);
-      
-      if (fileTypeError) {
-        newErrors.couponImage = fileTypeError;
+      if (!file.type.startsWith('image/')) {
+        newErrors.couponImage = '画像ファイルのみアップロード可能です';
         setErrors(newErrors);
         return;
       }
+      
+      const fileSizeError = validateFileSize(file, 10);
       
       if (fileSizeError) {
         newErrors.couponImage = fileSizeError;
@@ -233,7 +239,6 @@ function CouponEditPageContent() {
         const updateData: CouponUpdateRequest = {
           title: formData.couponName,
           description: formData.couponContent || null,
-          conditions: formData.couponConditions || null,
           imageUrl: formData.imageUrl || null,
           status: (formData.publishStatus === '1' ? 'active' : 'inactive') as CouponStatus
         };
@@ -288,6 +293,30 @@ function CouponEditPageContent() {
         {/* 編集フォーム */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="space-y-6">
+            {/* 会社情報（読み取り専用） */}
+            {merchantName && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  会社
+                </label>
+                <div className="text-sm text-gray-900">
+                  {merchantName}
+                </div>
+              </div>
+            )}
+            
+            {/* 店舗情報（読み取り専用） */}
+            {shopName && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  店舗
+                </label>
+                <div className="text-sm text-gray-900">
+                  {shopName}
+                </div>
+              </div>
+            )}
+            
             {/* クーポン名 */}
             <div>
               <label htmlFor="couponName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -299,7 +328,7 @@ function CouponEditPageContent() {
                 placeholder="クーポン名を入力（最大15文字）"
                 value={formData.couponName}
                 onChange={(e) => handleInputChange('couponName', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                className={`w-150 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                   errors.couponName ? 'border-red-500' : 'border-gray-300'
                 }`}
                 maxLength={15}
@@ -319,7 +348,7 @@ function CouponEditPageContent() {
                 placeholder="クーポン内容を入力（最大100文字）"
                 value={formData.couponContent}
                 onChange={(e) => handleInputChange('couponContent', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                className={`w-150 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                   errors.couponContent ? 'border-red-500' : 'border-gray-300'
                 }`}
                 rows={3}
@@ -330,22 +359,6 @@ function CouponEditPageContent() {
               )}
             </div>
 
-            {/* 利用条件 */}
-            <div>
-              <label htmlFor="couponConditions" className="block text-sm font-medium text-gray-700 mb-2">
-                利用条件
-              </label>
-              <textarea
-                id="couponConditions"
-                placeholder="利用条件を入力（最大100文字）"
-                value={formData.couponConditions}
-                onChange={(e) => handleInputChange('couponConditions', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                rows={2}
-                maxLength={100}
-              />
-            </div>
-
             {/* クーポン画像 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -354,7 +367,7 @@ function CouponEditPageContent() {
               <div className="space-y-4">
                 {/* 画像プレビュー */}
                 {formData.imagePreview && (
-                  <div className="border border-gray-300 rounded-lg p-4">
+                  <div>
                     <img
                       src={formData.imagePreview}
                       alt="クーポン画像プレビュー"
@@ -368,7 +381,7 @@ function CouponEditPageContent() {
                   <input
                     type="file"
                     id="couponImage"
-                    accept="image/jpeg,image/png,image/webp"
+                    accept="image/*"
                     onChange={handleImageUpload}
                     className="hidden"
                   />
@@ -381,7 +394,7 @@ function CouponEditPageContent() {
                     {isUploading ? 'アップロード中...' : '画像アップロード'}
                   </Button>
                   <p className="mt-1 text-xs text-gray-500">
-                    JPEG/PNG/WebP形式対応（最大10MB）
+                    PNG, JPG, WEBP形式の画像をアップロードできます（最大10MB）
                   </p>
                 </div>
               </div>

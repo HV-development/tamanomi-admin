@@ -2245,7 +2245,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         </div>
 
         {/* ボタン */}
-        <div className="flex justify-between items-center">
+        <div className="relative flex justify-center items-center">
           {isEdit && (
             <Button 
               type="button" 
@@ -2262,13 +2262,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   }
                 }
               }}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700 text-white absolute left-0"
             >
               削除
             </Button>
           )}
-          <div className={`flex space-x-3 ${!isEdit ? 'ml-auto' : ''}`}>
-            <Button type="button" variant="secondary" onClick={handleCancel}>
+          <div className="flex space-x-3">
+            <Button type="button" variant="outline" onClick={handleCancel}>
               キャンセル
             </Button>
             <Button 

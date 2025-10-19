@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
@@ -27,7 +28,9 @@ type PaginationData = CouponListResponse['pagination'];
 export default function CouponsPage() {
   const auth = useAuth();
   const isShopAccount = auth?.user?.accountType === 'shop';
+  const isMerchantAccount = auth?.user?.accountType === 'merchant';
   const shopId = isShopAccount ? auth?.user?.shopId : undefined; // 店舗アカウントの場合は自身のshopIdを使用
+  const merchantId = isMerchantAccount ? auth?.user?.merchantId : undefined; // 会社アカウントの場合は自身のmerchantIdを使用
   const router = useRouter();
   const [shop, setShop] = useState<Shop | null>(null);
   const [coupons, setCoupons] = useState<CouponWithShop[]>([]);
@@ -58,9 +61,16 @@ export default function CouponsPage() {
       params.append('page', pagination.page.toString());
       params.append('limit', pagination.limit.toString());
       
+      // 店舗アカウントの場合
       if (shopId) {
         console.log('🔍 CouponsPage: Fetching coupons for shopId:', shopId);
         params.append('shopId', shopId);
+      }
+      
+      // 会社アカウントの場合
+      if (merchantId) {
+        console.log('🔍 CouponsPage: Fetching coupons for merchantId:', merchantId);
+        params.append('merchantId', merchantId);
       }
       
       if (appliedSearchForm.couponName) {
@@ -101,7 +111,7 @@ export default function CouponsPage() {
   // クーポン一覧を取得
   useEffect(() => {
     fetchCoupons();
-  }, [shopId, pagination.page, appliedSearchForm, appliedStatusFilter]);
+  }, [shopId, merchantId, pagination.page, appliedSearchForm, appliedStatusFilter]);
 
   const filteredCoupons = coupons;
 
@@ -313,8 +323,14 @@ export default function CouponsPage() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="pl-6 pr-0 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    アクション
+                  </th>
+                  <th className="pl-2 pr-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    会社名
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    クーポンID
+                    店舗名
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     クーポン名
@@ -328,16 +344,30 @@ export default function CouponsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     更新日時
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    アクション
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredCoupons.map((coupon) => (
                   <tr key={coupon.id} className="hover:bg-gray-50">
+                    <td className="pl-6 pr-0 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-1">
+                        <Link href={`/coupons/${coupon.id}/edit`}>
+                          <button className="p-1 transition-opacity hover:opacity-70">
+                            <Image src="/edit.svg" alt="編集" width={24} height={24} />
+                          </button>
+                        </Link>
+                        <Link href={`/coupons/${coupon.id}/history`}>
+                          <button className="p-1 pl-6 transition-opacity hover:opacity-70">
+                            <Image src="/history.png" alt="利用履歴" width={24} height={24} />
+                          </button>
+                        </Link>
+                      </div>
+                    </td>
+                    <td className="pl-2 pr-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{coupon.shop?.merchant?.name || '-'}</div>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{coupon.id.substring(0, 8)}</div>
+                      <div className="text-sm text-gray-900">{coupon.shop?.name || '-'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{coupon.title}</div>
@@ -350,23 +380,6 @@ export default function CouponsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{new Date(coupon.updatedAt).toLocaleString('ja-JP')}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <Link href={`/coupons/${coupon.id}`}>
-                        <Button variant="outline" size="sm">
-                          詳細
-                        </Button>
-                      </Link>
-                      <Link href={`/coupons/${coupon.id}/edit`}>
-                        <Button variant="outline" size="sm" className="text-green-600 border-green-300 hover:bg-green-50">
-                          編集
-                        </Button>
-                      </Link>
-                      <Link href={`/coupons/${coupon.id}/history`}>
-                        <Button variant="outline" size="sm">
-                          利用履歴
-                        </Button>
-                      </Link>
                     </td>
                   </tr>
                 ))}
