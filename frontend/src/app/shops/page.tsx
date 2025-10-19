@@ -68,17 +68,34 @@ export default function ShopsPage() {
     const fetchMyShop = async () => {
       // 認証情報がロード中の場合は待機
       if (auth?.isLoading) {
+        console.log('🔄 ShopsPage: Auth is loading, waiting...');
         return;
       }
       
-      if (isShopAccount && auth?.user?.shopId) {
+      console.log('🔍 ShopsPage: Checking shop account', { 
+        isShopAccount, 
+        hasUser: !!auth?.user, 
+        shopId: auth?.user?.shopId 
+      });
+      
+      if (isShopAccount) {
+        if (!auth?.user?.shopId) {
+          // shopIdが設定されていない場合はエラーを表示
+          console.error('❌ ShopsPage: Shop account has no shopId');
+          setError('店舗情報が取得できませんでした。管理者にお問い合わせください。');
+          setIsLoading(false);
+          return;
+        }
+        
         try {
+          console.log('📥 ShopsPage: Fetching shop data for shopId:', auth.user.shopId);
           setIsLoading(true);
           const shopData = await apiClient.getShop(auth.user.shopId);
+          console.log('✅ ShopsPage: Shop data fetched successfully:', shopData);
           setShops([shopData as Shop]);
           setIsLoading(false);
         } catch (error) {
-          console.error('店舗情報の取得に失敗しました:', error);
+          console.error('❌ ShopsPage: Failed to fetch shop data:', error);
           setError('店舗情報の取得に失敗しました');
           setIsLoading(false);
         }
