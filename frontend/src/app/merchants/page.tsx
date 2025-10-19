@@ -10,16 +10,17 @@ import ToastContainer from '@/components/molecules/toast-container';
 import FloatingFooter from '@/components/molecules/floating-footer';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
-import { statusLabels, statusOptions, prefectures } from '@/lib/constants/merchant';
-import { type MerchantWithDetails, type MerchantStatus } from '@hv-development/schemas';
+import { prefectures } from '@/lib/constants/merchant';
+import { type MerchantWithDetails } from '@hv-development/schemas';
+import { useAuth } from '@/components/contexts/auth-context';
 
 // APIレスポンス用の型（日付がstringとして返される）
-type Merchant = Omit<MerchantWithDetails, 'createdAt' | 'updatedAt' | 'deletedAt' | 'account' | 'status' | 'shops'> & {
+type Merchant = Omit<MerchantWithDetails, 'createdAt' | 'updatedAt' | 'deletedAt' | 'account' | 'shops'> & {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
-  status: MerchantStatus;
-  account: {
+  accountEmail: string;
+  account?: {
     email: string;
     status: string;
     displayName: string | null;
@@ -28,10 +29,15 @@ type Merchant = Omit<MerchantWithDetails, 'createdAt' | 'updatedAt' | 'deletedAt
 };
 
 export default function MerchantsPage() {
+  const auth = useAuth();
   const [merchants, setMerchants] = useState<Merchant[]>([]);
+  const [myMerchant, setMyMerchant] = useState<Merchant | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
+  
+  // 会社アカウントかどうかを判定
+  const isMerchantAccount = auth?.user?.accountType === 'merchant';
   
   // チェックボックス関連の状態
   const [selectedMerchants, setSelectedMerchants] = useState<Set<string>>(new Set());
@@ -61,8 +67,6 @@ export default function MerchantsPage() {
     address: '',
     prefecture: '',
   });
-  const [statusFilter, setStatusFilter] = useState<'all' | MerchantStatus>('all');
-  const [appliedStatusFilter, setAppliedStatusFilter] = useState<'all' | MerchantStatus>('all');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // データ取得
@@ -74,6 +78,27 @@ export default function MerchantsPage() {
       try {
         setIsLoading(true);
         setError(null);
+        
+        // 会社アカウントの場合は自分の会社情報のみを取得
+        if (isMerchantAccount) {
+          const data = await apiClient.getMyMerchant();
+          
+          if (!isMounted) return;
+          
+          // APIレスポンス形式: {success: true, data: {...}}
+          let merchantData: Merchant | null = null;
+          if (data && typeof data === 'object') {
+            if ('data' in data && data.data && typeof data.data === 'object') {
+              merchantData = data.data as Merchant;
+            }
+          }
+          
+          if (isMounted && merchantData) {
+            setMyMerchant(merchantData);
+          }
+          return;
+        }
+        
         const data = await apiClient.getMerchants();
         
         // コンポーネントがアンマウントされている場合は処理を中断
@@ -138,7 +163,7 @@ export default function MerchantsPage() {
       isMounted = false;
       abortController.abort();
     };
-  }, []);
+  }, [isMerchantAccount]);
 
   // チェックボックス関連の関数
   const handleSelectAll = (checked: boolean) => {
@@ -183,36 +208,36 @@ export default function MerchantsPage() {
     setSelectedStatus(status);
   };
 
+  const handleResendRegistration = async (merchantId: string) => {
+    if (!confirm('登録用URLを再発行しますか？')) {
+      return;
+    }
+
+    try {
+      await apiClient.resendMerchantRegistration(merchantId);
+      showSuccess('登録用URLを再送信しました');
+    } catch (error) {
+      console.error('登録URL再発行エラー:', error);
+      showError('登録URLの再発行に失敗しました');
+    }
+  };
+
   const handleExecute = async () => {
     if (selectedMerchants.size === 0) return;
 
     setIsExecuting(true);
     try {
-      // 選択された会社のステータスを一括更新
-      const updatePromises = Array.from(selectedMerchants).map(merchantId =>
-        apiClient.updateMerchantStatus(merchantId, selectedStatus)
-      );
-      
-      await Promise.all(updatePromises);
-      
-      // ローカル状態を更新
-      setMerchants(prev =>
-        prev.map(merchant =>
-          selectedMerchants.has(merchant.id)
-            ? { ...merchant, status: selectedStatus as Merchant['status'] }
-            : merchant
-        )
-      );
-      
-      showSuccess(`${selectedMerchants.size}件の会社のステータスを「${statusLabels[selectedStatus]}」に更新しました`);
+      // 一括処理（今後実装予定）
+      await new Promise(resolve => setTimeout(resolve, 1500)); // 模擬APIコール
+      showSuccess(`${selectedMerchants.size}件の会社に対して処理を実行しました`);
       
       // 選択をクリア
       setSelectedMerchants(new Set());
       setIsAllSelected(false);
       setIsIndeterminate(false);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error instanceof Error ? error.message : "Unknown error" : '不明なエラー';
-      showError(`ステータスの一括更新に失敗しました: ${errorMessage}`);
+      console.error('一括処理エラー:', error);
+      showError('一括処理に失敗しました');
     } finally {
       setIsExecuting(false);
     }
@@ -240,6 +265,26 @@ export default function MerchantsPage() {
     }
   };
 
+  const getAccountStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active': return '契約中';
+      case 'inactive': return 'メール承認待ち';
+      case 'suspended': return '解約';
+      case 'terminated': return '終了';
+      default: return status;
+    }
+  };
+
+  const getAccountStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'text-green-600';
+      case 'inactive': return 'text-yellow-600';
+      case 'suspended': return 'text-red-600';
+      case 'terminated': return 'text-gray-600';
+      default: return 'text-gray-900';
+    }
+  };
+
   // フィルタリング処理
   const filteredMerchants = Array.isArray(merchants) ? merchants.filter((merchant) => {
     const matchesSearch = 
@@ -247,16 +292,14 @@ export default function MerchantsPage() {
       (appliedSearchForm.merchantName === '' || merchant.name.toLowerCase().includes(appliedSearchForm.merchantName.toLowerCase())) &&
       (appliedSearchForm.representativeName === '' || 
         `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(appliedSearchForm.representativeName.toLowerCase())) &&
-      (appliedSearchForm.email === '' || merchant.email.toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
-      (appliedSearchForm.phone === '' || merchant.phone.includes(appliedSearchForm.phone)) &&
+      (appliedSearchForm.email === '' || merchant.account?.email.toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
+      (appliedSearchForm.phone === '' || merchant.representativePhone.includes(appliedSearchForm.phone)) &&
       (appliedSearchForm.postalCode === '' || merchant.postalCode.includes(appliedSearchForm.postalCode)) &&
       (appliedSearchForm.address === '' || 
         `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(appliedSearchForm.address.toLowerCase())) &&
       (appliedSearchForm.prefecture === '' || merchant.prefecture.toLowerCase().includes(appliedSearchForm.prefecture.toLowerCase()));
     
-    const matchesStatus = appliedStatusFilter === 'all' || merchant.status === appliedStatusFilter;
-    
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   }) : [];
 
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {
@@ -269,7 +312,6 @@ export default function MerchantsPage() {
   const handleSearch = () => {
     // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
     setAppliedSearchForm({ ...searchForm });
-    setAppliedStatusFilter(statusFilter);
     console.log('検索実行:', searchForm);
   };
 
@@ -284,7 +326,6 @@ export default function MerchantsPage() {
       address: '',
       prefecture: '',
     });
-    setStatusFilter('all');
     setAppliedSearchForm({
       merchantId: '',
       merchantName: '',
@@ -295,20 +336,8 @@ export default function MerchantsPage() {
       address: '',
       prefecture: '',
     });
-    setAppliedStatusFilter('all');
   };
 
-  const _getStatusLabel = (status: string) => {
-    return statusLabels[status] || status;
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'text-green-600';
-      case 'terminated': return 'text-gray-600';
-      default: return 'text-gray-600';
-    }
-  };
 
   if (isLoading) {
     return (
@@ -319,6 +348,148 @@ export default function MerchantsPage() {
             <p className="text-gray-600">会社データを読み込み中...</p>
           </div>
         </div>
+      </AdminLayout>
+    );
+  }
+
+  // 会社アカウントの場合は自分の会社情報のみを表示
+  if (isMerchantAccount) {
+    return (
+      <AdminLayout>
+        <div className="space-y-6">
+          {/* ヘッダー */}
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">会社情報</h1>
+            <p className="text-gray-600 mt-1">会社の詳細情報を確認できます</p>
+          </div>
+
+          {/* ローディング状態 */}
+          {isLoading && (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">読み込み中...</p>
+            </div>
+          )}
+
+          {/* エラー状態 */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-800">{error}</p>
+            </div>
+          )}
+
+          {/* 会社情報 */}
+          {!isLoading && !error && myMerchant && (
+            <div className="bg-white rounded-lg shadow">
+              <div className="p-6 space-y-6">
+                {/* 基本情報 */}
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">基本情報</h2>
+                  <table className="w-full border-collapse border border-gray-300">
+                    <tbody>
+                      <tr className="border-b border-gray-300">
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">会社名</td>
+                        <td className="py-3 px-4 text-gray-900">{myMerchant.name}</td>
+                      </tr>
+                      <tr className="border-b border-gray-300">
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">会社名（カナ）</td>
+                        <td className="py-3 px-4 text-gray-900">{myMerchant.nameKana}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* 代表者情報 */}
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">代表者情報</h2>
+                  <table className="w-full border-collapse border border-gray-300">
+                    <tbody>
+                      <tr className="border-b border-gray-300">
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">代表者名</td>
+                        <td className="py-3 px-4 text-gray-900">{myMerchant.representativeNameLast} {myMerchant.representativeNameFirst}</td>
+                      </tr>
+                      <tr className="border-b border-gray-300">
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">代表者名（カナ）</td>
+                        <td className="py-3 px-4 text-gray-900">{myMerchant.representativeNameLastKana} {myMerchant.representativeNameFirstKana}</td>
+                      </tr>
+                      <tr className="border-b border-gray-300">
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">電話番号</td>
+                        <td className="py-3 px-4 text-gray-900">{myMerchant.representativePhone}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* 住所情報 */}
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">住所情報</h2>
+                  <table className="w-full border-collapse border border-gray-300">
+                    <tbody>
+                      <tr className="border-b border-gray-300">
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">郵便番号</td>
+                        <td className="py-3 px-4 text-gray-900">{myMerchant.postalCode}</td>
+                      </tr>
+                      <tr className="border-b border-gray-300">
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">都道府県</td>
+                        <td className="py-3 px-4 text-gray-900">{myMerchant.prefecture}</td>
+                      </tr>
+                      <tr className="border-b border-gray-300">
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">市区町村</td>
+                        <td className="py-3 px-4 text-gray-900">{myMerchant.city}</td>
+                      </tr>
+                      <tr className="border-b border-gray-300">
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">番地</td>
+                        <td className="py-3 px-4 text-gray-900">{myMerchant.address1}</td>
+                      </tr>
+                      {myMerchant.address2 && (
+                        <tr className="border-b border-gray-300">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">建物名・部屋番号</td>
+                          <td className="py-3 px-4 text-gray-900">{myMerchant.address2}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* アカウント情報 */}
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">アカウント情報</h2>
+                  <table className="w-full border-collapse border border-gray-300">
+                    <tbody>
+                      <tr className="border-b border-gray-300">
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">メールアドレス</td>
+                        <td className="py-3 px-4 text-gray-900">{myMerchant.account?.email || myMerchant.accountEmail}</td>
+                      </tr>
+                      <tr className="border-b border-gray-300">
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">アカウントステータス</td>
+                        <td className={`py-3 px-4 text-sm font-medium ${getAccountStatusColor(myMerchant.account?.status || 'inactive')}`}>
+                          {getAccountStatusLabel(myMerchant.account?.status || 'inactive')}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ボタンエリア */}
+          {!isLoading && !error && myMerchant && (
+            <div className="flex justify-center gap-4">
+              <Link href={`/merchants/${myMerchant.id}/shops`}>
+                <button className="px-6 py-3 border-2 border-green-600 bg-white text-green-600 rounded-lg hover:bg-green-50 transition-colors font-medium text-base">
+                  店舗一覧を見る
+                </button>
+              </Link>
+              <Link href={`/merchants/${myMerchant.id}/edit`}>
+                <button className="px-6 py-3 border-2 border-green-600 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:border-green-700 transition-colors font-medium text-base">
+                  編集
+                </button>
+              </Link>
+            </div>
+          )}
+        </div>
+        <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
       </AdminLayout>
     );
   }
@@ -502,24 +673,6 @@ export default function MerchantsPage() {
                 ))}
               </select>
             </div>
-
-            {/* ステータス */}
-            <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                ステータス
-              </label>
-              <select
-                id="status"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              >
-                <option value="all">すべて</option>
-                {statusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </div>
             </div>
 
             {/* 検索・クリアボタン */}
@@ -601,9 +754,9 @@ export default function MerchantsPage() {
                               <Image 
                                 src="/edit.svg" 
                                 alt="編集" 
-                                width={32}
-                                height={32}
-                                className="w-8 h-8 flex-shrink-0"
+                                width={24}
+                                height={24}
+                                className="w-6 h-6 flex-shrink-0"
                               />
                             </button>
                           </Link>
@@ -615,9 +768,9 @@ export default function MerchantsPage() {
                               <Image 
                                 src="/store-list.svg" 
                                 alt="店舗一覧" 
-                                width={32}
-                                height={32}
-                                className="w-8 h-8 flex-shrink-0"
+                                width={24}
+                                height={24}
+                                className="w-6 h-6 flex-shrink-0"
                               />
                             </button>
                           </Link>
@@ -643,8 +796,21 @@ export default function MerchantsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[180px]">
-                      <div className={`text-sm font-medium ${getStatusColor(merchant.status)}`}>
-                        {statusLabels[merchant.status] || merchant.status}
+                      <div className="flex items-center gap-2">
+                        <div className={`text-sm font-medium ${getAccountStatusColor(merchant.account?.status || 'inactive')}`}>
+                          {getAccountStatusLabel(merchant.account?.status || 'inactive')}
+                        </div>
+                        {merchant.account?.status === 'inactive' && (
+                          <button 
+                            onClick={() => handleResendRegistration(merchant.id)}
+                            className="p-1.5 text-orange-600 hover:text-orange-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
+                            title="登録URL再発行"
+                          >
+                            <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">

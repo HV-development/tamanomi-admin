@@ -495,9 +495,9 @@ export default function MerchantShopsPage() {
                             <Image 
                               src="/edit.svg" 
                               alt="編集" 
-                              width={32}
-                              height={32}
-                              className="w-8 h-8"
+                              width={24}
+                              height={24}
+                              className="w-6 h-6"
                             />
                           </button>
                         </Link>
@@ -509,9 +509,9 @@ export default function MerchantShopsPage() {
                             <Image 
                               src="/coupon.svg" 
                               alt="クーポン" 
-                              width={48}
-                              height={48}
-                              className="w-10 h-10"
+                              width={24}
+                              height={24}
+                              className="w-6 h-6"
                             />
                           </button>
                         </Link>

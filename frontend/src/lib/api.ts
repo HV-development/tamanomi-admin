@@ -165,6 +165,15 @@ class ApiClient {
     });
   }
 
+  async getMyMerchant(): Promise<unknown> {
+    console.log('👤 API: getMyMerchant called (via Next.js API Route)');
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>('/merchants/me', {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
   async createMerchant(merchantData: unknown): Promise<unknown> {
     console.log('➕ API: createMerchant called (via Next.js API Route)');
     const token = localStorage.getItem('accessToken');
@@ -200,6 +209,15 @@ class ApiClient {
     return this.request<unknown>(`/merchants/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async resendMerchantRegistration(id: string): Promise<unknown> {
+    console.log('📧 API: resendMerchantRegistration called (via Next.js API Route)', { id });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/merchants/${id}/resend-registration`, {
+      method: 'POST',
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }

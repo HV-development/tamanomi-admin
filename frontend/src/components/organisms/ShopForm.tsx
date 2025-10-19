@@ -7,6 +7,7 @@ import ToastContainer from '@/components/molecules/toast-container';
 import MerchantSelectModal from '@/components/molecules/MerchantSelectModal';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/components/contexts/auth-context';
 import type { ShopCreateRequest } from '@hv-development/schemas';
 import { shopCreateRequestSchema, shopUpdateRequestSchema, isValidEmail, isValidPhone, isValidPostalCode, isValidKana } from '@hv-development/schemas';
 import { CREDIT_CARD_BRANDS, QR_PAYMENT_SERVICES } from '@/lib/constants/payment';
@@ -63,7 +64,11 @@ interface ShopFormProps {
 }
 
 // エラーメッセージコンポーネント
-const ErrorMessage = ({ message }: { message?: string }) => {
+const ErrorMessage = ({ message, field }: { message?: string; field?: string }) => {
+  // デバッグ用：エラーメッセージが渡された時のみログ出力
+  if (message) {
+    console.log(`🔴 ErrorMessage表示 [${field || 'unknown'}]:`, message);
+  }
   if (!message) return null;
   return <p className="mt-1 text-sm text-red-600">{message}</p>;
 };
@@ -71,6 +76,10 @@ const ErrorMessage = ({ message }: { message?: string }) => {
 export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps = {}) {
   const params = useParams();
   const router = useRouter();
+  const auth = useAuth();
+  
+  // 会社アカウントかどうかを判定
+  const isMerchantAccount = auth?.user?.accountType === 'merchant';
   
   // shopIdの取得（編集時のみ存在）
   // /merchants/[id]/shops/[shopId]/edit -> params.shopId
@@ -86,7 +95,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     merchantId: merchantId || '',
     genreId: '',
     accountEmail: '',
-    shopEmail: '',
     name: '',
     nameKana: '',
     phone: '',
@@ -139,6 +147,19 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   // フィールドが触られたかを追跡（初期表示時は必須エラーを表示しない）
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
   
+  // デバッグ用：validationErrorsの変更を監視
+  useEffect(() => {
+    console.log('🔄 validationErrors更新:', validationErrors);
+    console.log('🔄 エラー件数:', Object.keys(validationErrors).length);
+    if (Object.keys(validationErrors).length > 0) {
+      console.log('🔄 エラーキー:', Object.keys(validationErrors));
+      console.log('🔄 エラー内容:', validationErrors);
+    }
+  }, [validationErrors]);
+  
+  // 既存のアカウントがあるかどうか（API取得時の初期データで判定）
+  const [hasExistingAccount, setHasExistingAccount] = useState(false);
+  
   // 画像関連
   const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
@@ -156,40 +177,66 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         setIsLoading(true);
         setError(null);
         
-        // 加盟店一覧を取得
-        const merchantsData = await apiClient.getMerchants();
-        
-        // コンポーネントがアンマウントされている場合は処理を中断
-        if (!isMounted) return;
-        
-        console.log('🏢 Merchants data received:', { 
-          merchantsData, 
-          isArray: Array.isArray(merchantsData),
-          hasData: merchantsData && typeof merchantsData === 'object' && 'data' in merchantsData,
-          hasMerchants: merchantsData && typeof merchantsData === 'object' && 'merchants' in merchantsData
-        });
-        
-        let merchantsArray: Merchant[] = [];
-        if (Array.isArray(merchantsData)) {
-          merchantsArray = merchantsData as Merchant[];
-        } else if (merchantsData && typeof merchantsData === 'object') {
-          // 新しいAPIレスポンス形式: {success: true, data: {merchants: [...], pagination: {...}}}
-          if ('data' in merchantsData && merchantsData.data && typeof merchantsData.data === 'object' && 'merchants' in merchantsData.data) {
-            merchantsArray = ((merchantsData.data as { merchants: Merchant[] }).merchants || []) as Merchant[];
-          }
-          // 古いAPIレスポンス形式: {merchants: [...], pagination: {...}}
-          else if ('merchants' in merchantsData) {
-            merchantsArray = ((merchantsData as { merchants: Merchant[] }).merchants || []) as Merchant[];
+        // 会社アカウントの場合、自分の会社情報を取得してmerchantIdと会社名を設定
+        if (isMerchantAccount) {
+          try {
+            const myMerchantData = await apiClient.getMyMerchant();
+            if (!isMounted) return;
+            
+            if (myMerchantData && typeof myMerchantData === 'object' && 'data' in myMerchantData && myMerchantData.data) {
+              const merchant = myMerchantData.data as any;
+              
+              // merchantIdがまだ設定されていない場合のみ設定
+              if (!merchantId) {
+                setFormData(prev => ({
+                  ...prev,
+                  merchantId: merchant.id
+                }));
+              }
+              // 会社名は常に設定
+              setMerchantName(merchant.name);
+            }
+          } catch (error) {
+            console.error('会社情報の取得に失敗しました:', error);
           }
         }
         
-        console.log('🏢 Processed merchants array:', { 
-          merchantsArray, 
-          length: merchantsArray.length,
-          firstMerchant: merchantsArray[0] || 'no merchants'
-        });
+        // 加盟店一覧を取得（管理者アカウントの場合のみ）
+        let merchantsArray: Merchant[] = [];
+        if (!isMerchantAccount) {
+          const merchantsData = await apiClient.getMerchants();
         
-        setMerchants(merchantsArray);
+          // コンポーネントがアンマウントされている場合は処理を中断
+          if (!isMounted) return;
+          
+          console.log('🏢 Merchants data received:', { 
+            merchantsData, 
+            isArray: Array.isArray(merchantsData),
+            hasData: merchantsData && typeof merchantsData === 'object' && 'data' in merchantsData,
+            hasMerchants: merchantsData && typeof merchantsData === 'object' && 'merchants' in merchantsData
+          });
+          
+          if (Array.isArray(merchantsData)) {
+            merchantsArray = merchantsData as Merchant[];
+          } else if (merchantsData && typeof merchantsData === 'object') {
+            // 新しいAPIレスポンス形式: {success: true, data: {merchants: [...], pagination: {...}}}
+            if ('data' in merchantsData && merchantsData.data && typeof merchantsData.data === 'object' && 'merchants' in merchantsData.data) {
+              merchantsArray = ((merchantsData.data as { merchants: Merchant[] }).merchants || []) as Merchant[];
+            }
+            // 古いAPIレスポンス形式: {merchants: [...], pagination: {...}}
+            else if ('merchants' in merchantsData) {
+              merchantsArray = ((merchantsData as { merchants: Merchant[] }).merchants || []) as Merchant[];
+            }
+          }
+          
+          console.log('🏢 Processed merchants array:', { 
+            merchantsArray, 
+            length: merchantsArray.length,
+            firstMerchant: merchantsArray[0] || 'no merchants'
+          });
+          
+          setMerchants(merchantsArray);
+        }
         
         // ジャンル一覧を取得
         const genresData = await apiClient.getGenres();
@@ -216,12 +263,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             const finalMerchantId = merchantId || shopData.merchantId;
             console.log('🔑 Final merchant ID:', { merchantId, shopDataMerchantId: shopData.merchantId, finalMerchantId });
             
-            // accountEmailが存在する場合、shopEmailにも設定
+            // accountEmailが存在する場合、createAccountをtrueに設定
             const accountEmail = shopData.accountEmail;
+            setHasExistingAccount(!!accountEmail); // 既存アカウントの有無を記録
             setFormData({
               ...shopData,
               merchantId: finalMerchantId,
-              shopEmail: accountEmail || '', // アカウントメールを初期値に設定
               createAccount: !!accountEmail, // accountEmailが存在する場合はcreateAccountをtrueに
               // latitude/longitudeを文字列に変換
               latitude: shopData.latitude ? String(shopData.latitude) : '',
@@ -232,7 +279,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             // これにより、初期値を削除した際にエラーメッセージが表示される
             setTouchedFields({
               name: true,
-              shopEmail: true,
+              accountEmail: !!accountEmail, // アカウント発行時のみ
               phone: true,
               postalCode: true,
             });
@@ -264,32 +311,44 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             
             // 既存画像の設定
             if (shopData.images && Array.isArray(shopData.images)) {
-              setExistingImages(shopData.images);
-              console.log('🖼️ Setting existing images:', shopData.images);
-            }
-            
-            // クレジットカードブランドの設定
-            const shopDataWithPayment = shopData as ShopCreateRequest & { customCreditText?: string; customQrText?: string };
-            const creditValue = shopDataWithPayment.paymentCredit;
-            if (creditValue && creditValue.trim()) {
-              const brands = creditValue.split(',').map(b => b.trim());
-              setSelectedCreditBrands(brands);
-              
-              // 「その他」が含まれる場合、カスタムテキストも読み込み
-              if (brands.includes('その他') && shopDataWithPayment.customCreditText) {
-                setCustomCreditText(shopDataWithPayment.customCreditText);
+              const validImages = shopData.images.filter(img => img && typeof img === 'string' && img.length > 0);
+              setExistingImages(validImages);
+              console.log('🖼️ Setting existing images:', validImages);
+              if (validImages.length !== shopData.images.length) {
+                console.warn('⚠️ Some invalid images were filtered out:', shopData.images);
               }
             }
             
-            // QRコード決済の設定
+            // クレジットカードブランドの設定（JSON形式から読み込み）
+            const shopDataWithPayment = shopData as ShopCreateRequest & { paymentCredit?: any; paymentCode?: any };
+            const creditValue = shopDataWithPayment.paymentCredit;
+            if (creditValue) {
+              // JSONオブジェクトとして扱う
+              if (typeof creditValue === 'object' && creditValue.brands) {
+                setSelectedCreditBrands(creditValue.brands);
+                if (creditValue.other) {
+                  setCustomCreditText(creditValue.other);
+                }
+              } else if (typeof creditValue === 'string') {
+                // 旧形式（カンマ区切り）のフォールバック
+                const brands = creditValue.split(',').map((b: string) => b.trim());
+                setSelectedCreditBrands(brands);
+              }
+            }
+            
+            // QRコード決済の設定（JSON形式から読み込み）
             const qrValue = shopDataWithPayment.paymentCode;
-            if (qrValue && qrValue.trim()) {
-              const services = qrValue.split(',').map(s => s.trim());
-              setSelectedQrBrands(services);
-              
-              // 「その他」が含まれる場合、カスタムテキストも読み込み
-              if (services.includes('その他') && shopDataWithPayment.customQrText) {
-                setCustomQrText(shopDataWithPayment.customQrText);
+            if (qrValue) {
+              // JSONオブジェクトとして扱う
+              if (typeof qrValue === 'object' && qrValue.services) {
+                setSelectedQrBrands(qrValue.services);
+                if (qrValue.other) {
+                  setCustomQrText(qrValue.other);
+                }
+              } else if (typeof qrValue === 'string') {
+                // 旧形式（カンマ区切り）のフォールバック
+                const services = qrValue.split(',').map((s: string) => s.trim());
+                setSelectedQrBrands(services);
               }
             }
             
@@ -301,13 +360,16 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             
             // 利用シーンの設定
             const shopDataWithScenes = shopData as ShopCreateRequest & { sceneIds?: string[]; customSceneText?: string };
+            console.log('🎯 Scene data:', {sceneIds: shopDataWithScenes.sceneIds, customSceneText: shopDataWithScenes.customSceneText});
             if (shopDataWithScenes.sceneIds && Array.isArray(shopDataWithScenes.sceneIds)) {
               setSelectedScenes(shopDataWithScenes.sceneIds);
+              console.log('✅ Selected scenes set:', shopDataWithScenes.sceneIds);
             }
             
             // カスタム利用シーンテキストの設定
             if (shopDataWithScenes.customSceneText) {
               setCustomSceneText(shopDataWithScenes.customSceneText);
+              console.log('✅ Custom scene text set:', shopDataWithScenes.customSceneText);
             }
           }
         } else if (merchantId && merchantsArray.length > 0 && isMounted) {
@@ -343,7 +405,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       isMounted = false;
       abortController.abort();
     };
-  }, [shopId, isEdit, merchantId, showError]);
+  }, [shopId, isEdit, merchantId, showError, isMerchantAccount]);
 
   // formData.merchantIdが変更されたときに加盟店名とaccountEmailを更新
   useEffect(() => {
@@ -356,11 +418,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       });
       if (merchant) {
         setMerchantName(merchant.name);
-        // accountEmailを更新
-        setFormData(prev => ({
-          ...prev,
-          accountEmail: merchant.account.email
-        }));
       }
     }
   }, [formData.merchantId, merchants]);
@@ -371,7 +428,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     setFormData(prev => ({
       ...prev,
       merchantId: merchant.id,
-      accountEmail: merchant.account.email,
     }));
     setMerchantName(merchant.name);
     // 会社を選択したことを記録
@@ -379,6 +435,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       ...prev,
       merchantId: true,
     }));
+    
+    // 会社選択時のバリデーションエラーをクリア
+    setValidationErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors.merchantId;
+      return newErrors;
+    });
+    
+    setIsMerchantModalOpen(false);
   };
 
   const handleInputChange = (field: keyof ShopCreateRequest, value: string | number | boolean) => {
@@ -426,9 +491,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         }
         break;
 
-      case 'shopEmail':
-        // 必須チェックは触られたフィールドのみ
-        if (touchedFields[field] && (!value || (typeof value === 'string' && value.trim().length === 0))) {
+      case 'accountEmail':
+        // アカウント発行時のみ必須
+        if (formData.createAccount && !formData.accountEmail && touchedFields[field] && (!value || (typeof value === 'string' && value.trim().length === 0))) {
           errorMessage = 'メールアドレスは必須です';
         } else if (typeof value === 'string' && value.trim().length > 0 && !isValidEmail(value)) {
           errorMessage = '有効なメールアドレスを入力してください';
@@ -470,6 +535,20 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       case 'details':
         if (typeof value === 'string' && value.length > 1000) {
           errorMessage = '詳細情報は1000文字以内で入力してください';
+        }
+        break;
+
+      case 'latitude':
+        // 必須チェックは触られたフィールドのみ
+        if (touchedFields[field] && (!value || (typeof value === 'string' && value.trim().length === 0))) {
+          errorMessage = '緯度は必須です';
+        }
+        break;
+
+      case 'longitude':
+        // 必須チェックは触られたフィールドのみ
+        if (touchedFields[field] && (!value || (typeof value === 'string' && value.trim().length === 0))) {
+          errorMessage = '経度は必須です';
         }
         break;
     }
@@ -555,6 +634,16 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           city: result.address2,
           address1: result.address3,
         }));
+        
+        // 自動入力されたフィールドのバリデーションエラーをクリア
+        setValidationErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.prefecture;
+          delete newErrors.city;
+          delete newErrors.address1;
+          return newErrors;
+        });
+        
         showSuccess('住所を取得しました');
       } else {
         showError('該当する住所が見つかりませんでした');
@@ -583,6 +672,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           latitude: lat,
           longitude: lng
         });
+        
+        // 自動入力されたフィールドのバリデーションエラーをクリア
+        setValidationErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.latitude;
+          delete newErrors.longitude;
+          return newErrors;
+        });
+        
         showSuccess('緯度経度を設定しました');
       }
     }
@@ -591,6 +689,18 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
 
   // Google Mapで住所を開く（手動で緯度経度を確認）
   const openGoogleMapsForAddress = () => {
+    const latitude = formData.latitude ? String(formData.latitude).trim() : '';
+    const longitude = formData.longitude ? String(formData.longitude).trim() : '';
+    
+    // 緯度経度が両方入力されている場合は座標でピンを表示
+    if (latitude && longitude) {
+      const url = `https://www.google.com/maps?q=${latitude},${longitude}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+      showSuccess('Google Mapで座標のピンを表示しました。');
+      return;
+    }
+    
+    // 緯度経度がない場合は住所で検索
     const _postalCode = formData.postalCode?.trim();
     const prefecture = formData.prefecture?.trim();
     const city = formData.city?.trim();
@@ -598,64 +708,251 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     const address2 = formData.address2?.trim();
     
     if (!prefecture && !city && !address1) {
-      showError('住所を入力してください');
+      showError('住所または緯度経度を入力してください');
       return;
     }
     
-    // 住所を構築（都道府県から）
+    // 住所を構築（郵便番号も含める）
     const addressParts = [
+      _postalCode ? `〒${_postalCode}` : '',
       prefecture,
       city,
       address1,
       address2,
     ].filter(Boolean);
     
-    const address = addressParts.join('');
+    const address = addressParts.join(' ');
     
-    // Google Maps URLを構築（qパラメータでピンを確実に表示）
+    // Google Mapsで住所検索を開く（検索ボックスに入力された状態）
     const url = `https://www.google.com/maps?q=${encodeURIComponent(address)}`;
-    
-    // 新しいタブでGoogle Mapを開く
     window.open(url, '_blank', 'noopener,noreferrer');
     
-    showSuccess('Google Mapを開きました。ピンが表示された場所を右クリックして緯度経度をコピーしてください。');
+    showSuccess('Google Mapを開きました。表示された検索ボタンをクリックしてピンを表示してください。');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('🚀 handleSubmit呼び出し開始');
     e.preventDefault();
-    
-    // バリデーションエラーをクリア
-    setValidationErrors({});
+    console.log('✅ preventDefault実行完了');
     
     try {
+      console.log('✅ tryブロック開始');
       setIsSubmitting(true);
+      console.log('✅ isSubmitting=true設定完了');
       
       // 送信前の総合バリデーション
+      // クレジットカードとQRコードをJSON形式に変換
+      const isCreditOtherSelected = selectedCreditBrands.includes('その他');
+      const isQrOtherSelected = selectedQrBrands.includes('その他');
+      
+      const paymentCreditJson = selectedCreditBrands.length > 0 ? {
+        brands: selectedCreditBrands.filter(b => b !== 'その他'),
+        ...(isCreditOtherSelected && customCreditText && { other: customCreditText })
+      } : null;
+      
+      const paymentCodeJson = selectedQrBrands.length > 0 ? {
+        services: selectedQrBrands.filter(s => s !== 'その他'),
+        ...(isQrOtherSelected && customQrText && { other: customQrText })
+      } : null;
+      
       const dataToValidate = {
         ...formData,
+        // 空文字列の場合はnullに変換（zodのバリデーションに対応）
+        accountEmail: formData.accountEmail || null,
         holidays: selectedHolidays.join(','),
-        paymentCredit: selectedCreditBrands.length > 0
-          ? selectedCreditBrands.filter(b => b !== 'その他').join(',')
-          : '',
-        paymentCode: selectedQrBrands.length > 0
-          ? selectedQrBrands.filter(s => s !== 'その他').join(',')
-          : '',
+        paymentCredit: paymentCreditJson,
+        paymentCode: paymentCodeJson,
       };
       
+      console.log('📝 バリデーション前のデータ:', dataToValidate);
+      console.log('📧 accountEmail:', formData.accountEmail, '→', dataToValidate.accountEmail);
+      console.log('🔍 formData全体:', formData);
+      console.log('🔍 isMerchantAccount:', isMerchantAccount);
+      console.log('🔍 isEdit:', isEdit);
+      
+      // Submit時は全フィールドのカスタムバリデーションを実行
+      const customErrors: Record<string, string> = {};
+      
+      // 店舗名
+      console.log('🔍 店舗名チェック:', { name: formData.name, isEmpty: !formData.name, isTrimEmpty: formData.name?.trim().length === 0 });
+      if (!formData.name || formData.name.trim().length === 0) {
+        console.log('❌ 店舗名エラー追加');
+        customErrors.name = '店舗名は必須です';
+      } else if (formData.name.length > 100) {
+        customErrors.name = '店舗名は100文字以内で入力してください';
+      }
+      
+      // 店舗名（カナ）
+      if (formData.nameKana && formData.nameKana.length > 100) {
+        customErrors.nameKana = '店舗名（カナ）は100文字以内で入力してください';
+      } else if (formData.nameKana && formData.nameKana.trim().length > 0 && !isValidKana(formData.nameKana)) {
+        customErrors.nameKana = '店舗名（カナ）は全角カタカナで入力してください';
+      }
+      
+      // 電話番号
+      console.log('🔍 電話番号チェック:', { phone: formData.phone, isEmpty: !formData.phone, isTrimEmpty: formData.phone?.trim().length === 0 });
+      if (!formData.phone || formData.phone.trim().length === 0) {
+        console.log('❌ 電話番号エラー追加');
+        customErrors.phone = '電話番号は必須です';
+      } else if (!isValidPhone(formData.phone)) {
+        customErrors.phone = '有効な電話番号を入力してください（10-11桁の数字）';
+      }
+      
+      // 郵便番号
+      console.log('🔍 郵便番号チェック:', { postalCode: formData.postalCode, isEmpty: !formData.postalCode });
+      if (!formData.postalCode || formData.postalCode.trim().length === 0) {
+        console.log('❌ 郵便番号エラー追加');
+        customErrors.postalCode = '郵便番号は必須です';
+      } else if (!isValidPostalCode(formData.postalCode)) {
+        customErrors.postalCode = '郵便番号は7桁の数字で入力してください';
+      }
+      
+      // 都道府県
+      console.log('🔍 都道府県チェック:', { prefecture: formData.prefecture, isEmpty: !formData.prefecture });
+      if (!formData.prefecture || formData.prefecture.trim().length === 0) {
+        console.log('❌ 都道府県エラー追加');
+        customErrors.prefecture = '都道府県を選択してください';
+      }
+      
+      // 市区町村
+      console.log('🔍 市区町村チェック:', { city: formData.city, isEmpty: !formData.city });
+      if (!formData.city || formData.city.trim().length === 0) {
+        console.log('❌ 市区町村エラー追加');
+        customErrors.city = '市区町村は必須です';
+      }
+      
+      // 番地以降
+      console.log('🔍 番地チェック:', { address1: formData.address1, isEmpty: !formData.address1 });
+      if (!formData.address1 || formData.address1.trim().length === 0) {
+        console.log('❌ 番地エラー追加');
+        customErrors.address1 = '番地以降は必須です';
+      }
+      
+      // 緯度
+      console.log('🔍 緯度チェック:', { latitude: formData.latitude, isEmpty: !formData.latitude });
+      if (!formData.latitude || String(formData.latitude).trim().length === 0) {
+        console.log('❌ 緯度エラー追加');
+        customErrors.latitude = '緯度は必須です';
+      }
+
+      // 経度
+      console.log('🔍 経度チェック:', { longitude: formData.longitude, isEmpty: !formData.longitude });
+      if (!formData.longitude || String(formData.longitude).trim().length === 0) {
+        console.log('❌ 経度エラー追加');
+        customErrors.longitude = '経度は必須です';
+      }
+      
+      // ジャンル
+      console.log('🔍 ジャンルチェック:', { genreId: formData.genreId, isEmpty: !formData.genreId });
+      if (!formData.genreId || formData.genreId.trim().length === 0) {
+        console.log('❌ ジャンルエラー追加');
+        customErrors.genreId = 'ジャンルを選択してください';
+      }
+      
+      // 会社（管理者アカウントの場合のみ）
+      console.log('🔍 会社チェック:', { isMerchantAccount, merchantId: formData.merchantId, isEmpty: !formData.merchantId });
+      if (!isMerchantAccount && (!formData.merchantId || formData.merchantId.trim().length === 0)) {
+        console.log('❌ 会社エラー追加');
+        customErrors.merchantId = '会社を選択してください';
+      }
+      
+      // アカウント情報（アカウント発行時のみ）
+      if (formData.createAccount) {
+        if (!formData.accountEmail || formData.accountEmail.trim().length === 0) {
+          customErrors.accountEmail = 'メールアドレスは必須です';
+        } else if (!isValidEmail(formData.accountEmail)) {
+          customErrors.accountEmail = '有効なメールアドレスを入力してください';
+        }
+        
+        // 新規登録時のみパスワード必須
+        if (!isEdit && (!formData.password || formData.password.trim().length === 0)) {
+          customErrors.password = 'パスワードは必須です';
+        } else if (!isEdit && formData.password && formData.password.length < 8) {
+          customErrors.password = 'パスワードは8文字以上で入力してください';
+        }
+      }
+      
+      // 説明文
+      if (formData.description && formData.description.length > 500) {
+        customErrors.description = '店舗紹介説明は500文字以内で入力してください';
+      }
+      
+      // 詳細情報
+      if (formData.details && formData.details.length > 1000) {
+        customErrors.details = '詳細情報は1000文字以内で入力してください';
+      }
+      
+      // カスタムエラーがある場合は表示して終了
+      if (Object.keys(customErrors).length > 0) {
+        console.log('❌ カスタムバリデーションエラー:', customErrors);
+        console.log('❌ エラー件数:', Object.keys(customErrors).length);
+        console.log('❌ エラーキー:', Object.keys(customErrors));
+        
+        // エラーをstateに設定
+        setValidationErrors(customErrors);
+        showError('入力内容に誤りがあります。各項目を確認してください。');
+        setIsSubmitting(false);
+        
+        // エラー設定後、次のレンダリングサイクルでスクロール
+        setTimeout(() => {
+          console.log('🔍 validationErrors設定後、スクロール実行');
+          
+          // 最初のエラー項目にスクロール
+          const firstErrorField = Object.keys(customErrors)[0];
+          if (firstErrorField) {
+            console.log('🎯 最初のエラーフィールド:', firstErrorField);
+            
+            // フィールド名から対応するinput要素を探す
+            const errorElement = document.querySelector(`[name="${firstErrorField}"]`) as HTMLElement;
+            if (errorElement) {
+              console.log('✅ エラー要素が見つかりました:', errorElement);
+              
+              // input要素の親要素（ラベルを含むコンテナ）を見つけてスクロール
+              const fieldContainer = errorElement.closest('div') as HTMLElement;
+              if (fieldContainer) {
+                fieldContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              } else {
+                errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+              // フォーカスはinput要素に当てる
+              errorElement.focus();
+            } else {
+              console.log('❌ name属性の要素が見つからない。data-field属性で検索:', firstErrorField);
+              // name属性がない場合は、idやdata属性で検索
+              const errorSection = document.querySelector(`[data-field="${firstErrorField}"]`) as HTMLElement;
+              if (errorSection) {
+                console.log('✅ data-field要素が見つかりました:', errorSection);
+                errorSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              } else {
+                console.log('❌ data-field要素も見つかりませんでした');
+              }
+            }
+          }
+        }, 100);
+        
+        return;
+      }
+      
+      // Zodバリデーションも実行（追加チェック用）
       const schema = isEdit ? shopUpdateRequestSchema : shopCreateRequestSchema;
       const validationResult = schema.safeParse(dataToValidate);
       
       if (!validationResult.success) {
-        const errors: Record<string, string> = {};
+        const zodErrors: Record<string, string> = {};
         validationResult.error.errors.forEach((err) => {
           const path = err.path.join('.');
-          if (!errors[path]) {
-            errors[path] = err.message;
+          if (!zodErrors[path]) {
+            zodErrors[path] = err.message;
           }
         });
-        setValidationErrors(errors);
+        
+        console.log('❌ Zodバリデーションエラー:', zodErrors);
+        console.log('📝 送信しようとしたデータ:', dataToValidate);
+        
+        setValidationErrors(zodErrors);
         showError('入力内容に誤りがあります。各項目を確認してください。');
         setIsSubmitting(false);
+        
         return;
       }
       
@@ -731,7 +1028,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       let accountEmail: string | null | undefined;
       if (formData.createAccount) {
         // アカウント発行チェックがONの場合
-        accountEmail = formData.shopEmail || formData.accountEmail || null;
+        accountEmail = formData.accountEmail || null;
       } else {
         // アカウント発行チェックがOFFの場合はnullに設定（アカウント無効化）
         accountEmail = null;
@@ -741,11 +1038,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       const otherScene = scenes.find(s => s.name === 'その他');
       const isOtherSceneSelected = otherScene && selectedScenes.includes(otherScene.id);
       
-      // 「その他」決済方法の判定
-      const isCreditOtherSelected = selectedCreditBrands.includes('その他');
-      const isQrOtherSelected = selectedQrBrands.includes('その他');
-      
-      // クレジットカードとQRコードの配列をカンマ区切り文字列に変換
+      // クレジットカードとQRコードをJSON形式で送信データに追加
       const submitData = {
         ...formData,
         accountEmail,
@@ -757,14 +1050,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         holidays: selectedHolidays.join(','),
         sceneIds: selectedScenes,  // 利用シーンの配列を追加
         customSceneText: isOtherSceneSelected ? customSceneText : undefined,  // 「その他」選択時のみ送信
-        paymentCredit: selectedCreditBrands.length > 0
-          ? selectedCreditBrands.filter(b => b !== 'その他').join(',')
-          : '',
-        customCreditText: isCreditOtherSelected ? customCreditText : undefined,
-        paymentCode: selectedQrBrands.length > 0
-          ? selectedQrBrands.filter(s => s !== 'その他').join(',')
-          : '',
-        customQrText: isQrOtherSelected ? customQrText : undefined,
+        paymentCredit: paymentCreditJson,
+        paymentCode: paymentCodeJson,
       };
       
       if (isEdit) {
@@ -847,16 +1134,28 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         </h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form 
+        noValidate
+        onSubmit={(e) => {
+          console.log('📋 フォームのonSubmitイベント発火');
+          handleSubmit(e);
+        }} 
+        className="space-y-6"
+      >
         {/* 基本情報 */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">基本情報</h2>
           <div className="space-y-4">
-            <div className="w-full">
+            <div className="w-full" data-field="merchantId">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 会社名 <span className="text-red-500">*</span>
               </label>
-              {(propMerchantId || merchantIdFromParams) ? (
+              {isMerchantAccount ? (
+                // 会社アカウントの場合は会社名を固定表示（設定ボタンなし）
+                <div className="text-gray-900">
+                  {merchantName || '読み込み中...'}
+                </div>
+              ) : (propMerchantId || merchantIdFromParams) ? (
                 <div>
                   <div className="text-gray-900 mb-2">
                     {merchantName || '読み込み中...'}
@@ -903,9 +1202,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                       会社を選択
                     </button>
                   )}
-                  {!formData.merchantId && touchedFields.merchantId && (
-                    <p className="mt-2 text-sm text-red-600">会社の選択は必須です</p>
-                  )}
+                  <ErrorMessage message={validationErrors.merchantId} />
                 </div>
               )}
             </div>
@@ -916,6 +1213,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               </label>
               <input
                 type="text"
+                name="name"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 onBlur={(e) => handleFieldBlur('name', e.target.value)}
@@ -927,7 +1225,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 maxLength={100}
                 required
               />
-              <ErrorMessage message={validationErrors.name} />
+              <ErrorMessage message={validationErrors.name} field="name" />
               <p className="mt-1 text-xs text-gray-500 text-right">
                 {formData.name.length} / 100文字
               </p>
@@ -939,6 +1237,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               </label>
               <input
                 type="text"
+                name="nameKana"
                 value={formData.nameKana}
                 onChange={(e) => handleInputChange('nameKana', e.target.value)}
                 onBlur={(e) => handleFieldBlur('nameKana', e.target.value)}
@@ -962,6 +1261,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               </label>
               <input
                 type="tel"
+                name="phone"
                 value={formData.phone}
                 onChange={(e) => {
                   // 数値のみ許可
@@ -980,29 +1280,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               />
               <ErrorMessage message={validationErrors.phone} />
             </div>
-
-            <div className="w-1/2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                メールアドレス <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                value={formData.shopEmail}
-                onChange={(e) => handleInputChange('shopEmail', e.target.value)}
-                onBlur={(e) => handleFieldBlur('shopEmail', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  validationErrors.shopEmail 
-                    ? 'border-red-500 focus:ring-red-500' 
-                    : 'border-gray-300 focus:ring-blue-500'
-                }`}
-                required
-                placeholder="例: shop@example.com"
-              />
-              <ErrorMessage message={validationErrors.shopEmail} />
-              <p className="mt-1 text-xs text-gray-500">
-                ※ アカウント発行時、このメールアドレスがログインIDになります
-              </p>
-            </div>
             
             {/* 郵便番号と住所検索 */}
             <div className="flex gap-4">
@@ -1012,6 +1289,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 </label>
                 <input
                   type="text"
+                  name="postalCode"
                   value={formData.postalCode}
                   onChange={(e) => {
                     // 数値のみ許可
@@ -1019,6 +1297,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                     handleInputChange('postalCode', value);
                   }}
                   onBlur={(e) => handleFieldBlur('postalCode', e.target.value)}
+                  onKeyDown={(e) => {
+                    // Enterキーが押された場合は住所検索を実行
+                    if (e.key === 'Enter') {
+                      e.preventDefault(); // フォーム送信を防ぐ
+                      handleZipcodeSearch();
+                    }
+                  }}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
                     validationErrors.postalCode 
                       ? 'border-red-500 focus:ring-red-500' 
@@ -1049,9 +1334,14 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 都道府県 <span className="text-red-500">*</span>
               </label>
               <select
+                name="prefecture"
                 value={formData.prefecture}
                 onChange={(e) => handleInputChange('prefecture', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  validationErrors.prefecture 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
                 required
               >
                 <option value="">都道府県を選択</option>
@@ -1059,40 +1349,53 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   <option key={pref} value={pref}>{pref}</option>
                 ))}
               </select>
+              <ErrorMessage message={validationErrors.prefecture} />
             </div>
 
             {/* 市区町村 */}
-            <div>
+            <div className="max-w-md">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 市区町村 <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
+                name="city"
                 value={formData.city}
                 onChange={(e) => handleInputChange('city', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  validationErrors.city 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
                 placeholder="市区町村を入力してください"
                 required
               />
+              <ErrorMessage message={validationErrors.city} />
             </div>
 
             {/* 番地以降 */}
-            <div>
+            <div className="max-w-lg">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 番地以降 <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
+                name="address1"
                 value={formData.address1}
                 onChange={(e) => handleInputChange('address1', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  validationErrors.address1 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
                 placeholder="番地以降を入力してください"
                 required
               />
+              <ErrorMessage message={validationErrors.address1} />
             </div>
 
             {/* 建物名 / 部屋番号 */}
-            <div>
+            <div className="max-w-lg">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 建物名 / 部屋番号
               </label>
@@ -1108,25 +1411,45 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             {/* 緯度・経度 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                緯度・経度
+                緯度・経度 <span className="text-red-500">*</span>
               </label>
-              <div className="flex gap-2 items-center">
-                <input
-                  type="text"
-                  value={formData.latitude}
-                  onChange={(e) => handleInputChange('latitude', e.target.value)}
-                  onPaste={handleCoordinatesPaste}
-                  className="w-48 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="緯度（例: 35.681236）"
-                />
-                <input
-                  type="text"
-                  value={formData.longitude}
-                  onChange={(e) => handleInputChange('longitude', e.target.value)}
-                  onPaste={handleCoordinatesPaste}
-                  className="w-48 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="経度（例: 139.767125）"
-                />
+              <div className="flex gap-2 items-start">
+                <div className="w-48">
+                  <input
+                    type="text"
+                    name="latitude"
+                    value={formData.latitude}
+                    onChange={(e) => handleInputChange('latitude', e.target.value)}
+                    onBlur={(e) => handleFieldBlur('latitude', e.target.value)}
+                    onPaste={handleCoordinatesPaste}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      validationErrors.latitude 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 focus:ring-blue-500'
+                    }`}
+                    placeholder="緯度（例: 35.681236）"
+                    required
+                  />
+                  <ErrorMessage message={validationErrors.latitude} field="latitude" />
+                </div>
+                <div className="w-48">
+                  <input
+                    type="text"
+                    name="longitude"
+                    value={formData.longitude}
+                    onChange={(e) => handleInputChange('longitude', e.target.value)}
+                    onBlur={(e) => handleFieldBlur('longitude', e.target.value)}
+                    onPaste={handleCoordinatesPaste}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      validationErrors.longitude 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 focus:ring-blue-500'
+                    }`}
+                    placeholder="経度（例: 139.767125）"
+                    required
+                  />
+                  <ErrorMessage message={validationErrors.longitude} field="longitude" />
+                </div>
                 <button
                   type="button"
                   onClick={openGoogleMapsForAddress}
@@ -1135,9 +1458,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   地図で確認
                 </button>
               </div>
-              <p className="mt-2 text-xs text-gray-500">
-                ※ 「地図で確認」ボタンをクリックしてGoogle Mapを開き、地図上で場所を右クリック→緯度経度をコピーして緯度または経度欄に貼り付けてください（カンマ区切りで自動的に分割されます）
-              </p>
+              <div className="mt-2 text-xs text-gray-500">
+                <p className="font-semibold mb-1">座標取得手順：</p>
+                <ol className="list-decimal list-inside space-y-1 ml-2">
+                  <li>「地図で確認」ボタンをクリック</li>
+                  <li>Google Mapで<span className="font-semibold text-gray-700">検索ボタンをクリック</span>してピンを表示</li>
+                  <li>地図上で場所を右クリック → 緯度経度をコピー</li>
+                  <li>緯度または経度欄に貼り付け（カンマ区切りで自動的に分割されます）</li>
+                </ol>
+              </div>
               {formData.latitude && formData.longitude && (
                 <div className="mt-2">
                   <a
@@ -1156,31 +1485,33 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               )}
             </div>
             
-            {/* ステータス */}
-            <div className="w-64">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                ステータス
-              </label>
-              <select
-                value={formData.status}
-                onChange={(e) => handleInputChange('status', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="registering">登録中</option>
-                <option value="collection_requested">情報収集依頼済み</option>
-                <option value="approval_pending">承認待ち</option>
-                <option value="promotional_materials_preparing">宣材準備中</option>
-                <option value="promotional_materials_shipping">宣材発送中</option>
-                <option value="operating">営業中</option>
-                <option value="suspended">停止中</option>
-                <option value="terminated">終了</option>
-              </select>
-            </div>
+            {/* ステータス（編集時のみ表示） */}
+            {isEdit && (
+              <div className="w-64">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ステータス
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => handleInputChange('status', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="registering">登録中</option>
+                  <option value="collection_requested">情報収集依頼済み</option>
+                  <option value="approval_pending">承認待ち</option>
+                  <option value="promotional_materials_preparing">宣材準備中</option>
+                  <option value="promotional_materials_shipping">宣材発送中</option>
+                  <option value="operating">営業中</option>
+                  <option value="suspended">停止中</option>
+                  <option value="terminated">終了</option>
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
         {/* ジャンル */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6" data-field="genreId">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">ジャンル <span className="text-red-500">*</span></h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {genres.map((genre) => (
@@ -1201,6 +1532,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               </label>
             ))}
           </div>
+          <ErrorMessage message={validationErrors.genreId} field="genreId" />
         </div>
 
         {/* 利用シーン */}
@@ -1265,13 +1597,19 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 店舗紹介説明
               </label>
               <textarea
+                name="description"
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 rows={4}
                 maxLength={500}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  validationErrors.description 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
                 placeholder="例：アットホームな雰囲気の居酒屋です。新鮮な魚介類と地元の食材を使った料理が自慢です。"
               />
+              <ErrorMessage message={validationErrors.description} />
               <p className="mt-1 text-xs text-gray-500 text-right">
                 {formData.description?.length || 0} / 500文字
               </p>
@@ -1283,13 +1621,19 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 詳細情報
               </label>
               <textarea
+                name="details"
                 value={formData.details}
                 onChange={(e) => handleInputChange('details', e.target.value)}
                 rows={6}
                 maxLength={1000}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  validationErrors.details 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
                 placeholder="【営業時間】&#10;ランチ: 11:30-14:00（L.O. 13:30）&#10;ディナー: 17:00-23:00（L.O. 22:00）&#10;&#10;【予算】&#10;ランチ: ¥1,000〜¥1,500&#10;ディナー: ¥3,000〜¥5,000"
               />
+              <ErrorMessage message={validationErrors.details} />
               <p className="mt-1 text-xs text-gray-500 text-right">
                 {formData.details?.length || 0} / 1000文字
               </p>
@@ -1557,27 +1901,48 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   現在登録されている画像
                 </label>
-                <div className="grid grid-cols-2 gap-4">
-                  {existingImages.map((imageUrl, index) => (
-                    <div key={index} className="relative group">
-                      <div className="relative w-full aspect-[3/1] rounded-md overflow-hidden border border-gray-300">
-                        <img
-                          src={imageUrl}
-                          alt={`店舗画像 ${index + 1}`}
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
+                <div className="grid grid-cols-3 gap-4">
+                  {existingImages.map((imageUrl, index) => {
+                    if (!imageUrl || typeof imageUrl !== 'string') {
+                      console.warn('⚠️ Invalid image URL at index', index, ':', imageUrl);
+                      return null;
+                    }
+                    console.log('🖼️ Rendering existing image:', imageUrl);
+                    return (
+                      <div key={index} className="relative group">
+                        <div className="relative w-full aspect-[3/2] rounded-md overflow-hidden border border-gray-300 bg-gray-100">
+                          <img
+                            src={imageUrl}
+                            alt={`店舗画像 ${index + 1}`}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onLoad={() => {
+                              console.log('✅ Image loaded successfully:', imageUrl);
+                            }}
+                            onError={(e) => {
+                              console.error('❌ 画像の読み込みに失敗しました:', imageUrl);
+                              e.currentTarget.style.display = 'none';
+                              const parent = e.currentTarget.parentElement;
+                              if (parent) {
+                                const errorMsg = document.createElement('div');
+                                errorMsg.className = 'absolute inset-0 flex items-center justify-center text-xs text-red-500';
+                                errorMsg.textContent = '画像を読み込めません';
+                                parent.appendChild(errorMsg);
+                              }
+                            }}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveExistingImage(index)}
+                          className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveExistingImage(index)}
-                        className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1588,10 +1953,10 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   新しくアップロードする画像
                 </label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   {imagePreviews.map((preview, index) => (
                     <div key={index} className="relative group">
-                      <div className="relative w-full aspect-[3/1] rounded-md overflow-hidden border border-gray-300">
+                      <div className="relative w-full aspect-[3/2] rounded-md overflow-hidden border border-gray-300 bg-gray-100">
                         <img
                           src={preview.url}
                           alt={`プレビュー ${index + 1}`}
@@ -1643,54 +2008,121 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           </div>
         </div>
 
-        {/* アカウント発行 */}
+        {/* アカウント発行 / 店舗用アカウント情報 */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">アカウント発行</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            {isEdit && hasExistingAccount ? '店舗用アカウント情報' : 'アカウント発行'}
+          </h2>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="createAccount"
-                  checked={!!formData.createAccount}
-                  onChange={(e) => handleInputChange('createAccount', e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="createAccount" className="text-sm font-medium text-gray-700">
-                  店舗用アカウントを発行する
-                  {isEdit && formData.accountEmail && (
-                    <span className="ml-2 text-xs text-green-600">(発行済み)</span>
-                  )}
-                </label>
-              </div>
-              <p className="ml-6 text-xs text-gray-500">
-                ※ チェックを外すとアカウントが無効になり、ログインできなくなります
-              </p>
-            </div>
-            
-            {/* パスワード設定 */}
-            {formData.createAccount && (
-              <div className="w-1/2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  パスワード{!formData.accountEmail && <span className="text-red-500">*</span>}
-                  {formData.accountEmail && '（変更する場合のみ）'}
-                </label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required={formData.createAccount && !formData.accountEmail}
-                  placeholder={formData.accountEmail ? '新しいパスワード（8文字以上）' : '8文字以上'}
-                  minLength={8}
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  {formData.accountEmail 
-                    ? '※ パスワードを変更しない場合は空欄のままにしてください'
-                    : '※ メールアドレス宛にパスワード設定メールが送信されます'
-                  }
+            {/* アカウント未発行の場合：発行チェックボックスを表示 */}
+            {!(isEdit && hasExistingAccount) && (
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="createAccount"
+                    checked={!!formData.createAccount}
+                    onChange={(e) => handleInputChange('createAccount', e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="createAccount" className="text-sm font-medium text-gray-700">
+                    店舗用アカウントを発行する
+                  </label>
+                </div>
+                <p className="ml-6 text-xs text-gray-500">
+                  ※ チェックを入れるとアカウントが発行され、店舗側でログインできるようになります
                 </p>
               </div>
+            )}
+            
+            {/* アカウント情報入力・表示 */}
+            {(formData.createAccount || (isEdit && hasExistingAccount)) && (
+              <>
+                {/* メールアドレス */}
+                <div className="w-1/2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    メールアドレス
+                    {!(isEdit && hasExistingAccount) && <span className="text-red-500">*</span>}
+                  </label>
+                  {isEdit && hasExistingAccount ? (
+                    <div className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-700">
+                      {formData.accountEmail}
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        type="email"
+                        name="accountEmail"
+                        value={formData.accountEmail || ''}
+                        onChange={(e) => handleInputChange('accountEmail', e.target.value)}
+                        onBlur={(e) => handleFieldBlur('accountEmail', e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                          validationErrors.accountEmail 
+                            ? 'border-red-500 focus:ring-red-500' 
+                            : 'border-gray-300 focus:ring-blue-500'
+                        }`}
+                        required={formData.createAccount && !formData.accountEmail}
+                        placeholder="例: shop@example.com"
+              />
+              <ErrorMessage message={validationErrors.accountEmail} field="accountEmail" />
+                    </>
+                  )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    ※ このメールアドレスがログインIDになります
+                  </p>
+                </div>
+                
+                {/* パスワード設定 */}
+                <div className="w-1/2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    パスワード
+                    {!(isEdit && hasExistingAccount) && <span className="text-red-500">*</span>}
+                    {isEdit && hasExistingAccount && '（変更する場合のみ）'}
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      validationErrors.password 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 focus:ring-blue-500'
+                    }`}
+                    required={formData.createAccount && !(isEdit && hasExistingAccount)}
+                    placeholder={isEdit && hasExistingAccount ? '新しいパスワード（8文字以上）' : '8文字以上'}
+                    minLength={8}
+                  />
+                  <ErrorMessage message={validationErrors.password} />
+                  <p className="mt-1 text-xs text-gray-500">
+                    {isEdit && hasExistingAccount 
+                      ? '※ パスワードを変更しない場合は空欄のままにしてください'
+                      : '※ メールアドレス宛にパスワード設定メールが送信されます'
+                    }
+                  </p>
+                </div>
+                
+                {/* アカウント発行済みの場合：削除チェックボックスを表示 */}
+                {isEdit && hasExistingAccount && (
+                  <div className="space-y-2 pt-4 border-t border-gray-200">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="deleteAccount"
+                        checked={!formData.createAccount}
+                        onChange={(e) => handleInputChange('createAccount', !e.target.checked)}
+                        className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                      />
+                      <label htmlFor="deleteAccount" className="text-sm font-medium text-red-600">
+                        アカウントを削除する
+                      </label>
+                    </div>
+                    <p className="ml-6 text-xs text-gray-500">
+                      ※ チェックを入れるとアカウントが無効になり、店舗側でログインできなくなります
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1722,7 +2154,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             <Button type="button" variant="secondary" onClick={handleCancel}>
               キャンセル
             </Button>
-            <Button type="submit" variant="primary" disabled={isSubmitting}>
+            <Button 
+              type="submit" 
+              variant="primary" 
+              disabled={isSubmitting}
+              onClick={() => console.log('🔘 送信ボタンがクリックされました', { isSubmitting, isEdit })}
+            >
               {isSubmitting ? '保存中...' : (isEdit ? '更新' : '作成')}
             </Button>
           </div>

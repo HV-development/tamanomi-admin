@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-import { validateMerchantField, validateMerchantForm, type MerchantFormData, type MerchantStatus, type MerchantEditFormData } from '@hv-development/schemas';
+import { validateMerchantField, validateMerchantForm, type MerchantFormData, type MerchantEditFormData } from '@hv-development/schemas';
 
 const prefectures = [
   '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
@@ -39,7 +39,6 @@ export default function MerchantEditPage() {
     city: '',
     address1: '',
     address2: '',
-    status: 'active',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -86,7 +85,6 @@ export default function MerchantEditPage() {
               city: merchantData.city || '',
               address1: merchantData.address1 || '',
               address2: merchantData.address2 || '',
-              status: (merchantData.status as MerchantStatus) || 'registering',
             });
           }
         } else {
@@ -111,7 +109,6 @@ export default function MerchantEditPage() {
             city: '千代田区',
             address1: '千代田1-1-1',
             address2: '',
-            status: 'active',
           };
           setFormData(sampleData);
         }
@@ -142,7 +139,6 @@ export default function MerchantEditPage() {
           city: '千代田区',
           address1: '千代田1-1-1',
           address2: '',
-          status: 'active',
         };
         setFormData(sampleData);
         alert('会社データの読み込みに失敗しました。サンプルデータを表示しています。');
@@ -167,35 +163,30 @@ export default function MerchantEditPage() {
   const handleInputChange = (field: keyof MerchantEditFormData, value: string) => {
     setFormData((prev: MerchantEditFormData) => ({ ...prev, [field]: value }));
     
-    // リアルタイムバリデーション（statusフィールドは除く）
-    if (field !== 'status') {
-      const error = validateMerchantField(field as keyof MerchantFormData, value || '');
-      if (error) {
-        setErrors((prev: Record<string, string>) => ({ ...prev, [field]: error }));
-      } else {
-        setErrors((prev: Record<string, string>) => {
-          const newErrors = { ...prev };
-          delete newErrors[field as string];
-          return newErrors;
-        });
-      }
+    // リアルタイムバリデーション
+    const error = validateMerchantField(field as keyof MerchantFormData, value || '');
+    if (error) {
+      setErrors((prev: Record<string, string>) => ({ ...prev, [field]: error }));
+    } else {
+      setErrors((prev: Record<string, string>) => {
+        const newErrors = { ...prev };
+        delete newErrors[field as string];
+        return newErrors;
+      });
     }
   };
 
   const handleBlur = (field: keyof MerchantEditFormData) => {
     const value = formData[field];
-    // statusフィールドは除く
-    if (field !== 'status') {
-      const error = validateMerchantField(field as keyof MerchantFormData, (value as string) || '');
-      if (error) {
-        setErrors((prev: Record<string, string>) => ({ ...prev, [field]: error }));
-      } else {
-        setErrors((prev: Record<string, string>) => {
-          const newErrors = { ...prev };
-          delete newErrors[field as string];
-          return newErrors;
-        });
-      }
+    const error = validateMerchantField(field as keyof MerchantFormData, (value as string) || '');
+    if (error) {
+      setErrors((prev: Record<string, string>) => ({ ...prev, [field]: error }));
+    } else {
+      setErrors((prev: Record<string, string>) => {
+        const newErrors = { ...prev };
+        delete newErrors[field as string];
+        return newErrors;
+      });
     }
   };
 
@@ -283,7 +274,6 @@ export default function MerchantEditPage() {
         city: formData.city,
         address1: formData.address1,
         address2: formData.address2,
-        status: formData.status,
       };
 
       const response = await fetch(`/api/merchants/${merchantId}`, {
@@ -716,27 +706,6 @@ export default function MerchantEditPage() {
                     <div></div>
                   )}
                   <p className="text-sm text-gray-500">{getCharacterCount('address2', 255)}</p>
-                </div>
-              </div>
-
-              {/* ステータス */}
-              <div className="w-60">
-                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                  ステータス <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="status"
-                  value={formData.status}
-                  onChange={(e) => handleInputChange('status', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                >
-                  <option value="active">営業中</option>
-                  <option value="terminated">終了</option>
-                </select>
-                <div className="mt-1 flex justify-between">
-                  {errors.status && (
-                    <p className="text-sm text-red-600">{errors.status}</p>
-                  )}
                 </div>
               </div>
             </div>

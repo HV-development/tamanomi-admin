@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   '@hv-development/schemas':
-    specifier: 1.12.0
-    version: 1.12.0
+    specifier: 1.15.0
+    version: 1.15.0
   autoprefixer:
     specifier: 10.4.21
     version: 10.4.21(postcss@8.5.6)
@@ -435,8 +435,8 @@ packages:
     engines: {node: '>=18.18'}
     dev: true
 
-  /@hv-development/schemas@1.12.0:
-    resolution: {integrity: sha512-Zb06f0ThRmjr2wXaW5Tz8mbv8Cii+6FDioi2LM2Cb1EyluOsSqSJC0OFPFtgEVpsznRoe+8lH8w6Jx7cmRt4cg==, tarball: https://npm.pkg.github.com/download/@hv-development/schemas/1.12.0/7db0ee0d79607eebbdcd89539be74b2e24d32b06}
+  /@hv-development/schemas@1.15.0:
+    resolution: {integrity: sha512-VcZ3+ATA6QdFbw3e/uFP9scsrXOx82LW7n+ltz+qpPRdld09koCn2/M7bjgwFV8UGNJ68eGvaoUGA5UM/E1dMA==, tarball: https://npm.pkg.github.com/download/@hv-development/schemas/1.15.0/1317b4a136157dd9df2aa22686a0a4363202c227}
     engines: {node: '>=18.0.0'}
     dependencies:
       zod: 3.25.76
