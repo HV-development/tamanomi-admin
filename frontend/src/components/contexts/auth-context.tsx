@@ -64,6 +64,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const userData = localStorage.getItem('userData');
             if (userData) {
               const accountData = JSON.parse(userData);
+              console.log('🔍 AuthContext: Loading user data from localStorage', {
+                accountType: accountData.accountType,
+                shopId: accountData.shopId,
+                merchantId: accountData.merchantId,
+                email: accountData.email
+              });
               setUser({
                 id: accountData.email,
                 email: accountData.email,
@@ -117,6 +123,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         refreshTokenMatch: savedRefreshToken === response.refreshToken
       });
       
+      console.log('🔍 AuthContext: Received account data from API', {
+        accountType: response.account.accountType,
+        shopId: response.account.shopId,
+        merchantId: response.account.merchantId,
+        hasShopId: !!response.account.shopId,
+        hasMerchantId: !!response.account.merchantId
+      });
+      
       setUser({
         id: response.account.email, // 仮のIDとしてemailを使用
         email: response.account.email,
@@ -125,7 +139,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         shopId: response.account.shopId,
         merchantId: response.account.merchantId
       });
-      console.log('✅ AuthContext: login successful', { user: response.account });
+      console.log('✅ AuthContext: login successful', { 
+        user: response.account,
+        setShopId: response.account.shopId,
+        setMerchantId: response.account.merchantId
+      });
     } catch (error) {
       console.error('❌ AuthContext: login failed', error);
       throw error;
