@@ -31,6 +31,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
     const data = await response.json();
     console.log('✅ API Route: 会社詳細取得成功', { merchantId: id });
+    console.log('🔍 API Route: Response data structure:', {
+      hasData: 'data' in data,
+      dataKeys: data.data ? Object.keys(data.data) : 'no data property',
+      fullData: data
+    });
     return NextResponse.json(data);
   } catch (error: unknown) {
     console.error(`❌ API Route: 会社詳細取得エラー ${params.id}`, error);

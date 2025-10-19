@@ -28,6 +28,7 @@ const prefectures = [
 interface Merchant {
   id: string;
   name: string;
+  applications?: string[];
   account: {
     email: string;
   };
@@ -116,9 +117,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     paymentCredit: '',
     paymentCode: '',
     status: 'registering',
+    applications: [],
     createAccount: false,
     password: '',
   });
+  
+  // 親Merchantのapplications
+  const [merchantApplications, setMerchantApplications] = useState<string[]>([]);
   
   // 利用シーンの複数選択用
   const [selectedScenes, setSelectedScenes] = useState<string[]>([]);
@@ -157,6 +162,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     }
   }, [validationErrors]);
   
+  // デバッグ用：merchantApplicationsの変更を監視
+  useEffect(() => {
+    console.log('📱 merchantApplications更新:', {
+      length: merchantApplications.length,
+      values: merchantApplications,
+      shouldShow: merchantApplications.length > 1
+    });
+  }, [merchantApplications]);
+  
   // 既存のアカウントがあるかどうか（API取得時の初期データで判定）
   const [hasExistingAccount, setHasExistingAccount] = useState(false);
   
@@ -190,11 +204,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               if (!merchantId) {
                 setFormData(prev => ({
                   ...prev,
-                  merchantId: merchant.id
+                  merchantId: merchant.id,
+                  // 親が1つのapplicationの場合は自動設定
+                  applications: merchant.applications?.length === 1 ? merchant.applications : []
                 }));
               }
               // 会社名は常に設定
               setMerchantName(merchant.name);
+              // 親のapplicationsを保存
+              setMerchantApplications(merchant.applications || []);
             }
           } catch (error) {
             console.error('会社情報の取得に失敗しました:', error);
@@ -232,7 +250,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           console.log('🏢 Processed merchants array:', { 
             merchantsArray, 
             length: merchantsArray.length,
-            firstMerchant: merchantsArray[0] || 'no merchants'
+            firstMerchant: merchantsArray[0] || 'no merchants',
+            firstMerchantApplications: merchantsArray[0]?.applications
           });
           
           setMerchants(merchantsArray);
@@ -322,13 +341,17 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             // クレジットカードブランドの設定（JSON形式から読み込み）
             const shopDataWithPayment = shopData as ShopCreateRequest & { paymentCredit?: any; paymentCode?: any };
             const creditValue = shopDataWithPayment.paymentCredit;
+            console.log('💳 Credit value from API:', creditValue);
             if (creditValue) {
               // JSONオブジェクトとして扱う
               if (typeof creditValue === 'object' && creditValue.brands) {
-                setSelectedCreditBrands(creditValue.brands);
+                const brands = [...creditValue.brands];
                 if (creditValue.other) {
+                  brands.push('その他');
                   setCustomCreditText(creditValue.other);
                 }
+                setSelectedCreditBrands(brands);
+                console.log('💳 Credit brands set:', brands, 'custom:', creditValue.other);
               } else if (typeof creditValue === 'string') {
                 // 旧形式（カンマ区切り）のフォールバック
                 const brands = creditValue.split(',').map((b: string) => b.trim());
@@ -338,13 +361,17 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             
             // QRコード決済の設定（JSON形式から読み込み）
             const qrValue = shopDataWithPayment.paymentCode;
+            console.log('📱 QR value from API:', qrValue);
             if (qrValue) {
               // JSONオブジェクトとして扱う
               if (typeof qrValue === 'object' && qrValue.services) {
-                setSelectedQrBrands(qrValue.services);
+                const services = [...qrValue.services];
                 if (qrValue.other) {
+                  services.push('その他');
                   setCustomQrText(qrValue.other);
                 }
+                setSelectedQrBrands(services);
+                console.log('📱 QR services set:', services, 'custom:', qrValue.other);
               } else if (typeof qrValue === 'string') {
                 // 旧形式（カンマ区切り）のフォールバック
                 const services = qrValue.split(',').map((s: string) => s.trim());
@@ -360,16 +387,37 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             
             // 利用シーンの設定
             const shopDataWithScenes = shopData as ShopCreateRequest & { sceneIds?: string[]; customSceneText?: string };
-            console.log('🎯 Scene data:', {sceneIds: shopDataWithScenes.sceneIds, customSceneText: shopDataWithScenes.customSceneText});
+            console.log('🎯 Scene data from API:', {
+              sceneIds: shopDataWithScenes.sceneIds, 
+              customSceneText: shopDataWithScenes.customSceneText,
+              availableScenes: scenesArray.map(s => ({ id: s.id, name: s.name }))
+            });
             if (shopDataWithScenes.sceneIds && Array.isArray(shopDataWithScenes.sceneIds)) {
               setSelectedScenes(shopDataWithScenes.sceneIds);
               console.log('✅ Selected scenes set:', shopDataWithScenes.sceneIds);
+            } else {
+              console.warn('⚠️ No sceneIds found in shop data');
             }
             
             // カスタム利用シーンテキストの設定
             if (shopDataWithScenes.customSceneText) {
               setCustomSceneText(shopDataWithScenes.customSceneText);
               console.log('✅ Custom scene text set:', shopDataWithScenes.customSceneText);
+            }
+            
+            // 掲載サイト（applications）の設定
+            const shopDataWithApplications = shopData as ShopCreateRequest & { applications?: string[] };
+            if (shopDataWithApplications.applications && Array.isArray(shopDataWithApplications.applications)) {
+              console.log('📱 Setting applications:', shopDataWithApplications.applications);
+              // formDataのapplicationsはすでにsetFormDataで設定されているので、
+              // 親会社のapplicationsも取得する
+              if (merchantFromShop) {
+                const parentMerchant = merchantsArray.find(m => m.id === finalMerchantId) as any;
+                if (parentMerchant?.applications) {
+                  setMerchantApplications(parentMerchant.applications);
+                  console.log('📱 Parent merchant applications set:', parentMerchant.applications);
+                }
+              }
             }
           }
         } else if (merchantId && merchantsArray.length > 0 && isMounted) {
@@ -410,14 +458,40 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   // formData.merchantIdが変更されたときに加盟店名とaccountEmailを更新
   useEffect(() => {
     if (formData.merchantId && merchants.length > 0) {
-      const merchant = merchants.find(m => m.id === formData.merchantId);
+      const merchant = merchants.find(m => m.id === formData.merchantId) as any;
       console.log('🔄 Updating merchant name from formData:', { 
         merchantId: formData.merchantId, 
         merchant, 
-        merchantsCount: merchants.length 
+        merchantsCount: merchants.length,
+        merchantApplications: merchant?.applications
       });
       if (merchant) {
         setMerchantName(merchant.name);
+        // 親Merchantのapplicationsを設定
+        const apps = merchant.applications || [];
+        console.log('📱 Setting merchantApplications:', apps);
+        setMerchantApplications(apps);
+        // 親が1つのapplicationの場合は自動設定、複数の場合はリセット
+        if (merchant.applications && merchant.applications.length === 1) {
+          setFormData(prev => ({
+            ...prev,
+            applications: merchant.applications
+          }));
+        } else if (merchant.applications && merchant.applications.length > 1) {
+          // 親が複数持つ場合は、現在選択されているアプリケーションが親のリストに含まれていない場合はリセット
+          setFormData(prev => {
+            const currentApp = prev.applications?.[0];
+            if (currentApp && merchant.applications.includes(currentApp)) {
+              // 現在の選択が有効な場合はそのまま
+              return prev;
+            }
+            // 無効な場合はリセット
+            return {
+              ...prev,
+              applications: []
+            };
+          });
+        }
       }
     }
   }, [formData.merchantId, merchants]);
@@ -854,6 +928,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       if (!isMerchantAccount && (!formData.merchantId || formData.merchantId.trim().length === 0)) {
         console.log('❌ 会社エラー追加');
         customErrors.merchantId = '会社を選択してください';
+      }
+      
+      // 掲載サイト（親会社が複数のアプリケーションを持つ場合）
+      console.log('🔍 掲載サイトチェック:', { applications: formData.applications, merchantApplications, parentAppsLength: merchantApplications.length });
+      if (merchantApplications.length > 1 && (!formData.applications || formData.applications.length === 0)) {
+        console.log('❌ 掲載サイトエラー追加');
+        customErrors.applications = '掲載サイトを選択してください';
       }
       
       // アカウント情報（アカウント発行時のみ）
@@ -1509,6 +1590,42 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             )}
           </div>
         </div>
+
+        {/* 掲載サイト（親が複数持つ場合のみ表示） */}
+        {merchantApplications.length > 1 && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">掲載サイト <span className="text-red-500">*</span></h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {merchantApplications.map((app) => (
+                <label
+                  key={app}
+                  className="flex items-center space-x-2 cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    name="application"
+                    value={app}
+                    checked={(formData.applications?.length === 1 && formData.applications[0] === app) || false}
+                    onChange={(e) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        applications: [e.target.value as "tamanomi" | "nomoca_kagawa"]
+                      }));
+                    }}
+                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">
+                    {app === 'tamanomi' ? 'たまのみ' : app === 'nomoca_kagawa' ? 'のもかかがわ' : app}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-gray-500">
+              ※ 親会社で設定されたアプリケーションの中から1つ選択してください
+            </p>
+            <ErrorMessage message={validationErrors.applications} field="applications" />
+          </div>
+        )}
 
         {/* ジャンル */}
         <div className="bg-white rounded-lg shadow p-6" data-field="genreId">

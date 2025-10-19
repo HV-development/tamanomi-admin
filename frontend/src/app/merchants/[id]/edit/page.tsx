@@ -39,6 +39,7 @@ export default function MerchantEditPage() {
     city: '',
     address1: '',
     address2: '',
+    applications: [],
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -56,17 +57,23 @@ export default function MerchantEditPage() {
     const loadMerchantData = async () => {
       try {
         // APIから会社データを取得
+        const token = localStorage.getItem('accessToken');
         const response = await fetch(`/api/merchants/${merchantId}`, {
           signal: abortController.signal,
+          headers: token ? {
+            'Authorization': `Bearer ${token}`
+          } : {},
         });
         
         // コンポーネントがアンマウントされている場合は処理を中断
         if (!isMounted) return;
         
         if (response.ok) {
-          const merchantData = await response.json();
+          const result = await response.json();
+          const merchantData = result.data; // APIレスポンスから data プロパティを取得
           
           if (isMounted) {
+            console.log('✅ 会社データ取得成功:', merchantData);
             // APIレスポンスをフォームデータに変換
             setFormData({
               name: merchantData.name || '',
@@ -85,32 +92,15 @@ export default function MerchantEditPage() {
               city: merchantData.city || '',
               address1: merchantData.address1 || '',
               address2: merchantData.address2 || '',
+              applications: merchantData.applications || [],
             });
           }
         } else {
           if (!isMounted) return;
           
-          console.error('会社データの取得に失敗しました:', response.status);
-          // エラー時はサンプルデータを使用
-          const sampleData: MerchantEditFormData = {
-            name: '株式会社たまのみ',
-            nameKana: 'カブシキガイシャタマノミ',
-            representative: '田中太郎',
-            representativeName: '田中太郎',
-            representativeNameLast: '田中',
-            representativeNameFirst: '太郎',
-            representativeNameLastKana: 'タナカ',
-            representativeNameFirstKana: 'タロウ',
-            representativePhone: '0312345678',
-            email: 'info@tamanomi.co.jp',
-            phone: '0312345678',
-            postalCode: '1000001',
-            prefecture: '東京都',
-            city: '千代田区',
-            address1: '千代田1-1-1',
-            address2: '',
-          };
-          setFormData(sampleData);
+          const errorData = await response.json();
+          console.error('❌ 会社データの取得に失敗しました:', { status: response.status, error: errorData });
+          alert(`会社データの取得に失敗しました: ${errorData.error?.message || '不明なエラー'}`);
         }
       } catch (error) {
         // アボート時のエラーは無視
@@ -120,28 +110,8 @@ export default function MerchantEditPage() {
         
         if (!isMounted) return;
         
-        console.error('会社データの読み込みエラー:', error);
-        // エラー時はサンプルデータを使用
-        const sampleData: MerchantEditFormData = {
-          name: '株式会社たまのみ',
-          nameKana: 'カブシキガイシャタマノミ',
-          representative: '田中太郎',
-          representativeName: '田中太郎',
-          representativeNameLast: '田中',
-          representativeNameFirst: '太郎',
-          representativeNameLastKana: 'タナカ',
-          representativeNameFirstKana: 'タロウ',
-          representativePhone: '0312345678',
-          email: 'info@tamanomi.co.jp',
-          phone: '0312345678',
-          postalCode: '1000001',
-          prefecture: '東京都',
-          city: '千代田区',
-          address1: '千代田1-1-1',
-          address2: '',
-        };
-        setFormData(sampleData);
-        alert('会社データの読み込みに失敗しました。サンプルデータを表示しています。');
+        console.error('❌ 会社データの読み込みエラー:', error);
+        alert(`会社データの読み込みに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -274,12 +244,15 @@ export default function MerchantEditPage() {
         city: formData.city,
         address1: formData.address1,
         address2: formData.address2,
+        applications: formData.applications,
       };
 
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`/api/merchants/${merchantId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
         },
         body: JSON.stringify(updateData),
       });
@@ -709,6 +682,68 @@ export default function MerchantEditPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* 契約サイト */}
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">契約サイト <span className="text-red-500">*</span></h3>
+            <p className="text-sm text-gray-600 mb-4">
+              ここで選択したサイトが店舗登録時に指定できるサイトとなります。
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  value="tamanomi"
+                  checked={formData.applications?.includes('tamanomi') || false}
+                  onChange={(e) => {
+                    const currentApps = formData.applications || [];
+                    if (e.target.checked) {
+                      setFormData(prev => ({
+                        ...prev,
+                        applications: [...currentApps, 'tamanomi']
+                      }));
+                    } else {
+                      setFormData(prev => ({
+                        ...prev,
+                        applications: currentApps.filter(app => app !== 'tamanomi')
+                      }));
+                    }
+                  }}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">たまのみ</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  value="nomoca_kagawa"
+                  checked={formData.applications?.includes('nomoca_kagawa') || false}
+                  onChange={(e) => {
+                    const currentApps = formData.applications || [];
+                    if (e.target.checked) {
+                      setFormData(prev => ({
+                        ...prev,
+                        applications: [...currentApps, 'nomoca_kagawa']
+                      }));
+                    } else {
+                      setFormData(prev => ({
+                        ...prev,
+                        applications: currentApps.filter(app => app !== 'nomoca_kagawa')
+                      }));
+                    }
+                  }}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">のもかかがわ</span>
+              </label>
+            </div>
+            {errors.applications && (
+              <p className="mt-2 text-sm text-red-600">{errors.applications}</p>
+            )}
+            <p className="mt-2 text-xs text-gray-500">
+              ※ 少なくとも1つのアプリケーションを選択してください
+            </p>
           </div>
 
           {/* ボタン */}

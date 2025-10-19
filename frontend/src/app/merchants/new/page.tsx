@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+import ToastContainer from '@/components/molecules/toast-container';
+import { useToast } from '@/hooks/use-toast';
 import { validateMerchantField, validateMerchantForm, type MerchantFormData } from '@hv-development/schemas';
 
 const prefectures = [
@@ -19,6 +21,7 @@ const prefectures = [
 
 export default function MerchantNewPage() {
   const router = useRouter();
+  const { toasts, removeToast, showSuccess, showError } = useToast();
   
   // フォームデータに追加のフィールドを含める
   const [formData, setFormData] = useState<MerchantFormData & { email: string }>({
@@ -109,7 +112,7 @@ export default function MerchantNewPage() {
   const handleZipcodeSearch = async () => {
     // 郵便番号の存在チェック
     if (formData.postalCode.length !== 7) {
-      alert('郵便番号を正しく入力してください（7桁の数字）');
+      showError('郵便番号を正しく入力してください（7桁の数字）');
       return;
     }
 
@@ -136,16 +139,16 @@ export default function MerchantNewPage() {
           delete newErrors.address1;
           return newErrors;
         });
-        alert('住所を取得しました');
+        showSuccess('住所を取得しました');
       } else {
         const newErrors = { ...errors };
         newErrors.postalCode = '入力された郵便番号は存在しません';
         setErrors(newErrors);
-        alert('該当する住所が見つかりませんでした');
+        showError('該当する住所が見つかりませんでした');
       }
     } catch (error) {
       console.error('住所検索エラー:', error);
-      alert('住所検索に失敗しました');
+      showError('住所検索に失敗しました');
     } finally {
       setIsSearchingAddress(false);
     }
@@ -251,7 +254,7 @@ export default function MerchantNewPage() {
           }
         } else {
           // その他のエラーの場合
-          alert(errorData.message || '登録中にエラーが発生しました');
+          showError(errorData.message || '登録中にエラーが発生しました');
         }
         return;
       }
@@ -261,7 +264,7 @@ export default function MerchantNewPage() {
       
     } catch (error) {
       console.error('登録エラー:', error);
-      alert('登録中にエラーが発生しました');
+      showError('登録中にエラーが発生しました');
     } finally {
       setIsSubmitting(false);
     }
@@ -275,6 +278,8 @@ export default function MerchantNewPage() {
   return (
     <AdminLayout>
       <div className="space-y-6">
+        <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+        
         {/* ヘッダー */}
         <div>
           <div className="flex items-center justify-between">

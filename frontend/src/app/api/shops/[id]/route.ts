@@ -33,6 +33,12 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
     const data = await response.json();
     console.log('✅ API Route: Get shop successful', { shopId: id });
+    console.log('🔍 API Route: Shop data received from backend:', {
+      paymentCredit: data.paymentCredit,
+      paymentCode: data.paymentCode,
+      customSceneText: data.customSceneText,
+      sceneIds: data.sceneIds
+    });
     return NextResponse.json(data);
   } catch (error: unknown) {
     console.error(`❌ API Route: Get shop ${params.id} error`, error);
