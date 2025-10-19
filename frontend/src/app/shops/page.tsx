@@ -310,6 +310,143 @@ export default function ShopsPage() {
     );
   }
 
+  // 店舗アカウントの場合は店舗情報を詳細表示
+  if (isShopAccount && shops.length > 0) {
+    const shop = shops[0];
+    
+    return (
+      <AdminLayout>
+        <div className="space-y-6">
+          {/* ヘッダー */}
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">店舗情報</h1>
+            <p className="text-gray-600 mt-1">店舗の詳細情報を確認できます</p>
+          </div>
+
+          {/* エラー状態 */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-800">{error}</p>
+            </div>
+          )}
+
+          {/* 店舗情報 */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-6 space-y-6">
+              {/* 基本情報 */}
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">基本情報</h2>
+                <table className="w-full border-collapse border border-gray-300">
+                  <tbody>
+                    <tr className="border-b border-gray-300">
+                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">店舗名</td>
+                      <td className="py-3 px-4 text-gray-900">{shop.name}</td>
+                    </tr>
+                    {shop.nameKana && (
+                      <tr className="border-b border-gray-300">
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">店舗名（カナ）</td>
+                        <td className="py-3 px-4 text-gray-900">{shop.nameKana}</td>
+                      </tr>
+                    )}
+                    <tr className="border-b border-gray-300">
+                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">電話番号</td>
+                      <td className="py-3 px-4 text-gray-900">{shop.phone}</td>
+                    </tr>
+                    <tr className="border-b border-gray-300">
+                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">ステータス</td>
+                      <td className={`py-3 px-4 text-sm font-medium ${getStatusColor(shop.status as any)}`}>
+                        {statusLabels[shop.status as keyof typeof statusLabels] || shop.status}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 住所情報 */}
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">住所情報</h2>
+                <table className="w-full border-collapse border border-gray-300">
+                  <tbody>
+                    <tr className="border-b border-gray-300">
+                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">郵便番号</td>
+                      <td className="py-3 px-4 text-gray-900">{shop.postalCode}</td>
+                    </tr>
+                    <tr className="border-b border-gray-300">
+                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">都道府県</td>
+                      <td className="py-3 px-4 text-gray-900">{shop.prefecture}</td>
+                    </tr>
+                    <tr className="border-b border-gray-300">
+                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">市区町村</td>
+                      <td className="py-3 px-4 text-gray-900">{shop.city}</td>
+                    </tr>
+                    <tr className="border-b border-gray-300">
+                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">番地</td>
+                      <td className="py-3 px-4 text-gray-900">{shop.address1}</td>
+                    </tr>
+                    {shop.address2 && (
+                      <tr className="border-b border-gray-300">
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">建物名・部屋番号</td>
+                        <td className="py-3 px-4 text-gray-900">{shop.address2}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 店舗詳細 */}
+              {(shop.description || shop.details) && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">店舗詳細</h2>
+                  <table className="w-full border-collapse border border-gray-300">
+                    <tbody>
+                      {shop.description && (
+                        <tr className="border-b border-gray-300">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">説明</td>
+                          <td className="py-3 px-4 text-gray-900 whitespace-pre-wrap">{shop.description}</td>
+                        </tr>
+                      )}
+                      {shop.details && (
+                        <tr className="border-b border-gray-300">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">詳細</td>
+                          <td className="py-3 px-4 text-gray-900 whitespace-pre-wrap">{shop.details}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* アカウント情報 */}
+              {shop.accountEmail && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">アカウント情報</h2>
+                  <table className="w-full border-collapse border border-gray-300">
+                    <tbody>
+                      <tr className="border-b border-gray-300">
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">メールアドレス</td>
+                        <td className="py-3 px-4 text-gray-900">{shop.accountEmail}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ボタンエリア */}
+          <div className="flex justify-center gap-4">
+            <Link href={`/shops/${shop.id}/edit`}>
+              <button className="px-6 py-3 border-2 border-green-600 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:border-green-700 transition-colors font-medium text-base">
+                編集
+              </button>
+            </Link>
+          </div>
+        </div>
+        <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
