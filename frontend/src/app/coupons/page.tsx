@@ -59,6 +59,7 @@ export default function CouponsPage() {
       params.append('limit', pagination.limit.toString());
       
       if (shopId) {
+        console.log('🔍 CouponsPage: Fetching coupons for shopId:', shopId);
         params.append('shopId', shopId);
       }
       
@@ -71,10 +72,11 @@ export default function CouponsPage() {
       }
 
       const data: any = await apiClient.getCoupons(params.toString());
+      console.log('✅ CouponsPage: Coupons fetched:', data.coupons?.length || 0);
       setCoupons(data.coupons || []);
       setPagination(data.pagination || pagination);
     } catch (error) {
-      console.error('クーポン一覧の取得に失敗しました:', error);
+      console.error('❌ CouponsPage: Failed to fetch coupons:', error);
       setCoupons([]);
     } finally {
       setLoading(false);
