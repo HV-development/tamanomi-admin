@@ -204,7 +204,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('accessToken', response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
       
-      console.log('✅ AuthContext: token refreshed');
+      // アカウント情報も更新（shopId/merchantIdを含む）
+      if (response.account) {
+        localStorage.setItem('userData', JSON.stringify(response.account));
+        
+        // ユーザー状態も更新
+        setUser({
+          id: response.account.email,
+          email: response.account.email,
+          name: response.account.displayName || response.account.email,
+          accountType: response.account.accountType as 'admin' | 'merchant' | 'user' | 'shop',
+          shopId: response.account.shopId,
+          merchantId: response.account.merchantId
+        });
+        
+        console.log('✅ AuthContext: token and user data refreshed', {
+          shopId: response.account.shopId,
+          merchantId: response.account.merchantId
+        });
+      } else {
+        console.log('✅ AuthContext: token refreshed (no account data in response)');
+      }
     } catch (error) {
       console.error('❌ AuthContext: token refresh failed', error);
       // リフレッシュに失敗した場合はログアウト
