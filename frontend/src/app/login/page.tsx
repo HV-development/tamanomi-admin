@@ -119,6 +119,7 @@ function LoginFormWithParams() {
         
         // トークンが保存されたか確認
         const token = localStorage.getItem('accessToken');
+        const userDataStr = localStorage.getItem('userData');
         console.log('🔍 LoginPage: Token verification before redirect', { 
           hasToken: !!token,
           tokenLength: token?.length 
@@ -128,9 +129,24 @@ function LoginFormWithParams() {
           throw new Error('トークンの保存に失敗しました。再度お試しください。');
         }
         
-        console.log('🚀 LoginPage: Redirecting to /merchants');
-        // 認証成功時は会社一覧画面に遷移
-        router.push('/merchants');
+        // アカウントタイプに応じてリダイレクト先を決定
+        let redirectPath = '/merchants';
+        if (userDataStr) {
+          try {
+            const userData = JSON.parse(userDataStr);
+            if (userData.accountType === 'shop') {
+              redirectPath = '/shops';
+              console.log('🚀 LoginPage: Redirecting shop account to /shops');
+            } else {
+              console.log('🚀 LoginPage: Redirecting to /merchants');
+            }
+          } catch (error) {
+            console.error('Failed to parse user data:', error);
+          }
+        }
+        
+        // 認証成功時はアカウントタイプに応じた画面に遷移
+        router.push(redirectPath);
       } catch (error: unknown) {
         console.error('❌ LoginPage: Login error', error);
         
