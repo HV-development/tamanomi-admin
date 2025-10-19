@@ -174,6 +174,15 @@ class ApiClient {
     });
   }
 
+  async getMyShop(): Promise<unknown> {
+    console.log('🏪 API: getMyShop called (via Next.js API Route)');
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>('/shops/me', {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
   async createMerchant(merchantData: unknown): Promise<unknown> {
     console.log('➕ API: createMerchant called (via Next.js API Route)');
     const token = localStorage.getItem('accessToken');

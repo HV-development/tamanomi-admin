@@ -123,26 +123,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         refreshTokenMatch: savedRefreshToken === response.refreshToken
       });
       
+      const accountData = response.account as any;
       console.log('🔍 AuthContext: Received account data from API', {
-        accountType: response.account.accountType,
-        shopId: response.account.shopId,
-        merchantId: response.account.merchantId,
-        hasShopId: !!response.account.shopId,
-        hasMerchantId: !!response.account.merchantId
+        accountType: accountData.accountType,
+        shopId: accountData.shopId,
+        merchantId: accountData.merchantId,
+        hasShopId: !!accountData.shopId,
+        hasMerchantId: !!accountData.merchantId
       });
       
       setUser({
-        id: response.account.email, // 仮のIDとしてemailを使用
-        email: response.account.email,
-        name: response.account.displayName || response.account.email,
-        accountType: response.account.accountType as 'admin' | 'merchant' | 'user' | 'shop',
-        shopId: response.account.shopId,
-        merchantId: response.account.merchantId
+        id: accountData.email, // 仮のIDとしてemailを使用
+        email: accountData.email,
+        name: accountData.displayName || accountData.email,
+        accountType: accountData.accountType as 'admin' | 'merchant' | 'user' | 'shop',
+        shopId: accountData.shopId,
+        merchantId: accountData.merchantId
       });
       console.log('✅ AuthContext: login successful', { 
-        user: response.account,
-        setShopId: response.account.shopId,
-        setMerchantId: response.account.merchantId
+        user: accountData,
+        setShopId: accountData.shopId,
+        setMerchantId: accountData.merchantId
       });
     } catch (error) {
       console.error('❌ AuthContext: login failed', error);
@@ -156,19 +157,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiClient.register(userData);
       
       // トークンを保存
+      const accountData = response.account as any;
       localStorage.setItem('accessToken', response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
-      localStorage.setItem('userData', JSON.stringify(response.account));
+      localStorage.setItem('userData', JSON.stringify(accountData));
       
       setUser({
-        id: response.account.email, // 仮のIDとしてemailを使用
-        email: response.account.email,
-        name: response.account.displayName || response.account.email,
-        accountType: response.account.accountType as 'admin' | 'merchant' | 'user' | 'shop',
-        shopId: response.account.shopId,
-        merchantId: response.account.merchantId
+        id: accountData.email, // 仮のIDとしてemailを使用
+        email: accountData.email,
+        name: accountData.displayName || accountData.email,
+        accountType: accountData.accountType as 'admin' | 'merchant' | 'user' | 'shop',
+        shopId: accountData.shopId,
+        merchantId: accountData.merchantId
       });
-      console.log('✅ AuthContext: register successful', { user: response.account });
+      console.log('✅ AuthContext: register successful', { user: accountData });
     } catch (error) {
       console.error('❌ AuthContext: register failed', error);
       throw error;
@@ -204,27 +206,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('accessToken', response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
       
-      // アカウント情報も更新（shopId/merchantIdを含む）
-      if (response.account) {
-        localStorage.setItem('userData', JSON.stringify(response.account));
-        
-        // ユーザー状態も更新
-        setUser({
-          id: response.account.email,
-          email: response.account.email,
-          name: response.account.displayName || response.account.email,
-          accountType: response.account.accountType as 'admin' | 'merchant' | 'user' | 'shop',
-          shopId: response.account.shopId,
-          merchantId: response.account.merchantId
-        });
-        
-        console.log('✅ AuthContext: token and user data refreshed', {
-          shopId: response.account.shopId,
-          merchantId: response.account.merchantId
-        });
-      } else {
-        console.log('✅ AuthContext: token refreshed (no account data in response)');
-      }
+      console.log('✅ AuthContext: tokens refreshed');
     } catch (error) {
       console.error('❌ AuthContext: token refresh failed', error);
       // リフレッシュに失敗した場合はログアウト
