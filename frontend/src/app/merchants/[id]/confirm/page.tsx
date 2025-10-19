@@ -183,7 +183,7 @@ export default function MerchantEditConfirmPage() {
                     ステータス
                   </label>
                   <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
-                    {_getStatusLabel(formData.status)}
+                    {_getStatusLabel(formData.status as string)}
                   </div>
                 </div>
                 

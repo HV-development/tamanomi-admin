@@ -10,9 +10,12 @@ import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
+import { useAuth } from '@/components/contexts/auth-context';
 
 export default function ShopsPage() {
-  const merchantId = undefined; // このページではmerchantIdは使用しない
+  const auth = useAuth();
+  const isMerchantAccount = auth?.user?.accountType === 'merchant';
+  const [merchantId, setMerchantId] = useState<string | undefined>(undefined);
   const [shops, setShops] = useState<Shop[]>([]);
   const [merchantName, setMerchantName] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -32,6 +35,31 @@ export default function ShopsPage() {
     status: 'all' as 'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+
+  // 会社アカウントの場合、自分の会社IDを取得
+  useEffect(() => {
+    const fetchMyMerchant = async () => {
+      // 認証情報がロード中の場合は待機
+      if (auth?.isLoading) {
+        return;
+      }
+      
+      if (isMerchantAccount) {
+        try {
+          const data = await apiClient.getMyMerchant();
+          if (data && typeof data === 'object' && 'data' in data && data.data) {
+            const merchantData = data.data as any;
+            setMerchantId(merchantData.id);
+            setMerchantName(merchantData.name);
+          }
+        } catch (error) {
+          console.error('会社情報の取得に失敗しました:', error);
+        }
+      }
+    };
+
+    fetchMyMerchant();
+  }, [isMerchantAccount, auth?.isLoading]);
 
   // データ取得（検索条件を含む）
   const fetchShops = async () => {
@@ -125,9 +153,20 @@ export default function ShopsPage() {
   };
 
   // 初回マウント時とmerchantId変更時にデータ取得
+  // 会社アカウントの場合はmerchantIdが設定されるまで待機
   useEffect(() => {
+    // 認証情報がロード中の場合は待機
+    if (auth?.isLoading) {
+      return;
+    }
+    
+    // 会社アカウントの場合、merchantIdが設定されるまで待機
+    if (isMerchantAccount && !merchantId) {
+      return;
+    }
+    
     fetchShops();
-  }, [merchantId]);
+  }, [merchantId, auth?.isLoading, isMerchantAccount]);
 
   // 検索フォームの入力ハンドラー
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {

@@ -10,6 +10,7 @@ interface User {
   id: string;
   email: string;
   name: string;
+  accountType: 'admin' | 'merchant' | 'user';
 }
 
 interface AuthContextType {
@@ -60,7 +61,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // ユーザー情報を取得（実際の実装では、トークンからユーザー情報を取得）
             const userData = localStorage.getItem('userData');
             if (userData) {
-              setUser(JSON.parse(userData));
+              const accountData = JSON.parse(userData);
+              setUser({
+                id: accountData.email,
+                email: accountData.email,
+                name: accountData.displayName || accountData.email,
+                accountType: accountData.accountType
+              });
             }
           } catch (error) {
             console.error('Token validation failed:', error);
@@ -109,7 +116,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser({
         id: response.account.email, // 仮のIDとしてemailを使用
         email: response.account.email,
-        name: response.account.displayName || response.account.email
+        name: response.account.displayName || response.account.email,
+        accountType: response.account.accountType as 'admin' | 'merchant' | 'user'
       });
       console.log('✅ AuthContext: login successful', { user: response.account });
     } catch (error) {
@@ -131,7 +139,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser({
         id: response.account.email, // 仮のIDとしてemailを使用
         email: response.account.email,
-        name: response.account.displayName || response.account.email
+        name: response.account.displayName || response.account.email,
+        accountType: response.account.accountType as 'admin' | 'merchant' | 'user'
       });
       console.log('✅ AuthContext: register successful', { user: response.account });
     } catch (error) {

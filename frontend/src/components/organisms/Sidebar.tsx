@@ -14,7 +14,7 @@ interface MenuItemData {
 }
 
 const menuItems: MenuItemData[] = [
-  { name: '会社管理', href: '/merchants', iconName: 'storefront' },
+  { name: '会社管理', href: '/merchants', iconName: 'domain' },
   { name: '店舗管理', href: '/shops', iconName: 'store' },
   { name: 'クーポン管理', href: '/coupons', iconName: 'confirmation_number' },
   { name: 'ユーザー管理', href: '/users', iconName: 'groups' },
@@ -28,6 +28,18 @@ export default function Sidebar() {
   const [isLoaded, setIsLoaded] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+
+  // アカウントタイプに基づいてメニューをフィルタリング
+  // 認証情報がロード中の場合は空配列を返してちらつきを防ぐ
+  const filteredMenuItems = auth?.isLoading 
+    ? [] 
+    : menuItems.filter((item) => {
+        // 会社アカウントの場合、ユーザー管理と管理者アカウントを非表示
+        if (auth?.user?.accountType === 'merchant') {
+          return item.href !== '/users' && item.href !== '/admins';
+        }
+        return true;
+      });
 
   // ローカルストレージからサイドバーの状態を復元
   useEffect(() => {
@@ -68,7 +80,7 @@ export default function Sidebar() {
       {/* メニュー */}
       <nav className={`p-4 ${isCollapsed ? 'pt-6' : ''}`}>
         <ul className="space-y-2">
-          {menuItems.map((item) => (
+          {filteredMenuItems.map((item) => (
             <li key={item.href}>
               <MenuItem
                 name={item.name}
