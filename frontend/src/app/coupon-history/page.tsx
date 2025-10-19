@@ -6,6 +6,7 @@ import Link from 'next/link';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+import { useAuth } from '@/components/contexts/auth-context';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -60,6 +61,9 @@ const sampleCouponUsages: CouponUsage[] = [
 ];
 
 export default function CouponHistoryPage() {
+  const auth = useAuth();
+  const isShopAccount = auth?.user?.accountType === 'shop';
+  const shopId = isShopAccount ? auth?.user?.shopId : undefined;
   const pathname = usePathname();
   const router = useRouter();
   const _params = useParams(); // 将来的に使用予定
@@ -118,11 +122,13 @@ export default function CouponHistoryPage() {
       // クーポン一覧またはユーザー一覧からの遷移（referrerで判定）
       setShowBackButton(true);
       setBackUrl('/coupons'); // デフォルトはクーポン一覧
-      setPageTitle('クーポン利用履歴');
+      setPageTitle(isShopAccount ? 'クーポン利用履歴' : 'クーポン利用履歴');
       setIsFromCouponDetail(false);
+      // 店舗アカウントの場合は自身の店舗の履歴のみ（TODO: APIから取得する）
+      // 現在はサンプルデータを使用しているため、全履歴を表示
       setFilteredUsages(sampleCouponUsages);
     }
-  }, [pathname]);
+  }, [pathname, isShopAccount]);
 
   useEffect(() => {
     // フィルタリング処理
@@ -229,7 +235,7 @@ export default function CouponHistoryPage() {
                 ? 'このクーポンの利用履歴を表示します' 
                 : pathname.includes('/users/') && pathname.includes('/coupon-history')
                 ? 'このユーザーが使用したクーポンの利用履歴を表示します'
-                : 'クーポンの利用履歴を管理します'}
+                : (isShopAccount ? '自身の店舗のクーポン利用履歴を管理します' : 'クーポンの利用履歴を管理します')}
             </p>
             </div>
             <div className="text-sm text-gray-600">
@@ -241,8 +247,8 @@ export default function CouponHistoryPage() {
           </div>
         </div>
 
-        {/* 検索フォーム（クーポン詳細からの遷移時は簡略化） */}
-        {!(pathname.includes('/coupons/') && pathname.includes('/history')) && !(pathname.includes('/users/') && pathname.includes('/coupon-history')) && (
+        {/* 検索フォーム（クーポン詳細からの遷移時または店舗アカウントの場合は簡略化） */}
+        {!(pathname.includes('/coupons/') && pathname.includes('/history')) && !(pathname.includes('/users/') && pathname.includes('/coupon-history')) && !isShopAccount && (
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="pb-3 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
