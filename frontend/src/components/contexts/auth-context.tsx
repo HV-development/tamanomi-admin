@@ -10,7 +10,9 @@ interface User {
   id: string;
   email: string;
   name: string;
-  accountType: 'admin' | 'merchant' | 'user';
+  accountType: 'admin' | 'merchant' | 'user' | 'shop';
+  shopId?: string; // 店舗アカウントの場合の店舗ID
+  merchantId?: string; // 会社アカウントまたは店舗アカウントの場合の会社ID
 }
 
 interface AuthContextType {
@@ -66,7 +68,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 id: accountData.email,
                 email: accountData.email,
                 name: accountData.displayName || accountData.email,
-                accountType: accountData.accountType
+                accountType: accountData.accountType,
+                shopId: accountData.shopId,
+                merchantId: accountData.merchantId
               });
             }
           } catch (error) {
@@ -117,7 +121,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         id: response.account.email, // 仮のIDとしてemailを使用
         email: response.account.email,
         name: response.account.displayName || response.account.email,
-        accountType: response.account.accountType as 'admin' | 'merchant' | 'user'
+        accountType: response.account.accountType as 'admin' | 'merchant' | 'user' | 'shop',
+        shopId: response.account.shopId,
+        merchantId: response.account.merchantId
       });
       console.log('✅ AuthContext: login successful', { user: response.account });
     } catch (error) {
@@ -140,7 +146,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         id: response.account.email, // 仮のIDとしてemailを使用
         email: response.account.email,
         name: response.account.displayName || response.account.email,
-        accountType: response.account.accountType as 'admin' | 'merchant' | 'user'
+        accountType: response.account.accountType as 'admin' | 'merchant' | 'user' | 'shop',
+        shopId: response.account.shopId,
+        merchantId: response.account.merchantId
       });
       console.log('✅ AuthContext: register successful', { user: response.account });
     } catch (error) {

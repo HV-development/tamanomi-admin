@@ -15,6 +15,7 @@ import { useAuth } from '@/components/contexts/auth-context';
 export default function ShopsPage() {
   const auth = useAuth();
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
+  const isShopAccount = auth?.user?.accountType === 'shop';
   const [merchantId, setMerchantId] = useState<string | undefined>(undefined);
   const [shops, setShops] = useState<Shop[]>([]);
   const [merchantName, setMerchantName] = useState<string>('');
@@ -61,6 +62,31 @@ export default function ShopsPage() {
 
     fetchMyMerchant();
   }, [isMerchantAccount, auth?.isLoading]);
+
+  // 店舗アカウントの場合、自身の店舗情報のみを取得
+  useEffect(() => {
+    const fetchMyShop = async () => {
+      // 認証情報がロード中の場合は待機
+      if (auth?.isLoading) {
+        return;
+      }
+      
+      if (isShopAccount && auth?.user?.shopId) {
+        try {
+          setIsLoading(true);
+          const shopData = await apiClient.getShop(auth.user.shopId);
+          setShops([shopData as Shop]);
+          setIsLoading(false);
+        } catch (error) {
+          console.error('店舗情報の取得に失敗しました:', error);
+          setError('店舗情報の取得に失敗しました');
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchMyShop();
+  }, [isShopAccount, auth?.isLoading, auth?.user?.shopId]);
 
   // データ取得（検索条件を含む）
   const fetchShops = async () => {
@@ -164,13 +190,18 @@ export default function ShopsPage() {
       return;
     }
     
+    // 店舗アカウントの場合は、別のuseEffectで店舗情報を取得するためスキップ
+    if (isShopAccount) {
+      return;
+    }
+    
     // 会社アカウントの場合、merchantIdが設定されるまで待機
     if (isMerchantAccount && !merchantId) {
       return;
     }
     
     fetchShops();
-  }, [merchantId, auth?.isLoading, isMerchantAccount]);
+  }, [merchantId, auth?.isLoading, isMerchantAccount, isShopAccount]);
 
   // 検索フォームの入力ハンドラー
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {
@@ -269,9 +300,11 @@ export default function ShopsPage() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">店舗一覧</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {isShopAccount ? '店舗管理' : '店舗一覧'}
+              </h1>
               <p className="text-gray-600">
-                店舗の管理・編集を行います
+                {isShopAccount ? '自身の店舗情報を確認できます' : '店舗の管理・編集を行います'}
               </p>
             </div>
             <div className="text-sm text-gray-600">
@@ -308,7 +341,8 @@ export default function ShopsPage() {
           </div>
         )}
 
-        {/* 検索フォーム */}
+        {/* 検索フォーム（店舗アカウントの場合は非表示） */}
+        {!isShopAccount && (
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="pb-3 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
@@ -497,19 +531,22 @@ export default function ShopsPage() {
           </div>
           )}
         </div>
+        )}
 
         {/* 店舗一覧 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
-              店舗一覧 ({shops.length}件)
+              {isShopAccount ? '店舗情報' : `店舗一覧 (${shops.length}件)`}
             </h3>
+            {!isShopAccount && (
             <Link href={merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new'}>
               <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
                 <span className="mr-2">+</span>
                 新規登録
               </Button>
             </Link>
+            )}
           </div>
           
           <div className="overflow-x-auto">
