@@ -1,5 +1,29 @@
 // APIクライアント - Next.js APIルート経由
-import { AdminLoginInput, RegisterInput, RefreshTokenInput, AuthResponse, RefreshResponse } from '@tamanomi/schemas';
+import { 
+  type AdminLoginInput, 
+  type AdminRegisterInput,
+  type RefreshTokenInput,
+} from '@hv-development/schemas';
+
+type RegisterInput = AdminRegisterInput;
+
+// 認証レスポンスの型定義
+interface AuthResponse {
+  account: {
+    email: string;
+    accountType: string;
+    status: string;
+    displayName?: string;
+  };
+  accessToken: string;
+  refreshToken: string;
+}
+
+type RefreshResponse = {
+  token: string;
+  accessToken: string;
+  refreshToken: string;
+};
 
 const API_BASE_URL = '/api';
 
@@ -37,6 +61,21 @@ class ApiClient {
           message: 'Unknown error',
           error: { message: 'Failed to parse error response' }
         }));
+        
+        // 401/403エラー（認証エラー）の場合はログイン画面へリダイレクト
+        if (response.status === 401 || response.status === 403) {
+          console.warn('🔒 Session timeout or authentication failed: Redirecting to login page');
+          // ローカルストレージをクリア
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userData');
+          // ログイン画面へリダイレクト（セッション切れのメッセージ付き）
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login?session=expired';
+          }
+          // リダイレクト後はPromiseを返して処理を止める
+          return new Promise(() => {}) as Promise<T>;
+        }
         
         // エラーオブジェクトを作成して投げる
         const error = new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -95,14 +134,23 @@ class ApiClient {
     }
   }
 
-  // 事業者関連
-  async getMerchants(): Promise<unknown> {
-    console.log('🌐 API: getMerchants called (via Next.js API Route)');
+  // 会社関連
+  async getMerchants(params?: { search?: string; page?: number; limit?: number; status?: string }): Promise<unknown> {
+    console.log('🌐 API: getMerchants called (via Next.js API Route)', { params });
     console.log('🔗 API Base URL:', this.baseUrl);
-    console.log('🔗 Full URL:', `${this.baseUrl}/merchants`);
+    
+    const queryParams = new URLSearchParams();
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.status) queryParams.append('status', params.status);
+    
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/merchants?${queryString}` : '/merchants';
+    console.log('🔗 Full URL:', `${this.baseUrl}${endpoint}`);
     
     const token = localStorage.getItem('accessToken');
-    return this.request<unknown>('/merchants', {
+    return this.request<unknown>(endpoint, {
       method: 'GET',
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
@@ -112,6 +160,24 @@ class ApiClient {
     console.log('🏢 API: getMerchant called (via Next.js API Route)', { id });
     const token = localStorage.getItem('accessToken');
     return this.request<unknown>(`/merchants/${id}`, {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async getMyMerchant(): Promise<unknown> {
+    console.log('👤 API: getMyMerchant called (via Next.js API Route)');
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>('/merchants/me', {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async getMyShop(): Promise<unknown> {
+    console.log('🏪 API: getMyShop called (via Next.js API Route)');
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>('/shops/me', {
       method: 'GET',
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
@@ -156,10 +222,40 @@ class ApiClient {
     });
   }
 
+  async resendMerchantRegistration(id: string): Promise<unknown> {
+    console.log('📧 API: resendMerchantRegistration called (via Next.js API Route)', { id });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/merchants/${id}/resend-registration`, {
+      method: 'POST',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  // ジャンルカテゴリー関連
+  async getGenres(): Promise<unknown> {
+    console.log('🏷️ API: getGenres called (via Next.js API Route)');
+    return this.request<unknown>('/genres', {
+      method: 'GET',
+    });
+  }
+
+  // 利用シーン関連
+  async getScenes(): Promise<unknown> {
+    console.log('🎭 API: getScenes called (via Next.js API Route)');
+    return this.request<unknown>('/scenes', {
+      method: 'GET',
+    });
+  }
+
   // 店舗関連
   async getShops(queryParams?: string): Promise<unknown> {
     console.log('🏪 API: getShops called (via Next.js API Route)');
     const token = localStorage.getItem('accessToken');
+    console.log('🔑 API: getShops - Token check', { 
+      hasToken: !!token, 
+      tokenLength: token?.length,
+      tokenPreview: token ? `${token.substring(0, 20)}...` : 'no token'
+    });
     const endpoint = queryParams ? `/shops?${queryParams}` : '/shops';
     return this.request<unknown>(endpoint, {
       method: 'GET',
@@ -211,6 +307,55 @@ class ApiClient {
     return this.request<unknown>(`/shops/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify(statusData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  // クーポン関連
+  async getCoupons(queryParams?: string): Promise<unknown> {
+    console.log('🎟️ API: getCoupons called (via Next.js API Route)');
+    const token = localStorage.getItem('accessToken');
+    const endpoint = queryParams ? `/coupons?${queryParams}` : '/coupons';
+    return this.request<unknown>(endpoint, {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async getCoupon(id: string): Promise<unknown> {
+    console.log('🎟️ API: getCoupon called (via Next.js API Route)', { id });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/coupons/${id}`, {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async createCoupon(couponData: unknown): Promise<unknown> {
+    console.log('➕ API: createCoupon called (via Next.js API Route)');
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>('/coupons', {
+      method: 'POST',
+      body: JSON.stringify(couponData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async updateCoupon(id: string, couponData: unknown): Promise<unknown> {
+    console.log('✏️ API: updateCoupon called (via Next.js API Route)', { id });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/coupons/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(couponData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async deleteCoupon(id: string): Promise<void> {
+    console.log('🗑️ API: deleteCoupon called (via Next.js API Route)', { id });
+    const token = localStorage.getItem('accessToken');
+    return this.request<void>(`/coupons/${id}`, {
+      method: 'DELETE',
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }

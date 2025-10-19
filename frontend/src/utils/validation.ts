@@ -48,7 +48,7 @@ export const validateUrl = (value: string): string | null => {
   return null;
 };
 
-export const validateStoreCode = (value: string): string | null => {
+export const validateShopCode = (value: string): string | null => {
   if (value && (value.length < 3 || value.length > 6 || !/^[A-Z0-9]+$/.test(value))) {
     return '店舗CDは3-6文字の大文字英語または数字で入力してください';
   }

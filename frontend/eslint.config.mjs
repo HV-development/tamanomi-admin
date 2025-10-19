@@ -1,17 +1,11 @@
 // eslint.config.mjs (Flat Config for ESLint v9 + Next.js + TypeScript + React)
-import { dirname } from 'path'
-import { fileURLToPath } from 'url'
-import { FlatCompat } from '@eslint/eslintrc'
 import nextPlugin from '@next/eslint-plugin-next'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-})
+import tseslint from 'typescript-eslint'
 
 const eslintConfig = [
+  {
+    ignores: ['.next/', 'node_modules/', 'dist/', 'build/'],
+  },
   {
     name: 'next/core-web-vitals',
     plugins: {
@@ -24,7 +18,7 @@ const eslintConfig = [
       'react/no-unescaped-entities': 'off',
     },
   },
-  ...compat.extends('next/typescript'),
+  ...tseslint.configs.recommended,
   {
     rules: {
       '@typescript-eslint/ban-ts-comment': 'warn',
@@ -43,9 +37,6 @@ const eslintConfig = [
         },
       ],
     },
-  },
-  {
-    ignores: ['.next/', 'node_modules/', 'dist/', 'build/'],
   },
 ]
 

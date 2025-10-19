@@ -26,7 +26,30 @@ export async function POST(request: Request) {
     }
 
     console.log('✅ API Route: Logout successful');
-    return NextResponse.json({ message: 'Logout successful' });
+    
+    // セッションクッキーを削除
+    const nextResponse = NextResponse.json({ message: 'Logout successful' });
+    
+    // accessToken クッキーを削除
+    nextResponse.cookies.set('accessToken', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0,
+      path: '/',
+    });
+    
+    // refreshToken クッキーを削除
+    nextResponse.cookies.set('refreshToken', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0,
+      path: '/',
+    });
+    
+    console.log('🍪 API Route: Session cookies cleared');
+    return nextResponse;
   } catch (error: unknown) {
     console.error('❌ API Route: Logout error', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

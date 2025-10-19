@@ -4,24 +4,27 @@ services:
       context: ../../../
       dockerfile: tamanomi-admin/infrastructure/docker/Dockerfile
       target: dev
+      args:
+        - GITHUB_TOKEN=${GITHUB_TOKEN}
     ports:
       - "3001:3000"
     env_file:
-      - ../../../tamanomi-admin/.env
+      - ../../frontend/.env
     environment:
-      - NODE_ENV=development
-      - API_BASE_URL=http://tamanomi-api-api-1:3002/api/v1
+      - PORT=3000
     volumes:
-      - ../../../tamanomi-admin/frontend:/app
-      - /app/node_modules
+      - ../../frontend:/app
+      - admin_node_modules:/app/node_modules
       - /app/.next
-      - ../../../tamanomi-schemas:/app/tamanomi-schemas
     networks:
       - tamanomi-network
     external_links:
       - tamanomi-api_api-1
 
+volumes:
+  admin_node_modules:
+
 networks:
   tamanomi-network:
     external: true
-    name: tamanomi-api_tamanomi-network
+    name: tamanomi-network
