@@ -8,6 +8,7 @@ import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { apiClient } from '@/lib/api';
 import type { CouponWithShop, CouponStatus, CouponListResponse } from '@hv-development/schemas';
+import { useAuth } from '@/components/contexts/auth-context';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,9 @@ interface Shop {
 type PaginationData = CouponListResponse['pagination'];
 
 export default function CouponsPage() {
-  const shopId = undefined; // このページでは店舗指定なし
+  const auth = useAuth();
+  const isShopAccount = auth?.user?.accountType === 'shop';
+  const shopId = isShopAccount ? auth?.user?.shopId : undefined; // 店舗アカウントの場合は自身のshopIdを使用
   const router = useRouter();
   const [shop, setShop] = useState<Shop | null>(null);
   const [coupons, setCoupons] = useState<CouponWithShop[]>([]);
@@ -56,6 +59,7 @@ export default function CouponsPage() {
       params.append('limit', pagination.limit.toString());
       
       if (shopId) {
+        console.log('🔍 CouponsPage: Fetching coupons for shopId:', shopId);
         params.append('shopId', shopId);
       }
       
@@ -68,10 +72,11 @@ export default function CouponsPage() {
       }
 
       const data: any = await apiClient.getCoupons(params.toString());
+      console.log('✅ CouponsPage: Coupons fetched:', data.coupons?.length || 0);
       setCoupons(data.coupons || []);
       setPagination(data.pagination || pagination);
     } catch (error) {
-      console.error('クーポン一覧の取得に失敗しました:', error);
+      console.error('❌ CouponsPage: Failed to fetch coupons:', error);
       setCoupons([]);
     } finally {
       setLoading(false);
@@ -189,12 +194,14 @@ export default function CouponsPage() {
                 </div>
               )}
               <h1 className="text-2xl font-bold text-gray-900">
-                {shopId ? '店舗クーポン管理' : 'クーポン管理'}
+                {isShopAccount ? 'クーポン管理' : (shopId ? '店舗クーポン管理' : 'クーポン管理')}
               </h1>
               <p className="text-gray-600">
-                {shopId 
-                  ? 'この店舗のクーポンを管理します' 
-                  : 'クーポンの管理・編集を行います'
+                {isShopAccount 
+                  ? '自身の店舗のクーポンを管理します'
+                  : (shopId 
+                    ? 'この店舗のクーポンを管理します' 
+                    : 'クーポンの管理・編集を行います')
                 }
               </p>
             </div>
@@ -207,7 +214,8 @@ export default function CouponsPage() {
           </div>
         </div>
 
-        {/* 検索フォーム */}
+        {/* 検索フォーム（店舗アカウントの場合は簡略表示） */}
+        {!isShopAccount && (
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="pb-3 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
@@ -285,6 +293,7 @@ export default function CouponsPage() {
           </div>
           )}
         </div>
+        )}
 
         {/* クーポン一覧 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">

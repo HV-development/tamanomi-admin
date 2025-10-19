@@ -34,6 +34,10 @@ export default function Sidebar() {
   const filteredMenuItems = auth?.isLoading 
     ? [] 
     : menuItems.filter((item) => {
+        // 店舗アカウントの場合、店舗管理、クーポン管理、クーポン利用履歴のみ表示
+        if (auth?.user?.accountType === 'shop') {
+          return item.href === '/shops' || item.href === '/coupons' || item.href === '/coupon-history';
+        }
         // 会社アカウントの場合、ユーザー管理と管理者アカウントを非表示
         if (auth?.user?.accountType === 'merchant') {
           return item.href !== '/users' && item.href !== '/admins';
