@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import SidebarHeader from '@/components/molecules/SidebarHeader';
-import MenuItem from '@/components/molecules/MenuItem';
+import SidebarHeader from '@/components/molecules/sidebar-header';
+import MenuItem from '@/components/molecules/menu-item';
 import Icon from '@/components/atoms/Icon';
+import { useAuth } from '@/components/contexts/auth-context';
 
 interface MenuItemData {
   name: string;
@@ -13,7 +14,7 @@ interface MenuItemData {
 }
 
 const menuItems: MenuItemData[] = [
-  { name: '掲載店管理', href: '/merchants', iconName: 'storefront' },
+  { name: '会社管理', href: '/merchants', iconName: 'domain' },
   { name: '店舗管理', href: '/shops', iconName: 'store' },
   { name: 'クーポン管理', href: '/coupons', iconName: 'confirmation_number' },
   { name: 'ユーザー管理', href: '/users', iconName: 'groups' },
@@ -23,9 +24,26 @@ const menuItems: MenuItemData[] = [
 
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const auth = useAuth();
   const [isLoaded, setIsLoaded] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+
+  // アカウントタイプに基づいてメニューをフィルタリング
+  // 認証情報がロード中の場合は空配列を返してちらつきを防ぐ
+  const filteredMenuItems = auth?.isLoading 
+    ? [] 
+    : menuItems.filter((item) => {
+        // 店舗アカウントの場合、店舗管理、クーポン管理、クーポン利用履歴のみ表示
+        if (auth?.user?.accountType === 'shop') {
+          return item.href === '/shops' || item.href === '/coupons' || item.href === '/coupon-history';
+        }
+        // 会社アカウントの場合、ユーザー管理と管理者アカウントを非表示
+        if (auth?.user?.accountType === 'merchant') {
+          return item.href !== '/users' && item.href !== '/admins';
+        }
+        return true;
+      });
 
   // ローカルストレージからサイドバーの状態を復元
   useEffect(() => {
@@ -66,7 +84,7 @@ export default function Sidebar() {
       {/* メニュー */}
       <nav className={`p-4 ${isCollapsed ? 'pt-6' : ''}`}>
         <ul className="space-y-2">
-          {menuItems.map((item) => (
+          {filteredMenuItems.map((item) => (
             <li key={item.href}>
               <MenuItem
                 name={item.name}
@@ -86,9 +104,12 @@ export default function Sidebar() {
         {/* ログアウトボタン */}
         <div className="px-4 py-2">
           <button
-            onClick={() => {
+            onClick={async () => {
+              if (!auth) return;
+              
               if (confirm('ログアウトしますか？')) {
-                window.location.href = '/';
+                await auth.logout();
+                router.push('/login');
               }
             }}
             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900`}

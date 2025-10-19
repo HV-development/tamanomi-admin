@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import DashboardLayout from '@/components/templates/DashboardLayout';
+import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 
@@ -219,7 +219,7 @@ export default function UserManagement() {
   };
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <div className="space-y-6">
         {/* ヘッダー */}
         <div>
@@ -596,6 +596,6 @@ export default function UserManagement() {
           )}
         </div>
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 }

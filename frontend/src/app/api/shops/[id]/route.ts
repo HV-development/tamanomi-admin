@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
-function getAuthHeaders(request: Request): HeadersInit {
+function getAuthHeaders(request: Request): Record<string, string> {
   const authToken = request.headers.get('authorization');
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
   
@@ -20,7 +20,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     const { id } = params;
     console.log('🏪 API Route: Get shop request received', { shopId: id });
     
-    const response = await fetch(`${API_BASE_URL}/v1/shops/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/shops/${id}`, {
       method: 'GET',
       headers: getAuthHeaders(request),
     });
@@ -33,6 +33,12 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
     const data = await response.json();
     console.log('✅ API Route: Get shop successful', { shopId: id });
+    console.log('🔍 API Route: Shop data received from backend:', {
+      paymentCredit: data.paymentCredit,
+      paymentCode: data.paymentCode,
+      customSceneText: data.customSceneText,
+      sceneIds: data.sceneIds
+    });
     return NextResponse.json(data);
   } catch (error: unknown) {
     console.error(`❌ API Route: Get shop ${params.id} error`, error);
@@ -47,7 +53,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     const body = await request.json();
     console.log('✏️ API Route: Update shop request received', { shopId: id, name: body.name });
     
-    const response = await fetch(`${API_BASE_URL}/v1/shops/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/shops/${id}`, {
       method: 'PATCH',
       headers: getAuthHeaders(request),
       body: JSON.stringify(body),
@@ -74,7 +80,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     const { id } = params;
     console.log('🗑️ API Route: Delete shop request received', { shopId: id });
     
-    const response = await fetch(`${API_BASE_URL}/v1/shops/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/shops/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(request),
     });

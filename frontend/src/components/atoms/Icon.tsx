@@ -11,6 +11,8 @@ const iconMap: Record<string, { type: 'emoji' | 'material' | 'image'; value: str
   admin: { type: 'material', value: 'person' },
   history: { type: 'material', value: 'history_2' },
   // サイドバーで使用するアイコン名を追加
+  apartment: { type: 'material', value: 'apartment' },
+  domain: { type: 'material', value: 'domain' },
   storefront: { type: 'material', value: 'storefront' },
   confirmation_number: { type: 'material', value: 'confirmation_number' },
   groups: { type: 'material', value: 'groups' },

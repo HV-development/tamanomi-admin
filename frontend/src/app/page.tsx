@@ -1,5 +1,6 @@
-import Login from '@/components/pages/Login';
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return <Login />;
+  // ルートページにアクセスしたら加盟店一覧にリダイレクト
+  redirect('/merchants');
 }

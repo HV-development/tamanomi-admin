@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
-function getAuthHeaders(request: Request): HeadersInit {
+function getAuthHeaders(request: Request): Record<string, string> {
   const authToken = request.headers.get('authorization');
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
   
@@ -21,7 +21,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     const body = await request.json();
     console.log('🔄 API Route: Update shop status request received', { shopId: id, status: body.status });
     
-    const response = await fetch(`${API_BASE_URL}/v1/shops/${id}/status`, {
+    const response = await fetch(`${API_BASE_URL}/shops/${id}/status`, {
       method: 'PATCH',
       headers: getAuthHeaders(request),
       body: JSON.stringify(body),

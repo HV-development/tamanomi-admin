@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
-function getAuthHeaders(request: Request): HeadersInit {
+function getAuthHeaders(request: Request): Record<string, string> {
   const authToken = request.headers.get('authorization');
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
   
@@ -20,19 +20,22 @@ export async function GET(request: Request) {
     console.log('🌐 API Route: Get shops request received');
     
     const url = new URL(request.url);
-    const page = url.searchParams.get('page') || '1';
-    const limit = url.searchParams.get('limit') || '10';
-    const status = url.searchParams.get('status');
-    const merchantId = url.searchParams.get('merchantId');
     
-    // クエリパラメータを構築
+    // 全てのクエリパラメータをそのまま転送
     const queryParams = new URLSearchParams();
-    queryParams.append('page', page);
-    queryParams.append('limit', limit);
-    if (status) queryParams.append('status', status);
-    if (merchantId) queryParams.append('merchantId', merchantId);
+    url.searchParams.forEach((value, key) => {
+      queryParams.append(key, value);
+    });
     
-    const response = await fetch(`${API_BASE_URL}/v1/shops?${queryParams.toString()}`, {
+    // デフォルト値の設定
+    if (!queryParams.has('page')) queryParams.append('page', '1');
+    if (!queryParams.has('limit')) queryParams.append('limit', '10');
+    
+    const fullUrl = `${API_BASE_URL}/shops?${queryParams.toString()}`;
+    console.log('🔗 API Route: Fetching from', fullUrl);
+    console.log('🔑 API Route: API_BASE_URL', API_BASE_URL);
+    
+    const response = await fetch(fullUrl, {
       method: 'GET',
       headers: getAuthHeaders(request),
     });
@@ -58,7 +61,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log('➕ API Route: Create shop request received', { name: body.name });
     
-    const response = await fetch(`${API_BASE_URL}/v1/shops`, {
+    const response = await fetch(`${API_BASE_URL}/shops`, {
       method: 'POST',
       headers: getAuthHeaders(request),
       body: JSON.stringify(body),
