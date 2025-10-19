@@ -7,16 +7,26 @@ import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { apiClient } from '@/lib/api';
-import type { CouponCreateRequest, CouponStatus } from '@hv-development/schemas';
+import type { CouponCreateRequest, CouponStatus, Shop } from '@hv-development/schemas';
 import { 
   validateRequired, 
   validateMaxLength, 
-  validateFileSize, 
-  validateFileType 
+  validateFileSize
 } from '@/utils/validation';
+import { useAuth } from '@/components/contexts/auth-context';
+import MerchantSelectModal from '@/components/molecules/MerchantSelectModal';
+import ShopSelectModal from '@/components/molecules/ShopSelectModal';
 
 export const dynamic = 'force-dynamic';
 export const dynamicParams = true;
+
+interface Merchant {
+  id: string;
+  name: string;
+  account: {
+    email: string;
+  };
+}
 
 interface CouponFormData {
   shopId: string;
@@ -29,9 +39,17 @@ interface CouponFormData {
   publishStatus: string;
 }
 
+type CouponFormErrors = Partial<Record<keyof CouponFormData, string>>;
+
 function CouponNewPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const auth = useAuth();
+  
+  // アカウントタイプの判定
+  const isAdminAccount = auth?.user?.accountType === 'admin';
+  const isMerchantAccount = auth?.user?.accountType === 'merchant';
+  const isShopAccount = auth?.user?.accountType === 'shop';
   
   const [formData, setFormData] = useState<CouponFormData>({
     shopId: '',
@@ -44,9 +62,15 @@ function CouponNewPageContent() {
     publishStatus: 'active',
   });
 
-  const [errors, setErrors] = useState<Partial<Record<keyof CouponFormData, string>>>({});
+  const [errors, setErrors] = useState<CouponFormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [_isUploading, setIsUploading] = useState(false);
+  
+  // 会社・店舗選択用の状態
+  const [selectedMerchant, setSelectedMerchant] = useState<Merchant | null>(null);
+  const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
+  const [isMerchantModalOpen, setIsMerchantModalOpen] = useState(false);
+  const [isShopModalOpen, setIsShopModalOpen] = useState(false);
 
   useEffect(() => {
     // URLパラメータから値を取得してフォームに設定
@@ -79,6 +103,42 @@ function CouponNewPageContent() {
       sessionStorage.removeItem('couponImagePreview');
     }
   }, [searchParams]);
+  
+  // アカウントタイプに応じた初期化
+  useEffect(() => {
+    const initializeAccountData = async () => {
+      // 店舗アカウントの場合: 会社と店舗情報を自動設定
+      if (isShopAccount && auth?.user?.shopId) {
+        try {
+          const shopData = await apiClient.getShop(auth.user.shopId) as Shop;
+          setSelectedShop(shopData);
+          setFormData(prev => ({ ...prev, shopId: shopData.id }));
+          
+          if (shopData.merchant) {
+            setSelectedMerchant({
+              id: shopData.merchant.id,
+              name: shopData.merchant.name,
+              account: { email: '' }
+            });
+          }
+        } catch (error) {
+          console.error('店舗情報の取得に失敗しました:', error);
+        }
+      }
+      
+      // 会社アカウントの場合: 会社情報を自動設定
+      if (isMerchantAccount && auth?.user?.merchantId) {
+        try {
+          const merchantData = await apiClient.getMerchant(auth.user.merchantId) as Merchant;
+          setSelectedMerchant(merchantData);
+        } catch (error) {
+          console.error('会社情報の取得に失敗しました:', error);
+        }
+      }
+    };
+    
+    initializeAccountData();
+  }, [isShopAccount, isMerchantAccount, auth?.user?.shopId, auth?.user?.merchantId]);
 
   const handleInputChange = (field: keyof CouponFormData, value: string) => {
     setFormData(prev => ({
@@ -124,6 +184,20 @@ function CouponNewPageContent() {
 
     setErrors(newErrors);
   };
+  
+  // 会社選択ハンドラー
+  const handleMerchantSelect = (merchant: Merchant) => {
+    setSelectedMerchant(merchant);
+    // 会社を変更した場合、店舗選択をリセット
+    setSelectedShop(null);
+    setFormData(prev => ({ ...prev, shopId: '' }));
+  };
+  
+  // 店舗選択ハンドラー
+  const handleShopSelect = (shop: Shop) => {
+    setSelectedShop(shop);
+    setFormData(prev => ({ ...prev, shopId: shop.id }));
+  };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -131,14 +205,13 @@ function CouponNewPageContent() {
 
     if (file) {
       // 画像形式チェック
-      const fileTypeError = validateFileType(file, ['image/jpeg', 'image/png', 'image/webp']);
-      const fileSizeError = validateFileSize(file, 10);
-      
-      if (fileTypeError) {
-        newErrors.couponImage = fileTypeError;
+      if (!file.type.startsWith('image/')) {
+        newErrors.couponImage = '画像ファイルのみアップロード可能です';
         setErrors(newErrors);
         return;
       }
+      
+      const fileSizeError = validateFileSize(file, 10);
       
       if (fileSizeError) {
         newErrors.couponImage = fileSizeError;
@@ -198,7 +271,7 @@ function CouponNewPageContent() {
   };
 
   const validateAllFields = (): boolean => {
-    const newErrors: Partial<Record<keyof CouponFormData, string>> = {};
+    const newErrors: CouponFormErrors = {};
 
     // 必須チェック
     const couponNameError = validateRequired(formData.couponName, 'クーポン名') || validateMaxLength(formData.couponName, 15, 'クーポン名');
@@ -209,6 +282,17 @@ function CouponNewPageContent() {
 
     const publishStatusError = validateRequired(formData.publishStatus, '公開 / 非公開');
     if (publishStatusError) newErrors.publishStatus = publishStatusError;
+    
+    // 店舗選択チェック
+    if (!formData.shopId) {
+      newErrors.shopId = '店舗を選択してください';
+    } else {
+      // UUID形式チェック（簡易版）
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(formData.shopId)) {
+        newErrors.shopId = '選択された店舗のIDが無効です。別の店舗を選択してください。';
+      }
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -224,7 +308,7 @@ function CouponNewPageContent() {
           title: formData.couponName,
           description: formData.couponContent || null,
           conditions: formData.couponConditions || null,
-          imageUrl: formData.imageUrl || null,
+          imageUrl: formData.imageUrl && formData.imageUrl.trim() !== '' ? formData.imageUrl : null,
           status: (formData.publishStatus === '1' ? 'active' : 'inactive') as CouponStatus
         };
         
@@ -232,9 +316,31 @@ function CouponNewPageContent() {
         
         // 作成成功後、一覧画面に遷移
         router.push('/coupons');
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('クーポンの作成に失敗しました:', error);
-        alert('クーポンの作成に失敗しました。もう一度お試しください。');
+        
+        // エラーメッセージを取得
+        let errorMessage = 'クーポンの作成に失敗しました。もう一度お試しください。';
+        if (error && typeof error === 'object' && 'response' in error) {
+          const apiError = error as { response?: { data?: { message?: string } } };
+          if (apiError.response?.data?.message) {
+            errorMessage = apiError.response.data.message;
+          }
+        } else if (error && typeof error === 'object' && 'message' in error) {
+          errorMessage = (error as { message: string }).message;
+        }
+        
+        // 店舗IDのバリデーションエラーの場合
+        if (errorMessage.includes('shopId') || errorMessage.includes('uuid')) {
+          errorMessage = '選択された店舗のIDが無効です。別の店舗を選択してください。';
+        }
+        
+        // imageUrlのバリデーションエラーの場合
+        if (errorMessage.includes('imageUrl') || errorMessage.includes('uri')) {
+          errorMessage = '画像URLが無効です。画像を再度アップロードしてください。';
+        }
+        
+        alert(errorMessage);
         setIsSubmitting(false);
       }
     } else {
@@ -248,6 +354,22 @@ function CouponNewPageContent() {
 
   return (
     <AdminLayout>
+      {/* モーダル */}
+      <MerchantSelectModal
+        isOpen={isMerchantModalOpen}
+        onClose={() => setIsMerchantModalOpen(false)}
+        onSelect={handleMerchantSelect}
+        selectedMerchantId={selectedMerchant?.id}
+      />
+      
+      <ShopSelectModal
+        isOpen={isShopModalOpen}
+        onClose={() => setIsShopModalOpen(false)}
+        onSelect={handleShopSelect}
+        selectedShopId={selectedShop?.id}
+        merchantId={selectedMerchant?.id}
+      />
+      
       <div className="space-y-6">
         {/* ページタイトル */}
         <div>
@@ -270,6 +392,122 @@ function CouponNewPageContent() {
         {/* 登録フォーム */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="space-y-6">
+            {/* 会社・店舗選択 */}
+            {isAdminAccount && (
+              <>
+                {/* 管理者：会社選択 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    会社 <span className="text-red-500">*</span>
+                  </label>
+                  {selectedMerchant && (
+                    <div className="mb-2 text-sm text-gray-900">
+                      {selectedMerchant.name}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsMerchantModalOpen(true)}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors"
+                  >
+                    会社を選択
+                  </button>
+                </div>
+                
+                {/* 管理者：店舗選択 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    店舗 <span className="text-red-500">*</span>
+                  </label>
+                  {selectedShop && (
+                    <div className="mb-2 text-base text-gray-900">
+                      {selectedShop.name}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsShopModalOpen(true)}
+                    disabled={!selectedMerchant}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    店舗を選択
+                  </button>
+                  {!selectedMerchant && (
+                    <p className="mt-1 text-xs text-gray-500">先に会社を選択してください</p>
+                  )}
+                  {errors.shopId && (
+                    <p className="mt-1 text-sm text-red-500">{errors.shopId}</p>
+                  )}
+                </div>
+              </>
+            )}
+            
+            {isMerchantAccount && (
+              <>
+                {/* 会社アカウント：会社名表示（変更不可） */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    会社 <span className="text-red-500">*</span>
+                  </label>
+                  <div className="text-sm text-gray-900 mb-1">
+                    {selectedMerchant?.name || '読み込み中...'}
+                  </div>
+                  <p className="text-xs text-gray-500">自身の会社が設定されています（変更不可）</p>
+                </div>
+                
+                {/* 会社アカウント：店舗選択 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    店舗 <span className="text-red-500">*</span>
+                  </label>
+                  {selectedShop && (
+                    <div className="mb-2 text-sm text-gray-900">
+                      {selectedShop.name}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsShopModalOpen(true)}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors"
+                  >
+                    店舗を選択
+                  </button>
+                  {errors.shopId && (
+                    <p className="mt-1 text-sm text-red-500">{errors.shopId}</p>
+                  )}
+                </div>
+              </>
+            )}
+            
+            {isShopAccount && (
+              <>
+                {/* 店舗アカウント：会社名表示（変更不可） */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    会社 <span className="text-red-500">*</span>
+                  </label>
+                  <div className="text-sm text-gray-900 mb-1">
+                    {selectedMerchant?.name || '読み込み中...'}
+                  </div>
+                  <p className="text-xs text-gray-500">自身の会社が設定されています（変更不可）</p>
+                </div>
+                
+                {/* 店舗アカウント：店舗名表示（変更不可） */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    店舗 <span className="text-red-500">*</span>
+                  </label>
+                  <div className="text-sm text-gray-900 mb-1">
+                    {selectedShop?.name || '読み込み中...'}
+                  </div>
+                  <p className="text-xs text-gray-500">自身の店舗が設定されています（変更不可）</p>
+                  {errors.shopId && (
+                    <p className="mt-1 text-sm text-red-500">{errors.shopId}</p>
+                  )}
+                </div>
+              </>
+            )}
+
             {/* クーポン名 */}
             <div>
               <label htmlFor="couponName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -281,7 +519,7 @@ function CouponNewPageContent() {
                 placeholder="クーポン名を入力（最大15文字）"
                 value={formData.couponName}
                 onChange={(e) => handleInputChange('couponName', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                className={`w-150 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                   errors.couponName ? 'border-red-500' : 'border-gray-300'
                 }`}
                 maxLength={15}
@@ -301,7 +539,7 @@ function CouponNewPageContent() {
                 placeholder="クーポン内容を入力（最大100文字）"
                 value={formData.couponContent}
                 onChange={(e) => handleInputChange('couponContent', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                className={`w-150 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                   errors.couponContent ? 'border-red-500' : 'border-gray-300'
                 }`}
                 rows={3}
@@ -312,21 +550,6 @@ function CouponNewPageContent() {
               )}
             </div>
 
-            {/* 店舗選択 */}
-            <div>
-              <label htmlFor="shopId" className="block text-sm font-medium text-gray-700 mb-2">
-                店舗 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="shopId"
-                placeholder="店舗IDを入力"
-                value={formData.shopId}
-                onChange={(e) => handleInputChange('shopId', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-
             {/* クーポン画像 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -335,7 +558,7 @@ function CouponNewPageContent() {
               <div className="space-y-4">
                 {/* 画像プレビュー */}
                 {formData.imagePreview && (
-                  <div className="border border-gray-300 rounded-lg p-4">
+                  <div>
                     <img
                       src={formData.imagePreview}
                       alt="クーポン画像プレビュー"
@@ -349,7 +572,7 @@ function CouponNewPageContent() {
                   <input
                     type="file"
                     id="couponImage"
-                    accept="image/jpeg,image/png,image/webp"
+                    accept="image/*"
                     onChange={handleImageUpload}
                     className="hidden"
                   />
@@ -361,7 +584,7 @@ function CouponNewPageContent() {
                     画像アップロード
                   </Button>
                   <p className="mt-1 text-xs text-gray-500">
-                    JPEG形式のみ対応（最大5MB）
+                    PNG, JPG, WEBP形式の画像をアップロードできます（最大10MB）
                   </p>
                 </div>
               </div>
