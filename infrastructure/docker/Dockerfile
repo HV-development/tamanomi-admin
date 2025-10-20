@@ -1,7 +1,8 @@
 # Next.jsアプリケーション用Dockerfile
 FROM node:22-alpine AS base
 
-# Install pnpm 
+# Install pnpm and Watchman（ファイル監視の最適化）
+RUN apk add --no-cache watchman
 RUN npm install -g pnpm
 
 # Dependencies
