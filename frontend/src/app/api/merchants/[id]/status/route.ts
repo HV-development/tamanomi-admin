@@ -13,13 +13,13 @@ function getAuthHeaders(request: Request): Record<string, string> {
   return headers;
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     console.log('🔄 API Route: 会社ステータス更新リクエスト受信', { merchantId: id, status: body.status });
 
-    const response = await fetch(`${API_BASE_URL}/admin/merchants/${id}/status`, {
+    const response = await fetch(`${API_BASE_URL}/admin/merchants//status`, {
       method: 'PATCH',
       headers: getAuthHeaders(request),
       body: JSON.stringify(body),
@@ -35,7 +35,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     console.log('✅ API Route: 会社ステータス更新成功', { merchantId: id });
     return NextResponse.json(data);
   } catch (error: unknown) {
-    console.error(`❌ API Route: 会社ステータス更新エラー ${params.id}`, error);
+    console.error(`❌ API Route: 会社ステータス更新エラー `, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
   }

@@ -4,10 +4,11 @@ import ShopForm from '@/components/organisms/ShopForm';
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
 
-export default function EditShopPage({ params }: { params: { id: string; shopId: string } }) {
+export default async function EditShopPage({ params }: { params: Promise<{ id: string; shopId: string }> }) {
+  const { id } = await params;
   return (
     <AdminLayout>
-      <ShopForm merchantId={params.id} />
+      <ShopForm merchantId={id} />
     </AdminLayout>
   );
 }
