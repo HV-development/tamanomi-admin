@@ -15,12 +15,12 @@ function getAuthHeaders(request: Request): Record<string, string> {
   return headers;
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     console.log('🏪 API Route: Get shop request received', { shopId: id });
     
-    const response = await fetch(`${API_BASE_URL}/shops/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/shops/`, {
       method: 'GET',
       headers: getAuthHeaders(request),
     });
@@ -41,19 +41,19 @@ export async function GET(request: Request, { params }: { params: { id: string }
     });
     return NextResponse.json(data);
   } catch (error: unknown) {
-    console.error(`❌ API Route: Get shop ${params.id} error`, error);
+    console.error(`❌ API Route: Get shop  error`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     console.log('✏️ API Route: Update shop request received', { shopId: id, name: body.name });
     
-    const response = await fetch(`${API_BASE_URL}/shops/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/shops/`, {
       method: 'PATCH',
       headers: getAuthHeaders(request),
       body: JSON.stringify(body),
@@ -69,18 +69,18 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     console.log('✅ API Route: Update shop successful', { shopId: id });
     return NextResponse.json(data);
   } catch (error: unknown) {
-    console.error(`❌ API Route: Update shop ${params.id} error`, error);
+    console.error(`❌ API Route: Update shop  error`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     console.log('🗑️ API Route: Delete shop request received', { shopId: id });
     
-    const response = await fetch(`${API_BASE_URL}/shops/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/shops/`, {
       method: 'DELETE',
       headers: getAuthHeaders(request),
     });
@@ -94,7 +94,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     console.log('✅ API Route: Delete shop successful', { shopId: id });
     return NextResponse.json({ message: '店舗が削除されました' });
   } catch (error: unknown) {
-    console.error(`❌ API Route: Delete shop ${params.id} error`, error);
+    console.error(`❌ API Route: Delete shop  error`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }

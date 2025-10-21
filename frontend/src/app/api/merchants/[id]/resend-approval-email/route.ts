@@ -15,14 +15,14 @@ function getAuthHeaders(request: Request): Record<string, string> {
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     console.log('➕ API Route: 承認メール再送リクエスト受信', { merchantId: id });
     
     // 会社情報を取得してメールアドレスを確認
-    const merchantResponse = await fetch(`${API_BASE_URL}/admin/merchants/${id}`, {
+    const merchantResponse = await fetch(`${API_BASE_URL}/admin/merchants/`, {
       method: 'GET',
       headers: getAuthHeaders(request),
     });

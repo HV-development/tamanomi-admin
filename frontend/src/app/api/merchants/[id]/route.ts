@@ -13,12 +13,12 @@ function getAuthHeaders(request: Request): Record<string, string> {
   return headers;
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     console.log('🏢 API Route: 会社詳細取得リクエスト受信', { merchantId: id });
 
-    const response = await fetch(`${API_BASE_URL}/admin/merchants/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/admin/merchants/`, {
       method: 'GET',
       headers: getAuthHeaders(request),
     });
@@ -38,19 +38,19 @@ export async function GET(request: Request, { params }: { params: { id: string }
     });
     return NextResponse.json(data);
   } catch (error: unknown) {
-    console.error(`❌ API Route: 会社詳細取得エラー ${params.id}`, error);
+    console.error(`❌ API Route: 会社詳細取得エラー `, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     console.log('✏️ API Route: 会社更新リクエスト受信', { merchantId: id, name: body.name });
 
-    const response = await fetch(`${API_BASE_URL}/admin/merchants/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/admin/merchants/`, {
       method: 'PUT',
       headers: getAuthHeaders(request),
       body: JSON.stringify(body),
@@ -66,18 +66,18 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     console.log('✅ API Route: 会社更新成功', { merchantId: id });
     return NextResponse.json(data);
   } catch (error: unknown) {
-    console.error(`❌ API Route: 会社更新エラー ${params.id}`, error);
+    console.error(`❌ API Route: 会社更新エラー `, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     console.log('🗑️ API Route: 会社削除リクエスト受信', { merchantId: id });
 
-    const response = await fetch(`${API_BASE_URL}/admin/merchants/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/admin/merchants/`, {
       method: 'DELETE',
       headers: getAuthHeaders(request),
     });
@@ -91,7 +91,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     console.log('✅ API Route: 会社削除成功', { merchantId: id });
     return NextResponse.json({ message: '会社が削除されました' });
   } catch (error: unknown) {
-    console.error(`❌ API Route: 会社削除エラー ${params.id}`, error);
+    console.error(`❌ API Route: 会社削除エラー `, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
   }

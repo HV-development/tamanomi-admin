@@ -15,10 +15,10 @@ function getAuthHeaders(request: Request): Record<string, string> {
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     console.log('📧 API Route: 登録URL再発行リクエスト受信', { merchantId: id });
     console.log('🔗 API Route: API_BASE_URL:', API_BASE_URL);
     
@@ -28,7 +28,7 @@ export async function POST(
       authHeader: authHeaders.Authorization ? 'Bearer ***' : 'none'
     });
     
-    const response = await fetch(`${API_BASE_URL}/admin/merchants/${id}/resend-registration`, {
+    const response = await fetch(`${API_BASE_URL}/admin/merchants//resend-registration`, {
       method: 'POST',
       headers: authHeaders,
       body: JSON.stringify({}),
