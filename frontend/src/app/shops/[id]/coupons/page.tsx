@@ -67,7 +67,7 @@ export default function ShopCouponsPage() {
         params.append('status', appliedStatusFilter);
       }
 
-      const data: any = await apiClient.getCoupons(params.toString());
+      const data: { coupons: Coupon[]; pagination: Pagination } = await apiClient.getCoupons(params.toString());
       setCoupons(data.coupons || []);
       setPagination(data.pagination || pagination);
     } catch (error) {
