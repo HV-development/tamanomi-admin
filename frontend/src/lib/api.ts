@@ -78,7 +78,8 @@ class ApiClient {
         }
         
         // エラーオブジェクトを作成して投げる
-        const error = new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        const errorMessage = errorData?.message || errorData?.error?.message || `HTTP error! status: ${response.status}`;
+        const error = new Error(errorMessage);
         (error as Error & { response?: { status: number; data: unknown } }).response = {
           status: response.status,
           data: errorData

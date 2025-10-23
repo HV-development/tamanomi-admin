@@ -21,7 +21,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const body = await request.json();
     console.log('🔄 API Route: Update shop status request received', { shopId: id, status: body.status });
     
-    const response = await fetch(`${API_BASE_URL}/shops//status`, {
+    const response = await fetch(`${API_BASE_URL}/shops/${id}/status`, {
       method: 'PATCH',
       headers: getAuthHeaders(request),
       body: JSON.stringify(body),
