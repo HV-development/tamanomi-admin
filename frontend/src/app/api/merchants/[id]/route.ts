@@ -18,7 +18,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
     console.log('🏢 API Route: 会社詳細取得リクエスト受信', { merchantId: id });
 
-    const response = await fetch(`${API_BASE_URL}/admin/merchants/`, {
+    const response = await fetch(`${API_BASE_URL}/admin/merchants/${id}`, {
       method: 'GET',
       headers: getAuthHeaders(request),
     });
@@ -50,7 +50,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const body = await request.json();
     console.log('✏️ API Route: 会社更新リクエスト受信', { merchantId: id, name: body.name });
 
-    const response = await fetch(`${API_BASE_URL}/admin/merchants/`, {
+    const response = await fetch(`${API_BASE_URL}/admin/merchants/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(request),
       body: JSON.stringify(body),
@@ -77,7 +77,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     const { id } = await params;
     console.log('🗑️ API Route: 会社削除リクエスト受信', { merchantId: id });
 
-    const response = await fetch(`${API_BASE_URL}/admin/merchants/`, {
+    const response = await fetch(`${API_BASE_URL}/admin/merchants/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(request),
     });
