@@ -50,7 +50,7 @@ export default function ShopsPage() {
         try {
           const data = await apiClient.getMyMerchant();
           if (data && typeof data === 'object' && 'data' in data && data.data) {
-            const merchantData = data.data as any;
+            const merchantData = data.data as { id: string; name: string };
             setMerchantId(merchantData.id);
             setMerchantName(merchantData.name);
           }
@@ -796,8 +796,8 @@ export default function ShopsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[120px]">
                       <div className="text-sm text-gray-900">
-                        {(shop as any).applications && Array.isArray((shop as any).applications) 
-                          ? (shop as any).applications.map((app: string) => 
+                        {(shop as Shop & { applications?: string[] }).applications && Array.isArray((shop as Shop & { applications?: string[] }).applications) 
+                          ? (shop as Shop & { applications?: string[] }).applications.map((app: string) => 
                               app === 'tamanomi' ? 'たまのみ' : app === 'nomoca_kagawa' ? 'のもかかがわ' : app
                             ).join(', ')
                           : '-'}

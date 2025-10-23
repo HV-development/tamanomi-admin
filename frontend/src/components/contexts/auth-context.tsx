@@ -123,7 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         refreshTokenMatch: savedRefreshToken === response.refreshToken
       });
       
-      const accountData = response.account as any;
+      const accountData = response.account as { accountType: string; shopId?: string; merchantId?: string };
       console.log('🔍 AuthContext: Received account data from API', {
         accountType: accountData.accountType,
         shopId: accountData.shopId,
@@ -157,7 +157,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiClient.register(userData);
       
       // トークンを保存
-      const accountData = response.account as any;
+      const accountData = response.account as { accountType: string; shopId?: string; merchantId?: string };
       localStorage.setItem('accessToken', response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
       localStorage.setItem('userData', JSON.stringify(accountData));

@@ -63,7 +63,7 @@ const sampleCouponUsages: CouponUsage[] = [
 export default function CouponHistoryPage() {
   const auth = useAuth();
   const isShopAccount = auth?.user?.accountType === 'shop';
-  const shopId = isShopAccount ? auth?.user?.shopId : undefined;
+  const _shopId = isShopAccount ? auth?.user?.shopId : undefined;
   const pathname = usePathname();
   const router = useRouter();
   const _params = useParams(); // 将来的に使用予定

@@ -198,7 +198,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             if (!isMounted) return;
             
             if (myMerchantData && typeof myMerchantData === 'object' && 'data' in myMerchantData && myMerchantData.data) {
-              const merchant = myMerchantData.data as any;
+              const merchant = myMerchantData.data as { id: string; name: string };
               
               // merchantIdがまだ設定されていない場合のみ設定
               if (!merchantId) {
@@ -339,7 +339,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             }
             
             // クレジットカードブランドの設定（JSON形式から読み込み）
-            const shopDataWithPayment = shopData as ShopCreateRequest & { paymentCredit?: any; paymentCode?: any };
+            const shopDataWithPayment = shopData as ShopCreateRequest & { paymentCredit?: { brands: string[]; other?: string }; paymentCode?: string };
             const creditValue = shopDataWithPayment.paymentCredit;
             console.log('💳 Credit value from API:', creditValue);
             if (creditValue) {
@@ -412,7 +412,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               // formDataのapplicationsはすでにsetFormDataで設定されているので、
               // 親会社のapplicationsも取得する
               if (merchantFromShop) {
-                const parentMerchant = merchantsArray.find(m => m.id === finalMerchantId) as any;
+                const parentMerchant = merchantsArray.find(m => m.id === finalMerchantId) as Merchant & { applications?: string[] };
                 if (parentMerchant?.applications) {
                   setMerchantApplications(parentMerchant.applications);
                   console.log('📱 Parent merchant applications set:', parentMerchant.applications);
@@ -458,7 +458,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   // formData.merchantIdが変更されたときに加盟店名とaccountEmailを更新
   useEffect(() => {
     if (formData.merchantId && merchants.length > 0) {
-      const merchant = merchants.find(m => m.id === formData.merchantId) as any;
+      const merchant = merchants.find(m => m.id === formData.merchantId) as Merchant;
       console.log('🔄 Updating merchant name from formData:', { 
         merchantId: formData.merchantId, 
         merchant, 
