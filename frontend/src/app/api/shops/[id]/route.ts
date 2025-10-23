@@ -20,7 +20,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
     console.log('🏪 API Route: Get shop request received', { shopId: id });
     
-    const response = await fetch(`${API_BASE_URL}/shops/`, {
+    const response = await fetch(`${API_BASE_URL}/shops/${id}`, {
       method: 'GET',
       headers: getAuthHeaders(request),
     });
@@ -53,7 +53,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const body = await request.json();
     console.log('✏️ API Route: Update shop request received', { shopId: id, name: body.name });
     
-    const response = await fetch(`${API_BASE_URL}/shops/`, {
+    const response = await fetch(`${API_BASE_URL}/shops/${id}`, {
       method: 'PATCH',
       headers: getAuthHeaders(request),
       body: JSON.stringify(body),
@@ -80,7 +80,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     const { id } = await params;
     console.log('🗑️ API Route: Delete shop request received', { shopId: id });
     
-    const response = await fetch(`${API_BASE_URL}/shops/`, {
+    const response = await fetch(`${API_BASE_URL}/shops/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(request),
     });
