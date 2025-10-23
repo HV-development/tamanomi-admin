@@ -1,7 +1,7 @@
 # Next.jsアプリケーション用Dockerfile
 FROM node:22-alpine AS base
 
-# Install pnpm 
+# Install pnpm
 RUN npm install -g pnpm
 
 # Dependencies

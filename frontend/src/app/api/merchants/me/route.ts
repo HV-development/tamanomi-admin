@@ -13,14 +13,11 @@ function getAuthHeaders(request: Request): Record<string, string> {
   return headers;
 }
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request) {
   try {
-    const { id } = await params;
-    console.log('📧 API Route: 登録URL再発行リクエスト受信', { merchantId: id });
+    console.log('🏢 API Route: 自分の会社情報取得リクエスト受信');
     console.log('🔗 API Route: API_BASE_URL:', API_BASE_URL);
+    console.log('🔗 API Route: Full URL:', `${API_BASE_URL}/admin/merchants/me`);
     
     const authHeaders = getAuthHeaders(request);
     console.log('🔐 API Route: 認証ヘッダー', { 
@@ -28,17 +25,16 @@ export async function POST(
       authHeader: authHeaders.Authorization ? 'Bearer ***' : 'none'
     });
     
-    const response = await fetch(`${API_BASE_URL}/admin/merchants//resend-registration`, {
-      method: 'POST',
+    const response = await fetch(`${API_BASE_URL}/admin/merchants/me`, {
+      method: 'GET',
       headers: authHeaders,
-      body: JSON.stringify({}),
     });
 
     console.log('📡 API Route: Response status:', response.status);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response' }));
-      console.error('❌ API Route: 登録URL再発行失敗', { 
+      console.error('❌ API Route: 自分の会社情報取得失敗', { 
         status: response.status, 
         statusText: response.statusText,
         error: errorData 
@@ -47,10 +43,15 @@ export async function POST(
     }
 
     const data = await response.json();
-    console.log('✅ API Route: 登録URL再発行成功', { merchantId: id });
+    console.log('✅ API Route: 自分の会社情報取得成功', { 
+      dataType: typeof data,
+      dataKeys: Object.keys(data),
+      merchantId: data.data?.id || data.id || 'unknown',
+      merchantName: data.data?.name || data.name || 'unknown'
+    });
     return NextResponse.json(data);
   } catch (error: unknown) {
-    console.error('❌ API Route: 登録URL再発行エラー', {
+    console.error('❌ API Route: 自分の会社情報取得エラー', {
       error,
       errorMessage: error instanceof Error ? error.message : 'Unknown error',
       errorStack: error instanceof Error ? error.stack : undefined,
@@ -64,4 +65,3 @@ export async function POST(
     }, { status: 500 });
   }
 }
-

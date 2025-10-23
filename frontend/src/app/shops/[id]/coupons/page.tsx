@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
@@ -22,8 +22,9 @@ interface Shop {
 
 type PaginationData = CouponListResponse['pagination'];
 
-export default function ShopCouponsPage({ params }: { params: { id: string } }) {
-  const shopId = params.id;
+export default function ShopCouponsPage() {
+  const params = useParams();
+  const shopId = params.id as string;
   const router = useRouter();
   const [shop, setShop] = useState<Shop | null>(null);
   const [coupons, setCoupons] = useState<CouponWithShop[]>([]);
