@@ -15,9 +15,9 @@ function getAuthHeaders(request: Request): Record<string, string> {
   return headers;
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     console.log('🔄 API Route: Update shop status request received', { shopId: id, status: body.status });
     
@@ -37,7 +37,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     console.log('✅ API Route: Update shop status successful', { shopId: id });
     return NextResponse.json(data);
   } catch (error: unknown) {
-    console.error(`❌ API Route: Update shop status ${params.id} error`, error);
+    console.error(`❌ API Route: Update shop status  error`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
