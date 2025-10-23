@@ -127,10 +127,12 @@ function CouponNewPageContent() {
       }
       
       // 会社アカウントの場合: 会社情報を自動設定
-      if (isMerchantAccount && auth?.user?.merchantId) {
+      if (isMerchantAccount) {
         try {
-          const merchantData = await apiClient.getMerchant(auth.user.merchantId) as Merchant;
-          setSelectedMerchant(merchantData);
+          const merchantData = await apiClient.getMyMerchant() as { data: Merchant };
+          if (merchantData && merchantData.data) {
+            setSelectedMerchant(merchantData.data);
+          }
         } catch (error) {
           console.error('会社情報の取得に失敗しました:', error);
         }
@@ -138,7 +140,7 @@ function CouponNewPageContent() {
     };
     
     initializeAccountData();
-  }, [isShopAccount, isMerchantAccount, auth?.user?.shopId, auth?.user?.merchantId]);
+  }, [isShopAccount, isMerchantAccount, auth?.user?.shopId]);
 
   const handleInputChange = (field: keyof CouponFormData, value: string) => {
     setFormData(prev => ({
