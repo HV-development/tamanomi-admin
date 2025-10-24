@@ -759,10 +759,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     const address = addressParts.join(' ');
     
     // Google Mapsで住所検索を開く（検索ボックスに入力された状態、最大ズーム）
-    const url = `https://www.google.com/maps/search/${encodeURIComponent(address)}/@${latitude || '35.6762'},${longitude || '139.6503'},21z`;
+    // 住所検索専用のURL形式を使用
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}&zoom=21`;
     window.open(url, '_blank', 'noopener,noreferrer');
     
-    showSuccess('Google Mapを最大ズームで開きました。表示された検索ボタンをクリックしてピンを表示してください。');
+    showSuccess('Google Mapを最大ズームで開きました。住所が自動的に検索されます。');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
