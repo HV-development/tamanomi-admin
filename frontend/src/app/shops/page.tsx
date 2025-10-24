@@ -797,7 +797,7 @@ export default function ShopsPage() {
                     <td className="px-6 py-4 whitespace-nowrap min-w-[120px]">
                       <div className="text-sm text-gray-900">
                         {(shop as Shop & { applications?: string[] }).applications && Array.isArray((shop as Shop & { applications?: string[] }).applications) 
-                          ? (shop as Shop & { applications?: string[] }).applications.map((app: string) => 
+                          ? (shop as Shop & { applications?: string[] }).applications!.map((app: string) => 
                               app === 'tamanomi' ? 'たまのみ' : app === 'nomoca_kagawa' ? 'のもかかがわ' : app
                             ).join(', ')
                           : '-'}
