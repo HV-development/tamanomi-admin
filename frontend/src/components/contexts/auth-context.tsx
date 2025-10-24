@@ -59,7 +59,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (accessToken && refreshToken) {
           // トークンが有効かチェック（簡単な検証）
           try {
-            await apiClient.refreshToken({ refreshToken });
+            await apiClient.refreshToken();
             // ユーザー情報を取得（実際の実装では、トークンからユーザー情報を取得）
             const userData = localStorage.getItem('userData');
             if (userData) {
@@ -195,18 +195,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const refreshToken = async () => {
     try {
-      const refreshTokenValue = localStorage.getItem('refreshToken');
-      if (!refreshTokenValue) {
-        throw new Error('No refresh token available');
-      }
-
-      const response = await apiClient.refreshToken({ refreshToken: refreshTokenValue });
-      
-      // 新しいトークンを保存
-      localStorage.setItem('accessToken', response.accessToken);
-      localStorage.setItem('refreshToken', response.refreshToken);
-      
+      const response = await apiClient.refreshToken();
       console.log('✅ AuthContext: tokens refreshed');
+      return response;
     } catch (error) {
       console.error('❌ AuthContext: token refresh failed', error);
       // リフレッシュに失敗した場合はログアウト

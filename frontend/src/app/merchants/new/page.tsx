@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
@@ -8,6 +8,8 @@ import Icon from '@/components/atoms/Icon';
 import ToastContainer from '@/components/molecules/toast-container';
 import { useToast } from '@/hooks/use-toast';
 import { validateMerchantField, validateMerchantForm, type MerchantFormData } from '@hv-development/schemas';
+import { apiClient } from '@/lib/api';
+import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-search';
 
 const prefectures = [
   '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
@@ -23,8 +25,12 @@ export default function MerchantNewPage() {
   const router = useRouter();
   const { toasts, removeToast, showSuccess, showError } = useToast();
   
+  // アプリケーション一覧の状態
+  const [applications, setApplications] = useState<Array<{ id: string; name: string; description?: string; domain: string }>>([]);
+  const [isLoadingApplications, setIsLoadingApplications] = useState(true);
+  
   // フォームデータに追加のフィールドを含める
-  const [formData, setFormData] = useState<MerchantFormData & { email: string }>({
+  const [formData, setFormData] = useState<MerchantFormData & { email: string; applications: string[] }>({
     name: '',
     nameKana: '',
     representativeNameLast: '',
@@ -38,20 +44,79 @@ export default function MerchantNewPage() {
     city: '',
     address1: '',
     address2: '',
+    applications: [], // デフォルトは空配列、useEffectで設定
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string>('');
-  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  
+  // 住所検索フック
+  const { isSearching: isSearchingAddress, searchAddress } = useAddressSearch(
+    (result) => {
+      setFormData(prev => applyAddressSearchResult(prev, result));
+      // 住所フィールドのエラーをクリア
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.prefecture;
+        delete newErrors.city;
+        delete newErrors.address1;
+        return newErrors;
+      });
+      showSuccess('住所を取得しました');
+    },
+    (error) => {
+      setErrors(prev => ({ ...prev, postalCode: error }));
+      showError(error);
+    }
+  );
   
   const fieldRefs = useRef<{ [key: string]: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null }>({});
 
+  // アプリケーション一覧を取得
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        console.log('📱 Fetching applications...');
+        const response = await apiClient.getApplications() as { applications: Array<{ id: string; name: string; description?: string; domain: string }> };
+        setApplications(response.applications);
+        
+        // 最初のアプリケーションをデフォルトで選択
+        if (response.applications.length > 0) {
+          setFormData(prev => ({
+            ...prev,
+            applications: [response.applications[0].name]
+          }));
+          
+          // アプリケーションが選択されたらエラーをクリア
+          setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors.applications;
+            return newErrors;
+          });
+        }
+        
+        console.log('✅ Applications loaded:', response.applications);
+      } catch (error) {
+        console.error('❌ Failed to fetch applications:', error);
+        showError('アプリケーション一覧の取得に失敗しました');
+      } finally {
+        setIsLoadingApplications(false);
+      }
+    };
 
-  const handleInputChange = (field: keyof (MerchantFormData & { email: string }), value: string) => {
+    fetchApplications();
+  }, [showError]);
+
+  // エラー状態の変更を監視
+  useEffect(() => {
+    console.log('🔍 Errors state changed:', errors);
+  }, [errors]);
+
+  const handleInputChange = (field: keyof (MerchantFormData & { email: string; applications: string[] }), value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     
-    // リアルタイムバリデーション（emailフィールドは個別にバリデーション）
+    // リアルタイムバリデーション（emailとapplicationsフィールドは個別にバリデーション）
     if (field === 'email') {
       // emailの簡易バリデーション
       if (!value.trim()) {
@@ -62,6 +127,18 @@ export default function MerchantNewPage() {
         setErrors((prev) => {
           const newErrors = { ...prev };
           delete newErrors.email;
+          return newErrors;
+        });
+      }
+    } else if (field === 'applications') {
+      // applicationsフィールドの簡易バリデーション
+      const apps = value.split(',').filter(app => app.trim() !== '');
+      if (apps.length === 0) {
+        setErrors((prev) => ({ ...prev, applications: '少なくとも1つのアプリケーションを選択してください' }));
+      } else {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.applications;
           return newErrors;
         });
       }
@@ -79,7 +156,7 @@ export default function MerchantNewPage() {
     }
   };
 
-  const handleBlur = (field: keyof (MerchantFormData & { email: string })) => {
+  const handleBlur = (field: keyof (MerchantFormData & { email: string; applications: string[] })) => {
     const value = formData[field];
     
     if (field === 'email') {
@@ -92,6 +169,18 @@ export default function MerchantNewPage() {
         setErrors((prev) => {
           const newErrors = { ...prev };
           delete newErrors.email;
+          return newErrors;
+        });
+      }
+    } else if (field === 'applications') {
+      // applicationsフィールドの簡易バリデーション
+      const apps = formData.applications || [];
+      if (apps.length === 0) {
+        setErrors((prev) => ({ ...prev, applications: '少なくとも1つのアプリケーションを選択してください' }));
+      } else {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.applications;
           return newErrors;
         });
       }
@@ -110,60 +199,70 @@ export default function MerchantNewPage() {
   };
 
   const handleZipcodeSearch = async () => {
-    // 郵便番号の存在チェック
-    if (formData.postalCode.length !== 7) {
-      showError('郵便番号を正しく入力してください（7桁の数字）');
-      return;
-    }
-
-    setIsSearchingAddress(true);
-
-    try {
-      const response = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${formData.postalCode}`);
-      const data = await response.json();
-
-      if (data.status === 200 && data.results && data.results.length > 0) {
-        const result = data.results[0];
-        setFormData((prev) => ({
-          ...prev,
-          prefecture: result.address1,
-          city: result.address2,
-          address1: result.address3,
-        }));
-        
-        // エラーをクリア
-        setErrors(prev => {
-          const newErrors = { ...prev };
-          delete newErrors.prefecture;
-          delete newErrors.city;
-          delete newErrors.address1;
-          return newErrors;
-        });
-        showSuccess('住所を取得しました');
-      } else {
-        const newErrors = { ...errors };
-        newErrors.postalCode = '入力された郵便番号は存在しません';
-        setErrors(newErrors);
-        showError('該当する住所が見つかりませんでした');
-      }
-    } catch (error) {
-      console.error('住所検索エラー:', error);
-      showError('住所検索に失敗しました');
-    } finally {
-      setIsSearchingAddress(false);
-    }
+    await searchAddress(formData.postalCode);
   };
 
   const validateFormData = (): boolean => {
-    const validationError = validateMerchantForm(formData);
-    
-    if (validationError) {
-      // バリデーションエラーがある場合
-      setErrors({ general: validationError });
+    console.log('🔍 Validating form data:', formData);
+    const fieldErrors: Record<string, string> = {};
+    let hasErrors = false;
+
+    // 各フィールドを個別にバリデーション
+    const fieldsToValidate: (keyof MerchantFormData)[] = [
+      'name',
+      'nameKana', 
+      'representativeNameLast',
+      'representativeNameFirst',
+      'representativeNameLastKana',
+      'representativeNameFirstKana',
+      'representativePhone',
+      'postalCode',
+      'prefecture',
+      'city',
+      'address1',
+      'applications'
+    ];
+
+    fieldsToValidate.forEach(field => {
+      if (field === 'applications') {
+        // applicationsフィールドの個別バリデーション
+        if (!formData.applications || formData.applications.length === 0) {
+          fieldErrors.applications = '少なくとも1つのアプリケーションを選択してください';
+          hasErrors = true;
+          console.log('❌ Applications validation failed');
+        }
+      } else {
+        const value = formData[field] || '';
+        const error = validateMerchantField(field, value);
+        if (error) {
+          fieldErrors[field] = error;
+          hasErrors = true;
+          console.log(`❌ ${field} validation failed:`, error);
+        }
+      }
+    });
+
+    // emailフィールドの個別バリデーション
+    if (!formData.email.trim()) {
+      fieldErrors.email = 'メールアドレスは必須です';
+      hasErrors = true;
+      console.log('❌ Email validation failed: empty');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      fieldErrors.email = '有効なメールアドレスを入力してください';
+      hasErrors = true;
+      console.log('❌ Email validation failed: invalid format');
+    }
+
+    console.log('🔍 Validation result:', { hasErrors, fieldErrors });
+
+    if (hasErrors) {
+      console.log('🚨 Setting errors:', fieldErrors);
+      setErrors(fieldErrors);
       return false;
     }
     
     // バリデーション成功
+    console.log('✅ Validation successful');
     setErrors({});
     return true;
   };
@@ -173,7 +272,10 @@ export default function MerchantNewPage() {
     e.preventDefault();
     setServerError('');
     
+    console.log('📝 Form submit started, current errors:', errors);
+    
     if (!validateFormData()) {
+      console.log('❌ Validation failed, stopping submit');
       return;
     }
 
@@ -196,6 +298,7 @@ export default function MerchantNewPage() {
         city: formData.city,
         address1: formData.address1,
         address2: formData.address2 || undefined,
+        applications: formData.applications,
       };
       
       console.log('📤 Sending merchant data:', requestData);
@@ -688,6 +791,62 @@ export default function MerchantNewPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* 契約サイト */}
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">契約サイト <span className="text-red-500">*</span></h3>
+            <p className="text-sm text-gray-600 mb-4">
+              ここで選択したサイトが店舗登録時に指定できるサイトとなります。
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {isLoadingApplications ? (
+                <div className="col-span-full text-center py-4">
+                  <p className="text-sm text-gray-500">アプリケーションを読み込み中...</p>
+                </div>
+              ) : applications.length === 0 ? (
+                <div className="col-span-full text-center py-4">
+                  <p className="text-sm text-gray-500">アプリケーションが見つかりません</p>
+                </div>
+              ) : (
+                applications.map((app) => (
+                  <label key={app.id} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      value={app.name}
+                      checked={formData.applications?.includes(app.name) || false}
+                      onChange={(e) => {
+                        const currentApps = formData.applications || [];
+                        let newApplications: string[];
+                        
+                        if (e.target.checked) {
+                          newApplications = [...currentApps, app.name];
+                        } else {
+                          newApplications = currentApps.filter(appName => appName !== app.name);
+                        }
+                        
+                        setFormData(prev => ({
+                          ...prev,
+                          applications: newApplications
+                        }));
+                        
+                        // リアルタイムバリデーションを実行
+                        handleInputChange('applications', newApplications.join(','));
+                      }}
+                      onBlur={() => handleBlur('applications')}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{app.name}</span>
+                  </label>
+                ))
+              )}
+            </div>
+            {errors.applications && (
+              <p className="mt-2 text-sm text-red-600">{errors.applications}</p>
+            )}
+            <p className="mt-2 text-xs text-gray-500">
+              ※ 少なくとも1つのアプリケーションを選択してください
+            </p>
           </div>
 
           {/* ボタン */}
