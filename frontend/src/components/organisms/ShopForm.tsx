@@ -1696,20 +1696,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   onChange={(e) => {
                     if (e.target.checked) {
                       setSelectedScenes([...selectedScenes, scene.id]);
-                      // 「その他」を選択した場合のリアルタイムバリデーション
-                      if (scene.name === 'その他') {
-                        if (!customSceneText || customSceneText.trim().length === 0) {
-                          setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンを入力してください' }));
-                        } else if (customSceneText.length > 100) {
-                          setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンは100文字以内で入力してください' }));
-                        } else {
-                          setValidationErrors(prev => {
-                            const newErrors = { ...prev };
-                            delete newErrors.customSceneText;
-                            return newErrors;
-                          });
-                        }
-                      }
                     } else {
                       setSelectedScenes(selectedScenes.filter(id => id !== scene.id));
                       // 「その他」のチェックを外したらカスタムテキストもクリア
@@ -1740,9 +1726,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 type="text"
                 name="customSceneText"
                 value={customSceneText}
-                onChange={(e) => {
-                  setCustomSceneText(e.target.value);
-                  // リアルタイムバリデーション
+                onChange={(e) => setCustomSceneText(e.target.value)}
+                onBlur={(e) => {
+                  // blurイベントでのバリデーション
                   const otherScene = scenes.find(s => s.name === 'その他');
                   const isOtherSceneSelected = otherScene && selectedScenes.includes(otherScene.id);
                   if (isOtherSceneSelected) {
@@ -1757,6 +1743,21 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                         return newErrors;
                       });
                     }
+                  }
+                }}
+                onInput={(e) => {
+                  // inputイベントでのリアルタイムバリデーション（文字数チェックのみ）
+                  const target = e.target as HTMLInputElement;
+                  const otherScene = scenes.find(s => s.name === 'その他');
+                  const isOtherSceneSelected = otherScene && selectedScenes.includes(otherScene.id);
+                  if (isOtherSceneSelected && target.value.length > 100) {
+                    setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンは100文字以内で入力してください' }));
+                  } else if (isOtherSceneSelected && target.value.length <= 100 && target.value.trim().length > 0) {
+                    setValidationErrors(prev => {
+                      const newErrors = { ...prev };
+                      delete newErrors.customSceneText;
+                      return newErrors;
+                    });
                   }
                 }}
                 maxLength={100}
@@ -1987,20 +1988,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                       onChange={(e) => {
                         if (e.target.checked) {
                           setSelectedCreditBrands([...selectedCreditBrands, brand]);
-                          // 「その他」を選択した場合のリアルタイムバリデーション
-                          if (brand === 'その他') {
-                            if (!customCreditText || customCreditText.trim().length === 0) {
-                              setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名を入力してください' }));
-                            } else if (customCreditText.length > 100) {
-                              setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名は100文字以内で入力してください' }));
-                            } else {
-                              setValidationErrors(prev => {
-                                const newErrors = { ...prev };
-                                delete newErrors.customCreditText;
-                                return newErrors;
-                              });
-                            }
-                          }
                         } else {
                           setSelectedCreditBrands(selectedCreditBrands.filter(b => b !== brand));
                           // 「その他」のチェックを外したらカスタムテキストもクリア
@@ -2031,9 +2018,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                     type="text"
                     name="customCreditText"
                     value={customCreditText}
-                    onChange={(e) => {
-                      setCustomCreditText(e.target.value);
-                      // リアルタイムバリデーション
+                    onChange={(e) => setCustomCreditText(e.target.value)}
+                    onBlur={(e) => {
+                      // blurイベントでのバリデーション
                       const isCreditOtherSelected = selectedCreditBrands.includes('その他');
                       if (isCreditOtherSelected) {
                         if (!e.target.value || e.target.value.trim().length === 0) {
@@ -2047,6 +2034,20 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                             return newErrors;
                           });
                         }
+                      }
+                    }}
+                    onInput={(e) => {
+                      // inputイベントでのリアルタイムバリデーション（文字数チェックのみ）
+                      const target = e.target as HTMLInputElement;
+                      const isCreditOtherSelected = selectedCreditBrands.includes('その他');
+                      if (isCreditOtherSelected && target.value.length > 100) {
+                        setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名は100文字以内で入力してください' }));
+                      } else if (isCreditOtherSelected && target.value.length <= 100 && target.value.trim().length > 0) {
+                        setValidationErrors(prev => {
+                          const newErrors = { ...prev };
+                          delete newErrors.customCreditText;
+                          return newErrors;
+                        });
                       }
                     }}
                     maxLength={100}
@@ -2083,20 +2084,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                       onChange={(e) => {
                         if (e.target.checked) {
                           setSelectedQrBrands([...selectedQrBrands, service]);
-                          // 「その他」を選択した場合のリアルタイムバリデーション
-                          if (service === 'その他') {
-                            if (!customQrText || customQrText.trim().length === 0) {
-                              setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名を入力してください' }));
-                            } else if (customQrText.length > 100) {
-                              setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名は100文字以内で入力してください' }));
-                            } else {
-                              setValidationErrors(prev => {
-                                const newErrors = { ...prev };
-                                delete newErrors.customQrText;
-                                return newErrors;
-                              });
-                            }
-                          }
                         } else {
                           setSelectedQrBrands(selectedQrBrands.filter(s => s !== service));
                           // 「その他」のチェックを外したらカスタムテキストもクリア
@@ -2127,9 +2114,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                     type="text"
                     name="customQrText"
                     value={customQrText}
-                    onChange={(e) => {
-                      setCustomQrText(e.target.value);
-                      // リアルタイムバリデーション
+                    onChange={(e) => setCustomQrText(e.target.value)}
+                    onBlur={(e) => {
+                      // blurイベントでのバリデーション
                       const isQrOtherSelected = selectedQrBrands.includes('その他');
                       if (isQrOtherSelected) {
                         if (!e.target.value || e.target.value.trim().length === 0) {
@@ -2143,6 +2130,20 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                             return newErrors;
                           });
                         }
+                      }
+                    }}
+                    onInput={(e) => {
+                      // inputイベントでのリアルタイムバリデーション（文字数チェックのみ）
+                      const target = e.target as HTMLInputElement;
+                      const isQrOtherSelected = selectedQrBrands.includes('その他');
+                      if (isQrOtherSelected && target.value.length > 100) {
+                        setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名は100文字以内で入力してください' }));
+                      } else if (isQrOtherSelected && target.value.length <= 100 && target.value.trim().length > 0) {
+                        setValidationErrors(prev => {
+                          const newErrors = { ...prev };
+                          delete newErrors.customQrText;
+                          return newErrors;
+                        });
                       }
                     }}
                     maxLength={100}
