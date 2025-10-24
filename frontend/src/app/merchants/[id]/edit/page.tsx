@@ -6,8 +6,8 @@ import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { validateMerchantField, type MerchantFormData, type MerchantEditFormData } from '@hv-development/schemas';
-import { apiClient } from '@/lib/api';
 import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-search';
+import { useAuth } from '@/components/contexts/auth-context';
 
 const prefectures = [
   '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
@@ -23,13 +23,12 @@ const prefectures = [
 export default function MerchantEditPage() {
   const params = useParams();
   const router = useRouter();
+  const auth = useAuth();
   const merchantId = params.id as string;
   
   const [formData, setFormData] = useState<MerchantEditFormData>({
     name: '',
     nameKana: '',
-    representative: '',
-    representativeName: '',
     representativeNameLast: '',
     representativeNameFirst: '',
     representativeNameLastKana: '',
@@ -42,11 +41,20 @@ export default function MerchantEditPage() {
     city: '',
     address1: '',
     address2: '',
+    applications: [],
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // 事業者アカウントの場合はアクセス拒否
+  useEffect(() => {
+    if (auth?.user?.accountType === 'merchant') {
+      router.push('/merchants');
+      return;
+    }
+  }, [auth, router]);
   
   // 住所検索フック
   const { isSearching: isSearchingAddress, searchAddress } = useAddressSearch(
@@ -103,8 +111,6 @@ export default function MerchantEditPage() {
             setFormData({
               name: merchantData.name || '',
               nameKana: merchantData.nameKana || '',
-              representative: merchantData.representative || '',
-              representativeName: merchantData.representativeName || '',
               representativeNameLast: merchantData.representativeNameLast || '',
               representativeNameFirst: merchantData.representativeNameFirst || '',
               representativeNameLastKana: merchantData.representativeNameLastKana || '',
@@ -117,6 +123,7 @@ export default function MerchantEditPage() {
               city: merchantData.city || '',
               address1: merchantData.address1 || '',
               address2: merchantData.address2 || '',
+              applications: merchantData.applications || [],
             });
           }
         } else {
@@ -312,8 +319,8 @@ export default function MerchantEditPage() {
             console.log('❌ Phone validation failed: invalid length');
           }
         }
-      } else {
-        // その他のフィールドはMerchantFormSchemaでバリデーション
+      } else if (field !== 'applications') {
+        // applications以外のフィールドはMerchantFormSchemaでバリデーション
         const value = formData[field] || '';
         const error = validateMerchantField(field as keyof MerchantFormData, value);
         if (error) {
@@ -414,9 +421,9 @@ export default function MerchantEditPage() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">会社編集</h1>
+              <h1 className="text-2xl font-bold text-gray-900">事業者編集</h1>
               <p className="text-gray-600">
-                会社ID: {merchantId}
+                事業者ID: {merchantId}
               </p>
             </div>
             <div className="text-sm text-gray-600">
@@ -434,10 +441,10 @@ export default function MerchantEditPage() {
             <h3 className="text-lg font-medium text-gray-900 mb-6">基本情報</h3>
             
             <div className="space-y-6">
-              {/* 会社名 */}
+              {/* 事業者名 */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  会社名 <span className="text-red-500">*</span>
+                  事業者名 <span className="text-red-500">*</span>
                 </label>
                 <input
                   ref={(el) => { fieldRefs.current.name = el; }}
@@ -449,7 +456,7 @@ export default function MerchantEditPage() {
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.name ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="会社名を入力"
+                  placeholder="事業者名を入力"
                 />
                 <div className="mt-1 flex justify-between items-center">
                   {errors.name ? (
@@ -461,10 +468,10 @@ export default function MerchantEditPage() {
                 </div>
               </div>
 
-              {/* 会社名（カナ） */}
+              {/* 事業者名（カナ） */}
               <div>
                 <label htmlFor="nameKana" className="block text-sm font-medium text-gray-700 mb-2">
-                  会社名（カナ） <span className="text-red-500">*</span>
+                  事業者名（カナ） <span className="text-red-500">*</span>
                 </label>
                 <input
                   ref={(el) => { fieldRefs.current.nameKana = el; }}

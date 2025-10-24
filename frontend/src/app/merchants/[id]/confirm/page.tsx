@@ -83,9 +83,9 @@ export default function MerchantEditConfirmPage() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">会社編集確認</h1>
+              <h1 className="text-2xl font-bold text-gray-900">事業者編集確認</h1>
               <p className="text-gray-600">
-                会社ID: {merchantId}
+                事業者ID: {merchantId}
               </p>
             </div>
             <div className="text-sm text-gray-600">

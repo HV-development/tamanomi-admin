@@ -239,7 +239,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             if (!isMounted) return;
             
             if (myMerchantData && typeof myMerchantData === 'object' && 'data' in myMerchantData && myMerchantData.data) {
-              const merchant = myMerchantData.data as { id: string; name: string };
+              const merchant = myMerchantData.data as Merchant;
               
               // merchantIdがまだ設定されていない場合のみ設定
               if (!merchantId) {
@@ -250,6 +250,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               }
               // 会社名は常に設定
               setMerchantName(merchant.name);
+              
+              // 自分の会社情報をmerchants配列に追加（親会社からコピー機能用）
+              setMerchants([merchant]);
             }
           } catch (error) {
             console.error('会社情報の取得に失敗しました:', error);
@@ -889,11 +892,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customErrors.genreId = 'ジャンルを選択してください';
       }
       
-      // 会社（管理者アカウントの場合のみ）
-      console.log('🔍 会社チェック:', { isMerchantAccount, merchantId: formData.merchantId, isEmpty: !formData.merchantId });
+      // 事業者（管理者アカウントの場合のみ）
+      console.log('🔍 事業者チェック:', { isMerchantAccount, merchantId: formData.merchantId, isEmpty: !formData.merchantId });
       if (!isMerchantAccount && (!formData.merchantId || formData.merchantId.trim().length === 0)) {
-        console.log('❌ 会社エラー追加');
-        customErrors.merchantId = '会社を選択してください';
+        console.log('❌ 事業者エラー追加');
+        customErrors.merchantId = '事業者を選択してください';
       }
       
       
@@ -997,7 +1000,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       
       // Zodバリデーションも実行（追加チェック用）
       const schema = isEdit ? shopUpdateRequestSchema : shopCreateRequestSchema;
-      const validationResult = schema.safeParse(dataToValidate);
+      
+      // アカウント発行が無効な場合はパスワードフィールドを除外
+      let dataForZodValidation = { ...dataToValidate };
+      if (!formData.createAccount) {
+        const { password, ...rest } = dataForZodValidation;
+        dataForZodValidation = { ...rest, accountEmail: null };
+      }
+      
+      const validationResult = schema.safeParse(dataForZodValidation);
       
       if (!validationResult.success) {
         const zodErrors: Record<string, string> = {};
@@ -1209,9 +1220,52 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 会社名 <span className="text-red-500">*</span>
               </label>
               {isMerchantAccount ? (
-                // 会社アカウントの場合は会社名を固定表示（設定ボタンなし）
-                <div className="text-gray-900">
-                  {merchantName || '読み込み中...'}
+                // 会社アカウントの場合は会社名を固定表示（親会社からコピーボタン付き）
+                <div>
+                  <div className="text-gray-900 mb-2">
+                    {merchantName || '読み込み中...'}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // 親会社の情報を取得
+                      const merchant = merchants.find(m => m.id === formData.merchantId);
+                      if (merchant) {
+                        
+                        // 親会社の情報をフォームに反映
+                        setFormData(prev => {
+                          const newFormData = {
+                            ...prev,
+                            // 店舗名（会社名をそのまま使用）
+                            name: merchant.name,
+                            // 店舗名（カナ）
+                            nameKana: merchant.nameKana,
+                            // 電話番号
+                            phone: merchant.representativePhone || '',
+                            // 郵便番号
+                            postalCode: merchant.postalCode || '',
+                            // 都道府県
+                            prefecture: merchant.prefecture || '',
+                            // 市区町村
+                            city: merchant.city || '',
+                            // 番地以降
+                            address1: merchant.address1 || '',
+                            // 建物名
+                            address2: merchant.address2 || ''
+                          };
+                          
+                          
+                          return newFormData;
+                        });
+                      }
+                    }}
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    親会社からコピー
+                  </button>
                 </div>
               ) : (propMerchantId || merchantIdFromParams) ? (
                 <div>
