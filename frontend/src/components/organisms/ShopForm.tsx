@@ -728,7 +728,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     
     // 緯度経度が両方入力されている場合は座標でピンを表示（最大ズーム）
     if (latitude && longitude) {
-      const url = `https://www.google.com/maps?q=${latitude},${longitude}&z=21`;
+      // 複数の方法を試して最大ズームレベルで表示
+      const url = `https://www.google.com/maps/@${latitude},${longitude},21z/data=!3m1!1e3`;
       window.open(url, '_blank', 'noopener,noreferrer');
       showSuccess('Google Mapで座標のピンを最大ズームで表示しました。');
       return;
@@ -758,7 +759,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     const address = addressParts.join(' ');
     
     // Google Mapsで住所検索を開く（検索ボックスに入力された状態、最大ズーム）
-    const url = `https://www.google.com/maps?q=${encodeURIComponent(address)}&z=21`;
+    const url = `https://www.google.com/maps/search/${encodeURIComponent(address)}/@${latitude || '35.6762'},${longitude || '139.6503'},21z`;
     window.open(url, '_blank', 'noopener,noreferrer');
     
     showSuccess('Google Mapを最大ズームで開きました。表示された検索ボタンをクリックしてピンを表示してください。');
@@ -1591,7 +1592,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               {formData.latitude && formData.longitude && (
                 <div className="mt-2">
                   <a
-                    href={`https://www.google.com/maps?q=${formData.latitude},${formData.longitude}&z=21`}
+                    href={`https://www.google.com/maps/@${formData.latitude},${formData.longitude},21z/data=!3m1!1e3`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
