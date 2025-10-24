@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-import { validateMerchantField, validateMerchantForm, type MerchantFormData, type MerchantEditFormData } from '@hv-development/schemas';
+import { validateMerchantField, type MerchantFormData, type MerchantEditFormData } from '@hv-development/schemas';
+import { apiClient } from '@/lib/api';
+import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-search';
 
 const prefectures = [
   '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
@@ -20,7 +22,12 @@ const prefectures = [
 
 export default function MerchantEditPage() {
   const params = useParams();
+  const router = useRouter();
   const merchantId = params.id as string;
+  
+  // アプリケーション一覧の状態
+  const [applications, setApplications] = useState<Array<{ id: string; name: string; description?: string; domain: string }>>([]);
+  const [isLoadingApplications, setIsLoadingApplications] = useState(true);
   
   const [formData, setFormData] = useState<MerchantEditFormData>({
     name: '',
@@ -45,7 +52,24 @@ export default function MerchantEditPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  
+  // 住所検索フック
+  const { isSearching: isSearchingAddress, searchAddress } = useAddressSearch(
+    (result) => {
+      setFormData(prev => applyAddressSearchResult(prev, result));
+      // 住所フィールドのエラーをクリア
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.prefecture;
+        delete newErrors.city;
+        delete newErrors.address1;
+        return newErrors;
+      });
+    },
+    (error) => {
+      setErrors(prev => ({ ...prev, postalCode: error }));
+    }
+  );
   
   const fieldRefs = useRef<{ [key: string]: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null }>({});
 
@@ -74,6 +98,12 @@ export default function MerchantEditPage() {
           
           if (isMounted) {
             console.log('✅ 会社データ取得成功:', merchantData);
+            console.log('🔍 Applications data from API:', {
+              applications: merchantData.applications,
+              type: typeof merchantData.applications,
+              isArray: Array.isArray(merchantData.applications)
+            });
+            
             // APIレスポンスをフォームデータに変換
             setFormData({
               name: merchantData.name || '',
@@ -130,33 +160,144 @@ export default function MerchantEditPage() {
     };
   }, [merchantId]);
 
+  // アプリケーション一覧を取得
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        console.log('📱 Fetching applications...');
+        const response = await apiClient.getApplications() as { applications: Array<{ id: string; name: string; description?: string; domain: string }> };
+        setApplications(response.applications);
+        console.log('✅ Applications loaded:', response.applications);
+      } catch (error) {
+        console.error('❌ Failed to fetch applications:', error);
+        alert('アプリケーション一覧の取得に失敗しました');
+      } finally {
+        setIsLoadingApplications(false);
+      }
+    };
+
+    fetchApplications();
+  }, []);
+
+  // エラー状態の変更を監視
+  useEffect(() => {
+    console.log('🔍 Edit errors state changed:', errors);
+  }, [errors]);
+
+
   const handleInputChange = (field: keyof MerchantEditFormData, value: string) => {
     setFormData((prev: MerchantEditFormData) => ({ ...prev, [field]: value }));
     
-    // リアルタイムバリデーション
-    const error = validateMerchantField(field as keyof MerchantFormData, value || '');
-    if (error) {
-      setErrors((prev: Record<string, string>) => ({ ...prev, [field]: error }));
+    // リアルタイムバリデーション（emailとphoneフィールドは個別にバリデーション）
+    if (field === 'email') {
+      // emailの簡易バリデーション
+      if (!value.trim()) {
+        setErrors((prev) => ({ ...prev, email: 'メールアドレスは必須です' }));
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        setErrors((prev) => ({ ...prev, email: '有効なメールアドレスを入力してください' }));
+      } else {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.email;
+          return newErrors;
+        });
+      }
+    } else if (field === 'phone') {
+      // phoneの簡易バリデーション
+      if (!value.trim()) {
+        setErrors((prev) => ({ ...prev, phone: '電話番号は必須です' }));
+      } else if (!/^\d+$/.test(value)) {
+        setErrors((prev) => ({ ...prev, phone: '電話番号は数値のみで入力してください（ハイフン無し）' }));
+      } else if (value.length < 10 || value.length > 11) {
+        setErrors((prev) => ({ ...prev, phone: '電話番号は10-11桁で入力してください' }));
+      } else {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.phone;
+          return newErrors;
+        });
+      }
+    } else if (field === 'applications') {
+      // applicationsフィールドの簡易バリデーション
+      const apps = formData.applications || [];
+      if (apps.length === 0) {
+        setErrors((prev) => ({ ...prev, applications: '少なくとも1つのアプリケーションを選択してください' }));
+      } else {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.applications;
+          return newErrors;
+        });
+      }
     } else {
-      setErrors((prev: Record<string, string>) => {
-        const newErrors = { ...prev };
-        delete newErrors[field as string];
-        return newErrors;
-      });
+      const error = validateMerchantField(field as keyof MerchantFormData, value || '');
+      if (error) {
+        setErrors((prev: Record<string, string>) => ({ ...prev, [field]: error }));
+      } else {
+        setErrors((prev: Record<string, string>) => {
+          const newErrors = { ...prev };
+          delete newErrors[field as string];
+          return newErrors;
+        });
+      }
     }
   };
 
   const handleBlur = (field: keyof MerchantEditFormData) => {
     const value = formData[field];
-    const error = validateMerchantField(field as keyof MerchantFormData, (value as string) || '');
-    if (error) {
-      setErrors((prev: Record<string, string>) => ({ ...prev, [field]: error }));
+    
+    // emailとphoneフィールドは個別にバリデーション
+    if (field === 'email') {
+      const emailValue = value as string;
+      if (!emailValue.trim()) {
+        setErrors((prev) => ({ ...prev, email: 'メールアドレスは必須です' }));
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+        setErrors((prev) => ({ ...prev, email: '有効なメールアドレスを入力してください' }));
+      } else {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.email;
+          return newErrors;
+        });
+      }
+    } else if (field === 'phone') {
+      const phoneValue = value as string;
+      if (!phoneValue.trim()) {
+        setErrors((prev) => ({ ...prev, phone: '電話番号は必須です' }));
+      } else if (!/^\d+$/.test(phoneValue)) {
+        setErrors((prev) => ({ ...prev, phone: '電話番号は数値のみで入力してください（ハイフン無し）' }));
+      } else if (phoneValue.length < 10 || phoneValue.length > 11) {
+        setErrors((prev) => ({ ...prev, phone: '電話番号は10-11桁で入力してください' }));
+      } else {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.phone;
+          return newErrors;
+        });
+      }
+    } else if (field === 'applications') {
+      // applicationsフィールドの簡易バリデーション
+      const apps = formData.applications || [];
+      if (apps.length === 0) {
+        setErrors((prev) => ({ ...prev, applications: '少なくとも1つのアプリケーションを選択してください' }));
+      } else {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.applications;
+          return newErrors;
+        });
+      }
     } else {
-      setErrors((prev: Record<string, string>) => {
-        const newErrors = { ...prev };
-        delete newErrors[field as string];
-        return newErrors;
-      });
+      const error = validateMerchantField(field as keyof MerchantFormData, (value as string) || '');
+      if (error) {
+        setErrors((prev: Record<string, string>) => ({ ...prev, [field]: error }));
+      } else {
+        setErrors((prev: Record<string, string>) => {
+          const newErrors = { ...prev };
+          delete newErrors[field as string];
+          return newErrors;
+        });
+      }
     }
   };
 
@@ -166,55 +307,96 @@ export default function MerchantEditPage() {
   };
 
   const handleAddressSearch = async () => {
-    // 郵便番号の存在チェック
-    if (formData.postalCode.length !== 7) {
-      alert('郵便番号を正しく入力してください（7桁の数字）');
-      return;
-    }
-
-    setIsSearchingAddress(true);
-
-    try {
-      const response = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${formData.postalCode}`);
-      const data = await response.json();
-
-      if (data.status === 200 && data.results && data.results.length > 0) {
-        const result = data.results[0];
-        setFormData((prev: MerchantEditFormData) => ({
-          ...prev,
-          prefecture: result.address1,
-          city: result.address2,
-          address1: result.address3,
-        }));
-        alert('住所を取得しました');
-      } else {
-        const newErrors = { ...errors };
-        newErrors.postalCode = '入力された郵便番号は存在しません';
-        setErrors(newErrors);
-        alert('該当する住所が見つかりませんでした');
-      }
-    } catch (error) {
-      console.error('住所検索エラー:', error);
-      alert('住所検索に失敗しました');
-    } finally {
-      setIsSearchingAddress(false);
-    }
+    await searchAddress(formData.postalCode);
   };
 
   const validateFormData = (): boolean => {
-    // MerchantFormDataの部分のみをバリデーション
-    const { name, nameKana, representativeNameLast, representativeNameFirst, representativeNameLastKana, representativeNameFirstKana, representativePhone, email, phone, postalCode, prefecture, city, address1, address2 } = formData;
-    const merchantData = { name, nameKana, representativeNameLast, representativeNameFirst, representativeNameLastKana, representativeNameFirstKana, representativePhone, email, phone, postalCode, prefecture, city, address1, address2 };
-    
-    const validationError = validateMerchantForm(merchantData as Partial<MerchantFormData>);
-    
-    if (validationError) {
-      // バリデーションエラーがある場合
-      setErrors({ general: validationError });
+    console.log('🔍 Validating edit form data:', formData);
+    const fieldErrors: Record<string, string> = {};
+    let hasErrors = false;
+
+    // 各フィールドを個別にバリデーション
+    const fieldsToValidate: (keyof MerchantEditFormData)[] = [
+      'name',
+      'nameKana', 
+      'representativeNameLast',
+      'representativeNameFirst',
+      'representativeNameLastKana',
+      'representativeNameFirstKana',
+      'representativePhone',
+      'email',
+      'phone',
+      'postalCode',
+      'prefecture',
+      'city',
+      'address1',
+      'applications'
+    ];
+
+    fieldsToValidate.forEach(field => {
+      if (field === 'applications') {
+        // applicationsフィールドの個別バリデーション
+        console.log('🔍 Applications validation check:', {
+          applications: formData.applications,
+          type: typeof formData.applications,
+          length: formData.applications?.length,
+          isArray: Array.isArray(formData.applications)
+        });
+        if (!formData.applications || formData.applications.length === 0) {
+          fieldErrors.applications = '少なくとも1つのアプリケーションを選択してください';
+          hasErrors = true;
+          console.log('❌ Applications validation failed');
+        }
+      } else if (field === 'email' || field === 'phone') {
+        // emailとphoneフィールドは個別にバリデーション（MerchantFormSchemaに存在しないため）
+        const value = formData[field] || '';
+        if (field === 'email') {
+          if (!value.trim()) {
+            fieldErrors.email = 'メールアドレスは必須です';
+            hasErrors = true;
+            console.log('❌ Email validation failed: empty');
+          } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+            fieldErrors.email = '有効なメールアドレスを入力してください';
+            hasErrors = true;
+            console.log('❌ Email validation failed: invalid format');
+          }
+        } else if (field === 'phone') {
+          if (!value.trim()) {
+            fieldErrors.phone = '電話番号は必須です';
+            hasErrors = true;
+            console.log('❌ Phone validation failed: empty');
+          } else if (!/^\d+$/.test(value)) {
+            fieldErrors.phone = '電話番号は数値のみで入力してください（ハイフン無し）';
+            hasErrors = true;
+            console.log('❌ Phone validation failed: invalid format');
+          } else if (value.length < 10 || value.length > 11) {
+            fieldErrors.phone = '電話番号は10-11桁で入力してください';
+            hasErrors = true;
+            console.log('❌ Phone validation failed: invalid length');
+          }
+        }
+      } else {
+        // その他のフィールドはMerchantFormSchemaでバリデーション
+        const value = formData[field] || '';
+        const error = validateMerchantField(field as keyof MerchantFormData, value);
+        if (error) {
+          fieldErrors[field] = error;
+          hasErrors = true;
+          console.log(`❌ ${field} validation failed:`, error);
+        }
+      }
+    });
+
+    console.log('🔍 Edit validation result:', { hasErrors, fieldErrors });
+
+    if (hasErrors) {
+      console.log('🚨 Setting edit errors:', fieldErrors);
+      setErrors(fieldErrors);
       return false;
     }
     
     // バリデーション成功
+    console.log('✅ Edit validation successful');
     setErrors({});
     return true;
   };
@@ -222,7 +404,16 @@ export default function MerchantEditPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('📝 Edit form submit started, current errors:', errors);
+    console.log('🔍 Form data at submit:', {
+      applications: formData.applications,
+      applicationsLength: formData.applications?.length,
+      applicationsType: typeof formData.applications,
+      isArray: Array.isArray(formData.applications)
+    });
+    
     if (!validateFormData()) {
+      console.log('❌ Edit validation failed, stopping submit');
       return;
     }
 
@@ -260,7 +451,8 @@ export default function MerchantEditPage() {
       if (response.ok) {
         console.log('会社更新データ:', formData);
         alert('会社の更新が完了しました。');
-        // 成功時の処理（実際の実装では適切なページにリダイレクト）
+        // 会社一覧に遷移
+        router.push('/merchants');
       } else {
         const errorData = await response.json();
         console.error('更新エラー:', errorData);
@@ -691,52 +883,72 @@ export default function MerchantEditPage() {
               ここで選択したサイトが店舗登録時に指定できるサイトとなります。
             </p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  value="tamanomi"
-                  checked={formData.applications?.includes('tamanomi') || false}
-                  onChange={(e) => {
-                    const currentApps = formData.applications || [];
-                    if (e.target.checked) {
-                      setFormData(prev => ({
-                        ...prev,
-                        applications: [...currentApps, 'tamanomi']
-                      }));
-                    } else {
-                      setFormData(prev => ({
-                        ...prev,
-                        applications: currentApps.filter(app => app !== 'tamanomi')
-                      }));
-                    }
-                  }}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">たまのみ</span>
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  value="nomoca_kagawa"
-                  checked={formData.applications?.includes('nomoca_kagawa') || false}
-                  onChange={(e) => {
-                    const currentApps = formData.applications || [];
-                    if (e.target.checked) {
-                      setFormData(prev => ({
-                        ...prev,
-                        applications: [...currentApps, 'nomoca_kagawa']
-                      }));
-                    } else {
-                      setFormData(prev => ({
-                        ...prev,
-                        applications: currentApps.filter(app => app !== 'nomoca_kagawa')
-                      }));
-                    }
-                  }}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">のもかかがわ</span>
-              </label>
+              {isLoadingApplications ? (
+                <div className="col-span-full text-center py-4">
+                  <p className="text-sm text-gray-500">アプリケーションを読み込み中...</p>
+                </div>
+              ) : applications.length === 0 ? (
+                <div className="col-span-full text-center py-4">
+                  <p className="text-sm text-gray-500">アプリケーションが見つかりません</p>
+                </div>
+              ) : (
+                applications.map((app) => (
+                  <label key={app.id} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      value={app.name}
+                      checked={formData.applications?.includes(app.name) || false}
+                      onChange={(e) => {
+                        const currentApps = formData.applications || [];
+                        console.log('🔍 Checkbox change:', {
+                          appName: app.name,
+                          checked: e.target.checked,
+                          currentApps,
+                          currentLength: currentApps.length
+                        });
+                        if (e.target.checked) {
+                          const newApps = [...currentApps, app.name];
+                          console.log('✅ Adding app:', newApps);
+                          setFormData(prev => ({
+                            ...prev,
+                            applications: newApps
+                          }));
+                          
+                          // エラーをクリア
+                          setErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors.applications;
+                            return newErrors;
+                          });
+                        } else {
+                          const newApps = currentApps.filter(appName => appName !== app.name);
+                          console.log('❌ Removing app:', newApps);
+                          setFormData(prev => ({
+                            ...prev,
+                            applications: newApps
+                          }));
+                          
+                          // リアルタイムバリデーション
+                          if (newApps.length === 0) {
+                            setErrors(prev => ({
+                              ...prev,
+                              applications: '少なくとも1つのアプリケーションを選択してください'
+                            }));
+                          } else {
+                            setErrors(prev => {
+                              const newErrors = { ...prev };
+                              delete newErrors.applications;
+                              return newErrors;
+                            });
+                          }
+                        }
+                      }}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{app.name}</span>
+                  </label>
+                ))
+              )}
             </div>
             {errors.applications && (
               <p className="mt-2 text-sm text-red-600">{errors.applications}</p>

@@ -11,6 +11,7 @@ import { useAuth } from '@/components/contexts/auth-context';
 import type { ShopCreateRequest } from '@hv-development/schemas';
 import { shopCreateRequestSchema, shopUpdateRequestSchema, isValidEmail, isValidPhone, isValidPostalCode, isValidKana } from '@hv-development/schemas';
 import { CREDIT_CARD_BRANDS, QR_PAYMENT_SERVICES } from '@/lib/constants/payment';
+import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-search';
 
 // 都道府県リスト
 const prefectures = [
@@ -28,10 +29,39 @@ const prefectures = [
 interface Merchant {
   id: string;
   name: string;
-  applications?: string[];
+  nameKana: string;
+  representativeNameLast: string;
+  representativeNameFirst: string;
+  representativeNameLastKana: string;
+  representativeNameFirstKana: string;
+  email: string;
+  phone: string;
+  representativePhone: string;
+  postalCode: string;
+  prefecture: string;
+  city: string;
+  address1: string;
+  address2: string | null;
+  businessType: string;
+  businessDescription: string;
+  website: string | null;
+  accountId: string;
+  accountEmail: string;
+  applications: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
   account: {
     email: string;
+    displayName: string | null;
+    status: string;
+    lastLoginAt?: Date;
   };
+  shops: Array<{
+    id: string;
+    name: string;
+    status: string;
+  }>;
 }
 
 interface ShopDataResponse extends ShopCreateRequest {
@@ -141,10 +171,28 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   const [merchantName, setMerchantName] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const [isMerchantModalOpen, setIsMerchantModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
+  
+  // 住所検索フック
+  const { isSearching: isSearchingAddress, searchAddress } = useAddressSearch(
+    (result) => {
+      setFormData(prev => applyAddressSearchResult(prev, result));
+      // 住所フィールドのエラーをクリア
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.prefecture;
+        delete newErrors.city;
+        delete newErrors.address1;
+        return newErrors;
+      });
+      showSuccess('住所を取得しました');
+    },
+    (error) => {
+      showError(error);
+    }
+  );
   
   // バリデーションエラー用のステート
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -167,7 +215,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     console.log('📱 merchantApplications更新:', {
       length: merchantApplications.length,
       values: merchantApplications,
-      shouldShow: merchantApplications.length > 1
+      shouldShow: merchantApplications.length > 0
     });
   }, [merchantApplications]);
   
@@ -205,14 +253,14 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 setFormData(prev => ({
                   ...prev,
                   merchantId: merchant.id,
-                  // 親が1つのapplicationの場合は自動設定
-                  applications: merchant.applications?.length === 1 ? merchant.applications : []
+                  // 親のアプリケーションを自動設定（複数選択対応）
+                  applications: ((merchant.applications || []) as any)
                 }));
               }
               // 会社名は常に設定
               setMerchantName(merchant.name);
               // 親のapplicationsを保存
-              setMerchantApplications(merchant.applications || []);
+              setMerchantApplications((merchant.applications || []) as any);
             }
           } catch (error) {
             console.error('会社情報の取得に失敗しました:', error);
@@ -468,31 +516,36 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       if (merchant) {
         setMerchantName(merchant.name);
         // 親Merchantのapplicationsを設定
-        const apps = merchant.applications || [];
+        const apps = (merchant.applications || []) as any;
         console.log('📱 Setting merchantApplications:', apps);
-        setMerchantApplications(apps);
-        // 親が1つのapplicationの場合は自動設定、複数の場合はリセット
-        if (merchant.applications && merchant.applications.length === 1) {
-          setFormData(prev => ({
-            ...prev,
-            applications: merchant.applications
-          }));
-        } else if (merchant.applications && merchant.applications.length > 1) {
-          // 親が複数持つ場合は、現在選択されているアプリケーションが親のリストに含まれていない場合はリセット
+        setMerchantApplications(apps as any);
+        // 親のアプリケーションを自動設定（複数選択対応）
+        if (merchant.applications && merchant.applications.length > 0) {
           setFormData(prev => {
-            const currentApp = prev.applications?.[0];
-            if (currentApp && merchant.applications.includes(currentApp)) {
-              // 現在の選択が有効な場合はそのまま
-              return prev;
+            const currentApps = prev.applications || [];
+            // 現在選択されているアプリケーションが親のリストに含まれているかチェック
+            const validApps = currentApps.filter(app => (merchant.applications as any)!.includes(app as any));
+            
+            if (validApps.length > 0) {
+              // 有効なアプリケーションがある場合はそのまま
+              return {
+                ...prev,
+                applications: validApps
+              };
+            } else {
+              // 無効な場合は親の全アプリケーションを設定
+              return {
+                ...prev,
+                applications: [...(merchant.applications as any)]
+              };
             }
-            // 無効な場合はリセット
-            return {
-              ...prev,
-              applications: []
-            };
           });
         }
       }
+    } else if (!formData.merchantId) {
+      // merchantIdがクリアされた場合はmerchantApplicationsもクリア
+      console.log('📱 Clearing merchantApplications (no merchantId)');
+      setMerchantApplications([]);
     }
   }, [formData.merchantId, merchants]);
 
@@ -504,6 +557,14 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       merchantId: merchant.id,
     }));
     setMerchantName(merchant.name);
+    
+    // 親Merchantのapplicationsを設定
+    const apps = (merchant.applications || []) as any;
+    console.log('📱 Setting merchantApplications in handleMerchantSelect:', apps);
+    console.log('📱 merchant.applications:', merchant.applications as any);
+    console.log('📱 apps after || []:', apps);
+    setMerchantApplications(apps as any);
+    
     // 会社を選択したことを記録
     setTouchedFields(prev => ({
       ...prev,
@@ -689,45 +750,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   };
   // 郵便番号から住所を検索（zipcloud API使用）
   const handleZipcodeSearch = async () => {
-    if (!formData.postalCode || formData.postalCode.length !== 7) {
-      showError('郵便番号を7桁で入力してください');
-      return;
-    }
-
-    setIsSearchingAddress(true);
-
-    try {
-      const response = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${formData.postalCode}`);
-      const data = await response.json();
-
-      if (data.status === 200 && data.results && data.results.length > 0) {
-        const result = data.results[0];
-        setFormData((prev) => ({
-          ...prev,
-          prefecture: result.address1,
-          city: result.address2,
-          address1: result.address3,
-        }));
-        
-        // 自動入力されたフィールドのバリデーションエラーをクリア
-        setValidationErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors.prefecture;
-          delete newErrors.city;
-          delete newErrors.address1;
-          return newErrors;
-        });
-        
-        showSuccess('住所を取得しました');
-      } else {
-        showError('該当する住所が見つかりませんでした');
-      }
-    } catch (error) {
-      console.error('住所検索エラー:', error);
-      showError('住所検索に失敗しました');
-    } finally {
-      setIsSearchingAddress(false);
-    }
+    await searchAddress(formData.postalCode);
   };
 
   // 緯度経度の貼り付けハンドラー（カンマ区切り対応）
@@ -930,9 +953,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customErrors.merchantId = '会社を選択してください';
       }
       
-      // 掲載サイト（親会社が複数のアプリケーションを持つ場合）
+      // 掲載サイト（親会社がアプリケーションを持つ場合）
       console.log('🔍 掲載サイトチェック:', { applications: formData.applications, merchantApplications, parentAppsLength: merchantApplications.length });
-      if (merchantApplications.length > 1 && (!formData.applications || formData.applications.length === 0)) {
+      if (merchantApplications.length > 0 && (!formData.applications || formData.applications.length === 0)) {
         console.log('❌ 掲載サイトエラー追加');
         customErrors.applications = '掲載サイトを選択してください';
       }
@@ -1247,7 +1270,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                     className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
                     title="会社を変更"
                   >
-                    設定
+                    会社を変更
                   </button>
                 </div>
               ) : (
@@ -1257,32 +1280,130 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                       <div className="text-gray-900 mb-2">
                         {merchantName}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setIsMerchantModalOpen(true)}
-                        className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
-                        title="会社を変更"
-                      >
-                        設定
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsMerchantModalOpen(true)}
+                          className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
+                          title="会社を変更"
+                        >
+                          会社を変更
+                        </button>
+                        {merchantApplications.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              // 親会社の情報を取得
+                              const merchant = merchants.find(m => m.id === formData.merchantId);
+                              if (merchant) {
+                                
+                                // 親会社の情報をフォームに反映
+                                setFormData(prev => {
+                                  const newFormData = {
+                                    ...prev,
+                                  // 契約サイト
+                                  applications: [...merchantApplications] as any,
+                                    // 店舗名（会社名をそのまま使用）
+                                    name: merchant.name,
+                                    // 店舗名（カナ）
+                                    nameKana: merchant.nameKana,
+                                  // 電話番号
+                                  phone: merchant.representativePhone || '',
+                                  // 郵便番号
+                                  postalCode: merchant.postalCode || '',
+                                  // 都道府県
+                                  prefecture: merchant.prefecture || '',
+                                  // 市区町村
+                                  city: merchant.city || '',
+                                  // 番地以降
+                                  address1: merchant.address1 || '',
+                                  // 建物名
+                                  address2: merchant.address2 || ''
+                                  };
+                                  
+                                  
+                                  return newFormData;
+                                });
+                              }
+                            }}
+                            className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            親会社からコピー
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsMerchantModalOpen(true);
-                        // モーダルを開いたことをタッチとして記録
-                        setTouchedFields(prev => ({
-                          ...prev,
-                          merchantId: true,
-                        }));
-                      }}
-                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
-                      title="会社を選択"
-                    >
-                      会社を選択
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMerchantModalOpen(true);
+                          // モーダルを開いたことをタッチとして記録
+                          setTouchedFields(prev => ({
+                            ...prev,
+                            merchantId: true,
+                          }));
+                        }}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
+                        title="会社を選択"
+                      >
+                        会社を選択
+                      </button>
+                      {merchantApplications.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // 親会社の情報を取得
+                            const merchant = merchants.find(m => m.id === formData.merchantId);
+                            if (merchant) {
+                              
+                              // 親会社の情報をフォームに反映
+                              setFormData(prev => {
+                                const newFormData = {
+                                  ...prev,
+                                  // 契約サイト
+                                  applications: [...merchantApplications] as any,
+                                  // 店舗名（会社名をそのまま使用）
+                                  name: merchant.name,
+                                  // 店舗名（カナ）
+                                  nameKana: merchant.nameKana,
+                                  // 電話番号
+                                  phone: merchant.representativePhone || '',
+                                  // 郵便番号
+                                  postalCode: merchant.postalCode || '',
+                                  // 都道府県
+                                  prefecture: merchant.prefecture || '',
+                                  // 市区町村
+                                  city: merchant.city || '',
+                                  // 番地以降
+                                  address1: merchant.address1 || '',
+                                  // 建物名
+                                  address2: merchant.address2 || ''
+                                };
+                                
+                                
+                                return newFormData;
+                              });
+                            }
+                          }}
+                          className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          親会社からコピー
+                        </button>
+                      )}
+                    </div>
                   )}
+                  {/* デバッグ情報 */}
+                  <div className="text-xs text-gray-500 mt-2">
+                    Debug: merchantApplications.length = {merchantApplications.length}, values = {JSON.stringify(merchantApplications)}
+                  </div>
                   <ErrorMessage message={validationErrors.merchantId} />
                 </div>
               )}
@@ -1591,41 +1712,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           </div>
         </div>
 
-        {/* 掲載サイト（親が複数持つ場合のみ表示） */}
-        {merchantApplications.length > 1 && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">掲載サイト <span className="text-red-500">*</span></h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {merchantApplications.map((app) => (
-                <label
-                  key={app}
-                  className="flex items-center space-x-2 cursor-pointer"
-                >
-                  <input
-                    type="radio"
-                    name="application"
-                    value={app}
-                    checked={(formData.applications?.length === 1 && formData.applications[0] === app) || false}
-                    onChange={(e) => {
-                      setFormData(prev => ({
-                        ...prev,
-                        applications: [e.target.value as "tamanomi" | "nomoca_kagawa"]
-                      }));
-                    }}
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">
-                    {app === 'tamanomi' ? 'たまのみ' : app === 'nomoca_kagawa' ? 'のもかかがわ' : app}
-                  </span>
-                </label>
-              ))}
-            </div>
-            <p className="mt-2 text-xs text-gray-500">
-              ※ 親会社で設定されたアプリケーションの中から1つ選択してください
-            </p>
-            <ErrorMessage message={validationErrors.applications} field="applications" />
-          </div>
-        )}
 
         {/* ジャンル */}
         <div className="bg-white rounded-lg shadow p-6" data-field="genreId">
@@ -2123,6 +2209,66 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               </div>
             )}
           </div>
+        </div>
+
+        {/* 掲載サイト */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">掲載サイト <span className="text-red-500">*</span></h2>
+          </div>
+          
+          {/* デバッグ情報 */}
+          <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
+            <div>🔍 デバッグ情報:</div>
+            <div>• merchantApplications: {JSON.stringify(merchantApplications)}</div>
+            <div>• merchantApplications.length: {merchantApplications.length}</div>
+            <div>• formData.applications: {JSON.stringify(formData.applications)}</div>
+            <div>• merchantId: {formData.merchantId}</div>
+          </div>
+          
+          {merchantApplications.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {merchantApplications.map((app) => (
+                <label
+                  key={app}
+                  className="flex items-center space-x-2 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    name="application"
+                    value={app}
+                    checked={formData.applications?.includes(app) || false}
+                    onChange={(e) => {
+                      const currentApps = formData.applications || [];
+                      let newApplications: string[];
+                      
+                      if (e.target.checked) {
+                        newApplications = [...currentApps, app];
+                      } else {
+                        newApplications = currentApps.filter(appName => appName !== app);
+                      }
+                      
+                      setFormData(prev => ({
+                        ...prev,
+                        applications: newApplications
+                      }));
+                    }}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">{app}</span>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <div className="text-gray-500 text-sm">
+              親会社を選択すると、契約サイトの選択肢が表示されます。
+            </div>
+          )}
+          
+          <p className="mt-2 text-xs text-gray-500">
+            ※ 親会社で設定されたアプリケーションの中から選択してください（複数選択可能）
+          </p>
+          <ErrorMessage message={validationErrors.applications} field="applications" />
         </div>
 
         {/* アカウント発行 / 店舗用アカウント情報 */}
