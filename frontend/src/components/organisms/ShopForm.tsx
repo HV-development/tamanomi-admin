@@ -726,15 +726,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     const latitude = formData.latitude ? String(formData.latitude).trim() : '';
     const longitude = formData.longitude ? String(formData.longitude).trim() : '';
     
-    // 緯度経度が両方入力されている場合は座標でピンを表示
+    // 緯度経度が両方入力されている場合は座標でピンを表示（最大ズーム）
     if (latitude && longitude) {
-      const url = `https://www.google.com/maps?q=${latitude},${longitude}`;
+      const url = `https://www.google.com/maps?q=${latitude},${longitude}&z=21`;
       window.open(url, '_blank', 'noopener,noreferrer');
-      showSuccess('Google Mapで座標のピンを表示しました。');
+      showSuccess('Google Mapで座標のピンを最大ズームで表示しました。');
       return;
     }
     
-    // 緯度経度がない場合は住所で検索
+    // 緯度経度がない場合は住所で検索（最大ズーム）
     const _postalCode = formData.postalCode?.trim();
     const prefecture = formData.prefecture?.trim();
     const city = formData.city?.trim();
@@ -757,11 +757,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     
     const address = addressParts.join(' ');
     
-    // Google Mapsで住所検索を開く（検索ボックスに入力された状態）
-    const url = `https://www.google.com/maps?q=${encodeURIComponent(address)}`;
+    // Google Mapsで住所検索を開く（検索ボックスに入力された状態、最大ズーム）
+    const url = `https://www.google.com/maps?q=${encodeURIComponent(address)}&z=21`;
     window.open(url, '_blank', 'noopener,noreferrer');
     
-    showSuccess('Google Mapを開きました。表示された検索ボタンをクリックしてピンを表示してください。');
+    showSuccess('Google Mapを最大ズームで開きました。表示された検索ボタンをクリックしてピンを表示してください。');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1591,7 +1591,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               {formData.latitude && formData.longitude && (
                 <div className="mt-2">
                   <a
-                    href={`https://www.google.com/maps?q=${formData.latitude},${formData.longitude}`}
+                    href={`https://www.google.com/maps?q=${formData.latitude},${formData.longitude}&z=21`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
