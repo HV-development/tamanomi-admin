@@ -919,6 +919,20 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customErrors.details = '詳細情報は1000文字以内で入力してください';
       }
       
+      // クレジットカード「その他」のテキストボックス必須チェック
+      if (isCreditOtherSelected && (!customCreditText || customCreditText.trim().length === 0)) {
+        customErrors.customCreditText = 'その他のクレジットカードブランド名を入力してください';
+      } else if (isCreditOtherSelected && customCreditText && customCreditText.length > 100) {
+        customErrors.customCreditText = 'その他のクレジットカードブランド名は100文字以内で入力してください';
+      }
+      
+      // QRコード「その他」のテキストボックス必須チェック
+      if (isQrOtherSelected && (!customQrText || customQrText.trim().length === 0)) {
+        customErrors.customQrText = 'その他のQRコード決済サービス名を入力してください';
+      } else if (isQrOtherSelected && customQrText && customQrText.length > 100) {
+        customErrors.customQrText = 'その他のQRコード決済サービス名は100文字以内で入力してください';
+      }
+      
       // カスタムエラーがある場合は表示して終了
       if (Object.keys(customErrors).length > 0) {
         console.log('❌ カスタムバリデーションエラー:', customErrors);
@@ -1946,12 +1960,18 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   </label>
                   <input
                     type="text"
+                    name="customCreditText"
                     value={customCreditText}
                     onChange={(e) => setCustomCreditText(e.target.value)}
                     maxLength={100}
                     placeholder="例：銀聯カード、Discoverなど"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      validationErrors.customCreditText ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
+                  {validationErrors.customCreditText && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.customCreditText}</p>
+                  )}
                   <p className="mt-1 text-xs text-gray-500">
                     「その他」を選択した場合は、具体的なブランド名を入力してください（最大100文字）
                   </p>
@@ -2000,12 +2020,18 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   </label>
                   <input
                     type="text"
+                    name="customQrText"
                     value={customQrText}
                     onChange={(e) => setCustomQrText(e.target.value)}
                     maxLength={100}
                     placeholder="例：Alipay、WeChat Payなど"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      validationErrors.customQrText ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
+                  {validationErrors.customQrText && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.customQrText}</p>
+                  )}
                   <p className="mt-1 text-xs text-gray-500">
                     「その他」を選択した場合は、具体的なサービス名を入力してください（最大100文字）
                   </p>
