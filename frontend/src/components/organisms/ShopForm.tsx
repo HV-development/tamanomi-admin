@@ -781,6 +781,10 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       const isCreditOtherSelected = selectedCreditBrands.includes('その他');
       const isQrOtherSelected = selectedQrBrands.includes('その他');
       
+      // 「その他」シーンの選択状態を確認
+      const otherScene = scenes.find(s => s.name === 'その他');
+      const isOtherSceneSelected = otherScene && selectedScenes.includes(otherScene.id);
+      
       const paymentCreditJson = selectedCreditBrands.length > 0 ? {
         brands: selectedCreditBrands.filter(b => b !== 'その他'),
         ...(isCreditOtherSelected && customCreditText && { other: customCreditText })
@@ -931,6 +935,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customErrors.customQrText = 'その他のQRコード決済サービス名を入力してください';
       } else if (isQrOtherSelected && customQrText && customQrText.length > 100) {
         customErrors.customQrText = 'その他のQRコード決済サービス名は100文字以内で入力してください';
+      }
+      
+      // 利用シーン「その他」のテキストボックス必須チェック
+      if (isOtherSceneSelected && (!customSceneText || customSceneText.trim().length === 0)) {
+        customErrors.customSceneText = '具体的な利用シーンを入力してください';
+      } else if (isOtherSceneSelected && customSceneText && customSceneText.length > 100) {
+        customErrors.customSceneText = '具体的な利用シーンは100文字以内で入力してください';
       }
       
       // カスタムエラーがある場合は表示して終了
@@ -1084,10 +1095,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         // アカウント発行チェックがOFFの場合はnullに設定（アカウント無効化）
         accountEmail = null;
       }
-      
-      // 「その他」シーンのIDを取得
-      const otherScene = scenes.find(s => s.name === 'その他');
-      const isOtherSceneSelected = otherScene && selectedScenes.includes(otherScene.id);
       
       // クレジットカードとQRコードをJSON形式で送信データに追加
       const submitData = {
@@ -1689,11 +1696,30 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   onChange={(e) => {
                     if (e.target.checked) {
                       setSelectedScenes([...selectedScenes, scene.id]);
+                      // 「その他」を選択した場合のリアルタイムバリデーション
+                      if (scene.name === 'その他') {
+                        if (!customSceneText || customSceneText.trim().length === 0) {
+                          setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンを入力してください' }));
+                        } else if (customSceneText.length > 100) {
+                          setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンは100文字以内で入力してください' }));
+                        } else {
+                          setValidationErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors.customSceneText;
+                            return newErrors;
+                          });
+                        }
+                      }
                     } else {
                       setSelectedScenes(selectedScenes.filter(id => id !== scene.id));
                       // 「その他」のチェックを外したらカスタムテキストもクリア
                       if (scene.name === 'その他') {
                         setCustomSceneText('');
+                        setValidationErrors(prev => {
+                          const newErrors = { ...prev };
+                          delete newErrors.customSceneText;
+                          return newErrors;
+                        });
                       }
                     }
                   }}
@@ -1712,12 +1738,36 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               </label>
               <input
                 type="text"
+                name="customSceneText"
                 value={customSceneText}
-                onChange={(e) => setCustomSceneText(e.target.value)}
+                onChange={(e) => {
+                  setCustomSceneText(e.target.value);
+                  // リアルタイムバリデーション
+                  const otherScene = scenes.find(s => s.name === 'その他');
+                  const isOtherSceneSelected = otherScene && selectedScenes.includes(otherScene.id);
+                  if (isOtherSceneSelected) {
+                    if (!e.target.value || e.target.value.trim().length === 0) {
+                      setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンを入力してください' }));
+                    } else if (e.target.value.length > 100) {
+                      setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンは100文字以内で入力してください' }));
+                    } else {
+                      setValidationErrors(prev => {
+                        const newErrors = { ...prev };
+                        delete newErrors.customSceneText;
+                        return newErrors;
+                      });
+                    }
+                  }
+                }}
                 maxLength={100}
                 placeholder="例：ビジネスミーティング、記念日など"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  validationErrors.customSceneText ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
+              {validationErrors.customSceneText && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.customSceneText}</p>
+              )}
               <p className="mt-1 text-xs text-gray-500">
                 「その他」を選択した場合は、具体的な利用シーンを入力してください（最大100文字）
               </p>
@@ -1937,11 +1987,30 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                       onChange={(e) => {
                         if (e.target.checked) {
                           setSelectedCreditBrands([...selectedCreditBrands, brand]);
+                          // 「その他」を選択した場合のリアルタイムバリデーション
+                          if (brand === 'その他') {
+                            if (!customCreditText || customCreditText.trim().length === 0) {
+                              setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名を入力してください' }));
+                            } else if (customCreditText.length > 100) {
+                              setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名は100文字以内で入力してください' }));
+                            } else {
+                              setValidationErrors(prev => {
+                                const newErrors = { ...prev };
+                                delete newErrors.customCreditText;
+                                return newErrors;
+                              });
+                            }
+                          }
                         } else {
                           setSelectedCreditBrands(selectedCreditBrands.filter(b => b !== brand));
                           // 「その他」のチェックを外したらカスタムテキストもクリア
                           if (brand === 'その他') {
                             setCustomCreditText('');
+                            setValidationErrors(prev => {
+                              const newErrors = { ...prev };
+                              delete newErrors.customCreditText;
+                              return newErrors;
+                            });
                           }
                         }
                       }}
@@ -1962,7 +2031,24 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                     type="text"
                     name="customCreditText"
                     value={customCreditText}
-                    onChange={(e) => setCustomCreditText(e.target.value)}
+                    onChange={(e) => {
+                      setCustomCreditText(e.target.value);
+                      // リアルタイムバリデーション
+                      const isCreditOtherSelected = selectedCreditBrands.includes('その他');
+                      if (isCreditOtherSelected) {
+                        if (!e.target.value || e.target.value.trim().length === 0) {
+                          setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名を入力してください' }));
+                        } else if (e.target.value.length > 100) {
+                          setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名は100文字以内で入力してください' }));
+                        } else {
+                          setValidationErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors.customCreditText;
+                            return newErrors;
+                          });
+                        }
+                      }
+                    }}
                     maxLength={100}
                     placeholder="例：銀聯カード、Discoverなど"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -1997,11 +2083,30 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                       onChange={(e) => {
                         if (e.target.checked) {
                           setSelectedQrBrands([...selectedQrBrands, service]);
+                          // 「その他」を選択した場合のリアルタイムバリデーション
+                          if (service === 'その他') {
+                            if (!customQrText || customQrText.trim().length === 0) {
+                              setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名を入力してください' }));
+                            } else if (customQrText.length > 100) {
+                              setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名は100文字以内で入力してください' }));
+                            } else {
+                              setValidationErrors(prev => {
+                                const newErrors = { ...prev };
+                                delete newErrors.customQrText;
+                                return newErrors;
+                              });
+                            }
+                          }
                         } else {
                           setSelectedQrBrands(selectedQrBrands.filter(s => s !== service));
                           // 「その他」のチェックを外したらカスタムテキストもクリア
                           if (service === 'その他') {
                             setCustomQrText('');
+                            setValidationErrors(prev => {
+                              const newErrors = { ...prev };
+                              delete newErrors.customQrText;
+                              return newErrors;
+                            });
                           }
                         }
                       }}
@@ -2022,7 +2127,24 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                     type="text"
                     name="customQrText"
                     value={customQrText}
-                    onChange={(e) => setCustomQrText(e.target.value)}
+                    onChange={(e) => {
+                      setCustomQrText(e.target.value);
+                      // リアルタイムバリデーション
+                      const isQrOtherSelected = selectedQrBrands.includes('その他');
+                      if (isQrOtherSelected) {
+                        if (!e.target.value || e.target.value.trim().length === 0) {
+                          setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名を入力してください' }));
+                        } else if (e.target.value.length > 100) {
+                          setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名は100文字以内で入力してください' }));
+                        } else {
+                          setValidationErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors.customQrText;
+                            return newErrors;
+                          });
+                        }
+                      }
+                    }}
                     maxLength={100}
                     placeholder="例：Alipay、WeChat Payなど"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
