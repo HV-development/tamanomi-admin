@@ -1746,18 +1746,22 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   }
                 }}
                 onInput={(e) => {
-                  // inputイベントでのリアルタイムバリデーション（文字数チェックのみ）
+                  // inputイベントでのリアルタイムバリデーション（文字数チェック + 削除時の必須チェック）
                   const target = e.target as HTMLInputElement;
                   const otherScene = scenes.find(s => s.name === 'その他');
                   const isOtherSceneSelected = otherScene && selectedScenes.includes(otherScene.id);
-                  if (isOtherSceneSelected && target.value.length > 100) {
-                    setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンは100文字以内で入力してください' }));
-                  } else if (isOtherSceneSelected && target.value.length <= 100 && target.value.trim().length > 0) {
-                    setValidationErrors(prev => {
-                      const newErrors = { ...prev };
-                      delete newErrors.customSceneText;
-                      return newErrors;
-                    });
+                  if (isOtherSceneSelected) {
+                    if (target.value.length > 100) {
+                      setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンは100文字以内で入力してください' }));
+                    } else if (target.value.trim().length === 0) {
+                      setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンを入力してください' }));
+                    } else {
+                      setValidationErrors(prev => {
+                        const newErrors = { ...prev };
+                        delete newErrors.customSceneText;
+                        return newErrors;
+                      });
+                    }
                   }
                 }}
                 maxLength={100}
@@ -2037,17 +2041,21 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                       }
                     }}
                     onInput={(e) => {
-                      // inputイベントでのリアルタイムバリデーション（文字数チェックのみ）
+                      // inputイベントでのリアルタイムバリデーション（文字数チェック + 削除時の必須チェック）
                       const target = e.target as HTMLInputElement;
                       const isCreditOtherSelected = selectedCreditBrands.includes('その他');
-                      if (isCreditOtherSelected && target.value.length > 100) {
-                        setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名は100文字以内で入力してください' }));
-                      } else if (isCreditOtherSelected && target.value.length <= 100 && target.value.trim().length > 0) {
-                        setValidationErrors(prev => {
-                          const newErrors = { ...prev };
-                          delete newErrors.customCreditText;
-                          return newErrors;
-                        });
+                      if (isCreditOtherSelected) {
+                        if (target.value.length > 100) {
+                          setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名は100文字以内で入力してください' }));
+                        } else if (target.value.trim().length === 0) {
+                          setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名を入力してください' }));
+                        } else {
+                          setValidationErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors.customCreditText;
+                            return newErrors;
+                          });
+                        }
                       }
                     }}
                     maxLength={100}
@@ -2133,17 +2141,21 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                       }
                     }}
                     onInput={(e) => {
-                      // inputイベントでのリアルタイムバリデーション（文字数チェックのみ）
+                      // inputイベントでのリアルタイムバリデーション（文字数チェック + 削除時の必須チェック）
                       const target = e.target as HTMLInputElement;
                       const isQrOtherSelected = selectedQrBrands.includes('その他');
-                      if (isQrOtherSelected && target.value.length > 100) {
-                        setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名は100文字以内で入力してください' }));
-                      } else if (isQrOtherSelected && target.value.length <= 100 && target.value.trim().length > 0) {
-                        setValidationErrors(prev => {
-                          const newErrors = { ...prev };
-                          delete newErrors.customQrText;
-                          return newErrors;
-                        });
+                      if (isQrOtherSelected) {
+                        if (target.value.length > 100) {
+                          setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名は100文字以内で入力してください' }));
+                        } else if (target.value.trim().length === 0) {
+                          setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名を入力してください' }));
+                        } else {
+                          setValidationErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors.customQrText;
+                            return newErrors;
+                          });
+                        }
                       }
                     }}
                     maxLength={100}
