@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
+import Checkbox from '@/components/atoms/Checkbox';
+import FloatingFooter from '@/components/molecules/floating-footer';
 
 export default function ShopsPage() {
   const auth = useAuth();
@@ -37,6 +39,13 @@ export default function ShopsPage() {
     appName: 'all' as 'all' | 'tamanomi' | 'nomoca_kagawa',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+
+  // チェックボックス関連の状態を追加
+  const [selectedShops, setSelectedShops] = useState<Set<string>>(new Set());
+  const [isAllSelected, setIsAllSelected] = useState(false);
+  const [isIndeterminate, setIsIndeterminate] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('operating');
+  const [isExecuting, setIsExecuting] = useState(false);
 
   // 会社アカウントの場合、自分の会社IDを取得
   useEffect(() => {
@@ -278,6 +287,70 @@ export default function ShopsPage() {
         )
       );
       showError(`ステータスの更新に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+    }
+  };
+
+  // チェックボックス関連の関数を追加
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = new Set(shops.map(shop => shop.id));
+      setSelectedShops(allIds);
+      setIsAllSelected(true);
+      setIsIndeterminate(false);
+    } else {
+      setSelectedShops(new Set());
+      setIsAllSelected(false);
+      setIsIndeterminate(false);
+    }
+  };
+
+  const handleSelectShop = (shopId: string, checked: boolean) => {
+    const newSelected = new Set(selectedShops);
+    if (checked) {
+      newSelected.add(shopId);
+    } else {
+      newSelected.delete(shopId);
+    }
+    setSelectedShops(newSelected);
+
+    // 全選択状態の更新
+    const totalCount = shops.length;
+    const selectedCount = newSelected.size;
+    
+    if (selectedCount === 0) {
+      setIsAllSelected(false);
+      setIsIndeterminate(false);
+    } else if (selectedCount === totalCount) {
+      setIsAllSelected(true);
+      setIsIndeterminate(false);
+    } else {
+      setIsAllSelected(false);
+      setIsIndeterminate(true);
+    }
+  };
+
+  const handleStatusChange = (status: string) => {
+    setSelectedStatus(status);
+  };
+
+  const handleExecute = async () => {
+    if (selectedShops.size === 0) return;
+
+    setIsExecuting(true);
+    try {
+      // 一括処理（今後実装予定）
+      await new Promise(resolve => setTimeout(resolve, 1500)); // 模擬APIコール
+      showSuccess(`${selectedShops.size}件の店舗に対して処理を実行しました`);
+      
+      // 選択をクリア
+      setSelectedShops(new Set());
+      setIsAllSelected(false);
+      setIsIndeterminate(false);
+    } catch (error: unknown) {
+      console.error('一括処理エラー:', error);
+      showError('一括処理に失敗しました');
+    } finally {
+      setIsExecuting(false);
     }
   };
 
@@ -677,7 +750,7 @@ export default function ShopsPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
-              店舗一覧 (${shops.length}件)
+              店舗一覧 ({shops.length}件)
             </h3>
             <Link href={merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new'}>
               <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
@@ -691,6 +764,13 @@ export default function ShopsPage() {
             <table className="w-full min-w-[1200px]">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
+                    <Checkbox
+                      checked={isAllSelected}
+                      indeterminate={isIndeterminate}
+                      onChange={handleSelectAll}
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
                     アクション
                   </th>
@@ -722,6 +802,12 @@ export default function ShopsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
               {shops.map((shop) => (
                   <tr key={shop.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap w-32">
+                      <Checkbox
+                        checked={selectedShops.has(shop.id)}
+                        onChange={(checked) => handleSelectShop(shop.id, checked)}
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap w-32">
                       <div className="flex justify-center gap-2">
                         <Link href={`/merchants/${merchantId || shop.merchantId}/shops/${shop.id}/edit`}>
@@ -825,6 +911,16 @@ export default function ShopsPage() {
         </div>
         )}
       </div>
+
+      <FloatingFooter
+        selectedCount={selectedShops.size}
+        onStatusChange={handleStatusChange}
+        onExecute={handleExecute}
+        onIssueAccount={() => {}} // 店舗では使用しない
+        selectedStatus={selectedStatus}
+        isExecuting={isExecuting}
+        isIssuingAccount={false}
+      />
       
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
