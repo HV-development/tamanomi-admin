@@ -13,6 +13,7 @@ import type { Shop } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
 import Checkbox from '@/components/atoms/Checkbox';
 import FloatingFooter from '@/components/molecules/floating-footer';
+import BulkUpdateConfirmModal from '@/components/molecules/bulk-update-confirm-modal';
 
 export default function ShopsPage() {
   const auth = useAuth();
@@ -46,6 +47,7 @@ export default function ShopsPage() {
   const [isIndeterminate, setIsIndeterminate] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('operating');
   const [isExecuting, setIsExecuting] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // 会社アカウントの場合、自分の会社IDを取得
   useEffect(() => {
@@ -336,11 +338,36 @@ export default function ShopsPage() {
   const handleExecute = async () => {
     if (selectedShops.size === 0) return;
 
+    // 確認モーダルを表示
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmExecute = async () => {
+    if (selectedShops.size === 0) return;
+
+    setShowConfirmModal(false);
     setIsExecuting(true);
     try {
-      // 一括処理（今後実装予定）
-      await new Promise(resolve => setTimeout(resolve, 1500)); // 模擬APIコール
-      showSuccess(`${selectedShops.size}件の店舗に対して処理を実行しました`);
+      const shopIds = Array.from(selectedShops);
+      const result = await apiClient.bulkUpdateShopStatus(shopIds, selectedStatus);
+      
+      if (result.success) {
+        const { updatedCount, failedCount, errors } = result.data;
+        
+        if (failedCount === 0) {
+          showSuccess(`${updatedCount}件の店舗のステータスを更新しました`);
+        } else {
+          showSuccess(`${updatedCount}件の店舗のステータスを更新しました（${failedCount}件失敗）`);
+          if (errors.length > 0) {
+            console.warn('一部の店舗でエラーが発生しました:', errors);
+          }
+        }
+        
+        // データを再取得
+        await fetchShops();
+      } else {
+        showError('一括処理に失敗しました');
+      }
       
       // 選択をクリア
       setSelectedShops(new Set());
@@ -352,6 +379,10 @@ export default function ShopsPage() {
     } finally {
       setIsExecuting(false);
     }
+  };
+
+  const handleCancelExecute = () => {
+    setShowConfirmModal(false);
   };
 
   const getStatusColor = (status: string) => {
@@ -794,9 +825,6 @@ export default function ShopsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                     ステータス
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
-                    掲載サイト
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -867,7 +895,7 @@ export default function ShopsPage() {
                     <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
                       <div className="text-sm text-gray-900">{shop.phone}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[220px]">
                       <select
                         value={shop.status}
                         onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
@@ -879,15 +907,6 @@ export default function ShopsPage() {
                           </option>
                         ))}
                       </select>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[120px]">
-                      <div className="text-sm text-gray-900">
-                        {(shop as Shop & { applications?: string[] }).applications && Array.isArray((shop as Shop & { applications?: string[] }).applications) 
-                          ? (shop as Shop & { applications?: string[] }).applications.map((app: string) => 
-                              app === 'tamanomi' ? 'たまのみ' : app === 'nomoca_kagawa' ? 'のもかかがわ' : app
-                            ).join(', ')
-                          : '-'}
-                      </div>
                     </td>
                   </tr>
               ))}
@@ -923,6 +942,15 @@ export default function ShopsPage() {
       />
       
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+      
+      <BulkUpdateConfirmModal
+        isOpen={showConfirmModal}
+        onClose={handleCancelExecute}
+        onConfirm={handleConfirmExecute}
+        selectedCount={selectedShops.size}
+        selectedStatus={selectedStatus}
+        isExecuting={isExecuting}
+      />
     </AdminLayout>
   );
 }
