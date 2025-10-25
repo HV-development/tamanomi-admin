@@ -37,7 +37,6 @@ export default function ShopsPage() {
     prefecture: '',
     city: '',
     status: 'all' as 'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
-    appName: 'all' as 'all' | 'tamanomi' | 'nomoca_kagawa',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
@@ -139,9 +138,6 @@ export default function ShopsPage() {
       if (searchForm.city) queryParams.append('city', searchForm.city);
       if (searchForm.status && searchForm.status !== 'all') {
         queryParams.append('status', searchForm.status);
-      }
-      if (searchForm.appName && searchForm.appName !== 'all') {
-        queryParams.append('appName', searchForm.appName);
       }
       
       const data = await apiClient.getShops(queryParams.toString());
@@ -255,7 +251,6 @@ export default function ShopsPage() {
       prefecture: '',
       city: '',
       status: 'all',
-      appName: 'all',
     });
     // クリア後にデータを再取得
     setTimeout(() => fetchShops(), 100);
@@ -613,23 +608,6 @@ export default function ShopsPage() {
                 {statusOptions.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
-              </select>
-            </div>
-
-            {/* 掲載サイト */}
-            <div>
-              <label htmlFor="appName" className="block text-sm font-medium text-gray-700 mb-2">
-                掲載サイト
-              </label>
-              <select
-                id="appName"
-                value={searchForm.appName}
-                onChange={(e) => handleInputChange('appName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              >
-                <option value="all">すべて</option>
-                <option value="tamanomi">たまのみ</option>
-                <option value="nomoca_kagawa">のもかかがわ</option>
               </select>
             </div>
             </div>
