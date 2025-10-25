@@ -111,7 +111,7 @@ export function useAddressSearch(
  * @param addressResult 住所検索の結果
  * @returns 更新されたフォームデータ
  */
-export function applyAddressSearchResult<T extends { prefecture: string; city: string; address1: string }>(
+export function applyAddressSearchResult<T extends { prefecture?: string; city?: string; address1?: string }>(
   formData: T,
   addressResult: AddressSearchResult
 ): T {

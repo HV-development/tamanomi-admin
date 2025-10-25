@@ -175,7 +175,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   const { isSearching: isSearchingAddress, searchAddress } = useAddressSearch(
     (result) => {
       setFormData(prev => {
-        const addressResult = applyAddressSearchResult(prev as any, result);
+        const addressResult = applyAddressSearchResult(prev, result);
         return {
           ...prev,
           ...addressResult
@@ -1004,7 +1004,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       // アカウント発行が無効な場合はパスワードフィールドを除外
       let dataForZodValidation = { ...dataToValidate };
       if (!formData.createAccount) {
-        const { password, ...rest } = dataForZodValidation;
+        const { password: _password, ...rest } = dataForZodValidation;
         dataForZodValidation = { ...rest, accountEmail: null };
       }
       
