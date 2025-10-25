@@ -344,25 +344,32 @@ export default function ShopsPage() {
     setIsExecuting(true);
     try {
       const shopIds = Array.from(selectedShops);
-      const result = await apiClient.bulkUpdateShopStatus(shopIds, selectedStatus);
+      let updatedCount = 0;
+      let failedCount = 0;
+      const errors: string[] = [];
       
-      if (result.success) {
-        const { updatedCount, failedCount, errors } = result.data;
-        
-        if (failedCount === 0) {
-          showSuccess(`${updatedCount}件の店舗のステータスを更新しました`);
-        } else {
-          showSuccess(`${updatedCount}件の店舗のステータスを更新しました（${failedCount}件失敗）`);
-          if (errors.length > 0) {
-            console.warn('一部の店舗でエラーが発生しました:', errors);
-          }
+      // 個別に店舗ステータスを更新
+      for (const shopId of shopIds) {
+        try {
+          await apiClient.updateShopStatus(shopId, { status: selectedStatus });
+          updatedCount++;
+        } catch (error) {
+          failedCount++;
+          errors.push(`店舗ID ${shopId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
-        
-        // データを再取得
-        await fetchShops();
-      } else {
-        showError('一括処理に失敗しました');
       }
+      
+      if (failedCount === 0) {
+        showSuccess(`${updatedCount}件の店舗のステータスを更新しました`);
+      } else {
+        showSuccess(`${updatedCount}件の店舗のステータスを更新しました（${failedCount}件失敗）`);
+        if (errors.length > 0) {
+          console.warn('一部の店舗でエラーが発生しました:', errors);
+        }
+      }
+      
+      // データを再取得
+      await fetchShops();
       
       // 選択をクリア
       setSelectedShops(new Set());
@@ -861,9 +868,7 @@ export default function ShopsPage() {
                     </td>
                     <td className="px-6 py-4 min-w-[250px]">
                       <div className="text-sm text-gray-900">
-                        {shop.postalCode ? `〒${shop.postalCode}` : '-'}
-                      </div>
-                      <div className="text-sm text-gray-900 mt-1">
+                        {shop.postalCode ? `〒${shop.postalCode}` : '-'}<br />
                         {shop.address || '-'}
                       </div>
                     </td>

@@ -127,12 +127,12 @@ export default function ShopCouponsPage() {
 
   const _getStatusLabel = (status: CouponStatus) => {
     switch (status) {
-      case 'active':
-        return '有効';
-      case 'inactive':
-        return '無効';
-      case 'expired':
-        return '期限切れ';
+      case 'pending':
+        return '申請中';
+      case 'approved':
+        return '承認済み';
+      case 'suspended':
+        return '停止中';
       default:
         return status;
     }
@@ -140,11 +140,11 @@ export default function ShopCouponsPage() {
 
   const _getStatusColor = (status: CouponStatus) => {
     switch (status) {
-      case 'active':
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'approved':
         return 'bg-green-100 text-green-800';
-      case 'inactive':
-        return 'bg-gray-100 text-gray-800';
-      case 'expired':
+      case 'suspended':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';

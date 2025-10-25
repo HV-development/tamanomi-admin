@@ -49,6 +49,7 @@ class ApiClient {
     console.log('🚀 API Request (via Next.js API Route):', { url, method: fetchOptions.method || 'GET', endpoint });
 
     try {
+      console.log('🌐 API Request:', { url, method: fetchOptions.method, body: fetchOptions.body });
       const response = await fetch(url, {
         ...fetchOptions,
         headers: {
@@ -56,6 +57,7 @@ class ApiClient {
           ...fetchOptions.headers,
         },
       });
+      console.log('📡 API Response:', { status: response.status, statusText: response.statusText });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ 
@@ -407,6 +409,26 @@ class ApiClient {
     });
   }
 
+  async updateCouponStatus(id: string, statusData: { status: string }): Promise<unknown> {
+    console.log('🔄 API: updateCouponStatus called (via Next.js API Route)', { id, statusData });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/coupons/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(statusData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async updateCouponPublicStatus(id: string, publicStatusData: { isPublic: boolean }): Promise<unknown> {
+    console.log('🌐 API: updateCouponPublicStatus called (via Next.js API Route)', { id, publicStatusData });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/coupons/${id}/public-status`, {
+      method: 'PATCH',
+      body: JSON.stringify(publicStatusData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
   async deleteCoupon(id: string): Promise<void> {
     console.log('🗑️ API: deleteCoupon called (via Next.js API Route)', { id });
     const token = localStorage.getItem('accessToken');
@@ -414,6 +436,69 @@ class ApiClient {
       method: 'DELETE',
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
+  }
+
+  // サーバーサイド用メソッド（localStorageを使用しない）
+  async updateCouponStatusServerSide(id: string, statusData: { status: string }, authToken?: string): Promise<unknown> {
+    console.log('🔄 API: updateCouponStatusServerSide called', { id, statusData, authToken: authToken ? 'present' : 'missing' });
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://tamanomi-api:3002';
+    
+    try {
+      const response = await fetch(`${backendUrl}/api/v1/coupons/${id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': authToken }),
+        },
+        body: JSON.stringify(statusData),
+      });
+      
+      console.log('📡 Server-side API Response:', { status: response.status, statusText: response.statusText });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('❌ Server-side API Error:', errorData);
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Server-side API Success:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Server-side API Request failed:', error);
+      throw error;
+    }
+  }
+
+  async updateCouponPublicStatusServerSide(id: string, publicStatusData: { isPublic: boolean }, authToken?: string): Promise<unknown> {
+    console.log('🌐 API: updateCouponPublicStatusServerSide called', { id, publicStatusData, authToken: authToken ? 'present' : 'missing' });
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://tamanomi-api:3002';
+    
+    try {
+      const response = await fetch(`${backendUrl}/api/v1/coupons/${id}/public-status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': authToken }),
+        },
+        body: JSON.stringify(publicStatusData),
+      });
+      
+      console.log('📡 Server-side API Response:', { status: response.status, statusText: response.statusText });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('❌ Server-side API Error:', errorData);
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Server-side API Success:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Server-side API Request failed:', error);
+      throw error;
+    }
   }
 }
 

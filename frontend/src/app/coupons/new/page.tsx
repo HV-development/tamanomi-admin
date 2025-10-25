@@ -197,6 +197,8 @@ function CouponNewPageContent() {
   
   // 店舗選択ハンドラー
   const handleShopSelect = (shop: Shop) => {
+    console.log('🔍 Shop selected:', shop);
+    console.log('🔍 Shop ID:', shop.id);
     setSelectedShop(shop);
     setFormData(prev => ({ ...prev, shopId: shop.id }));
   };
@@ -290,8 +292,11 @@ function CouponNewPageContent() {
       newErrors.shopId = '店舗を選択してください';
     } else {
       // UUID形式チェック（簡易版）
+      console.log('🔍 Validating shopId:', formData.shopId);
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(formData.shopId)) {
+      const isValidUuid = uuidRegex.test(formData.shopId);
+      console.log('🔍 UUID validation result:', isValidUuid);
+      if (!isValidUuid) {
         newErrors.shopId = '選択された店舗のIDが無効です。別の店舗を選択してください。';
       }
     }
@@ -311,7 +316,8 @@ function CouponNewPageContent() {
           description: formData.couponContent || null,
           conditions: formData.couponConditions || null,
           imageUrl: formData.imageUrl && formData.imageUrl.trim() !== '' ? formData.imageUrl : null,
-          status: (formData.publishStatus === '1' ? 'active' : 'inactive') as CouponStatus
+          status: (formData.publishStatus === '1' ? 'approved' : 'pending') as CouponStatus,
+          isPublic: formData.publishStatus === '1'
         };
         
         await apiClient.createCoupon(couponData);

@@ -7,7 +7,9 @@ import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+import ToastContainer from '@/components/molecules/toast-container';
 import { apiClient } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 import type { CouponWithShop, CouponStatus, CouponListResponse } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
 
@@ -27,6 +29,7 @@ type PaginationData = CouponListResponse['pagination'];
 
 export default function CouponsPage() {
   const auth = useAuth();
+  const { toasts, removeToast, showSuccess, showError } = useToast();
   const isShopAccount = auth?.user?.accountType === 'shop';
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
   const shopId = isShopAccount ? auth?.user?.shopId : undefined; // 店舗アカウントの場合は自身のshopIdを使用
@@ -144,27 +147,98 @@ export default function CouponsPage() {
 
   const _getStatusLabel = (status: CouponStatus) => {
     switch (status) {
-      case 'active':
-        return '有効';
-      case 'inactive':
-        return '無効';
-      case 'expired':
-        return '期限切れ';
+      case 'pending':
+        return '申請中';
+      case 'approved':
+        return '承認済み';
+      case 'suspended':
+        return '停止中';
       default:
         return status;
     }
   };
 
+  const _getPublicStatusLabel = (isPublic: boolean) => {
+    return isPublic ? '公開中' : '非公開';
+  };
+
   const _getStatusColor = (status: CouponStatus) => {
     switch (status) {
-      case 'active':
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'approved':
         return 'bg-green-100 text-green-800';
-      case 'inactive':
-        return 'bg-gray-100 text-gray-800';
-      case 'expired':
+      case 'suspended':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const _getPublicStatusColor = (isPublic: boolean) => {
+    return isPublic ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800';
+  };
+
+  // セレクトボックス用のステータス色クラス
+  const _getStatusSelectColor = (status: CouponStatus) => {
+    switch (status) {
+      case 'pending':
+        return 'text-yellow-700';
+      case 'approved':
+        return 'text-green-700';
+      case 'suspended':
+        return 'text-red-700';
+      default:
+        return 'text-gray-700';
+    }
+  };
+
+  // セレクトボックス用の公開ステータス色クラス
+  const _getPublicStatusSelectColor = (isPublic: boolean) => {
+    return isPublic ? 'text-green-700' : 'text-red-700';
+  };
+
+  const handleStatusChange = async (couponId: string, newStatus: string) => {
+    console.log('🔄 CouponsPage: handleStatusChange called', { couponId, newStatus });
+    try {
+      await apiClient.updateCouponStatus(couponId, { status: newStatus as CouponStatus });
+      console.log('✅ CouponsPage: Status updated successfully');
+      // ローカル状態を更新
+      setCoupons(prevCoupons => 
+        prevCoupons.map(coupon => 
+          coupon.id === couponId 
+            ? { ...coupon, status: newStatus as CouponStatus }
+            : coupon
+        )
+      );
+      // 成功トーストを表示
+      showSuccess(`クーポンのステータスを「${_getStatusLabel(newStatus as CouponStatus)}」に更新しました`);
+    } catch (error) {
+      console.error('❌ CouponsPage: Status update error:', error);
+      // エラートーストを表示
+      showError('クーポンのステータス更新に失敗しました');
+    }
+  };
+
+  const handlePublicStatusChange = async (couponId: string, isPublic: boolean) => {
+    console.log('🌐 CouponsPage: handlePublicStatusChange called', { couponId, isPublic });
+    try {
+      await apiClient.updateCouponPublicStatus(couponId, { isPublic });
+      console.log('✅ CouponsPage: Public status updated successfully');
+      // ローカル状態を更新
+      setCoupons(prevCoupons => 
+        prevCoupons.map(coupon => 
+          coupon.id === couponId 
+            ? { ...coupon, isPublic }
+            : coupon
+        )
+      );
+      // 成功トーストを表示
+      showSuccess(`クーポンの公開ステータスを「${_getPublicStatusLabel(isPublic)}」に更新しました`);
+    } catch (error) {
+      console.error('❌ CouponsPage: Public status update error:', error);
+      // エラートーストを表示
+      showError('クーポンの公開ステータス更新に失敗しました');
     }
   };
 
@@ -320,28 +394,31 @@ export default function CouponsPage() {
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[1280px]">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="pl-6 pr-0 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="pl-6 pr-0 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
                     アクション
                   </th>
-                  <th className="pl-2 pr-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="pl-2 pr-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                     会社名
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                     店舗名
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
                     クーポン名
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ステータス
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px]">
+                    承認ステータス
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px]">
+                    公開ステータス
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[160px]">
                     作成日時
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[160px]">
                     更新日時
                   </th>
                 </tr>
@@ -349,7 +426,7 @@ export default function CouponsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredCoupons.map((coupon) => (
                   <tr key={coupon.id} className="hover:bg-gray-50">
-                    <td className="pl-6 pr-0 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="pl-6 pr-0 py-4 whitespace-nowrap text-sm font-medium min-w-[120px]">
                       <div className="flex items-center space-x-1">
                         <Link href={`/coupons/${coupon.id}/edit`}>
                           <button className="p-1 transition-opacity hover:opacity-70">
@@ -363,22 +440,40 @@ export default function CouponsPage() {
                         </Link>
                       </div>
                     </td>
-                    <td className="pl-2 pr-6 py-4 whitespace-nowrap">
+                    <td className="pl-2 pr-6 py-4 whitespace-nowrap min-w-[150px]">
                       <div className="text-sm text-gray-900">{coupon.shop?.merchant?.name || '-'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
                       <div className="text-sm text-gray-900">{coupon.shop?.name || '-'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                       <div className="text-sm text-gray-900">{coupon.title}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{_getStatusLabel(coupon.status)}</div>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
+                      <select
+                        value={coupon.status}
+                        onChange={(e) => handleStatusChange(coupon.id, e.target.value)}
+                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[120px] ${_getStatusSelectColor(coupon.status)}`}
+                      >
+                        <option value="pending">申請中</option>
+                        <option value="approved">承認済み</option>
+                        <option value="suspended">停止中</option>
+                      </select>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
+                      <select
+                        value={coupon.isPublic ? 'true' : 'false'}
+                        onChange={(e) => handlePublicStatusChange(coupon.id, e.target.value === 'true')}
+                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[100px] ${_getPublicStatusSelectColor(coupon.isPublic)}`}
+                      >
+                        <option value="true">公開中</option>
+                        <option value="false">非公開</option>
+                      </select>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[160px]">
                       <div className="text-sm text-gray-900">{new Date(coupon.createdAt).toLocaleString('ja-JP')}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[160px]">
                       <div className="text-sm text-gray-900">{new Date(coupon.updatedAt).toLocaleString('ja-JP')}</div>
                     </td>
                   </tr>
@@ -396,6 +491,7 @@ export default function CouponsPage() {
           )}
         </div>
       </div>
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
   );
 }
