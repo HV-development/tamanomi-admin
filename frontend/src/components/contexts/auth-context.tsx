@@ -123,7 +123,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         refreshTokenMatch: savedRefreshToken === response.refreshToken
       });
       
-      const accountData = response.account as { accountType: string; shopId?: string; merchantId?: string };
+      const accountData = response.account as { 
+        accountType: string; 
+        shopId?: string; 
+        merchantId?: string;
+        email: string;
+        displayName?: string;
+      };
       console.log('🔍 AuthContext: Received account data from API', {
         accountType: accountData.accountType,
         shopId: accountData.shopId,
@@ -157,7 +163,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiClient.register(userData);
       
       // トークンを保存
-      const accountData = response.account as { accountType: string; shopId?: string; merchantId?: string };
+      const accountData = response.account as { 
+        accountType: string; 
+        shopId?: string; 
+        merchantId?: string;
+        email: string;
+        displayName?: string;
+      };
       localStorage.setItem('accessToken', response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
       localStorage.setItem('userData', JSON.stringify(accountData));
@@ -193,11 +205,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const refreshToken = async () => {
+  const refreshToken = async (): Promise<void> => {
     try {
-      const response = await apiClient.refreshToken();
+      await apiClient.refreshToken();
       console.log('✅ AuthContext: tokens refreshed');
-      return response;
     } catch (error) {
       console.error('❌ AuthContext: token refresh failed', error);
       // リフレッシュに失敗した場合はログアウト

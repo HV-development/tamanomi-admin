@@ -6,8 +6,8 @@ import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { validateMerchantField, type MerchantFormData, type MerchantEditFormData } from '@hv-development/schemas';
-import { apiClient } from '@/lib/api';
 import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-search';
+import { useAuth } from '@/components/contexts/auth-context';
 
 const prefectures = [
   '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
@@ -23,17 +23,12 @@ const prefectures = [
 export default function MerchantEditPage() {
   const params = useParams();
   const router = useRouter();
+  const auth = useAuth();
   const merchantId = params.id as string;
-  
-  // アプリケーション一覧の状態
-  const [applications, setApplications] = useState<Array<{ id: string; name: string; description?: string; domain: string }>>([]);
-  const [isLoadingApplications, setIsLoadingApplications] = useState(true);
   
   const [formData, setFormData] = useState<MerchantEditFormData>({
     name: '',
     nameKana: '',
-    representative: '',
-    representativeName: '',
     representativeNameLast: '',
     representativeNameFirst: '',
     representativeNameLastKana: '',
@@ -52,6 +47,14 @@ export default function MerchantEditPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // 事業者アカウントの場合はアクセス拒否
+  useEffect(() => {
+    if (auth?.user?.accountType === 'merchant') {
+      router.push('/merchants');
+      return;
+    }
+  }, [auth, router]);
   
   // 住所検索フック
   const { isSearching: isSearchingAddress, searchAddress } = useAddressSearch(
@@ -108,8 +111,6 @@ export default function MerchantEditPage() {
             setFormData({
               name: merchantData.name || '',
               nameKana: merchantData.nameKana || '',
-              representative: merchantData.representative || '',
-              representativeName: merchantData.representativeName || '',
               representativeNameLast: merchantData.representativeNameLast || '',
               representativeNameFirst: merchantData.representativeNameFirst || '',
               representativeNameLastKana: merchantData.representativeNameLastKana || '',
@@ -160,25 +161,6 @@ export default function MerchantEditPage() {
     };
   }, [merchantId]);
 
-  // アプリケーション一覧を取得
-  useEffect(() => {
-    const fetchApplications = async () => {
-      try {
-        console.log('📱 Fetching applications...');
-        const response = await apiClient.getApplications() as { applications: Array<{ id: string; name: string; description?: string; domain: string }> };
-        setApplications(response.applications);
-        console.log('✅ Applications loaded:', response.applications);
-      } catch (error) {
-        console.error('❌ Failed to fetch applications:', error);
-        alert('アプリケーション一覧の取得に失敗しました');
-      } finally {
-        setIsLoadingApplications(false);
-      }
-    };
-
-    fetchApplications();
-  }, []);
-
   // エラー状態の変更を監視
   useEffect(() => {
     console.log('🔍 Edit errors state changed:', errors);
@@ -214,18 +196,6 @@ export default function MerchantEditPage() {
         setErrors((prev) => {
           const newErrors = { ...prev };
           delete newErrors.phone;
-          return newErrors;
-        });
-      }
-    } else if (field === 'applications') {
-      // applicationsフィールドの簡易バリデーション
-      const apps = formData.applications || [];
-      if (apps.length === 0) {
-        setErrors((prev) => ({ ...prev, applications: '少なくとも1つのアプリケーションを選択してください' }));
-      } else {
-        setErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors.applications;
           return newErrors;
         });
       }
@@ -275,18 +245,6 @@ export default function MerchantEditPage() {
           return newErrors;
         });
       }
-    } else if (field === 'applications') {
-      // applicationsフィールドの簡易バリデーション
-      const apps = formData.applications || [];
-      if (apps.length === 0) {
-        setErrors((prev) => ({ ...prev, applications: '少なくとも1つのアプリケーションを選択してください' }));
-      } else {
-        setErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors.applications;
-          return newErrors;
-        });
-      }
     } else {
       const error = validateMerchantField(field as keyof MerchantFormData, (value as string) || '');
       if (error) {
@@ -329,25 +287,11 @@ export default function MerchantEditPage() {
       'postalCode',
       'prefecture',
       'city',
-      'address1',
-      'applications'
+      'address1'
     ];
 
     fieldsToValidate.forEach(field => {
-      if (field === 'applications') {
-        // applicationsフィールドの個別バリデーション
-        console.log('🔍 Applications validation check:', {
-          applications: formData.applications,
-          type: typeof formData.applications,
-          length: formData.applications?.length,
-          isArray: Array.isArray(formData.applications)
-        });
-        if (!formData.applications || formData.applications.length === 0) {
-          fieldErrors.applications = '少なくとも1つのアプリケーションを選択してください';
-          hasErrors = true;
-          console.log('❌ Applications validation failed');
-        }
-      } else if (field === 'email' || field === 'phone') {
+      if (field === 'email' || field === 'phone') {
         // emailとphoneフィールドは個別にバリデーション（MerchantFormSchemaに存在しないため）
         const value = formData[field] || '';
         if (field === 'email') {
@@ -375,8 +319,8 @@ export default function MerchantEditPage() {
             console.log('❌ Phone validation failed: invalid length');
           }
         }
-      } else {
-        // その他のフィールドはMerchantFormSchemaでバリデーション
+      } else if (field !== 'applications') {
+        // applications以外のフィールドはMerchantFormSchemaでバリデーション
         const value = formData[field] || '';
         const error = validateMerchantField(field as keyof MerchantFormData, value);
         if (error) {
@@ -405,12 +349,6 @@ export default function MerchantEditPage() {
     e.preventDefault();
     
     console.log('📝 Edit form submit started, current errors:', errors);
-    console.log('🔍 Form data at submit:', {
-      applications: formData.applications,
-      applicationsLength: formData.applications?.length,
-      applicationsType: typeof formData.applications,
-      isArray: Array.isArray(formData.applications)
-    });
     
     if (!validateFormData()) {
       console.log('❌ Edit validation failed, stopping submit');
@@ -435,7 +373,6 @@ export default function MerchantEditPage() {
         city: formData.city,
         address1: formData.address1,
         address2: formData.address2,
-        applications: formData.applications,
       };
 
       const token = localStorage.getItem('accessToken');
@@ -484,9 +421,9 @@ export default function MerchantEditPage() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">会社編集</h1>
+              <h1 className="text-2xl font-bold text-gray-900">事業者編集</h1>
               <p className="text-gray-600">
-                会社ID: {merchantId}
+                事業者ID: {merchantId}
               </p>
             </div>
             <div className="text-sm text-gray-600">
@@ -504,10 +441,10 @@ export default function MerchantEditPage() {
             <h3 className="text-lg font-medium text-gray-900 mb-6">基本情報</h3>
             
             <div className="space-y-6">
-              {/* 会社名 */}
+              {/* 事業者名 */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  会社名 <span className="text-red-500">*</span>
+                  事業者名 <span className="text-red-500">*</span>
                 </label>
                 <input
                   ref={(el) => { fieldRefs.current.name = el; }}
@@ -519,7 +456,7 @@ export default function MerchantEditPage() {
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.name ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="会社名を入力"
+                  placeholder="事業者名を入力"
                 />
                 <div className="mt-1 flex justify-between items-center">
                   {errors.name ? (
@@ -531,10 +468,10 @@ export default function MerchantEditPage() {
                 </div>
               </div>
 
-              {/* 会社名（カナ） */}
+              {/* 事業者名（カナ） */}
               <div>
                 <label htmlFor="nameKana" className="block text-sm font-medium text-gray-700 mb-2">
-                  会社名（カナ） <span className="text-red-500">*</span>
+                  事業者名（カナ） <span className="text-red-500">*</span>
                 </label>
                 <input
                   ref={(el) => { fieldRefs.current.nameKana = el; }}
@@ -874,88 +811,6 @@ export default function MerchantEditPage() {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* 契約サイト */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">契約サイト <span className="text-red-500">*</span></h3>
-            <p className="text-sm text-gray-600 mb-4">
-              ここで選択したサイトが店舗登録時に指定できるサイトとなります。
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {isLoadingApplications ? (
-                <div className="col-span-full text-center py-4">
-                  <p className="text-sm text-gray-500">アプリケーションを読み込み中...</p>
-                </div>
-              ) : applications.length === 0 ? (
-                <div className="col-span-full text-center py-4">
-                  <p className="text-sm text-gray-500">アプリケーションが見つかりません</p>
-                </div>
-              ) : (
-                applications.map((app) => (
-                  <label key={app.id} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      value={app.name}
-                      checked={formData.applications?.includes(app.name) || false}
-                      onChange={(e) => {
-                        const currentApps = formData.applications || [];
-                        console.log('🔍 Checkbox change:', {
-                          appName: app.name,
-                          checked: e.target.checked,
-                          currentApps,
-                          currentLength: currentApps.length
-                        });
-                        if (e.target.checked) {
-                          const newApps = [...currentApps, app.name];
-                          console.log('✅ Adding app:', newApps);
-                          setFormData(prev => ({
-                            ...prev,
-                            applications: newApps
-                          }));
-                          
-                          // エラーをクリア
-                          setErrors(prev => {
-                            const newErrors = { ...prev };
-                            delete newErrors.applications;
-                            return newErrors;
-                          });
-                        } else {
-                          const newApps = currentApps.filter(appName => appName !== app.name);
-                          console.log('❌ Removing app:', newApps);
-                          setFormData(prev => ({
-                            ...prev,
-                            applications: newApps
-                          }));
-                          
-                          // リアルタイムバリデーション
-                          if (newApps.length === 0) {
-                            setErrors(prev => ({
-                              ...prev,
-                              applications: '少なくとも1つのアプリケーションを選択してください'
-                            }));
-                          } else {
-                            setErrors(prev => {
-                              const newErrors = { ...prev };
-                              delete newErrors.applications;
-                              return newErrors;
-                            });
-                          }
-                        }
-                      }}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">{app.name}</span>
-                  </label>
-                ))
-              )}
-            </div>
-            {errors.applications && (
-              <p className="mt-2 text-sm text-red-600">{errors.applications}</p>
-            )}
-            <p className="mt-2 text-xs text-gray-500">
-              ※ 少なくとも1つのアプリケーションを選択してください
-            </p>
           </div>
 
           {/* ボタン */}

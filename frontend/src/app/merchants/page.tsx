@@ -359,8 +359,8 @@ export default function MerchantsPage() {
         <div className="space-y-6">
           {/* ヘッダー */}
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">会社情報</h1>
-            <p className="text-gray-600 mt-1">会社の詳細情報を確認できます</p>
+            <h1 className="text-2xl font-bold text-gray-900">事業者情報</h1>
+            <p className="text-gray-600 mt-1">事業者の詳細情報を確認できます</p>
           </div>
 
           {/* ローディング状態 */}
@@ -388,11 +388,11 @@ export default function MerchantsPage() {
                   <table className="w-full border-collapse border border-gray-300">
                     <tbody>
                       <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">会社名</td>
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/2">事業者名</td>
                         <td className="py-3 px-4 text-gray-900">{myMerchant.name}</td>
                       </tr>
                       <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">会社名（カナ）</td>
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">事業者名（カナ）</td>
                         <td className="py-3 px-4 text-gray-900">{myMerchant.nameKana}</td>
                       </tr>
                     </tbody>
@@ -481,9 +481,9 @@ export default function MerchantsPage() {
                   店舗一覧を見る
                 </button>
               </Link>
-              <Link href={`/merchants/${myMerchant.id}/edit`}>
+              <Link href={`/merchants/${myMerchant.id}/edit-account`}>
                 <button className="px-6 py-3 border-2 border-green-600 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:border-green-700 transition-colors font-medium text-base">
-                  編集
+                  アカウント情報編集
                 </button>
               </Link>
             </div>
@@ -501,9 +501,9 @@ export default function MerchantsPage() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-900">会社管理</h1>
+            <h1 className="text-2xl font-bold text-gray-900">事業者管理</h1>
             <p className="text-gray-600">
-              会社の管理・編集を行います
+              事業者の管理・編集を行います
             </p>
             </div>
             <div className="text-sm text-gray-600">
@@ -551,30 +551,30 @@ export default function MerchantsPage() {
           {isSearchExpanded && (
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* 会社ID */}
+            {/* 事業者ID */}
             <div>
               <label htmlFor="merchantId" className="block text-sm font-medium text-gray-700 mb-2">
-                会社ID
+                事業者ID
               </label>
               <input
                 type="text"
                 id="merchantId"
-                placeholder="会社IDを入力"
+                placeholder="事業者IDを入力"
                 value={searchForm.merchantId}
                 onChange={(e) => handleInputChange('merchantId', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
 
-            {/* 会社名 */}
+            {/* 事業者名 */}
             <div>
               <label htmlFor="merchantName" className="block text-sm font-medium text-gray-700 mb-2">
-                会社名
+                事業者名
               </label>
               <input
                 type="text"
                 id="merchantName"
-                placeholder="会社名を入力"
+                placeholder="事業者名を入力"
                 value={searchForm.merchantName}
                 onChange={(e) => handleInputChange('merchantName', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"

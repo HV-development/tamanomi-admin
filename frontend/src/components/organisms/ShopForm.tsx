@@ -29,35 +29,35 @@ const prefectures = [
 interface Merchant {
   id: string;
   name: string;
-  nameKana: string;
-  representativeNameLast: string;
-  representativeNameFirst: string;
-  representativeNameLastKana: string;
-  representativeNameFirstKana: string;
-  email: string;
-  phone: string;
-  representativePhone: string;
-  postalCode: string;
-  prefecture: string;
-  city: string;
-  address1: string;
-  address2: string | null;
-  businessType: string;
-  businessDescription: string;
-  website: string | null;
-  accountId: string;
-  accountEmail: string;
-  applications: string[];
-  createdAt: Date;
-  updatedAt: Date;
+  nameKana?: string;
+  representativeNameLast?: string;
+  representativeNameFirst?: string;
+  representativeNameLastKana?: string;
+  representativeNameFirstKana?: string;
+  email?: string;
+  phone?: string;
+  representativePhone?: string;
+  postalCode?: string;
+  prefecture?: string;
+  city?: string;
+  address1?: string;
+  address2?: string | null;
+  businessType?: string;
+  businessDescription?: string;
+  website?: string | null;
+  accountId?: string;
+  accountEmail?: string;
+  applications?: string[];
+  createdAt?: Date;
+  updatedAt?: Date;
   deletedAt?: Date;
   account: {
     email: string;
-    displayName: string | null;
-    status: string;
+    displayName?: string | null;
+    status?: string;
     lastLoginAt?: Date;
   };
-  shops: Array<{
+  shops?: Array<{
     id: string;
     name: string;
     status: string;
@@ -147,13 +147,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     paymentCredit: '',
     paymentCode: '',
     status: 'registering',
-    applications: [],
     createAccount: false,
     password: '',
   });
-  
-  // 親Merchantのapplications
-  const [merchantApplications, setMerchantApplications] = useState<string[]>([]);
   
   // 利用シーンの複数選択用
   const [selectedScenes, setSelectedScenes] = useState<string[]>([]);
@@ -178,7 +174,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   // 住所検索フック
   const { isSearching: isSearchingAddress, searchAddress } = useAddressSearch(
     (result) => {
-      setFormData(prev => applyAddressSearchResult(prev, result));
+      setFormData(prev => {
+        const addressResult = applyAddressSearchResult(prev as any, result);
+        return {
+          ...prev,
+          ...addressResult
+        };
+      });
       // 住所フィールドのエラーをクリア
       setValidationErrors(prev => {
         const newErrors = { ...prev };
@@ -210,15 +212,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     }
   }, [validationErrors]);
   
-  // デバッグ用：merchantApplicationsの変更を監視
-  useEffect(() => {
-    console.log('📱 merchantApplications更新:', {
-      length: merchantApplications.length,
-      values: merchantApplications,
-      shouldShow: merchantApplications.length > 0
-    });
-  }, [merchantApplications]);
-  
   // 既存のアカウントがあるかどうか（API取得時の初期データで判定）
   const [hasExistingAccount, setHasExistingAccount] = useState(false);
   
@@ -246,21 +239,20 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             if (!isMounted) return;
             
             if (myMerchantData && typeof myMerchantData === 'object' && 'data' in myMerchantData && myMerchantData.data) {
-              const merchant = myMerchantData.data as { id: string; name: string };
+              const merchant = myMerchantData.data as Merchant;
               
               // merchantIdがまだ設定されていない場合のみ設定
               if (!merchantId) {
                 setFormData(prev => ({
                   ...prev,
                   merchantId: merchant.id,
-                  // 親のアプリケーションを自動設定（複数選択対応）
-                  applications: ((merchant.applications || []) as any)
                 }));
               }
               // 会社名は常に設定
               setMerchantName(merchant.name);
-              // 親のapplicationsを保存
-              setMerchantApplications((merchant.applications || []) as any);
+              
+              // 自分の会社情報をmerchants配列に追加（親会社からコピー機能用）
+              setMerchants([merchant]);
             }
           } catch (error) {
             console.error('会社情報の取得に失敗しました:', error);
@@ -453,20 +445,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               console.log('✅ Custom scene text set:', shopDataWithScenes.customSceneText);
             }
             
-            // 掲載サイト（applications）の設定
-            const shopDataWithApplications = shopData as ShopCreateRequest & { applications?: string[] };
-            if (shopDataWithApplications.applications && Array.isArray(shopDataWithApplications.applications)) {
-              console.log('📱 Setting applications:', shopDataWithApplications.applications);
-              // formDataのapplicationsはすでにsetFormDataで設定されているので、
-              // 親会社のapplicationsも取得する
-              if (merchantFromShop) {
-                const parentMerchant = merchantsArray.find(m => m.id === finalMerchantId) as Merchant & { applications?: string[] };
-                if (parentMerchant?.applications) {
-                  setMerchantApplications(parentMerchant.applications);
-                  console.log('📱 Parent merchant applications set:', parentMerchant.applications);
-                }
-              }
-            }
           }
         } else if (merchantId && merchantsArray.length > 0 && isMounted) {
           // 新規作成モードで加盟店が指定されている場合
@@ -510,42 +488,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       console.log('🔄 Updating merchant name from formData:', { 
         merchantId: formData.merchantId, 
         merchant, 
-        merchantsCount: merchants.length,
-        merchantApplications: merchant?.applications
+        merchantsCount: merchants.length
       });
       if (merchant) {
         setMerchantName(merchant.name);
-        // 親Merchantのapplicationsを設定
-        const apps = (merchant.applications || []) as any;
-        console.log('📱 Setting merchantApplications:', apps);
-        setMerchantApplications(apps as any);
-        // 親のアプリケーションを自動設定（複数選択対応）
-        if (merchant.applications && merchant.applications.length > 0) {
-          setFormData(prev => {
-            const currentApps = prev.applications || [];
-            // 現在選択されているアプリケーションが親のリストに含まれているかチェック
-            const validApps = currentApps.filter(app => (merchant.applications as any)!.includes(app as any));
-            
-            if (validApps.length > 0) {
-              // 有効なアプリケーションがある場合はそのまま
-              return {
-                ...prev,
-                applications: validApps
-              };
-            } else {
-              // 無効な場合は親の全アプリケーションを設定
-              return {
-                ...prev,
-                applications: [...(merchant.applications as any)]
-              };
-            }
-          });
-        }
       }
-    } else if (!formData.merchantId) {
-      // merchantIdがクリアされた場合はmerchantApplicationsもクリア
-      console.log('📱 Clearing merchantApplications (no merchantId)');
-      setMerchantApplications([]);
     }
   }, [formData.merchantId, merchants]);
 
@@ -557,13 +504,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       merchantId: merchant.id,
     }));
     setMerchantName(merchant.name);
-    
-    // 親Merchantのapplicationsを設定
-    const apps = (merchant.applications || []) as any;
-    console.log('📱 Setting merchantApplications in handleMerchantSelect:', apps);
-    console.log('📱 merchant.applications:', merchant.applications as any);
-    console.log('📱 apps after || []:', apps);
-    setMerchantApplications(apps as any);
     
     // 会社を選択したことを記録
     setTouchedFields(prev => ({
@@ -789,15 +729,16 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     const latitude = formData.latitude ? String(formData.latitude).trim() : '';
     const longitude = formData.longitude ? String(formData.longitude).trim() : '';
     
-    // 緯度経度が両方入力されている場合は座標でピンを表示
+    // 緯度経度が両方入力されている場合は座標でピンを表示（最大ズーム）
     if (latitude && longitude) {
-      const url = `https://www.google.com/maps?q=${latitude},${longitude}`;
+      // 複数の方法を試して最大ズームレベルで表示
+      const url = `https://www.google.com/maps/@${latitude},${longitude},21z/data=!3m1!1e3`;
       window.open(url, '_blank', 'noopener,noreferrer');
-      showSuccess('Google Mapで座標のピンを表示しました。');
+      showSuccess('Google Mapで座標のピンを最大ズームで表示しました。');
       return;
     }
     
-    // 緯度経度がない場合は住所で検索
+    // 緯度経度がない場合は住所で検索（最大ズーム）
     const _postalCode = formData.postalCode?.trim();
     const prefecture = formData.prefecture?.trim();
     const city = formData.city?.trim();
@@ -820,11 +761,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     
     const address = addressParts.join(' ');
     
-    // Google Mapsで住所検索を開く（検索ボックスに入力された状態）
-    const url = `https://www.google.com/maps?q=${encodeURIComponent(address)}`;
+    // Google Mapsで住所検索を開く（検索ボックスに入力された状態、最大ズーム）
+    // 住所検索専用のURL形式を使用
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}&zoom=21`;
     window.open(url, '_blank', 'noopener,noreferrer');
     
-    showSuccess('Google Mapを開きました。表示された検索ボタンをクリックしてピンを表示してください。');
+    showSuccess('Google Mapを最大ズームで開きました。住所が自動的に検索されます。');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -841,6 +783,10 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       // クレジットカードとQRコードをJSON形式に変換
       const isCreditOtherSelected = selectedCreditBrands.includes('その他');
       const isQrOtherSelected = selectedQrBrands.includes('その他');
+      
+      // 「その他」シーンの選択状態を確認
+      const otherScene = scenes.find(s => s.name === 'その他');
+      const isOtherSceneSelected = otherScene && selectedScenes.includes(otherScene.id);
       
       const paymentCreditJson = selectedCreditBrands.length > 0 ? {
         brands: selectedCreditBrands.filter(b => b !== 'その他'),
@@ -946,19 +892,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customErrors.genreId = 'ジャンルを選択してください';
       }
       
-      // 会社（管理者アカウントの場合のみ）
-      console.log('🔍 会社チェック:', { isMerchantAccount, merchantId: formData.merchantId, isEmpty: !formData.merchantId });
+      // 事業者（管理者アカウントの場合のみ）
+      console.log('🔍 事業者チェック:', { isMerchantAccount, merchantId: formData.merchantId, isEmpty: !formData.merchantId });
       if (!isMerchantAccount && (!formData.merchantId || formData.merchantId.trim().length === 0)) {
-        console.log('❌ 会社エラー追加');
-        customErrors.merchantId = '会社を選択してください';
+        console.log('❌ 事業者エラー追加');
+        customErrors.merchantId = '事業者を選択してください';
       }
       
-      // 掲載サイト（親会社がアプリケーションを持つ場合）
-      console.log('🔍 掲載サイトチェック:', { applications: formData.applications, merchantApplications, parentAppsLength: merchantApplications.length });
-      if (merchantApplications.length > 0 && (!formData.applications || formData.applications.length === 0)) {
-        console.log('❌ 掲載サイトエラー追加');
-        customErrors.applications = '掲載サイトを選択してください';
-      }
       
       // アカウント情報（アカウント発行時のみ）
       if (formData.createAccount) {
@@ -984,6 +924,27 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       // 詳細情報
       if (formData.details && formData.details.length > 1000) {
         customErrors.details = '詳細情報は1000文字以内で入力してください';
+      }
+      
+      // クレジットカード「その他」のテキストボックス必須チェック
+      if (isCreditOtherSelected && (!customCreditText || customCreditText.trim().length === 0)) {
+        customErrors.customCreditText = 'その他のクレジットカードブランド名を入力してください';
+      } else if (isCreditOtherSelected && customCreditText && customCreditText.length > 100) {
+        customErrors.customCreditText = 'その他のクレジットカードブランド名は100文字以内で入力してください';
+      }
+      
+      // QRコード「その他」のテキストボックス必須チェック
+      if (isQrOtherSelected && (!customQrText || customQrText.trim().length === 0)) {
+        customErrors.customQrText = 'その他のQRコード決済サービス名を入力してください';
+      } else if (isQrOtherSelected && customQrText && customQrText.length > 100) {
+        customErrors.customQrText = 'その他のQRコード決済サービス名は100文字以内で入力してください';
+      }
+      
+      // 利用シーン「その他」のテキストボックス必須チェック
+      if (isOtherSceneSelected && (!customSceneText || customSceneText.trim().length === 0)) {
+        customErrors.customSceneText = '具体的な利用シーンを入力してください';
+      } else if (isOtherSceneSelected && customSceneText && customSceneText.length > 100) {
+        customErrors.customSceneText = '具体的な利用シーンは100文字以内で入力してください';
       }
       
       // カスタムエラーがある場合は表示して終了
@@ -1039,7 +1000,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       
       // Zodバリデーションも実行（追加チェック用）
       const schema = isEdit ? shopUpdateRequestSchema : shopCreateRequestSchema;
-      const validationResult = schema.safeParse(dataToValidate);
+      
+      // アカウント発行が無効な場合はパスワードフィールドを除外
+      let dataForZodValidation = { ...dataToValidate };
+      if (!formData.createAccount) {
+        const { password, ...rest } = dataForZodValidation;
+        dataForZodValidation = { ...rest, accountEmail: null };
+      }
+      
+      const validationResult = schema.safeParse(dataForZodValidation);
       
       if (!validationResult.success) {
         const zodErrors: Record<string, string> = {};
@@ -1137,10 +1106,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         // アカウント発行チェックがOFFの場合はnullに設定（アカウント無効化）
         accountEmail = null;
       }
-      
-      // 「その他」シーンのIDを取得
-      const otherScene = scenes.find(s => s.name === 'その他');
-      const isOtherSceneSelected = otherScene && selectedScenes.includes(otherScene.id);
       
       // クレジットカードとQRコードをJSON形式で送信データに追加
       const submitData = {
@@ -1255,9 +1220,52 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 会社名 <span className="text-red-500">*</span>
               </label>
               {isMerchantAccount ? (
-                // 会社アカウントの場合は会社名を固定表示（設定ボタンなし）
-                <div className="text-gray-900">
-                  {merchantName || '読み込み中...'}
+                // 会社アカウントの場合は会社名を固定表示（親会社からコピーボタン付き）
+                <div>
+                  <div className="text-gray-900 mb-2">
+                    {merchantName || '読み込み中...'}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // 親会社の情報を取得
+                      const merchant = merchants.find(m => m.id === formData.merchantId);
+                      if (merchant) {
+                        
+                        // 親会社の情報をフォームに反映
+                        setFormData(prev => {
+                          const newFormData = {
+                            ...prev,
+                            // 店舗名（会社名をそのまま使用）
+                            name: merchant.name,
+                            // 店舗名（カナ）
+                            nameKana: merchant.nameKana,
+                            // 電話番号
+                            phone: merchant.representativePhone || '',
+                            // 郵便番号
+                            postalCode: merchant.postalCode || '',
+                            // 都道府県
+                            prefecture: merchant.prefecture || '',
+                            // 市区町村
+                            city: merchant.city || '',
+                            // 番地以降
+                            address1: merchant.address1 || '',
+                            // 建物名
+                            address2: merchant.address2 || ''
+                          };
+                          
+                          
+                          return newFormData;
+                        });
+                      }
+                    }}
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    親会社からコピー
+                  </button>
                 </div>
               ) : (propMerchantId || merchantIdFromParams) ? (
                 <div>
@@ -1289,71 +1297,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                         >
                           会社を変更
                         </button>
-                        {merchantApplications.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              // 親会社の情報を取得
-                              const merchant = merchants.find(m => m.id === formData.merchantId);
-                              if (merchant) {
-                                
-                                // 親会社の情報をフォームに反映
-                                setFormData(prev => {
-                                  const newFormData = {
-                                    ...prev,
-                                  // 契約サイト
-                                  applications: [...merchantApplications] as any,
-                                    // 店舗名（会社名をそのまま使用）
-                                    name: merchant.name,
-                                    // 店舗名（カナ）
-                                    nameKana: merchant.nameKana,
-                                  // 電話番号
-                                  phone: merchant.representativePhone || '',
-                                  // 郵便番号
-                                  postalCode: merchant.postalCode || '',
-                                  // 都道府県
-                                  prefecture: merchant.prefecture || '',
-                                  // 市区町村
-                                  city: merchant.city || '',
-                                  // 番地以降
-                                  address1: merchant.address1 || '',
-                                  // 建物名
-                                  address2: merchant.address2 || ''
-                                  };
-                                  
-                                  
-                                  return newFormData;
-                                });
-                              }
-                            }}
-                            className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                            親会社からコピー
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsMerchantModalOpen(true);
-                          // モーダルを開いたことをタッチとして記録
-                          setTouchedFields(prev => ({
-                            ...prev,
-                            merchantId: true,
-                          }));
-                        }}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
-                        title="会社を選択"
-                      >
-                        会社を選択
-                      </button>
-                      {merchantApplications.length > 0 && (
                         <button
                           type="button"
                           onClick={() => {
@@ -1365,8 +1308,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                               setFormData(prev => {
                                 const newFormData = {
                                   ...prev,
-                                  // 契約サイト
-                                  applications: [...merchantApplications] as any,
                                   // 店舗名（会社名をそのまま使用）
                                   name: merchant.name,
                                   // 店舗名（カナ）
@@ -1397,13 +1338,68 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                           </svg>
                           親会社からコピー
                         </button>
-                      )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMerchantModalOpen(true);
+                          // モーダルを開いたことをタッチとして記録
+                          setTouchedFields(prev => ({
+                            ...prev,
+                            merchantId: true,
+                          }));
+                        }}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
+                        title="会社を選択"
+                      >
+                        会社を選択
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // 親会社の情報を取得
+                          const merchant = merchants.find(m => m.id === formData.merchantId);
+                          if (merchant) {
+                            
+                            // 親会社の情報をフォームに反映
+                            setFormData(prev => {
+                              const newFormData = {
+                                ...prev,
+                                // 店舗名（会社名をそのまま使用）
+                                name: merchant.name,
+                                // 店舗名（カナ）
+                                nameKana: merchant.nameKana,
+                                // 電話番号
+                                phone: merchant.representativePhone || '',
+                                // 郵便番号
+                                postalCode: merchant.postalCode || '',
+                                // 都道府県
+                                prefecture: merchant.prefecture || '',
+                                // 市区町村
+                                city: merchant.city || '',
+                                // 番地以降
+                                address1: merchant.address1 || '',
+                                // 建物名
+                                address2: merchant.address2 || ''
+                              };
+                              
+                              
+                              return newFormData;
+                            });
+                          }
+                        }}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        親会社からコピー
+                      </button>
                     </div>
                   )}
-                  {/* デバッグ情報 */}
-                  <div className="text-xs text-gray-500 mt-2">
-                    Debug: merchantApplications.length = {merchantApplications.length}, values = {JSON.stringify(merchantApplications)}
-                  </div>
                   <ErrorMessage message={validationErrors.merchantId} />
                 </div>
               )}
@@ -1672,7 +1668,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               {formData.latitude && formData.longitude && (
                 <div className="mt-2">
                   <a
-                    href={`https://www.google.com/maps?q=${formData.latitude},${formData.longitude}`}
+                    href={`https://www.google.com/maps/@${formData.latitude},${formData.longitude},21z/data=!3m1!1e3`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
@@ -1759,6 +1755,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                       // 「その他」のチェックを外したらカスタムテキストもクリア
                       if (scene.name === 'その他') {
                         setCustomSceneText('');
+                        setValidationErrors(prev => {
+                          const newErrors = { ...prev };
+                          delete newErrors.customSceneText;
+                          return newErrors;
+                        });
                       }
                     }
                   }}
@@ -1777,12 +1778,55 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               </label>
               <input
                 type="text"
+                name="customSceneText"
                 value={customSceneText}
                 onChange={(e) => setCustomSceneText(e.target.value)}
+                onBlur={(e) => {
+                  // blurイベントでのバリデーション
+                  const otherScene = scenes.find(s => s.name === 'その他');
+                  const isOtherSceneSelected = otherScene && selectedScenes.includes(otherScene.id);
+                  if (isOtherSceneSelected) {
+                    if (!e.target.value || e.target.value.trim().length === 0) {
+                      setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンを入力してください' }));
+                    } else if (e.target.value.length > 100) {
+                      setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンは100文字以内で入力してください' }));
+                    } else {
+                      setValidationErrors(prev => {
+                        const newErrors = { ...prev };
+                        delete newErrors.customSceneText;
+                        return newErrors;
+                      });
+                    }
+                  }
+                }}
+                onInput={(e) => {
+                  // inputイベントでのリアルタイムバリデーション（文字数チェック + 削除時の必須チェック）
+                  const target = e.target as HTMLInputElement;
+                  const otherScene = scenes.find(s => s.name === 'その他');
+                  const isOtherSceneSelected = otherScene && selectedScenes.includes(otherScene.id);
+                  if (isOtherSceneSelected) {
+                    if (target.value.length > 100) {
+                      setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンは100文字以内で入力してください' }));
+                    } else if (target.value.trim().length === 0) {
+                      setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンを入力してください' }));
+                    } else {
+                      setValidationErrors(prev => {
+                        const newErrors = { ...prev };
+                        delete newErrors.customSceneText;
+                        return newErrors;
+                      });
+                    }
+                  }
+                }}
                 maxLength={100}
                 placeholder="例：ビジネスミーティング、記念日など"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  validationErrors.customSceneText ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
+              {validationErrors.customSceneText && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.customSceneText}</p>
+              )}
               <p className="mt-1 text-xs text-gray-500">
                 「その他」を選択した場合は、具体的な利用シーンを入力してください（最大100文字）
               </p>
@@ -2007,6 +2051,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                           // 「その他」のチェックを外したらカスタムテキストもクリア
                           if (brand === 'その他') {
                             setCustomCreditText('');
+                            setValidationErrors(prev => {
+                              const newErrors = { ...prev };
+                              delete newErrors.customCreditText;
+                              return newErrors;
+                            });
                           }
                         }
                       }}
@@ -2025,12 +2074,53 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   </label>
                   <input
                     type="text"
+                    name="customCreditText"
                     value={customCreditText}
                     onChange={(e) => setCustomCreditText(e.target.value)}
+                    onBlur={(e) => {
+                      // blurイベントでのバリデーション
+                      const isCreditOtherSelected = selectedCreditBrands.includes('その他');
+                      if (isCreditOtherSelected) {
+                        if (!e.target.value || e.target.value.trim().length === 0) {
+                          setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名を入力してください' }));
+                        } else if (e.target.value.length > 100) {
+                          setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名は100文字以内で入力してください' }));
+                        } else {
+                          setValidationErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors.customCreditText;
+                            return newErrors;
+                          });
+                        }
+                      }
+                    }}
+                    onInput={(e) => {
+                      // inputイベントでのリアルタイムバリデーション（文字数チェック + 削除時の必須チェック）
+                      const target = e.target as HTMLInputElement;
+                      const isCreditOtherSelected = selectedCreditBrands.includes('その他');
+                      if (isCreditOtherSelected) {
+                        if (target.value.length > 100) {
+                          setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名は100文字以内で入力してください' }));
+                        } else if (target.value.trim().length === 0) {
+                          setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名を入力してください' }));
+                        } else {
+                          setValidationErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors.customCreditText;
+                            return newErrors;
+                          });
+                        }
+                      }
+                    }}
                     maxLength={100}
                     placeholder="例：銀聯カード、Discoverなど"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      validationErrors.customCreditText ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
+                  {validationErrors.customCreditText && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.customCreditText}</p>
+                  )}
                   <p className="mt-1 text-xs text-gray-500">
                     「その他」を選択した場合は、具体的なブランド名を入力してください（最大100文字）
                   </p>
@@ -2061,6 +2151,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                           // 「その他」のチェックを外したらカスタムテキストもクリア
                           if (service === 'その他') {
                             setCustomQrText('');
+                            setValidationErrors(prev => {
+                              const newErrors = { ...prev };
+                              delete newErrors.customQrText;
+                              return newErrors;
+                            });
                           }
                         }
                       }}
@@ -2079,12 +2174,53 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   </label>
                   <input
                     type="text"
+                    name="customQrText"
                     value={customQrText}
                     onChange={(e) => setCustomQrText(e.target.value)}
+                    onBlur={(e) => {
+                      // blurイベントでのバリデーション
+                      const isQrOtherSelected = selectedQrBrands.includes('その他');
+                      if (isQrOtherSelected) {
+                        if (!e.target.value || e.target.value.trim().length === 0) {
+                          setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名を入力してください' }));
+                        } else if (e.target.value.length > 100) {
+                          setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名は100文字以内で入力してください' }));
+                        } else {
+                          setValidationErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors.customQrText;
+                            return newErrors;
+                          });
+                        }
+                      }
+                    }}
+                    onInput={(e) => {
+                      // inputイベントでのリアルタイムバリデーション（文字数チェック + 削除時の必須チェック）
+                      const target = e.target as HTMLInputElement;
+                      const isQrOtherSelected = selectedQrBrands.includes('その他');
+                      if (isQrOtherSelected) {
+                        if (target.value.length > 100) {
+                          setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名は100文字以内で入力してください' }));
+                        } else if (target.value.trim().length === 0) {
+                          setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名を入力してください' }));
+                        } else {
+                          setValidationErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors.customQrText;
+                            return newErrors;
+                          });
+                        }
+                      }
+                    }}
                     maxLength={100}
                     placeholder="例：Alipay、WeChat Payなど"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      validationErrors.customQrText ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
+                  {validationErrors.customQrText && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.customQrText}</p>
+                  )}
                   <p className="mt-1 text-xs text-gray-500">
                     「その他」を選択した場合は、具体的なサービス名を入力してください（最大100文字）
                   </p>
@@ -2209,66 +2345,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               </div>
             )}
           </div>
-        </div>
-
-        {/* 掲載サイト */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">掲載サイト <span className="text-red-500">*</span></h2>
-          </div>
-          
-          {/* デバッグ情報 */}
-          <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
-            <div>🔍 デバッグ情報:</div>
-            <div>• merchantApplications: {JSON.stringify(merchantApplications)}</div>
-            <div>• merchantApplications.length: {merchantApplications.length}</div>
-            <div>• formData.applications: {JSON.stringify(formData.applications)}</div>
-            <div>• merchantId: {formData.merchantId}</div>
-          </div>
-          
-          {merchantApplications.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {merchantApplications.map((app) => (
-                <label
-                  key={app}
-                  className="flex items-center space-x-2 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    name="application"
-                    value={app}
-                    checked={formData.applications?.includes(app) || false}
-                    onChange={(e) => {
-                      const currentApps = formData.applications || [];
-                      let newApplications: string[];
-                      
-                      if (e.target.checked) {
-                        newApplications = [...currentApps, app];
-                      } else {
-                        newApplications = currentApps.filter(appName => appName !== app);
-                      }
-                      
-                      setFormData(prev => ({
-                        ...prev,
-                        applications: newApplications
-                      }));
-                    }}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">{app}</span>
-                </label>
-              ))}
-            </div>
-          ) : (
-            <div className="text-gray-500 text-sm">
-              親会社を選択すると、契約サイトの選択肢が表示されます。
-            </div>
-          )}
-          
-          <p className="mt-2 text-xs text-gray-500">
-            ※ 親会社で設定されたアプリケーションの中から選択してください（複数選択可能）
-          </p>
-          <ErrorMessage message={validationErrors.applications} field="applications" />
         </div>
 
         {/* アカウント発行 / 店舗用アカウント情報 */}

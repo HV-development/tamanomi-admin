@@ -70,7 +70,7 @@ function MerchantConfirmContent() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">会社登録確認</h1>
+              <h1 className="text-2xl font-bold text-gray-900">事業者登録確認</h1>
               <p className="text-gray-600">
                 入力内容を確認してください
               </p>
@@ -104,7 +104,7 @@ function MerchantConfirmContent() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    会社名
+                    事業者名
                   </label>
                   <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
                     {formData.name}
@@ -113,7 +113,7 @@ function MerchantConfirmContent() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    会社名（カナ）
+                    事業者名（カナ）
                   </label>
                   <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
                     {formData.nameKana}

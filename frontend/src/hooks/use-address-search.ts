@@ -3,15 +3,13 @@ import { useState } from 'react';
 /**
  * 住所検索APIのレスポンス型
  */
-interface AddressSearchResult {
-  address1: string; // 都道府県
-  address2: string; // 市区町村
-  address3: string; // 町名
-}
-
 interface AddressSearchResponse {
   status: number;
-  results?: AddressSearchResult[];
+  results?: Array<{
+    address1: string; // 都道府県
+    address2: string; // 市区町村
+    address3: string; // 町名
+  }>;
   message?: string;
 }
 
