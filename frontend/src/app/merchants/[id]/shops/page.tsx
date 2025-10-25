@@ -243,7 +243,7 @@ export default function MerchantShopsPage() {
           {merchantName && (
             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center">
-                <span className="text-sm font-medium text-gray-700 mr-2">会社名:</span>
+                <span className="text-sm font-medium text-gray-700 mr-2">事業者名:</span>
                 <span className="text-sm font-bold text-gray-900">{merchantName}</span>
               </div>
             </div>
