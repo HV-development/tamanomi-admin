@@ -11,6 +11,9 @@ import { useToast } from '@/hooks/use-toast';
 import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
+import Checkbox from '@/components/atoms/Checkbox';
+import FloatingFooter from '@/components/molecules/floating-footer';
+import BulkUpdateConfirmModal from '@/components/molecules/bulk-update-confirm-modal';
 
 export default function ShopsPage() {
   const auth = useAuth();
@@ -37,6 +40,14 @@ export default function ShopsPage() {
     appName: 'all' as 'all' | 'tamanomi' | 'nomoca_kagawa',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+
+  // チェックボックス関連の状態を追加
+  const [selectedShops, setSelectedShops] = useState<Set<string>>(new Set());
+  const [isAllSelected, setIsAllSelected] = useState(false);
+  const [isIndeterminate, setIsIndeterminate] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('operating');
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // 会社アカウントの場合、自分の会社IDを取得
   useEffect(() => {
@@ -279,6 +290,99 @@ export default function ShopsPage() {
       );
       showError(`ステータスの更新に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
     }
+  };
+
+  // チェックボックス関連の関数を追加
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = new Set(shops.map(shop => shop.id));
+      setSelectedShops(allIds);
+      setIsAllSelected(true);
+      setIsIndeterminate(false);
+    } else {
+      setSelectedShops(new Set());
+      setIsAllSelected(false);
+      setIsIndeterminate(false);
+    }
+  };
+
+  const handleSelectShop = (shopId: string, checked: boolean) => {
+    const newSelected = new Set(selectedShops);
+    if (checked) {
+      newSelected.add(shopId);
+    } else {
+      newSelected.delete(shopId);
+    }
+    setSelectedShops(newSelected);
+
+    // 全選択状態の更新
+    const totalCount = shops.length;
+    const selectedCount = newSelected.size;
+    
+    if (selectedCount === 0) {
+      setIsAllSelected(false);
+      setIsIndeterminate(false);
+    } else if (selectedCount === totalCount) {
+      setIsAllSelected(true);
+      setIsIndeterminate(false);
+    } else {
+      setIsAllSelected(false);
+      setIsIndeterminate(true);
+    }
+  };
+
+  const handleStatusChange = (status: string) => {
+    setSelectedStatus(status);
+  };
+
+  const handleExecute = async () => {
+    if (selectedShops.size === 0) return;
+
+    // 確認モーダルを表示
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmExecute = async () => {
+    if (selectedShops.size === 0) return;
+
+    setShowConfirmModal(false);
+    setIsExecuting(true);
+    try {
+      const shopIds = Array.from(selectedShops);
+      const result = await apiClient.bulkUpdateShopStatus(shopIds, selectedStatus);
+      
+      if (result.success) {
+        const { updatedCount, failedCount, errors } = result.data;
+        
+        if (failedCount === 0) {
+          showSuccess(`${updatedCount}件の店舗のステータスを更新しました`);
+        } else {
+          showSuccess(`${updatedCount}件の店舗のステータスを更新しました（${failedCount}件失敗）`);
+          if (errors.length > 0) {
+            console.warn('一部の店舗でエラーが発生しました:', errors);
+          }
+        }
+        
+        // データを再取得
+        await fetchShops();
+      } else {
+        showError('一括処理に失敗しました');
+      }
+      
+      // 選択をクリア
+      setSelectedShops(new Set());
+      setIsAllSelected(false);
+      setIsIndeterminate(false);
+    } catch (error: unknown) {
+      console.error('一括処理エラー:', error);
+      showError('一括処理に失敗しました');
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
+  const handleCancelExecute = () => {
+    setShowConfirmModal(false);
   };
 
   const getStatusColor = (status: string) => {
@@ -677,7 +781,7 @@ export default function ShopsPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
-              店舗一覧 (${shops.length}件)
+              店舗一覧 ({shops.length}件)
             </h3>
             <Link href={merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new'}>
               <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
@@ -691,6 +795,13 @@ export default function ShopsPage() {
             <table className="w-full min-w-[1200px]">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
+                    <Checkbox
+                      checked={isAllSelected}
+                      indeterminate={isIndeterminate}
+                      onChange={handleSelectAll}
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
                     アクション
                   </th>
@@ -714,14 +825,17 @@ export default function ShopsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                     ステータス
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
-                    掲載サイト
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
               {shops.map((shop) => (
                   <tr key={shop.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap w-32">
+                      <Checkbox
+                        checked={selectedShops.has(shop.id)}
+                        onChange={(checked) => handleSelectShop(shop.id, checked)}
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap w-32">
                       <div className="flex justify-center gap-2">
                         <Link href={`/merchants/${merchantId || shop.merchantId}/shops/${shop.id}/edit`}>
@@ -781,7 +895,7 @@ export default function ShopsPage() {
                     <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
                       <div className="text-sm text-gray-900">{shop.phone}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[220px]">
                       <select
                         value={shop.status}
                         onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
@@ -793,15 +907,6 @@ export default function ShopsPage() {
                           </option>
                         ))}
                       </select>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[120px]">
-                      <div className="text-sm text-gray-900">
-                        {(shop as Shop & { applications?: string[] }).applications && Array.isArray((shop as Shop & { applications?: string[] }).applications) 
-                          ? (shop as Shop & { applications?: string[] }).applications!.map((app: string) => 
-                              app === 'tamanomi' ? 'たまのみ' : app === 'nomoca_kagawa' ? 'のもかかがわ' : app
-                            ).join(', ')
-                          : '-'}
-                      </div>
                     </td>
                   </tr>
               ))}
@@ -825,8 +930,27 @@ export default function ShopsPage() {
         </div>
         )}
       </div>
+
+      <FloatingFooter
+        selectedCount={selectedShops.size}
+        onStatusChange={handleStatusChange}
+        onExecute={handleExecute}
+        onIssueAccount={() => {}} // 店舗では使用しない
+        selectedStatus={selectedStatus}
+        isExecuting={isExecuting}
+        isIssuingAccount={false}
+      />
       
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+      
+      <BulkUpdateConfirmModal
+        isOpen={showConfirmModal}
+        onClose={handleCancelExecute}
+        onConfirm={handleConfirmExecute}
+        selectedCount={selectedShops.size}
+        selectedStatus={selectedStatus}
+        isExecuting={isExecuting}
+      />
     </AdminLayout>
   );
 }

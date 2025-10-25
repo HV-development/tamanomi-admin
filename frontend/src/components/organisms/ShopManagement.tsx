@@ -542,7 +542,7 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
                     <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
                       <div className="text-sm text-gray-900">{shop.phone}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[220px]">
                       <select
                         value={shop.status}
                         onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
