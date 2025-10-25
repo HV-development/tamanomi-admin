@@ -3,7 +3,7 @@
 import React from 'react';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-import { statusOptions } from '@/lib/constants/merchant';
+import { statusOptions } from '@/lib/constants/shop';
 
 interface FloatingFooterProps {
   selectedCount: number;
@@ -25,17 +25,15 @@ export default function FloatingFooter({
   isExecuting = false,
   isIssuingAccount = false
 }: FloatingFooterProps) {
-  // ステータスカラー関数（MerchantManagementと同じ）
+  // ステータスカラー関数（店舗ステータス用）
   const _getStatusColor = (status: string) => {
     switch (status) {
       case 'registering': return 'text-blue-600';
       case 'collection_requested': return 'text-purple-600';
       case 'approval_pending': return 'text-yellow-600';
-      case 'approval_expired': return 'text-red-600';
       case 'promotional_materials_preparing': return 'text-orange-600';
       case 'promotional_materials_shipping': return 'text-indigo-600';
       case 'operating': return 'text-green-600';
-      case 'active': return 'text-green-600'; // 旧ステータス
       case 'suspended': return 'text-red-600';
       case 'terminated': return 'text-gray-600';
       default: return 'text-gray-600';
@@ -62,7 +60,7 @@ export default function FloatingFooter({
               <select
                 value={selectedStatus}
                 onChange={(e) => onStatusChange(e.target.value)}
-                className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 min-w-[140px] ${_getStatusColor(selectedStatus)}`}
+                className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 min-w-[200px] ${_getStatusColor(selectedStatus)}`}
               >
                 {statusOptions.map((option) => (
                   <option key={option.value} value={option.value}>
