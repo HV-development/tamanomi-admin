@@ -12,7 +12,7 @@ import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
 import Checkbox from '@/components/atoms/Checkbox';
-import FloatingFooter from '@/components/molecules/floating-footer';
+import ShopFloatingFooter from '@/components/molecules/shop-floating-footer';
 import BulkUpdateConfirmModal from '@/components/molecules/bulk-update-confirm-modal';
 
 export default function ShopsPage() {
@@ -931,14 +931,12 @@ export default function ShopsPage() {
         )}
       </div>
 
-      <FloatingFooter
+      <ShopFloatingFooter
         selectedCount={selectedShops.size}
         onStatusChange={handleStatusChange}
         onExecute={handleExecute}
-        onIssueAccount={() => {}} // 店舗では使用しない
         selectedStatus={selectedStatus}
         isExecuting={isExecuting}
-        isIssuingAccount={false}
       />
       
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
