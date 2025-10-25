@@ -367,30 +367,6 @@ class ApiClient {
     });
   }
 
-  async bulkUpdateShopStatus(shopIds: string[], status: string): Promise<{
-    success: boolean;
-    data: {
-      updatedCount: number;
-      failedCount: number;
-      errors: Array<{ shopId: string; error: string }>;
-    };
-  }> {
-    console.log('🔄 API: bulkUpdateShopStatus called (via Next.js API Route)', { shopIds, status });
-    const token = localStorage.getItem('accessToken');
-    return this.request<{
-      success: boolean;
-      data: {
-        updatedCount: number;
-        failedCount: number;
-        errors: Array<{ shopId: string; error: string }>;
-      };
-    }>('/shops/bulk-status', {
-      method: 'PATCH',
-      body: JSON.stringify({ shopIds, status }),
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-    });
-  }
-
   // クーポン関連
   async getCoupons(queryParams?: string): Promise<unknown> {
     console.log('🎟️ API: getCoupons called (via Next.js API Route)');
