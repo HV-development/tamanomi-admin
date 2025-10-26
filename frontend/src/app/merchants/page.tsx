@@ -768,7 +768,7 @@ export default function MerchantsPage() {
                   placeholder="電話番号を入力"
                   value={searchForm.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-full max-w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
               </div>
               <div>
@@ -781,7 +781,7 @@ export default function MerchantsPage() {
                   placeholder="メールアドレスを入力"
                   value={searchForm.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-full max-w-[500px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
               </div>
             </div>
@@ -798,7 +798,7 @@ export default function MerchantsPage() {
                   placeholder="住所を入力"
                   value={searchForm.address}
                   onChange={(e) => handleInputChange('address', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-full max-w-[400px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
               </div>
               <div>
@@ -811,7 +811,7 @@ export default function MerchantsPage() {
                   placeholder="郵便番号を入力"
                   value={searchForm.postalCode}
                   onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-full max-w-[120px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
               </div>
             </div>
@@ -826,7 +826,7 @@ export default function MerchantsPage() {
                   id="prefecture"
                   value={searchForm.prefecture}
                   onChange={(e) => handleInputChange('prefecture', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-full max-w-[180px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 >
                   <option value="">すべて</option>
                   {prefectures.map((pref) => (
@@ -842,7 +842,7 @@ export default function MerchantsPage() {
                   id="accountStatus"
                   value={searchForm.accountStatus}
                   onChange={(e) => handleInputChange('accountStatus', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-full max-w-[180px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 >
                   <option value="">すべて</option>
                   <option value="inactive">未発行</option>
@@ -863,7 +863,7 @@ export default function MerchantsPage() {
                   id="contractStatus"
                   value={searchForm.contractStatus}
                   onChange={(e) => handleInputChange('contractStatus', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-full max-w-[180px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 >
                   <option value="">すべて</option>
                   <option value="active">契約中</option>
@@ -885,7 +885,7 @@ export default function MerchantsPage() {
                   id="createdAtFrom"
                   value={searchForm.createdAtFrom}
                   onChange={(e) => handleInputChange('createdAtFrom', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-full max-w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
                 {searchErrors.createdAtFrom && (
                   <p className="text-red-600 text-sm mt-1">{searchErrors.createdAtFrom}</p>
@@ -900,7 +900,7 @@ export default function MerchantsPage() {
                   id="createdAtTo"
                   value={searchForm.createdAtTo}
                   onChange={(e) => handleInputChange('createdAtTo', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-full max-w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
                 {searchErrors.createdAtTo && (
                   <p className="text-red-600 text-sm mt-1">{searchErrors.createdAtTo}</p>
