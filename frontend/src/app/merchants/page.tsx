@@ -20,6 +20,7 @@ type Merchant = Omit<MerchantWithDetails, 'createdAt' | 'updatedAt' | 'deletedAt
   updatedAt: string;
   deletedAt: string | null;
   accountEmail: string;
+  status: string;
   account?: {
     email: string;
     status: string;
@@ -37,7 +38,7 @@ export default function MerchantsPage() {
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
   
-  // 会社アカウントかどうかを判定
+  // 事業者アカウントかどうかを判定
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
   
   // チェックボックス関連の状態
@@ -78,7 +79,7 @@ export default function MerchantsPage() {
         setIsLoading(true);
         setError(null);
         
-        // 会社アカウントの場合は自分の会社情報のみを取得
+        // 事業者アカウントの場合は自分の事業者情報のみを取得
         if (isMerchantAccount) {
           const data = await apiClient.getMyMerchant();
           
@@ -144,8 +145,8 @@ export default function MerchantsPage() {
         }
         
         if (isMounted) {
-          console.error('会社データの取得に失敗しました:', err);
-          setError('会社データの取得に失敗しました');
+          console.error('事業者データの取得に失敗しました:', err);
+          setError('事業者データの取得に失敗しました');
           setMerchants([]);
         }
       } finally {
@@ -167,29 +168,13 @@ export default function MerchantsPage() {
   // チェックボックス関連の関数
 
 
-  const handleResendRegistration = async (merchantId: string) => {
-    if (!confirm('登録用URLを再発行しますか？')) {
-      return;
-    }
-
-    try {
-      await apiClient.resendMerchantRegistration(merchantId);
-      showSuccess('登録用URLを再送信しました');
-    } catch (error) {
-      console.error('登録URL再発行エラー:', error);
-      showError('登録URLの再発行に失敗しました');
-    }
-  };
-
-
 
   const getAccountStatusLabel = (status: string) => {
     switch (status) {
-      case 'active': return '契約中';
-      case 'inactive': return 'メール承認待ち';
+      case 'active': return '発行済み';
+      case 'inactive': return '未発行';
       case 'pending': return '承認待ち';
-      case 'suspended': return '解約';
-      case 'terminated': return '終了';
+      case 'suspended': return '停止中';
       default: return status;
     }
   };
@@ -200,6 +185,23 @@ export default function MerchantsPage() {
       case 'inactive': return 'text-yellow-600';
       case 'pending': return 'text-orange-600';
       case 'suspended': return 'text-red-600';
+      default: return 'text-gray-900';
+    }
+  };
+
+  const getMerchantStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active': return '契約中';
+      case 'inactive': return '未契約';
+      case 'terminated': return '解約済み';
+      default: return status;
+    }
+  };
+
+  const getMerchantStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'text-green-600';
+      case 'inactive': return 'text-yellow-600';
       case 'terminated': return 'text-gray-600';
       default: return 'text-gray-900';
     }
@@ -294,9 +296,25 @@ export default function MerchantsPage() {
       const result = await apiClient.issueAccounts(merchantIds);
       
       if (result.failed === 0) {
-        showSuccess(`${result.success}件の会社にアカウントを発行しました`);
+        showSuccess(`${result.success}件の事業者にアカウントを発行しました`);
+        // 選択したレコードのステータスのみを更新（inactive -> pending）
+        setMerchants(prevMerchants => 
+          prevMerchants.map(merchant => 
+            selectedMerchants.has(merchant.id) && merchant.account
+              ? { ...merchant, account: { ...merchant.account, status: 'pending' } }
+              : merchant
+          )
+        );
       } else if (result.success > 0) {
         showSuccess(`${result.success}件のアカウントを発行しました。${result.failed}件は失敗しました。`);
+        // 選択したレコードのステータスのみを更新（inactive -> pending）
+        setMerchants(prevMerchants => 
+          prevMerchants.map(merchant => 
+            selectedMerchants.has(merchant.id) && merchant.account
+              ? { ...merchant, account: { ...merchant.account, status: 'pending' } }
+              : merchant
+          )
+        );
       } else {
         showError(`${result.failed}件のアカウント発行に失敗しました`);
       }
@@ -313,20 +331,44 @@ export default function MerchantsPage() {
     }
   };
 
+  // 個別の事業者にアカウント発行（メールアイコンから）
+  const handleResendRegistration = async (merchantId: string) => {
+    try {
+      const result = await apiClient.issueAccounts([merchantId]);
+      
+      if (result.failed === 0) {
+        showSuccess('アカウント発行メールを送信しました');
+        // 該当レコードのステータスのみを更新（inactive -> pending）
+        setMerchants(prevMerchants => 
+          prevMerchants.map(merchant => 
+            merchant.id === merchantId && merchant.account
+              ? { ...merchant, account: { ...merchant.account, status: 'pending' } }
+              : merchant
+          )
+        );
+      } else {
+        showError('アカウント発行に失敗しました');
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      showError(`アカウント発行に失敗しました: ${errorMessage}`);
+    }
+  };
+
   if (isLoading) {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">会社データを読み込み中...</p>
+            <p className="text-gray-600">事業者データを読み込み中...</p>
           </div>
         </div>
       </AdminLayout>
     );
   }
 
-  // 会社アカウントの場合は自分の会社情報のみを表示
+  // 事業者アカウントの場合は自分の事業者情報のみを表示
   if (isMerchantAccount) {
     return (
       <AdminLayout>
@@ -352,7 +394,7 @@ export default function MerchantsPage() {
             </div>
           )}
 
-          {/* 会社情報 */}
+          {/* 事業者情報 */}
           {!isLoading && !error && myMerchant && (
             <div className="bg-white rounded-lg shadow">
               <div className="p-6 space-y-6">
@@ -691,7 +733,7 @@ export default function MerchantsPage() {
                     <span className="text-xs whitespace-nowrap">アクション</span>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-                    会社名
+                    事業者名
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                     代表者名
@@ -703,7 +745,10 @@ export default function MerchantsPage() {
                     住所
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[180px]">
-                    ステータス
+                    アカウント発行
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[180px]">
+                    契約ステータス
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                     登録日
@@ -774,17 +819,22 @@ export default function MerchantsPage() {
                         <div className={`text-sm font-medium ${getAccountStatusColor(merchant.account?.status || 'inactive')}`}>
                           {getAccountStatusLabel(merchant.account?.status || 'inactive')}
                         </div>
-                        {merchant.account?.status === 'inactive' && (
+                        {(merchant.account?.status === 'inactive' || merchant.account?.status === 'pending') && (
                           <button 
                             onClick={() => handleResendRegistration(merchant.id)}
                             className="p-1.5 text-orange-600 hover:text-orange-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
-                            title="登録URL再発行"
+                            title="アカウント発行メール再送"
                           >
                             <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
                           </button>
                         )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[180px]">
+                      <div className={`text-sm font-medium ${getMerchantStatusColor(merchant.status || 'active')}`}>
+                        {getMerchantStatusLabel(merchant.status || 'active')}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
@@ -813,7 +863,7 @@ export default function MerchantsPage() {
                 height={48}
                 className="mx-auto text-gray-400 mb-4"
               />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">会社が見つかりません</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">事業者が見つかりません</h3>
               <p className="text-gray-500">検索条件を変更してお試しください。</p>
             </div>
           )}

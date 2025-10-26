@@ -416,7 +416,7 @@ export default function MerchantNewPage() {
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.nameKana ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="会社名（カナ）を入力してください"
+                  placeholder="事業者名（カナ）を入力してください"
                 />
                 <div className="mt-1 flex justify-between items-center">
                   {errors.nameKana ? (

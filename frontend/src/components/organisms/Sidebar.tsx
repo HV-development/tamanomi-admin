@@ -38,7 +38,7 @@ export default function Sidebar() {
         if (auth?.user?.accountType === 'shop') {
           return item.href === '/shops' || item.href === '/coupons' || item.href === '/coupon-history';
         }
-        // 会社アカウントの場合、ユーザー管理と管理者アカウントを非表示
+        // 事業者アカウントの場合、ユーザー管理と管理者アカウントを非表示
         if (auth?.user?.accountType === 'merchant') {
           return item.href !== '/users' && item.href !== '/admins';
         }

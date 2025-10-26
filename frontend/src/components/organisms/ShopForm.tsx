@@ -109,7 +109,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   const router = useRouter();
   const auth = useAuth();
   
-  // 会社アカウントかどうかを判定
+  // 事業者アカウントかどうかを判定
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
   
   // shopIdの取得（編集時のみ存在）
@@ -232,7 +232,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         setIsLoading(true);
         setError(null);
         
-        // 会社アカウントの場合、自分の会社情報を取得してmerchantIdと会社名を設定
+        // 事業者アカウントの場合、自分の事業者情報を取得してmerchantIdと事業者名を設定
         if (isMerchantAccount) {
           try {
             const myMerchantData = await apiClient.getMyMerchant();
@@ -248,14 +248,14 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   merchantId: merchant.id,
                 }));
               }
-              // 会社名は常に設定
+              // 事業者名は常に設定
               setMerchantName(merchant.name);
               
-              // 自分の会社情報をmerchants配列に追加（親会社からコピー機能用）
+              // 自分の事業者情報をmerchants配列に追加（親事業者からコピー機能用）
               setMerchants([merchant]);
             }
           } catch (error) {
-            console.error('会社情報の取得に失敗しました:', error);
+            console.error('事業者情報の取得に失敗しました:', error);
           }
         }
         
@@ -505,13 +505,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     }));
     setMerchantName(merchant.name);
     
-    // 会社を選択したことを記録
+    // 事業者を選択したことを記録
     setTouchedFields(prev => ({
       ...prev,
       merchantId: true,
     }));
     
-    // 会社選択時のバリデーションエラーをクリア
+    // 事業者選択時のバリデーションエラーをクリア
     setValidationErrors((prev) => {
       const newErrors = { ...prev };
       delete newErrors.merchantId;
@@ -1217,10 +1217,10 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           <div className="space-y-4">
             <div className="w-full" data-field="merchantId">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                会社名 <span className="text-red-500">*</span>
+                事業者名 <span className="text-red-500">*</span>
               </label>
               {isMerchantAccount ? (
-                // 会社アカウントの場合は会社名を固定表示（親会社からコピーボタン付き）
+                // 事業者アカウントの場合は事業者名を固定表示（親事業者からコピーボタン付き）
                 <div>
                   <div className="text-gray-900 mb-2">
                     {merchantName || '読み込み中...'}
@@ -1228,15 +1228,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   <button
                     type="button"
                     onClick={() => {
-                      // 親会社の情報を取得
+                      // 親事業者の情報を取得
                       const merchant = merchants.find(m => m.id === formData.merchantId);
                       if (merchant) {
                         
-                        // 親会社の情報をフォームに反映
+                        // 親事業者の情報をフォームに反映
                         setFormData(prev => {
                           const newFormData = {
                             ...prev,
-                            // 店舗名（会社名をそのまま使用）
+                            // 店舗名（事業者名をそのまま使用）
                             name: merchant.name,
                             // 店舗名（カナ）
                             nameKana: merchant.nameKana,
@@ -1264,7 +1264,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
-                    親会社からコピー
+                    親事業者からコピー
                   </button>
                 </div>
               ) : (propMerchantId || merchantIdFromParams) ? (
@@ -1276,9 +1276,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                     type="button"
                     onClick={() => setIsMerchantModalOpen(true)}
                     className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
-                    title="会社を変更"
+                    title="事業者を変更"
                   >
-                    会社を変更
+                    事業者を変更
                   </button>
                 </div>
               ) : (
@@ -1293,22 +1293,22 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                           type="button"
                           onClick={() => setIsMerchantModalOpen(true)}
                           className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
-                          title="会社を変更"
+                          title="事業者を変更"
                         >
-                          会社を変更
+                          事業者を変更
                         </button>
                         <button
                           type="button"
                           onClick={() => {
-                            // 親会社の情報を取得
+                            // 親事業者の情報を取得
                             const merchant = merchants.find(m => m.id === formData.merchantId);
                             if (merchant) {
                               
-                              // 親会社の情報をフォームに反映
+                              // 親事業者の情報をフォームに反映
                               setFormData(prev => {
                                 const newFormData = {
                                   ...prev,
-                                  // 店舗名（会社名をそのまま使用）
+                                  // 店舗名（事業者名をそのまま使用）
                                   name: merchant.name,
                                   // 店舗名（カナ）
                                   nameKana: merchant.nameKana,
@@ -1336,7 +1336,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                           </svg>
-                          親会社からコピー
+                          親事業者からコピー
                         </button>
                       </div>
                     </div>
@@ -1353,22 +1353,22 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                           }));
                         }}
                         className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
-                        title="会社を選択"
+                        title="事業者を選択"
                       >
-                        会社を選択
+                        事業者を選択
                       </button>
                       <button
                         type="button"
                         onClick={() => {
-                          // 親会社の情報を取得
+                          // 親事業者の情報を取得
                           const merchant = merchants.find(m => m.id === formData.merchantId);
                           if (merchant) {
                             
-                            // 親会社の情報をフォームに反映
+                            // 親事業者の情報をフォームに反映
                             setFormData(prev => {
                               const newFormData = {
                                 ...prev,
-                                // 店舗名（会社名をそのまま使用）
+                                // 店舗名（事業者名をそのまま使用）
                                 name: merchant.name,
                                 // 店舗名（カナ）
                                 nameKana: merchant.nameKana,
@@ -1396,7 +1396,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
-                        親会社からコピー
+                        親事業者からコピー
                       </button>
                     </div>
                   )}

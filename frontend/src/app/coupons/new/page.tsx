@@ -66,7 +66,7 @@ function CouponNewPageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [_isUploading, setIsUploading] = useState(false);
   
-  // 会社・店舗選択用の状態
+  // 事業者・店舗選択用の状態
   const [selectedMerchant, setSelectedMerchant] = useState<Merchant | null>(null);
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
   const [isMerchantModalOpen, setIsMerchantModalOpen] = useState(false);
@@ -107,7 +107,7 @@ function CouponNewPageContent() {
   // アカウントタイプに応じた初期化
   useEffect(() => {
     const initializeAccountData = async () => {
-      // 店舗アカウントの場合: 会社と店舗情報を自動設定
+      // 店舗アカウントの場合: 事業者と店舗情報を自動設定
       if (isShopAccount && auth?.user?.shopId) {
         try {
           const shopData = await apiClient.getShop(auth.user.shopId) as Shop;
@@ -126,7 +126,7 @@ function CouponNewPageContent() {
         }
       }
       
-      // 会社アカウントの場合: 会社情報を自動設定
+      // 事業者アカウントの場合: 事業者情報を自動設定
       if (isMerchantAccount) {
         try {
           const merchantData = await apiClient.getMyMerchant() as { data: Merchant };
@@ -134,7 +134,7 @@ function CouponNewPageContent() {
             setSelectedMerchant(merchantData.data);
           }
         } catch (error) {
-          console.error('会社情報の取得に失敗しました:', error);
+          console.error('事業者情報の取得に失敗しました:', error);
         }
       }
     };
@@ -179,10 +179,10 @@ function CouponNewPageContent() {
     setErrors(newErrors);
   };
   
-  // 会社選択ハンドラー
+  // 事業者選択ハンドラー
   const handleMerchantSelect = (merchant: Merchant) => {
     setSelectedMerchant(merchant);
-    // 会社を変更した場合、店舗選択をリセット
+    // 事業者を変更した場合、店舗選択をリセット
     setSelectedShop(null);
     setFormData(prev => ({ ...prev, shopId: '' }));
   };
@@ -389,13 +389,13 @@ function CouponNewPageContent() {
         {/* 登録フォーム */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="space-y-6">
-            {/* 会社・店舗選択 */}
+            {/*事業者・店舗選択 */}
             {isAdminAccount && (
               <>
-                {/* 管理者：会社選択 */}
+                {/* 管理者：事業者選択 */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    会社 <span className="text-red-500">*</span>
+                    事業者 <span className="text-red-500">*</span>
                   </label>
                   {selectedMerchant && (
                     <div className="mb-2 text-sm text-gray-900">
@@ -407,7 +407,7 @@ function CouponNewPageContent() {
                     onClick={() => setIsMerchantModalOpen(true)}
                     className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors"
                   >
-                    会社を選択
+                  事業者を選択
                   </button>
                 </div>
                 
@@ -430,7 +430,7 @@ function CouponNewPageContent() {
                     店舗を選択
                   </button>
                   {!selectedMerchant && (
-                    <p className="mt-1 text-xs text-gray-500">先に会社を選択してください</p>
+                    <p className="mt-1 text-xs text-gray-500">先に事業者を選択してください</p>
                   )}
                   {errors.shopId && (
                     <p className="mt-1 text-sm text-red-500">{errors.shopId}</p>
@@ -441,21 +441,21 @@ function CouponNewPageContent() {
             
             {isMerchantAccount && (
               <>
-                {/* 会社アカウント：会社名表示（変更不可） */}
+                {/* 事業者アカウント：事業者名表示（変更不可） */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    会社 <span className="text-red-500">*</span>
+                    事業者 <span className="text-red-500">*</span>
                   </label>
                   <div className="text-sm text-gray-900 mb-1">
                     {selectedMerchant?.name || '読み込み中...'}
                   </div>
-                  <p className="text-xs text-gray-500">自身の会社が設定されています（変更不可）</p>
+                  <p className="text-xs text-gray-500">自身の事業者が設定されています（変更不可）</p>
                 </div>
                 
-                {/* 会社アカウント：店舗選択 */}
+                {/* 事業者アカウント：店舗選択 */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    店舗 <span className="text-red-500">*</span>
+                    店舗名 <span className="text-red-500">*</span>
                   </label>
                   {selectedShop && (
                     <div className="mb-2 text-sm text-gray-900">
@@ -478,15 +478,15 @@ function CouponNewPageContent() {
             
             {isShopAccount && (
               <>
-                {/* 店舗アカウント：会社名表示（変更不可） */}
+                {/* 店舗アカウント：事業者名表示（変更不可） */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    会社 <span className="text-red-500">*</span>
+                    事業者 <span className="text-red-500">*</span>
                   </label>
                   <div className="text-sm text-gray-900 mb-1">
                     {selectedMerchant?.name || '読み込み中...'}
                   </div>
-                  <p className="text-xs text-gray-500">自身の会社が設定されています（変更不可）</p>
+                  <p className="text-xs text-gray-500">自身の事業者が設定されています（変更不可）</p>
                 </div>
                 
                 {/* 店舗アカウント：店舗名表示（変更不可） */}

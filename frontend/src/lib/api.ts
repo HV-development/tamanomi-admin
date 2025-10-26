@@ -190,7 +190,7 @@ class ApiClient {
     });
   }
 
-  // 会社関連
+  // 事業者関連
   async getMerchants(params?: { search?: string; page?: number; limit?: number; status?: string }): Promise<unknown> {
     console.log('🌐 API: getMerchants called (via Next.js API Route)', { params });
     console.log('🔗 API Base URL:', this.baseUrl);

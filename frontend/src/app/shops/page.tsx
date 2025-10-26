@@ -45,7 +45,7 @@ export default function ShopsPage() {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [isIndeterminate, setIsIndeterminate] = useState(false);
 
-  // 会社アカウントの場合、自分の会社IDを取得
+  // 事業者アカウントの場合、自分の事業者IDを取得
   useEffect(() => {
     const fetchMyMerchant = async () => {
       // 認証情報がロード中の場合は待機
@@ -62,7 +62,7 @@ export default function ShopsPage() {
             setMerchantName(merchantData.name);
           }
         } catch (error) {
-          console.error('会社情報の取得に失敗しました:', error);
+          console.error('事業者情報の取得に失敗しました:', error);
         }
       }
     };
@@ -205,7 +205,7 @@ export default function ShopsPage() {
   };
 
   // 初回マウント時とmerchantId変更時にデータ取得
-  // 会社アカウントの場合はmerchantIdが設定されるまで待機
+  // 事業者アカウントの場合はmerchantIdが設定されるまで待機
   useEffect(() => {
     // 認証情報がロード中の場合は待機
     if (auth?.isLoading) {
@@ -217,7 +217,7 @@ export default function ShopsPage() {
       return;
     }
     
-    // 会社アカウントの場合、merchantIdが設定されるまで待機
+    // 事業者アカウントの場合、merchantIdが設定されるまで待機
     if (isMerchantAccount && !merchantId) {
       return;
     }
@@ -394,11 +394,11 @@ export default function ShopsPage() {
             </div>
           </div>
           
-          {/* 親会社名の表示 */}
+          {/* 親事業者名の表示 */}
           {merchantName && (
             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center">
-                <span className="text-sm font-medium text-gray-700 mr-2">会社名:</span>
+                <span className="text-sm font-medium text-gray-700 mr-2">事業者名:</span>
                 <span className="text-sm font-bold text-gray-900">{merchantName}</span>
               </div>
             </div>
@@ -635,7 +635,7 @@ export default function ShopsPage() {
                       <td className="py-3 px-4 text-gray-900">{shops[0].phone}</td>
                     </tr>
                     <tr className="border-b border-gray-300">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">会社名</td>
+                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">事業者名</td>
                       <td className="py-3 px-4 text-gray-900">{shops[0].merchant?.name || '-'}</td>
                     </tr>
                     <tr className="border-b border-gray-300">
@@ -741,7 +741,7 @@ export default function ShopsPage() {
           </div>
         ) : null}
 
-        {/* 店舗一覧（管理者・会社アカウント用） */}
+        {/* 店舗一覧（管理者・事業者アカウント用） */}
         {!isShopAccount && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -774,7 +774,7 @@ export default function ShopsPage() {
                   </th>
                   {!merchantId && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-                      会社名
+                      事業者名
                     </th>
                   )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
