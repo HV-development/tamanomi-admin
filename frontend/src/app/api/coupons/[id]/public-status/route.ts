@@ -1,5 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiClient } from '@/lib/api';
+
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
+
+function getAuthHeaders(request: Request): Record<string, string> {
+  const authToken = request.headers.get('authorization');
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers['Authorization'] = authToken;
+  }
+  
+  return headers;
+}
 
 export async function PATCH(
   request: NextRequest,
@@ -9,21 +23,26 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
     
-    console.log('🌐 Next.js API Route: PATCH /api/coupons/[id]/public-status', { id, body });
+    console.log('🌐 API Route: Update coupon public status request received', { couponId: id, body });
     
-    // Authorizationヘッダーを取得
-    const authHeader = request.headers.get('authorization');
-    
-    // APIクライアントのサーバーサイド用メソッドを使用
-    const result = await apiClient.updateCouponPublicStatusServerSide(id, body, authHeader || undefined);
-    
-    return NextResponse.json(result);
+    const response = await fetch(`${API_BASE_URL}/coupons/${id}/public-status`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(request),
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('❌ API Route: Update coupon public status failed', { status: response.status, error: errorData });
+      return NextResponse.json(errorData, { status: response.status });
+    }
+
+    const data = await response.json();
+    console.log('✅ API Route: Update coupon public status successful', { couponId: id });
+    return NextResponse.json(data);
   } catch (error: unknown) {
-    console.error('❌ Next.js API Route Error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    console.error('❌ API Route: Update coupon public status error', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }
