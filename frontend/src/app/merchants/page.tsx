@@ -697,7 +697,7 @@ export default function MerchantsPage() {
             </div>
 
             {/* 事業者名と事業者名（カナ） */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label htmlFor="merchantName" className="block text-sm font-medium text-gray-700 mb-2">
                   事業者名
@@ -727,7 +727,7 @@ export default function MerchantsPage() {
             </div>
 
             {/* 代表者名と代表者名（カナ） */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label htmlFor="representativeName" className="block text-sm font-medium text-gray-700 mb-2">
                   代表者名
@@ -756,8 +756,8 @@ export default function MerchantsPage() {
               </div>
             </div>
 
-            {/* 電話番号、メールアドレス、住所、郵便番号 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* 電話番号とメールアドレス */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
                   電話番号
@@ -781,22 +781,13 @@ export default function MerchantsPage() {
                   placeholder="メールアドレスを入力"
                   value={searchForm.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full max-w-[500px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
               </div>
-              <div>
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                  住所
-                </label>
-                <input
-                  type="text"
-                  id="address"
-                  placeholder="住所を入力"
-                  value={searchForm.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  className="w-full max-w-[400px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
+            </div>
+
+            {/* 郵便番号、都道府県、住所 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
                   郵便番号
@@ -810,10 +801,6 @@ export default function MerchantsPage() {
                   className="w-full max-w-[120px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
               </div>
-            </div>
-
-            {/* 都道府県、アカウント発行、契約ステータス */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               <div>
                 <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
                   都道府県
@@ -830,6 +817,23 @@ export default function MerchantsPage() {
                   ))}
                 </select>
               </div>
+              <div>
+                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                  住所
+                </label>
+                <input
+                  type="text"
+                  id="address"
+                  placeholder="住所を入力"
+                  value={searchForm.address}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+            </div>
+
+            {/* アカウント発行、契約ステータス、登録日 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <label htmlFor="accountStatus" className="block text-sm font-medium text-gray-700 mb-2">
                   アカウント発行
@@ -863,10 +867,6 @@ export default function MerchantsPage() {
                   <option value="terminated">解約済み</option>
                 </select>
               </div>
-            </div>
-
-            {/* 登録日の範囲 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label htmlFor="createdAtFrom" className="block text-sm font-medium text-gray-700 mb-2">
                   登録日（開始）
@@ -882,6 +882,10 @@ export default function MerchantsPage() {
                   <p className="text-red-600 text-sm mt-1">{searchErrors.createdAtFrom}</p>
                 )}
               </div>
+            </div>
+
+            {/* 登録日（終了） */}
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-3">
               <div>
                 <label htmlFor="createdAtTo" className="block text-sm font-medium text-gray-700 mb-2">
                   登録日（終了）
@@ -910,7 +914,6 @@ export default function MerchantsPage() {
             </div>
           </div>
           )}
-        </div>
 
         {/* 事業者一覧 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -1082,7 +1085,7 @@ export default function MerchantsPage() {
           )}
         </div>
       </div>
-      
+
       <FloatingFooterMerchant
         selectedCount={selectedMerchants.size}
         onConfirmIssue={handleIssueAccount}
@@ -1092,7 +1095,7 @@ export default function MerchantsPage() {
           return merchant && merchant.account && merchant.account.passwordHash;
         }).length}
       />
-      
+
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
   );
