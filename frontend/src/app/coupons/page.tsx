@@ -10,6 +10,8 @@ import Icon from '@/components/atoms/Icon';
 import { apiClient } from '@/lib/api';
 import type { CouponWithShop, CouponStatus, CouponListResponse } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
+import { useToast } from '@/hooks/use-toast';
+import ToastContainer from '@/components/molecules/toast-container';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -27,6 +29,7 @@ type PaginationData = CouponListResponse['pagination'];
 
 export default function CouponsPage() {
   const auth = useAuth();
+  const { toasts, removeToast, showSuccess, showError } = useToast();
   const isShopAccount = auth?.user?.accountType === 'shop';
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
   const shopId = isShopAccount ? auth?.user?.shopId : undefined; // 店舗アカウントの場合は自身のshopIdを使用
@@ -142,6 +145,28 @@ export default function CouponsPage() {
     setAppliedStatusFilter('all');
   };
 
+  const handleStatusChange = async (couponId: string, status: string) => {
+    try {
+      await apiClient.updateCouponStatus(couponId, { status: status as CouponStatus });
+      showSuccess('ステータスを更新しました');
+      fetchCoupons();
+    } catch (error) {
+      console.error('ステータスの更新に失敗しました:', error);
+      showError('ステータスの更新に失敗しました');
+    }
+  };
+
+  const handlePublicStatusChange = async (couponId: string, isPublic: boolean) => {
+    try {
+      await apiClient.updateCouponPublicStatus(couponId, { isPublic });
+      showSuccess('公開ステータスを更新しました');
+      fetchCoupons();
+    } catch (error) {
+      console.error('公開ステータスの更新に失敗しました:', error);
+      showError('公開ステータスの更新に失敗しました');
+    }
+  };
+
   const _getStatusLabel = (status: CouponStatus) => {
     switch (status) {
       case 'active':
@@ -165,6 +190,27 @@ export default function CouponsPage() {
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const _getStatusSelectColor = (status: CouponStatus) => {
+    switch (status) {
+      case 'pending':
+        return 'text-yellow-600 bg-yellow-50';
+      case 'approved':
+        return 'text-green-600 bg-green-50';
+      case 'suspended':
+        return 'text-red-600 bg-red-50';
+      default:
+        return 'text-gray-600 bg-gray-50';
+    }
+  };
+
+  const _getPublicStatusSelectColor = (isPublic: boolean) => {
+    if (isPublic) {
+      return 'text-blue-600 bg-blue-50';
+    } else {
+      return 'text-gray-600 bg-gray-50';
     }
   };
 
@@ -424,6 +470,7 @@ export default function CouponsPage() {
           )}
         </div>
       </div>
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
   );
 }
