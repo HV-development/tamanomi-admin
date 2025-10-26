@@ -65,7 +65,7 @@ function CouponEditPageContent() {
           couponImage: null,
           imagePreview: data.imageUrl || '',
           imageUrl: data.imageUrl || '',
-          publishStatus: data.status === 'approved' ? '1' : '2',
+          publishStatus: data.status === 'active' ? '1' : '2',
         });
         
         // 事業者・店舗情報を設定
