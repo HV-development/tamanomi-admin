@@ -35,7 +35,7 @@ export default function CouponsPage() {
   const isShopAccount = auth?.user?.accountType === 'shop';
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
   const shopId = isShopAccount ? auth?.user?.shopId : undefined; // 店舗アカウントの場合は自身のshopIdを使用
-  const merchantId = isMerchantAccount ? auth?.user?.merchantId : undefined; // 会社アカウントの場合は自身のmerchantIdを使用
+  const merchantId = isMerchantAccount ? auth?.user?.merchantId : undefined; // 事業者アカウントの場合は自身のmerchantIdを使用
   const router = useRouter();
   const [shop, setShop] = useState<Shop | null>(null);
   const [coupons, setCoupons] = useState<CouponWithShop[]>([]);
@@ -78,7 +78,7 @@ export default function CouponsPage() {
         params.append('shopId', shopId);
       }
       
-      // 会社アカウントの場合
+      // 事業者アカウントの場合
       if (merchantId) {
         console.log('🔍 CouponsPage: Fetching coupons for merchantId:', merchantId);
         params.append('merchantId', merchantId);
@@ -495,7 +495,7 @@ export default function CouponsPage() {
                     アクション
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    会社名
+                  事業者名
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     店舗名
