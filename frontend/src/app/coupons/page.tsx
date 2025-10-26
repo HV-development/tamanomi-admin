@@ -401,12 +401,12 @@ export default function CouponsPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium min-w-[120px]">
                       <div className="flex items-center gap-2">
                         <Link href={`/coupons/${coupon.id}/edit`}>
-                          <button className="p-1 transition-opacity hover:opacity-70">
+                          <button className="p-1 transition-opacity hover:opacity-70 cursor-pointer">
                             <Image src="/edit.svg" alt="編集" width={24} height={24} />
                           </button>
                         </Link>
                         <Link href={`/coupons/${coupon.id}/history`}>
-                          <button className="p-1 transition-opacity hover:opacity-70">
+                          <button className="p-1 transition-opacity hover:opacity-70 cursor-pointer">
                             <Image src="/history.png" alt="利用履歴" width={24} height={24} />
                           </button>
                         </Link>
