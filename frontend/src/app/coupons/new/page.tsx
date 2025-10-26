@@ -226,40 +226,12 @@ function CouponNewPageContent() {
       };
       reader.readAsDataURL(file);
 
-      // 画像をアップロード
-      try {
-        setIsUploading(true);
-        const uploadFormData = new FormData();
-        uploadFormData.append('file', file);
-        uploadFormData.append('type', 'coupon');
-        uploadFormData.append('shopId', formData.shopId || 'temp');
-        uploadFormData.append('merchantId', 'temp');
-        uploadFormData.append('couponId', 'new');
-        
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: uploadFormData,
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error('画像のアップロードに失敗しました');
-        }
-        
-        const data = await response.json();
-        setFormData(prev => ({
-          ...prev,
-          imageUrl: data.url
-        }));
-      } catch (error) {
-        console.error('画像アップロードエラー:', error);
-        newErrors.couponImage = '画像のアップロードに失敗しました';
-        setErrors(newErrors);
-      } finally {
-        setIsUploading(false);
-      }
+      // 新規登録時は画像をアップロードしない（クーポン作成後に更新で追加）
+      // プレビュー用にローカル画像URLを保存
+      setFormData(prev => ({
+        ...prev,
+        imageUrl: '' // 空文字列でプレビュー用のフラグとして使用
+      }));
 
       delete newErrors.couponImage;
       setErrors(newErrors);
@@ -298,22 +270,55 @@ function CouponNewPageContent() {
     setIsSubmitting(true);
     if (validateAllFields()) {
       try {
-        // クーポンを作成
+        // まず画像なしでクーポンを作成
         const couponData: CouponCreateRequest = {
           shopId: formData.shopId,
           title: formData.couponName,
           description: formData.couponContent || null,
           conditions: formData.couponConditions || null,
-          imageUrl: formData.imageUrl && formData.imageUrl.trim() !== '' ? formData.imageUrl : null,
+          imageUrl: null,
           status: 'active' as CouponStatus,
           isPublic: false
         };
         
         console.log('📤 Creating coupon with data:', couponData);
-        console.log('📤 formData:', formData);
-        console.log('📤 imageUrl:', formData.imageUrl);
         
-        await apiClient.createCoupon(couponData);
+        const createdCoupon = await apiClient.createCoupon(couponData);
+        
+        // 画像がある場合はアップロードして更新
+        if (formData.couponImage) {
+          try {
+            setIsUploading(true);
+            const uploadFormData = new FormData();
+            uploadFormData.append('file', formData.couponImage);
+            uploadFormData.append('type', 'coupon');
+            uploadFormData.append('shopId', formData.shopId);
+            uploadFormData.append('merchantId', 'temp');
+            uploadFormData.append('couponId', createdCoupon.id);
+            
+            const response = await fetch('/api/upload', {
+              method: 'POST',
+              body: uploadFormData,
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+              }
+            });
+            
+            if (response.ok) {
+              const uploadData = await response.json();
+              // 画像URLを更新
+              await apiClient.updateCoupon(createdCoupon.id, {
+                imageUrl: uploadData.url
+              });
+            } else {
+              console.error('画像アップロード失敗:', await response.text());
+            }
+          } catch (error) {
+            console.error('画像アップロードエラー:', error);
+          } finally {
+            setIsUploading(false);
+          }
+        }
         
         // 作成成功後、一覧画面に遷移
         router.push('/coupons');
