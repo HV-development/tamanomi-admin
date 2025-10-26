@@ -7,7 +7,7 @@ import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { apiClient } from '@/lib/api';
-import type { CouponCreateRequest, CouponStatus, Shop } from '@hv-development/schemas';
+import type { CouponCreateRequest, CouponStatus, Shop, Coupon } from '@hv-development/schemas';
 import { 
   validateRequired, 
   validateMaxLength, 
@@ -283,7 +283,7 @@ function CouponNewPageContent() {
         
         console.log('📤 Creating coupon with data:', couponData);
         
-        const createdCoupon = await apiClient.createCoupon(couponData);
+        const createdCoupon = await apiClient.createCoupon(couponData) as Coupon;
         
         // 画像がある場合はアップロードして更新
         if (formData.couponImage) {
