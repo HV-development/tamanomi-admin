@@ -13,6 +13,7 @@ interface BulkUpdateConfirmModalProps {
   title?: string; // カスタムタイトル対応
   message?: string; // カスタムメッセージ対応
   isExecuting?: boolean;
+  unapprovedCount?: number; // 未承認クーポンの件数
 }
 
 export default function BulkUpdateConfirmModal({
@@ -23,7 +24,8 @@ export default function BulkUpdateConfirmModal({
   selectedStatus,
   title,
   message,
-  isExecuting = false
+  isExecuting = false,
+  unapprovedCount = 0
 }: BulkUpdateConfirmModalProps) {
   if (!isOpen) return null;
 
@@ -54,6 +56,11 @@ export default function BulkUpdateConfirmModal({
             <p className="text-sm text-gray-500 mt-2">
               この操作は取り消すことができません。
             </p>
+            {unapprovedCount > 0 && (
+              <p className="text-sm text-red-600 mt-2 font-medium">
+                未承認のクーポンが{unapprovedCount}件含まれています。未承認のクーポンは公開できません。
+              </p>
+            )}
           </div>
 
           {/* ボタン */}
