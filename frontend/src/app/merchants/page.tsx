@@ -914,6 +914,7 @@ export default function MerchantsPage() {
             </div>
           </div>
           )}
+        </div>
 
         {/* 事業者一覧 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
