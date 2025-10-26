@@ -879,17 +879,23 @@ export default function ShopsPage() {
                       <div className="text-sm text-gray-900">{shop.phone}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[220px]">
-                      <select
-                        value={shop.status}
-                        onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
-                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full ${getStatusColor(shop.status)}`}
-                      >
-                        {statusOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                      {isMerchantAccount ? (
+                        <span className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium ${getStatusColor(shop.status)}`}>
+                          {statusOptions.find(opt => opt.value === shop.status)?.label || shop.status}
+                        </span>
+                      ) : (
+                        <select
+                          value={shop.status}
+                          onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
+                          className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full ${getStatusColor(shop.status)}`}
+                        >
+                          {statusOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </td>
                   </tr>
               ))}
