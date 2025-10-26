@@ -287,10 +287,16 @@ export default function MerchantsPage() {
 
     setIsIssuingAccount(true);
     try {
-      // TODO: 実際のAPIを呼び出す
-      await new Promise(resolve => setTimeout(resolve, 2000)); // 仮の処理
+      const merchantIds = Array.from(selectedMerchants);
+      const result = await apiClient.issueAccounts(merchantIds);
       
-      showSuccess(`${selectedMerchants.size}件の会社にアカウントを発行しました`);
+      if (result.failed === 0) {
+        showSuccess(`${result.success}件の会社にアカウントを発行しました`);
+      } else if (result.success > 0) {
+        showSuccess(`${result.success}件のアカウントを発行しました。${result.failed}件は失敗しました。`);
+      } else {
+        showError(`${result.failed}件のアカウント発行に失敗しました`);
+      }
       
       // 選択をクリア
       setSelectedMerchants(new Set());
