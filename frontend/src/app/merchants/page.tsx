@@ -795,7 +795,7 @@ export default function MerchantsPage() {
                 <input
                   type="text"
                   id="postalCode"
-                  placeholder="郵便番号を入力"
+                  placeholder="0000000"
                   value={searchForm.postalCode}
                   onChange={(e) => handleInputChange('postalCode', e.target.value)}
                   className="w-[120px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -833,8 +833,8 @@ export default function MerchantsPage() {
             </div>
 
             {/* アカウント発行、契約ステータス、登録日 */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
+            <div className="flex gap-4">
+              <div className="flex-shrink-0">
                 <label htmlFor="accountStatus" className="block text-sm font-medium text-gray-700 mb-2">
                   アカウント発行
                 </label>
@@ -842,7 +842,7 @@ export default function MerchantsPage() {
                   id="accountStatus"
                   value={searchForm.accountStatus}
                   onChange={(e) => handleInputChange('accountStatus', e.target.value)}
-                  className="w-full max-w-[180px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-[180px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 >
                   <option value="">すべて</option>
                   <option value="inactive">未発行</option>
@@ -851,7 +851,7 @@ export default function MerchantsPage() {
                   <option value="suspended">停止中</option>
                 </select>
               </div>
-              <div>
+              <div className="flex-shrink-0">
                 <label htmlFor="contractStatus" className="block text-sm font-medium text-gray-700 mb-2">
                   契約ステータス
                 </label>
@@ -859,7 +859,7 @@ export default function MerchantsPage() {
                   id="contractStatus"
                   value={searchForm.contractStatus}
                   onChange={(e) => handleInputChange('contractStatus', e.target.value)}
-                  className="w-full max-w-[180px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-[180px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 >
                   <option value="">すべて</option>
                   <option value="active">契約中</option>
@@ -867,7 +867,7 @@ export default function MerchantsPage() {
                   <option value="terminated">解約済み</option>
                 </select>
               </div>
-              <div>
+              <div className="flex-shrink-0">
                 <label htmlFor="createdAtFrom" className="block text-sm font-medium text-gray-700 mb-2">
                   登録日（開始）
                 </label>
@@ -876,17 +876,13 @@ export default function MerchantsPage() {
                   id="createdAtFrom"
                   value={searchForm.createdAtFrom}
                   onChange={(e) => handleInputChange('createdAtFrom', e.target.value)}
-                  className="w-full max-w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
                 {searchErrors.createdAtFrom && (
                   <p className="text-red-600 text-sm mt-1">{searchErrors.createdAtFrom}</p>
                 )}
               </div>
-            </div>
-
-            {/* 登録日（終了） */}
-            <div className="grid grid-cols-1 md:grid-cols-1 gap-3">
-              <div>
+              <div className="flex-shrink-0">
                 <label htmlFor="createdAtTo" className="block text-sm font-medium text-gray-700 mb-2">
                   登録日（終了）
                 </label>
@@ -895,7 +891,7 @@ export default function MerchantsPage() {
                   id="createdAtTo"
                   value={searchForm.createdAtTo}
                   onChange={(e) => handleInputChange('createdAtTo', e.target.value)}
-                  className="w-full max-w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
                 {searchErrors.createdAtTo && (
                   <p className="text-red-600 text-sm mt-1">{searchErrors.createdAtTo}</p>
