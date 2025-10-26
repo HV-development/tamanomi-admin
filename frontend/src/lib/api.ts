@@ -497,6 +497,17 @@ class ApiClient {
       throw error;
     }
   }
+
+  async issueAccounts(merchantIds: string[]): Promise<{ success: number; failed: number }> {
+    console.log('🎫 API: issueAccounts called', { merchantIds });
+    const token = localStorage.getItem('accessToken');
+    const response = await this.request<{ success: boolean; data: { success: number; failed: number } }>('/merchants/issue-accounts', {
+      method: 'POST',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      body: JSON.stringify({ merchantIds }),
+    });
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();
