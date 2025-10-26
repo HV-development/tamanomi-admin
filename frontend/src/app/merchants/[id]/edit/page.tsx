@@ -79,7 +79,7 @@ export default function MerchantEditPage() {
   
   const fieldRefs = useRef<{ [key: string]: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null }>({});
 
-  // 会社データの読み込み
+  // 事業者データの読み込み
   useEffect(() => {
     let isMounted = true;
     const abortController = new AbortController();
@@ -103,7 +103,7 @@ export default function MerchantEditPage() {
           const merchantData = result.data; // APIレスポンスから data プロパティを取得
           
           if (isMounted) {
-            console.log('✅ 会社データ取得成功:', merchantData);
+            console.log('✅ 事業者データ取得成功:', merchantData);
             console.log('🔍 Applications data from API:', {
               applications: merchantData.applications,
               type: typeof merchantData.applications,
@@ -137,7 +137,7 @@ export default function MerchantEditPage() {
           if (!isMounted) return;
           
           const errorData = await response.json();
-          console.error('❌ 会社データの取得に失敗しました:', { status: response.status, error: errorData });
+          console.error('❌ 事業者データの取得に失敗しました:', { status: response.status, error: errorData });
           alert(`会社データの取得に失敗しました: ${errorData.error?.message || '不明なエラー'}`);
         }
       } catch (error) {
@@ -148,7 +148,7 @@ export default function MerchantEditPage() {
         
         if (!isMounted) return;
         
-        console.error('❌ 会社データの読み込みエラー:', error);
+        console.error('❌ 事業者データの読み込みエラー:', error);
         alert(`会社データの読み込みに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
       } finally {
         if (isMounted) {

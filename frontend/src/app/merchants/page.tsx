@@ -187,6 +187,7 @@ export default function MerchantsPage() {
     switch (status) {
       case 'active': return '契約中';
       case 'inactive': return 'メール承認待ち';
+      case 'pending': return '承認待ち';
       case 'suspended': return '解約';
       case 'terminated': return '終了';
       default: return status;
@@ -197,6 +198,7 @@ export default function MerchantsPage() {
     switch (status) {
       case 'active': return 'text-green-600';
       case 'inactive': return 'text-yellow-600';
+      case 'pending': return 'text-orange-600';
       case 'suspended': return 'text-red-600';
       case 'terminated': return 'text-gray-600';
       default: return 'text-gray-900';
