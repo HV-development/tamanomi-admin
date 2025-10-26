@@ -7,6 +7,7 @@ import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Checkbox from '@/components/atoms/Checkbox';
 import ToastContainer from '@/components/molecules/toast-container';
+import FloatingFooterMerchant from '@/components/molecules/floating-footer-merchant';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { prefectures } from '@/lib/constants/merchant';
@@ -42,6 +43,7 @@ export default function MerchantsPage() {
   const [selectedMerchants, setSelectedMerchants] = useState<Set<string>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [isIndeterminate, setIsIndeterminate] = useState(false);
+  const [isIssuingAccount, setIsIssuingAccount] = useState(false);
   
   const [searchForm, setSearchForm] = useState({
     merchantId: '',
@@ -162,43 +164,6 @@ export default function MerchantsPage() {
   }, [isMerchantAccount]);
 
   // チェックボックス関連の関数
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      const allIds = new Set(filteredMerchants.map(merchant => merchant.id));
-      setSelectedMerchants(allIds);
-      setIsAllSelected(true);
-      setIsIndeterminate(false);
-    } else {
-      setSelectedMerchants(new Set());
-      setIsAllSelected(false);
-      setIsIndeterminate(false);
-    }
-  };
-
-  const handleSelectMerchant = (merchantId: string, checked: boolean) => {
-    const newSelected = new Set(selectedMerchants);
-    if (checked) {
-      newSelected.add(merchantId);
-    } else {
-      newSelected.delete(merchantId);
-    }
-    setSelectedMerchants(newSelected);
-
-    // 全選択状態の更新
-    const totalCount = filteredMerchants.length;
-    const selectedCount = newSelected.size;
-    
-    if (selectedCount === 0) {
-      setIsAllSelected(false);
-      setIsIndeterminate(false);
-    } else if (selectedCount === totalCount) {
-      setIsAllSelected(true);
-      setIsIndeterminate(false);
-    } else {
-      setIsAllSelected(false);
-      setIsIndeterminate(true);
-    }
-  };
 
 
   const handleResendRegistration = async (merchantId: string) => {
@@ -290,6 +255,54 @@ export default function MerchantsPage() {
     });
   };
 
+  // チェックボックス関連の関数
+  useEffect(() => {
+    const allCount = filteredMerchants.length;
+    const selectedCount = selectedMerchants.size;
+    setIsAllSelected(allCount > 0 && selectedCount === allCount);
+    setIsIndeterminate(selectedCount > 0 && selectedCount < allCount);
+  }, [selectedMerchants, filteredMerchants]);
+
+  const handleToggleAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedMerchants(new Set(filteredMerchants.map(merchant => merchant.id)));
+    } else {
+      setSelectedMerchants(new Set());
+    }
+  };
+
+  const handleToggleMerchant = (merchantId: string, checked: boolean) => {
+    const newSelected = new Set(selectedMerchants);
+    if (checked) {
+      newSelected.add(merchantId);
+    } else {
+      newSelected.delete(merchantId);
+    }
+    setSelectedMerchants(newSelected);
+  };
+
+  // アカウント発行処理
+  const handleIssueAccount = async () => {
+    if (selectedMerchants.size === 0) return;
+
+    setIsIssuingAccount(true);
+    try {
+      // TODO: 実際のAPIを呼び出す
+      await new Promise(resolve => setTimeout(resolve, 2000)); // 仮の処理
+      
+      showSuccess(`${selectedMerchants.size}件の会社にアカウントを発行しました`);
+      
+      // 選択をクリア
+      setSelectedMerchants(new Set());
+      setIsAllSelected(false);
+      setIsIndeterminate(false);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      showError(`アカウント発行に失敗しました: ${errorMessage}`);
+    } finally {
+      setIsIssuingAccount(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -658,15 +671,15 @@ export default function MerchantsPage() {
             <table className="w-full min-w-[1200px]">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                    <Checkbox
+                      checked={isAllSelected}
+                      indeterminate={isIndeterminate}
+                      onChange={handleToggleAll}
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48 whitespace-nowrap">
-                    <div className="flex items-center space-x-4">
-                      <Checkbox
-                        checked={isAllSelected}
-                        indeterminate={isIndeterminate}
-                        onChange={handleSelectAll}
-                      />
-                      <span className="text-xs whitespace-nowrap">アクション</span>
-                    </div>
+                    <span className="text-xs whitespace-nowrap">アクション</span>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
                     会社名
@@ -691,42 +704,42 @@ export default function MerchantsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
               {filteredMerchants.map((merchant) => (
                   <tr key={merchant.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap w-12">
+                      <Checkbox
+                        checked={selectedMerchants.has(merchant.id)}
+                        onChange={(checked) => handleToggleMerchant(merchant.id, checked)}
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap w-48">
-                      <div className="flex items-center space-x-4">
-                        <Checkbox
-                          checked={selectedMerchants.has(merchant.id)}
-                          onChange={(checked) => handleSelectMerchant(merchant.id, checked)}
-                        />
-                        <div className="flex-1 flex justify-center gap-2">
-                          <Link href={`/merchants/${merchant.id}/edit`}>
-                            <button 
-                              className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
-                              title="編集"
-                            >
-                              <Image 
-                                src="/edit.svg" 
-                                alt="編集" 
-                                width={24}
-                                height={24}
-                                className="w-6 h-6 flex-shrink-0"
-                              />
-                            </button>
-                          </Link>
-                          <Link href={`/merchants/${merchant.id}/shops`}>
-                            <button 
-                              className="p-2.5 text-blue-600 hover:text-blue-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
-                              title="店舗一覧"
-                            >
-                              <Image 
-                                src="/store-list.svg" 
-                                alt="店舗一覧" 
-                                width={24}
-                                height={24}
-                                className="w-6 h-6 flex-shrink-0"
-                              />
-                            </button>
-                          </Link>
-                        </div>
+                      <div className="flex items-center justify-center gap-2">
+                        <Link href={`/merchants/${merchant.id}/edit`}>
+                          <button 
+                            className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                            title="編集"
+                          >
+                            <Image 
+                              src="/edit.svg" 
+                              alt="編集" 
+                              width={24}
+                              height={24}
+                              className="w-6 h-6 flex-shrink-0"
+                            />
+                          </button>
+                        </Link>
+                        <Link href={`/merchants/${merchant.id}/shops`}>
+                          <button 
+                            className="p-2.5 text-blue-600 hover:text-blue-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                            title="店舗一覧"
+                          >
+                            <Image 
+                              src="/store-list.svg" 
+                              alt="店舗一覧" 
+                              width={24}
+                              height={24}
+                              className="w-6 h-6 flex-shrink-0"
+                            />
+                          </button>
+                        </Link>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
@@ -797,6 +810,12 @@ export default function MerchantsPage() {
           )}
         </div>
       </div>
+      
+      <FloatingFooterMerchant
+        selectedCount={selectedMerchants.size}
+        onIssueAccount={handleIssueAccount}
+        isIssuingAccount={isIssuingAccount}
+      />
       
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
