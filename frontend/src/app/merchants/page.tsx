@@ -757,8 +757,8 @@ export default function MerchantsPage() {
             </div>
 
             {/* 電話番号とメールアドレス */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
+            <div className="flex gap-4">
+              <div className="flex-shrink-0">
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
                   電話番号
                 </label>
@@ -768,10 +768,10 @@ export default function MerchantsPage() {
                   placeholder="電話番号を入力"
                   value={searchForm.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="w-full max-w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
               </div>
-              <div>
+              <div className="flex-1">
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                   メールアドレス
                 </label>
