@@ -28,15 +28,16 @@ export default function ShopsPage() {
   // 検索フォームの状態（拡張版）
   const [searchForm, setSearchForm] = useState({
     keyword: '',
+    merchantName: '',
+    merchantNameKana: '',
     name: '',
     nameKana: '',
     phone: '',
     accountEmail: '',
     postalCode: '',
     prefecture: '',
-    city: '',
+    address: '',
     status: 'all' as 'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
-    appName: 'all' as 'all' | 'tamanomi' | 'nomoca_kagawa',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
@@ -126,18 +127,17 @@ export default function ShopsPage() {
       
       // 検索フォームの各項目を追加
       if (searchForm.keyword) queryParams.append('keyword', searchForm.keyword);
+      if (searchForm.merchantName) queryParams.append('merchantName', searchForm.merchantName);
+      if (searchForm.merchantNameKana) queryParams.append('merchantNameKana', searchForm.merchantNameKana);
       if (searchForm.name) queryParams.append('name', searchForm.name);
       if (searchForm.nameKana) queryParams.append('nameKana', searchForm.nameKana);
       if (searchForm.phone) queryParams.append('phone', searchForm.phone);
       if (searchForm.accountEmail) queryParams.append('accountEmail', searchForm.accountEmail);
       if (searchForm.postalCode) queryParams.append('postalCode', searchForm.postalCode);
       if (searchForm.prefecture) queryParams.append('prefecture', searchForm.prefecture);
-      if (searchForm.city) queryParams.append('city', searchForm.city);
+      if (searchForm.address) queryParams.append('address', searchForm.address);
       if (searchForm.status && searchForm.status !== 'all') {
         queryParams.append('status', searchForm.status);
-      }
-      if (searchForm.appName && searchForm.appName !== 'all') {
-        queryParams.append('appName', searchForm.appName);
       }
       
       const data = await apiClient.getShops(queryParams.toString());
@@ -243,15 +243,16 @@ export default function ShopsPage() {
   const handleClear = () => {
     setSearchForm({
       keyword: '',
+      merchantName: '',
+      merchantNameKana: '',
       name: '',
       nameKana: '',
       phone: '',
       accountEmail: '',
       postalCode: '',
       prefecture: '',
-      city: '',
+      address: '',
       status: 'all',
-      appName: 'all',
     });
     // クリア後にデータを再取得
     setTimeout(() => fetchShops(), 100);
@@ -458,6 +459,40 @@ export default function ShopsPage() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* 事業者名 */}
+            {!merchantId && (
+              <div>
+                <label htmlFor="merchantName" className="block text-sm font-medium text-gray-700 mb-2">
+                  事業者名
+                </label>
+                <input
+                  type="text"
+                  id="merchantName"
+                  placeholder="事業者名を入力"
+                  value={searchForm.merchantName}
+                  onChange={(e) => handleInputChange('merchantName', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+            )}
+
+            {/* 事業者名（カナ） */}
+            {!merchantId && (
+              <div>
+                <label htmlFor="merchantNameKana" className="block text-sm font-medium text-gray-700 mb-2">
+                  事業者名（カナ）
+                </label>
+                <input
+                  type="text"
+                  id="merchantNameKana"
+                  placeholder="事業者名（カナ）を入力"
+                  value={searchForm.merchantNameKana}
+                  onChange={(e) => handleInputChange('merchantNameKana', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+            )}
+
             {/* 店舗名 */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -548,25 +583,25 @@ export default function ShopsPage() {
               />
             </div>
 
-            {/* 市区町村 */}
+            {/* 住所 */}
             <div>
-              <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
-                市区町村
+              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                住所
               </label>
               <input
                 type="text"
-                id="city"
-                placeholder="市区町村を入力"
-                value={searchForm.city}
-                onChange={(e) => handleInputChange('city', e.target.value)}
+                id="address"
+                placeholder="住所を入力"
+                value={searchForm.address}
+                onChange={(e) => handleInputChange('address', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
 
-            {/* ステータス */}
+            {/* 承認ステータス */}
             <div>
               <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                ステータス
+                承認ステータス
               </label>
               <select
                 id="status"
@@ -580,27 +615,10 @@ export default function ShopsPage() {
                 ))}
               </select>
             </div>
-
-            {/* 掲載サイト */}
-            <div>
-              <label htmlFor="appName" className="block text-sm font-medium text-gray-700 mb-2">
-                掲載サイト
-              </label>
-              <select
-                id="appName"
-                value={searchForm.appName}
-                onChange={(e) => handleInputChange('appName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              >
-                <option value="all">すべて</option>
-                <option value="tamanomi">たまのみ</option>
-                <option value="nomoca_kagawa">のもかかがわ</option>
-              </select>
-            </div>
             </div>
 
             {/* 検索・クリアボタン */}
-            <div className="flex justify-end gap-2 mt-6">
+            <div className="flex justify-center gap-2 mt-6">
               <Button variant="outline" onClick={handleClear}>
                 クリア
               </Button>
@@ -790,7 +808,7 @@ export default function ShopsPage() {
                     電話番号
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
-                    ステータス
+                    承認ステータス
                   </th>
                 </tr>
               </thead>
