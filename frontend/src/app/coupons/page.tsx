@@ -332,13 +332,16 @@ export default function CouponsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     店舗名
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
                     クーポン名
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ステータス
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px]">
+                    承認ステータス
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px]">
+                    公開ステータス
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[160px]">
                     作成日時
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -369,13 +372,38 @@ export default function CouponsPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{coupon.shop?.name || '-'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                       <div className="text-sm text-gray-900">{coupon.title}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{_getStatusLabel(coupon.status)}</div>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
+                      {isMerchantAccount ? (
+                        <span className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium ${_getStatusSelectColor(coupon.status)}`}>
+                          {coupon.status === 'pending' ? '申請中' : coupon.status === 'approved' ? '承認済み' : '停止中'}
+                        </span>
+                      ) : (
+                        <select
+                          value={coupon.status}
+                          onChange={(e) => handleStatusChange(coupon.id, e.target.value)}
+                          className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[120px] ${_getStatusSelectColor(coupon.status)}`}
+                        >
+                          <option value="pending">申請中</option>
+                          <option value="approved">承認済み</option>
+                          <option value="suspended">停止中</option>
+                        </select>
+                      )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
+                      <select
+                        value={coupon.isPublic ? 'true' : 'false'}
+                        onChange={(e) => handlePublicStatusChange(coupon.id, e.target.value === 'true')}
+                        disabled={isMerchantAccount && coupon.status !== 'approved'}
+                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[100px] ${_getPublicStatusSelectColor(coupon.isPublic)} ${isMerchantAccount && coupon.status !== 'approved' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <option value="true">公開中</option>
+                        <option value="false">非公開</option>
+                      </select>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[160px]">
                       <div className="text-sm text-gray-900">{new Date(coupon.createdAt).toLocaleString('ja-JP')}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
