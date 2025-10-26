@@ -864,10 +864,10 @@ export default function ShopsPage() {
                     <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                       <div className="text-sm text-gray-900">{shop.accountEmail || '-'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{shop.phone}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <select
                         value={shop.status}
                         onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
@@ -880,7 +880,7 @@ export default function ShopsPage() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[120px]">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         {(shop as Shop & { applications?: string[] }).applications && Array.isArray((shop as Shop & { applications?: string[] }).applications) 
                           ? (shop as Shop & { applications?: string[] }).applications.map((app: string) => 
