@@ -7,7 +7,7 @@ import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Checkbox from '@/components/atoms/Checkbox';
 import ToastContainer from '@/components/molecules/toast-container';
-import FloatingFooter from '@/components/molecules/floating-footer';
+import FloatingFooterMerchant from '@/components/molecules/floating-footer-merchant';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { prefectures } from '@/lib/constants/merchant';
@@ -20,11 +20,13 @@ type Merchant = Omit<MerchantWithDetails, 'createdAt' | 'updatedAt' | 'deletedAt
   updatedAt: string;
   deletedAt: string | null;
   accountEmail: string;
+  status: string;
   account?: {
     email: string;
     status: string;
     displayName: string | null;
     lastLoginAt: string | null;
+    passwordHash?: string | null;
   };
 };
 
@@ -36,36 +38,46 @@ export default function MerchantsPage() {
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
   
-  // 会社アカウントかどうかを判定
+  // 事業者アカウントかどうかを判定
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
   
   // チェックボックス関連の状態
   const [selectedMerchants, setSelectedMerchants] = useState<Set<string>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [isIndeterminate, setIsIndeterminate] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState('active');
-  const [isExecuting, setIsExecuting] = useState(false);
   const [isIssuingAccount, setIsIssuingAccount] = useState(false);
   
   const [searchForm, setSearchForm] = useState({
-    merchantId: '',
+    keyword: '',
     merchantName: '',
+    merchantNameKana: '',
     representativeName: '',
-    email: '',
+    representativeNameKana: '',
     phone: '',
-    postalCode: '',
+    email: '',
     address: '',
+    postalCode: '',
     prefecture: '',
+    accountStatus: '',
+    contractStatus: '',
+    createdAtFrom: '',
+    createdAtTo: '',
   });
   const [appliedSearchForm, setAppliedSearchForm] = useState({
-    merchantId: '',
+    keyword: '',
     merchantName: '',
+    merchantNameKana: '',
     representativeName: '',
-    email: '',
+    representativeNameKana: '',
     phone: '',
-    postalCode: '',
+    email: '',
     address: '',
+    postalCode: '',
     prefecture: '',
+    accountStatus: '',
+    contractStatus: '',
+    createdAtFrom: '',
+    createdAtTo: '',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
@@ -79,7 +91,7 @@ export default function MerchantsPage() {
         setIsLoading(true);
         setError(null);
         
-        // 会社アカウントの場合は自分の会社情報のみを取得
+        // 事業者アカウントの場合は自分の事業者情報のみを取得
         if (isMerchantAccount) {
           const data = await apiClient.getMyMerchant();
           
@@ -145,8 +157,8 @@ export default function MerchantsPage() {
         }
         
         if (isMounted) {
-          console.error('会社データの取得に失敗しました:', err);
-          setError('会社データの取得に失敗しました');
+          console.error('事業者データの取得に失敗しました:', err);
+          setError('事業者データの取得に失敗しました');
           setMerchants([]);
         }
       } finally {
@@ -166,20 +178,220 @@ export default function MerchantsPage() {
   }, [isMerchantAccount]);
 
   // チェックボックス関連の関数
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      const allIds = new Set(filteredMerchants.map(merchant => merchant.id));
-      setSelectedMerchants(allIds);
-      setIsAllSelected(true);
-      setIsIndeterminate(false);
-    } else {
-      setSelectedMerchants(new Set());
-      setIsAllSelected(false);
-      setIsIndeterminate(false);
+
+
+
+  const getAccountStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active': return '発行済み';
+      case 'inactive': return '未発行';
+      case 'pending': return '承認待ち';
+      case 'suspended': return '停止中';
+      default: return status;
     }
   };
 
-  const handleSelectMerchant = (merchantId: string, checked: boolean) => {
+  const getAccountStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'text-green-600';
+      case 'inactive': return 'text-yellow-600';
+      case 'pending': return 'text-orange-600';
+      case 'suspended': return 'text-red-600';
+      default: return 'text-gray-900';
+    }
+  };
+
+  const getMerchantStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active': return '契約中';
+      case 'inactive': return '未契約';
+      case 'terminated': return '解約済み';
+      default: return status;
+    }
+  };
+
+  const getMerchantStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'text-green-600';
+      case 'inactive': return 'text-yellow-600';
+      case 'terminated': return 'text-gray-600';
+      default: return 'text-gray-900';
+    }
+  };
+
+  // フィルタリング処理
+  const filteredMerchants = Array.isArray(merchants) ? merchants.filter((merchant) => {
+    // フリーワード検索（全フィールドを対象）
+    const keyword = appliedSearchForm.keyword.toLowerCase();
+    const matchesKeyword = keyword === '' || 
+      merchant.id.toLowerCase().includes(keyword) ||
+      merchant.name.toLowerCase().includes(keyword) ||
+      merchant.nameKana.toLowerCase().includes(keyword) ||
+      `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(keyword) ||
+      `${merchant.representativeNameLastKana} ${merchant.representativeNameFirstKana}`.toLowerCase().includes(keyword) ||
+      merchant.representativePhone.includes(keyword) ||
+      (merchant.account?.email || merchant.email || '').toLowerCase().includes(keyword) ||
+      `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(keyword) ||
+      merchant.postalCode.includes(keyword);
+    
+    // 各項目のフィルタ
+    const matchesSearch = 
+      matchesKeyword &&
+      (appliedSearchForm.merchantName === '' || merchant.name.toLowerCase().includes(appliedSearchForm.merchantName.toLowerCase())) &&
+      (appliedSearchForm.merchantNameKana === '' || merchant.nameKana.toLowerCase().includes(appliedSearchForm.merchantNameKana.toLowerCase())) &&
+      (appliedSearchForm.representativeName === '' || 
+        `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(appliedSearchForm.representativeName.toLowerCase())) &&
+      (appliedSearchForm.representativeNameKana === '' || 
+        `${merchant.representativeNameLastKana} ${merchant.representativeNameFirstKana}`.toLowerCase().includes(appliedSearchForm.representativeNameKana.toLowerCase())) &&
+      (appliedSearchForm.phone === '' || merchant.representativePhone.includes(appliedSearchForm.phone)) &&
+      (appliedSearchForm.email === '' || (merchant.account?.email || merchant.email || '').toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
+      (appliedSearchForm.address === '' || 
+        `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(appliedSearchForm.address.toLowerCase())) &&
+      (appliedSearchForm.postalCode === '' || merchant.postalCode.includes(appliedSearchForm.postalCode)) &&
+      (appliedSearchForm.prefecture === '' || merchant.prefecture.toLowerCase().includes(appliedSearchForm.prefecture.toLowerCase())) &&
+      (appliedSearchForm.accountStatus === '' || (merchant.account?.status || 'inactive') === appliedSearchForm.accountStatus) &&
+      (appliedSearchForm.contractStatus === '' || merchant.status === appliedSearchForm.contractStatus);
+    
+    // 日付範囲のフィルタ
+    let matchesDateRange = true;
+    if (appliedSearchForm.createdAtFrom || appliedSearchForm.createdAtTo) {
+      const merchantDate = new Date(merchant.createdAt);
+      merchantDate.setHours(0, 0, 0, 0);
+      
+      if (appliedSearchForm.createdAtFrom && appliedSearchForm.createdAtTo) {
+        const fromDate = new Date(appliedSearchForm.createdAtFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        const toDate = new Date(appliedSearchForm.createdAtTo);
+        toDate.setHours(23, 59, 59, 999);
+        matchesDateRange = merchantDate >= fromDate && merchantDate <= toDate;
+      } else if (appliedSearchForm.createdAtFrom) {
+        const fromDate = new Date(appliedSearchForm.createdAtFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        matchesDateRange = merchantDate >= fromDate;
+      } else if (appliedSearchForm.createdAtTo) {
+        const toDate = new Date(appliedSearchForm.createdAtTo);
+        toDate.setHours(23, 59, 59, 999);
+        matchesDateRange = merchantDate <= toDate;
+      }
+    }
+    
+    return matchesSearch && matchesDateRange;
+  }) : [];
+
+  const [searchErrors, setSearchErrors] = useState<{createdAtFrom?: string; createdAtTo?: string}>({});
+
+  const handleInputChange = (field: keyof typeof searchForm, value: string) => {
+    setSearchForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    // エラーがある場合、値を変更したらエラーをクリア
+    if (searchErrors.createdAtFrom || searchErrors.createdAtTo) {
+      setSearchErrors({});
+    }
+  };
+
+  const validateSearchForm = (): boolean => {
+    const errors: {createdAtFrom?: string; createdAtTo?: string} = {};
+    
+    // 開始日のバリデーション
+    if (searchForm.createdAtFrom) {
+      const fromDate = new Date(searchForm.createdAtFrom);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999); // 今日の終わりまで
+      
+      if (fromDate > today) {
+        errors.createdAtFrom = '開始日は今日以前の日付を指定してください';
+      }
+    }
+    
+    // 終了日のバリデーション
+    if (searchForm.createdAtTo) {
+      const toDate = new Date(searchForm.createdAtTo);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      
+      if (toDate > today) {
+        errors.createdAtTo = '終了日は今日以前の日付を指定してください';
+      }
+    }
+    
+    // 日付の範囲バリデーション
+    if (searchForm.createdAtFrom && searchForm.createdAtTo) {
+      const fromDate = new Date(searchForm.createdAtFrom);
+      const toDate = new Date(searchForm.createdAtTo);
+      
+      if (fromDate > toDate) {
+        errors.createdAtFrom = '開始日は終了日より前の日付を指定してください';
+        errors.createdAtTo = '終了日は開始日より後の日付を指定してください';
+      }
+    }
+    
+    setSearchErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSearch = () => {
+    if (!validateSearchForm()) {
+      return;
+    }
+    // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
+    setAppliedSearchForm({ ...searchForm });
+    console.log('検索実行:', searchForm);
+  };
+
+  const handleClear = () => {
+    setSearchForm({
+      keyword: '',
+      merchantName: '',
+      merchantNameKana: '',
+      representativeName: '',
+      representativeNameKana: '',
+      phone: '',
+      email: '',
+      address: '',
+      postalCode: '',
+      prefecture: '',
+      accountStatus: '',
+      contractStatus: '',
+      createdAtFrom: '',
+      createdAtTo: '',
+    });
+    setAppliedSearchForm({
+      keyword: '',
+      merchantName: '',
+      merchantNameKana: '',
+      representativeName: '',
+      representativeNameKana: '',
+      phone: '',
+      email: '',
+      address: '',
+      postalCode: '',
+      prefecture: '',
+      accountStatus: '',
+      contractStatus: '',
+      createdAtFrom: '',
+      createdAtTo: '',
+    });
+  };
+
+  // チェックボックス関連の関数
+  useEffect(() => {
+    const allCount = filteredMerchants.length;
+    const selectedCount = selectedMerchants.size;
+    setIsAllSelected(allCount > 0 && selectedCount === allCount);
+    setIsIndeterminate(selectedCount > 0 && selectedCount < allCount);
+  }, [selectedMerchants, filteredMerchants]);
+
+  const handleToggleAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedMerchants(new Set(filteredMerchants.map(merchant => merchant.id)));
+    } else {
+      setSelectedMerchants(new Set());
+    }
+  };
+
+  const handleToggleMerchant = (merchantId: string, checked: boolean) => {
     const newSelected = new Set(selectedMerchants);
     if (checked) {
       newSelected.add(merchantId);
@@ -187,71 +399,40 @@ export default function MerchantsPage() {
       newSelected.delete(merchantId);
     }
     setSelectedMerchants(newSelected);
-
-    // 全選択状態の更新
-    const totalCount = filteredMerchants.length;
-    const selectedCount = newSelected.size;
-    
-    if (selectedCount === 0) {
-      setIsAllSelected(false);
-      setIsIndeterminate(false);
-    } else if (selectedCount === totalCount) {
-      setIsAllSelected(true);
-      setIsIndeterminate(false);
-    } else {
-      setIsAllSelected(false);
-      setIsIndeterminate(true);
-    }
   };
 
-  const handleStatusChange = (status: string) => {
-    setSelectedStatus(status);
-  };
-
-  const handleResendRegistration = async (merchantId: string) => {
-    if (!confirm('登録用URLを再発行しますか？')) {
-      return;
-    }
-
-    try {
-      await apiClient.resendMerchantRegistration(merchantId);
-      showSuccess('登録用URLを再送信しました');
-    } catch (error) {
-      console.error('登録URL再発行エラー:', error);
-      showError('登録URLの再発行に失敗しました');
-    }
-  };
-
-  const handleExecute = async () => {
-    if (selectedMerchants.size === 0) return;
-
-    setIsExecuting(true);
-    try {
-      // 一括処理（今後実装予定）
-      await new Promise(resolve => setTimeout(resolve, 1500)); // 模擬APIコール
-      showSuccess(`${selectedMerchants.size}件の会社に対して処理を実行しました`);
-      
-      // 選択をクリア
-      setSelectedMerchants(new Set());
-      setIsAllSelected(false);
-      setIsIndeterminate(false);
-    } catch (error: unknown) {
-      console.error('一括処理エラー:', error);
-      showError('一括処理に失敗しました');
-    } finally {
-      setIsExecuting(false);
-    }
-  };
-
+  // アカウント発行処理
   const handleIssueAccount = async () => {
     if (selectedMerchants.size === 0) return;
 
     setIsIssuingAccount(true);
     try {
-      // アカウント発行処理（実装は後で）
-      await new Promise(resolve => setTimeout(resolve, 2000)); // 仮の処理
+      const merchantIds = Array.from(selectedMerchants);
+      const result = await apiClient.issueAccounts(merchantIds);
       
-      showSuccess(`${selectedMerchants.size}件の会社にアカウントを発行しました`);
+      if (result.failed === 0) {
+        showSuccess(`${result.success}件の事業者にアカウントを発行しました`);
+        // 選択したレコードのステータスのみを更新（inactive -> pending）
+        setMerchants(prevMerchants => 
+          prevMerchants.map(merchant => 
+            selectedMerchants.has(merchant.id) && merchant.account
+              ? { ...merchant, account: { ...merchant.account, status: 'pending' } }
+              : merchant
+          )
+        );
+      } else if (result.success > 0) {
+        showSuccess(`${result.success}件のアカウントを発行しました。${result.failed}件は失敗しました。`);
+        // 選択したレコードのステータスのみを更新（inactive -> pending）
+        setMerchants(prevMerchants => 
+          prevMerchants.map(merchant => 
+            selectedMerchants.has(merchant.id) && merchant.account
+              ? { ...merchant, account: { ...merchant.account, status: 'pending' } }
+              : merchant
+          )
+        );
+      } else {
+        showError(`${result.failed}件のアカウント発行に失敗しました`);
+      }
       
       // 選択をクリア
       setSelectedMerchants(new Set());
@@ -265,79 +446,29 @@ export default function MerchantsPage() {
     }
   };
 
-  const getAccountStatusLabel = (status: string) => {
-    switch (status) {
-      case 'active': return '契約中';
-      case 'inactive': return 'メール承認待ち';
-      case 'suspended': return '解約';
-      case 'terminated': return '終了';
-      default: return status;
+  // 個別の事業者にアカウント発行（メールアイコンから）
+  const handleResendRegistration = async (merchantId: string) => {
+    try {
+      const result = await apiClient.issueAccounts([merchantId]);
+      
+      if (result.failed === 0) {
+        showSuccess('アカウント発行メールを送信しました');
+        // 該当レコードのステータスのみを更新（inactive -> pending）
+        setMerchants(prevMerchants => 
+          prevMerchants.map(merchant => 
+            merchant.id === merchantId && merchant.account
+              ? { ...merchant, account: { ...merchant.account, status: 'pending' } }
+              : merchant
+          )
+        );
+      } else {
+        showError('アカウント発行に失敗しました');
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      showError(`アカウント発行に失敗しました: ${errorMessage}`);
     }
   };
-
-  const getAccountStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'text-green-600';
-      case 'inactive': return 'text-yellow-600';
-      case 'suspended': return 'text-red-600';
-      case 'terminated': return 'text-gray-600';
-      default: return 'text-gray-900';
-    }
-  };
-
-  // フィルタリング処理
-  const filteredMerchants = Array.isArray(merchants) ? merchants.filter((merchant) => {
-    const matchesSearch = 
-      (appliedSearchForm.merchantId === '' || merchant.id.includes(appliedSearchForm.merchantId)) &&
-      (appliedSearchForm.merchantName === '' || merchant.name.toLowerCase().includes(appliedSearchForm.merchantName.toLowerCase())) &&
-      (appliedSearchForm.representativeName === '' || 
-        `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(appliedSearchForm.representativeName.toLowerCase())) &&
-      (appliedSearchForm.email === '' || merchant.account?.email.toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
-      (appliedSearchForm.phone === '' || merchant.representativePhone.includes(appliedSearchForm.phone)) &&
-      (appliedSearchForm.postalCode === '' || merchant.postalCode.includes(appliedSearchForm.postalCode)) &&
-      (appliedSearchForm.address === '' || 
-        `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(appliedSearchForm.address.toLowerCase())) &&
-      (appliedSearchForm.prefecture === '' || merchant.prefecture.toLowerCase().includes(appliedSearchForm.prefecture.toLowerCase()));
-    
-    return matchesSearch;
-  }) : [];
-
-  const handleInputChange = (field: keyof typeof searchForm, value: string) => {
-    setSearchForm(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleSearch = () => {
-    // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
-    setAppliedSearchForm({ ...searchForm });
-    console.log('検索実行:', searchForm);
-  };
-
-  const handleClear = () => {
-    setSearchForm({
-      merchantId: '',
-      merchantName: '',
-      representativeName: '',
-      email: '',
-      phone: '',
-      postalCode: '',
-      address: '',
-      prefecture: '',
-    });
-    setAppliedSearchForm({
-      merchantId: '',
-      merchantName: '',
-      representativeName: '',
-      email: '',
-      phone: '',
-      postalCode: '',
-      address: '',
-      prefecture: '',
-    });
-  };
-
 
   if (isLoading) {
     return (
@@ -345,22 +476,22 @@ export default function MerchantsPage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">会社データを読み込み中...</p>
+            <p className="text-gray-600">事業者データを読み込み中...</p>
           </div>
         </div>
       </AdminLayout>
     );
   }
 
-  // 会社アカウントの場合は自分の会社情報のみを表示
+  // 事業者アカウントの場合は自分の事業者情報のみを表示
   if (isMerchantAccount) {
     return (
       <AdminLayout>
         <div className="space-y-6">
           {/* ヘッダー */}
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">会社情報</h1>
-            <p className="text-gray-600 mt-1">会社の詳細情報を確認できます</p>
+            <h1 className="text-2xl font-bold text-gray-900">事業者情報</h1>
+            <p className="text-gray-600 mt-1">事業者の詳細情報を確認できます</p>
           </div>
 
           {/* ローディング状態 */}
@@ -378,7 +509,7 @@ export default function MerchantsPage() {
             </div>
           )}
 
-          {/* 会社情報 */}
+          {/* 事業者情報 */}
           {!isLoading && !error && myMerchant && (
             <div className="bg-white rounded-lg shadow">
               <div className="p-6 space-y-6">
@@ -388,11 +519,11 @@ export default function MerchantsPage() {
                   <table className="w-full border-collapse border border-gray-300">
                     <tbody>
                       <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">会社名</td>
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/2">事業者名</td>
                         <td className="py-3 px-4 text-gray-900">{myMerchant.name}</td>
                       </tr>
                       <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">会社名（カナ）</td>
+                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">事業者名（カナ）</td>
                         <td className="py-3 px-4 text-gray-900">{myMerchant.nameKana}</td>
                       </tr>
                     </tbody>
@@ -481,9 +612,9 @@ export default function MerchantsPage() {
                   店舗一覧を見る
                 </button>
               </Link>
-              <Link href={`/merchants/${myMerchant.id}/edit`}>
+              <Link href={`/merchants/${myMerchant.id}/edit-account`}>
                 <button className="px-6 py-3 border-2 border-green-600 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:border-green-700 transition-colors font-medium text-base">
-                  編集
+                  アカウント情報編集
                 </button>
               </Link>
             </div>
@@ -501,9 +632,9 @@ export default function MerchantsPage() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-900">会社管理</h1>
+            <h1 className="text-2xl font-bold text-gray-900">事業者管理</h1>
             <p className="text-gray-600">
-              会社の管理・編集を行います
+              事業者の管理・編集を行います
             </p>
             </div>
             <div className="text-sm text-gray-600">
@@ -549,134 +680,227 @@ export default function MerchantsPage() {
           </div>
           
           {isSearchExpanded && (
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* 会社ID */}
+          <div className="p-6 space-y-3">
+            {/* フリーワード検索 */}
             <div>
-              <label htmlFor="merchantId" className="block text-sm font-medium text-gray-700 mb-2">
-                会社ID
+              <label htmlFor="keyword" className="block text-sm font-medium text-gray-700 mb-2">
+                フリーワード検索
               </label>
               <input
                 type="text"
-                id="merchantId"
-                placeholder="会社IDを入力"
-                value={searchForm.merchantId}
-                onChange={(e) => handleInputChange('merchantId', e.target.value)}
+                id="keyword"
+                placeholder="事業者名、代表者名、メールアドレス、電話番号などで検索"
+                value={searchForm.keyword}
+                onChange={(e) => handleInputChange('keyword', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
 
-            {/* 会社名 */}
-            <div>
-              <label htmlFor="merchantName" className="block text-sm font-medium text-gray-700 mb-2">
-                会社名
-              </label>
-              <input
-                type="text"
-                id="merchantName"
-                placeholder="会社名を入力"
-                value={searchForm.merchantName}
-                onChange={(e) => handleInputChange('merchantName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
+            {/* 事業者名と事業者名（カナ） */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="merchantName" className="block text-sm font-medium text-gray-700 mb-2">
+                  事業者名
+                </label>
+                <input
+                  type="text"
+                  id="merchantName"
+                  placeholder="事業者名を入力"
+                  value={searchForm.merchantName}
+                  onChange={(e) => handleInputChange('merchantName', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="merchantNameKana" className="block text-sm font-medium text-gray-700 mb-2">
+                  事業者名（カナ）
+                </label>
+                <input
+                  type="text"
+                  id="merchantNameKana"
+                  placeholder="事業者名（カナ）を入力"
+                  value={searchForm.merchantNameKana}
+                  onChange={(e) => handleInputChange('merchantNameKana', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
             </div>
 
-            {/* 代表者名 */}
-            <div>
-              <label htmlFor="representativeName" className="block text-sm font-medium text-gray-700 mb-2">
-                代表者名
-              </label>
-              <input
-                type="text"
-                id="representativeName"
-                placeholder="代表者名を入力"
-                value={searchForm.representativeName}
-                onChange={(e) => handleInputChange('representativeName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
+            {/* 代表者名と代表者名（カナ） */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="representativeName" className="block text-sm font-medium text-gray-700 mb-2">
+                  代表者名
+                </label>
+                <input
+                  type="text"
+                  id="representativeName"
+                  placeholder="代表者名を入力"
+                  value={searchForm.representativeName}
+                  onChange={(e) => handleInputChange('representativeName', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="representativeNameKana" className="block text-sm font-medium text-gray-700 mb-2">
+                  代表者名（カナ）
+                </label>
+                <input
+                  type="text"
+                  id="representativeNameKana"
+                  placeholder="代表者名（カナ）を入力"
+                  value={searchForm.representativeNameKana}
+                  onChange={(e) => handleInputChange('representativeNameKana', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
             </div>
 
-            {/* メールアドレス */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                メールアドレス
-              </label>
-              <input
-                type="text"
-                id="email"
-                placeholder="メールアドレスを入力"
-                value={searchForm.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
+            {/* 電話番号とメールアドレス */}
+            <div className="flex gap-4">
+              <div className="flex-shrink-0">
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                  電話番号
+                </label>
+                <input
+                  type="text"
+                  id="phone"
+                  placeholder="電話番号を入力"
+                  value={searchForm.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  メールアドレス
+                </label>
+                <input
+                  type="text"
+                  id="email"
+                  placeholder="メールアドレスを入力"
+                  value={searchForm.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
             </div>
 
-            {/* 電話番号 */}
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                電話番号
-              </label>
-              <input
-                type="text"
-                id="phone"
-                placeholder="電話番号を入力"
-                value={searchForm.phone}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
+            {/* 郵便番号、都道府県、住所 */}
+            <div className="flex gap-4">
+              <div className="flex-shrink-0">
+                <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
+                  郵便番号
+                </label>
+                <input
+                  type="text"
+                  id="postalCode"
+                  placeholder="0000000"
+                  value={searchForm.postalCode}
+                  onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                  className="w-[120px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+              <div className="flex-shrink-0">
+                <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
+                  都道府県
+                </label>
+                <select
+                  id="prefecture"
+                  value={searchForm.prefecture}
+                  onChange={(e) => handleInputChange('prefecture', e.target.value)}
+                  className="w-[180px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="">すべて</option>
+                  {prefectures.map((pref) => (
+                    <option key={pref} value={pref}>{pref}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1">
+                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                  住所
+                </label>
+                <input
+                  type="text"
+                  id="address"
+                  placeholder="住所を入力"
+                  value={searchForm.address}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
             </div>
 
-            {/* 郵便番号 */}
-            <div>
-              <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
-                郵便番号
-              </label>
-              <input
-                type="text"
-                id="postalCode"
-                placeholder="郵便番号を入力"
-                value={searchForm.postalCode}
-                onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-
-            {/* 住所 */}
-            <div>
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                住所
-              </label>
-              <input
-                type="text"
-                id="address"
-                placeholder="住所を入力"
-                value={searchForm.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-
-            {/* 都道府県 */}
-            <div>
-              <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
-                都道府県
-              </label>
-              <select
-                id="prefecture"
-                value={searchForm.prefecture}
-                onChange={(e) => handleInputChange('prefecture', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              >
-                <option value="">都道府県を選択してください</option>
-                {prefectures.map((pref) => (
-                  <option key={pref} value={pref}>{pref}</option>
-                ))}
-              </select>
-            </div>
+            {/* アカウント発行、契約ステータス、登録日 */}
+            <div className="flex gap-4">
+              <div className="flex-shrink-0">
+                <label htmlFor="accountStatus" className="block text-sm font-medium text-gray-700 mb-2">
+                  アカウント発行
+                </label>
+                <select
+                  id="accountStatus"
+                  value={searchForm.accountStatus}
+                  onChange={(e) => handleInputChange('accountStatus', e.target.value)}
+                  className="w-[180px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="">すべて</option>
+                  <option value="inactive">未発行</option>
+                  <option value="pending">承認待ち</option>
+                  <option value="active">発行済み</option>
+                  <option value="suspended">停止中</option>
+                </select>
+              </div>
+              <div className="flex-shrink-0">
+                <label htmlFor="contractStatus" className="block text-sm font-medium text-gray-700 mb-2">
+                  契約ステータス
+                </label>
+                <select
+                  id="contractStatus"
+                  value={searchForm.contractStatus}
+                  onChange={(e) => handleInputChange('contractStatus', e.target.value)}
+                  className="w-[180px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="">すべて</option>
+                  <option value="active">契約中</option>
+                  <option value="inactive">未契約</option>
+                  <option value="terminated">解約済み</option>
+                </select>
+              </div>
+              <div className="flex-shrink-0">
+                <label htmlFor="createdAtFrom" className="block text-sm font-medium text-gray-700 mb-2">
+                  登録日（開始）
+                </label>
+                <input
+                  type="date"
+                  id="createdAtFrom"
+                  value={searchForm.createdAtFrom}
+                  onChange={(e) => handleInputChange('createdAtFrom', e.target.value)}
+                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+                {searchErrors.createdAtFrom && (
+                  <p className="text-red-600 text-sm mt-1">{searchErrors.createdAtFrom}</p>
+                )}
+              </div>
+              <div className="flex-shrink-0">
+                <label htmlFor="createdAtTo" className="block text-sm font-medium text-gray-700 mb-2">
+                  登録日（終了）
+                </label>
+                <input
+                  type="date"
+                  id="createdAtTo"
+                  value={searchForm.createdAtTo}
+                  onChange={(e) => handleInputChange('createdAtTo', e.target.value)}
+                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+                {searchErrors.createdAtTo && (
+                  <p className="text-red-600 text-sm mt-1">{searchErrors.createdAtTo}</p>
+                )}
+              </div>
             </div>
 
             {/* 検索・クリアボタン */}
-            <div className="flex justify-end gap-2 mt-6">
+            <div className="flex justify-center gap-2 mt-4">
               <Button variant="outline" onClick={handleClear}>
                 クリア
               </Button>
@@ -688,11 +912,11 @@ export default function MerchantsPage() {
           )}
         </div>
 
-        {/* 会社一覧 */}
+        {/* 事業者一覧 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
-              会社一覧 ({filteredMerchants.length}件)
+              事業者一覧 ({filteredMerchants.length}件)
             </h3>
             <Link href="/merchants/new">
               <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
@@ -706,21 +930,24 @@ export default function MerchantsPage() {
             <table className="w-full min-w-[1200px]">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                    <Checkbox
+                      checked={isAllSelected}
+                      indeterminate={isIndeterminate}
+                      onChange={handleToggleAll}
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48 whitespace-nowrap">
-                    <div className="flex items-center space-x-4">
-                      <Checkbox
-                        checked={isAllSelected}
-                        indeterminate={isIndeterminate}
-                        onChange={handleSelectAll}
-                      />
-                      <span className="text-xs whitespace-nowrap">アクション</span>
-                    </div>
+                    <span className="text-xs whitespace-nowrap">アクション</span>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-                    会社名
+                    事業者名
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                     代表者名
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                    電話番号
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
                     メールアドレス
@@ -729,7 +956,10 @@ export default function MerchantsPage() {
                     住所
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[180px]">
-                    ステータス
+                    アカウント発行
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[180px]">
+                    契約ステータス
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                     登録日
@@ -739,42 +969,42 @@ export default function MerchantsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
               {filteredMerchants.map((merchant) => (
                   <tr key={merchant.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap w-12">
+                      <Checkbox
+                        checked={selectedMerchants.has(merchant.id)}
+                        onChange={(checked) => handleToggleMerchant(merchant.id, checked)}
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap w-48">
-                      <div className="flex items-center space-x-4">
-                        <Checkbox
-                          checked={selectedMerchants.has(merchant.id)}
-                          onChange={(checked) => handleSelectMerchant(merchant.id, checked)}
-                        />
-                        <div className="flex-1 flex justify-center gap-2">
-                          <Link href={`/merchants/${merchant.id}/edit`}>
-                            <button 
-                              className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
-                              title="編集"
-                            >
-                              <Image 
-                                src="/edit.svg" 
-                                alt="編集" 
-                                width={24}
-                                height={24}
-                                className="w-6 h-6 flex-shrink-0"
-                              />
-                            </button>
-                          </Link>
-                          <Link href={`/merchants/${merchant.id}/shops`}>
-                            <button 
-                              className="p-2.5 text-blue-600 hover:text-blue-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
-                              title="店舗一覧"
-                            >
-                              <Image 
-                                src="/store-list.svg" 
-                                alt="店舗一覧" 
-                                width={24}
-                                height={24}
-                                className="w-6 h-6 flex-shrink-0"
-                              />
-                            </button>
-                          </Link>
-                        </div>
+                      <div className="flex items-center justify-center gap-2">
+                        <Link href={`/merchants/${merchant.id}/edit`}>
+                          <button 
+                            className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                            title="編集"
+                          >
+                            <Image 
+                              src="/edit.svg" 
+                              alt="編集" 
+                              width={24}
+                              height={24}
+                              className="w-6 h-6 flex-shrink-0"
+                            />
+                          </button>
+                        </Link>
+                        <Link href={`/merchants/${merchant.id}/shops`}>
+                          <button 
+                            className="p-2.5 text-blue-600 hover:text-blue-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                            title="店舗一覧"
+                          >
+                            <Image 
+                              src="/store-list.svg" 
+                              alt="店舗一覧" 
+                              width={24}
+                              height={24}
+                              className="w-6 h-6 flex-shrink-0"
+                            />
+                          </button>
+                        </Link>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
@@ -784,7 +1014,9 @@ export default function MerchantsPage() {
                     <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
                       <div className="text-sm font-medium text-gray-900">{merchant.representativeNameLast} {merchant.representativeNameFirst}</div>
                       <div className="text-sm text-gray-500">{merchant.representativeNameLastKana} {merchant.representativeNameFirstKana}</div>
-                      <div className="text-sm text-gray-500 mt-1">{merchant.representativePhone}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[120px]">
+                      <div className="text-sm text-gray-900">{merchant.representativePhone}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                       <div className="text-sm text-gray-900">{merchant.email}</div>
@@ -800,17 +1032,22 @@ export default function MerchantsPage() {
                         <div className={`text-sm font-medium ${getAccountStatusColor(merchant.account?.status || 'inactive')}`}>
                           {getAccountStatusLabel(merchant.account?.status || 'inactive')}
                         </div>
-                        {merchant.account?.status === 'inactive' && (
+                        {(merchant.account?.status === 'inactive' || merchant.account?.status === 'pending') && (
                           <button 
                             onClick={() => handleResendRegistration(merchant.id)}
                             className="p-1.5 text-orange-600 hover:text-orange-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
-                            title="登録URL再発行"
+                            title="アカウント発行メール再送"
                           >
                             <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
                           </button>
                         )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[180px]">
+                      <div className={`text-sm font-medium ${getMerchantStatusColor(merchant.status || 'active')}`}>
+                        {getMerchantStatusLabel(merchant.status || 'active')}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
@@ -839,23 +1076,23 @@ export default function MerchantsPage() {
                 height={48}
                 className="mx-auto text-gray-400 mb-4"
               />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">会社が見つかりません</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">事業者が見つかりません</h3>
               <p className="text-gray-500">検索条件を変更してお試しください。</p>
             </div>
           )}
         </div>
       </div>
-      
-      <FloatingFooter
+
+      <FloatingFooterMerchant
         selectedCount={selectedMerchants.size}
-        onStatusChange={handleStatusChange}
-        onExecute={handleExecute}
-        onIssueAccount={handleIssueAccount}
-        selectedStatus={selectedStatus}
-        isExecuting={isExecuting}
+        onConfirmIssue={handleIssueAccount}
         isIssuingAccount={isIssuingAccount}
+        alreadyIssuedCount={Array.from(selectedMerchants).filter(merchantId => {
+          const merchant = filteredMerchants.find(m => m.id === merchantId);
+          return merchant && merchant.account && merchant.account.passwordHash;
+        }).length}
       />
-      
+
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
   );

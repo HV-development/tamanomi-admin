@@ -7,7 +7,7 @@ import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { apiClient } from '@/lib/api';
-import type { CouponCreateRequest, CouponStatus, Shop } from '@hv-development/schemas';
+import type { CouponCreateRequest, CouponStatus, Shop, Coupon } from '@hv-development/schemas';
 import { 
   validateRequired, 
   validateMaxLength, 
@@ -66,7 +66,7 @@ function CouponNewPageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [_isUploading, setIsUploading] = useState(false);
   
-  // 会社・店舗選択用の状態
+  // 事業者・店舗選択用の状態
   const [selectedMerchant, setSelectedMerchant] = useState<Merchant | null>(null);
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
   const [isMerchantModalOpen, setIsMerchantModalOpen] = useState(false);
@@ -107,7 +107,7 @@ function CouponNewPageContent() {
   // アカウントタイプに応じた初期化
   useEffect(() => {
     const initializeAccountData = async () => {
-      // 店舗アカウントの場合: 会社と店舗情報を自動設定
+      // 店舗アカウントの場合: 事業者と店舗情報を自動設定
       if (isShopAccount && auth?.user?.shopId) {
         try {
           const shopData = await apiClient.getShop(auth.user.shopId) as Shop;
@@ -126,19 +126,21 @@ function CouponNewPageContent() {
         }
       }
       
-      // 会社アカウントの場合: 会社情報を自動設定
-      if (isMerchantAccount && auth?.user?.merchantId) {
+      // 事業者アカウントの場合: 事業者情報を自動設定
+      if (isMerchantAccount) {
         try {
-          const merchantData = await apiClient.getMerchant(auth.user.merchantId) as Merchant;
-          setSelectedMerchant(merchantData);
+          const merchantData = await apiClient.getMyMerchant() as { data: Merchant };
+          if (merchantData && merchantData.data) {
+            setSelectedMerchant(merchantData.data);
+          }
         } catch (error) {
-          console.error('会社情報の取得に失敗しました:', error);
+          console.error('事業者情報の取得に失敗しました:', error);
         }
       }
     };
     
     initializeAccountData();
-  }, [isShopAccount, isMerchantAccount, auth?.user?.shopId, auth?.user?.merchantId]);
+  }, [isShopAccount, isMerchantAccount, auth?.user?.shopId]);
 
   const handleInputChange = (field: keyof CouponFormData, value: string) => {
     setFormData(prev => ({
@@ -172,29 +174,23 @@ function CouponNewPageContent() {
         }
         break;
 
-      case 'publishStatus':
-        const publishStatusError = validateRequired(value, '公開 / 非公開');
-        if (publishStatusError) {
-          newErrors.publishStatus = publishStatusError;
-        } else {
-          delete newErrors.publishStatus;
-        }
-        break;
     }
 
     setErrors(newErrors);
   };
   
-  // 会社選択ハンドラー
+  // 事業者選択ハンドラー
   const handleMerchantSelect = (merchant: Merchant) => {
     setSelectedMerchant(merchant);
-    // 会社を変更した場合、店舗選択をリセット
+    // 事業者を変更した場合、店舗選択をリセット
     setSelectedShop(null);
     setFormData(prev => ({ ...prev, shopId: '' }));
   };
   
   // 店舗選択ハンドラー
   const handleShopSelect = (shop: Shop) => {
+    console.log('🔍 Shop selected:', shop);
+    console.log('🔍 Shop ID:', shop.id);
     setSelectedShop(shop);
     setFormData(prev => ({ ...prev, shopId: shop.id }));
   };
@@ -230,40 +226,12 @@ function CouponNewPageContent() {
       };
       reader.readAsDataURL(file);
 
-      // 画像をアップロード
-      try {
-        setIsUploading(true);
-        const uploadFormData = new FormData();
-        uploadFormData.append('file', file);
-        uploadFormData.append('type', 'coupon');
-        uploadFormData.append('shopId', formData.shopId || 'temp');
-        uploadFormData.append('merchantId', 'temp');
-        uploadFormData.append('couponId', 'new');
-        
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: uploadFormData,
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error('画像のアップロードに失敗しました');
-        }
-        
-        const data = await response.json();
-        setFormData(prev => ({
-          ...prev,
-          imageUrl: data.url
-        }));
-      } catch (error) {
-        console.error('画像アップロードエラー:', error);
-        newErrors.couponImage = '画像のアップロードに失敗しました';
-        setErrors(newErrors);
-      } finally {
-        setIsUploading(false);
-      }
+      // 新規登録時は画像をアップロードしない（クーポン作成後に更新で追加）
+      // プレビュー用にローカル画像URLを保存
+      setFormData(prev => ({
+        ...prev,
+        imageUrl: '' // 空文字列でプレビュー用のフラグとして使用
+      }));
 
       delete newErrors.couponImage;
       setErrors(newErrors);
@@ -279,17 +247,17 @@ function CouponNewPageContent() {
 
     const couponContentError = validateRequired(formData.couponContent, 'クーポン内容') || validateMaxLength(formData.couponContent, 100, 'クーポン内容');
     if (couponContentError) newErrors.couponContent = couponContentError;
-
-    const publishStatusError = validateRequired(formData.publishStatus, '公開 / 非公開');
-    if (publishStatusError) newErrors.publishStatus = publishStatusError;
     
     // 店舗選択チェック
     if (!formData.shopId) {
       newErrors.shopId = '店舗を選択してください';
     } else {
       // UUID形式チェック（簡易版）
+      console.log('🔍 Validating shopId:', formData.shopId);
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(formData.shopId)) {
+      const isValidUuid = uuidRegex.test(formData.shopId);
+      console.log('🔍 UUID validation result:', isValidUuid);
+      if (!isValidUuid) {
         newErrors.shopId = '選択された店舗のIDが無効です。別の店舗を選択してください。';
       }
     }
@@ -302,17 +270,63 @@ function CouponNewPageContent() {
     setIsSubmitting(true);
     if (validateAllFields()) {
       try {
-        // クーポンを作成
+        // まず画像なしでクーポンを作成
         const couponData: CouponCreateRequest = {
           shopId: formData.shopId,
           title: formData.couponName,
           description: formData.couponContent || null,
           conditions: formData.couponConditions || null,
-          imageUrl: formData.imageUrl && formData.imageUrl.trim() !== '' ? formData.imageUrl : null,
-          status: (formData.publishStatus === '1' ? 'active' : 'inactive') as CouponStatus
+          imageUrl: null,
+          status: 'active' as CouponStatus,
+          isPublic: false
         };
         
-        await apiClient.createCoupon(couponData);
+        console.log('📤 Creating coupon with data:', couponData);
+        
+        const createdCoupon = await apiClient.createCoupon(couponData) as Coupon;
+        
+        // 画像がある場合はアップロードして更新
+        if (formData.couponImage && createdCoupon.id) {
+          try {
+            setIsUploading(true);
+            
+            // タイムスタンプを生成
+            const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '').split('.')[0];
+            
+            const uploadFormData = new FormData();
+            uploadFormData.append('image', formData.couponImage);
+            uploadFormData.append('type', 'coupon');
+            uploadFormData.append('shopId', formData.shopId);
+            uploadFormData.append('merchantId', 'temp');
+            uploadFormData.append('couponId', createdCoupon.id);
+            uploadFormData.append('timestamp', timestamp);
+            
+            const response = await fetch('/api/upload', {
+              method: 'POST',
+              body: uploadFormData,
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+              }
+            });
+            
+            if (response.ok) {
+              const uploadData = await response.json();
+              console.log('📤 Image upload successful:', uploadData);
+              
+              // 画像URLを更新
+              await apiClient.updateCoupon(createdCoupon.id, {
+                imageUrl: uploadData.url
+              });
+            } else {
+              const errorData = await response.json().catch(() => ({}));
+              console.error('画像アップロード失敗:', response.status, errorData);
+            }
+          } catch (error) {
+            console.error('画像アップロードエラー:', error);
+          } finally {
+            setIsUploading(false);
+          }
+        }
         
         // 作成成功後、一覧画面に遷移
         router.push('/coupons');
@@ -392,13 +406,13 @@ function CouponNewPageContent() {
         {/* 登録フォーム */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="space-y-6">
-            {/* 会社・店舗選択 */}
+            {/*事業者・店舗選択 */}
             {isAdminAccount && (
               <>
-                {/* 管理者：会社選択 */}
+                {/* 管理者：事業者選択 */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    会社 <span className="text-red-500">*</span>
+                    事業者 <span className="text-red-500">*</span>
                   </label>
                   {selectedMerchant && (
                     <div className="mb-2 text-sm text-gray-900">
@@ -410,7 +424,7 @@ function CouponNewPageContent() {
                     onClick={() => setIsMerchantModalOpen(true)}
                     className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors"
                   >
-                    会社を選択
+                  事業者を選択
                   </button>
                 </div>
                 
@@ -433,7 +447,7 @@ function CouponNewPageContent() {
                     店舗を選択
                   </button>
                   {!selectedMerchant && (
-                    <p className="mt-1 text-xs text-gray-500">先に会社を選択してください</p>
+                    <p className="mt-1 text-xs text-gray-500">先に事業者を選択してください</p>
                   )}
                   {errors.shopId && (
                     <p className="mt-1 text-sm text-red-500">{errors.shopId}</p>
@@ -444,21 +458,21 @@ function CouponNewPageContent() {
             
             {isMerchantAccount && (
               <>
-                {/* 会社アカウント：会社名表示（変更不可） */}
+                {/* 事業者アカウント：事業者名表示（変更不可） */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    会社 <span className="text-red-500">*</span>
+                    事業者 <span className="text-red-500">*</span>
                   </label>
                   <div className="text-sm text-gray-900 mb-1">
                     {selectedMerchant?.name || '読み込み中...'}
                   </div>
-                  <p className="text-xs text-gray-500">自身の会社が設定されています（変更不可）</p>
+                  <p className="text-xs text-gray-500">自身の事業者が設定されています（変更不可）</p>
                 </div>
                 
-                {/* 会社アカウント：店舗選択 */}
+                {/* 事業者アカウント：店舗選択 */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    店舗 <span className="text-red-500">*</span>
+                    店舗名 <span className="text-red-500">*</span>
                   </label>
                   {selectedShop && (
                     <div className="mb-2 text-sm text-gray-900">
@@ -481,15 +495,15 @@ function CouponNewPageContent() {
             
             {isShopAccount && (
               <>
-                {/* 店舗アカウント：会社名表示（変更不可） */}
+                {/* 店舗アカウント：事業者名表示（変更不可） */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    会社 <span className="text-red-500">*</span>
+                    事業者 <span className="text-red-500">*</span>
                   </label>
                   <div className="text-sm text-gray-900 mb-1">
                     {selectedMerchant?.name || '読み込み中...'}
                   </div>
-                  <p className="text-xs text-gray-500">自身の会社が設定されています（変更不可）</p>
+                  <p className="text-xs text-gray-500">自身の事業者が設定されています（変更不可）</p>
                 </div>
                 
                 {/* 店舗アカウント：店舗名表示（変更不可） */}
@@ -593,40 +607,6 @@ function CouponNewPageContent() {
               )}
             </div>
 
-            {/* 公開/非公開 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                公開 / 非公開 <span className="text-red-500">*</span>
-              </label>
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="publishStatus"
-                    value="1"
-                    checked={formData.publishStatus === '1'}
-                    onChange={(e) => handleInputChange('publishStatus', e.target.value)}
-                    className="mr-2 text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">公開する</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="publishStatus"
-                    value="2"
-                    checked={formData.publishStatus === '2'}
-                    onChange={(e) => handleInputChange('publishStatus', e.target.value)}
-                    className="mr-2 text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">公開しない</span>
-                </label>
-              </div>
-              {errors.publishStatus && (
-                <p className="mt-1 text-sm text-red-500">{errors.publishStatus}</p>
-              )}
-            </div>
-
             {/* アクションボタン */}
             <div className="flex justify-center space-x-4 pt-6">
               <Button
@@ -644,7 +624,7 @@ function CouponNewPageContent() {
                 disabled={isSubmitting}
                 className="px-8"
               >
-                {isSubmitting ? '処理中...' : '登録内容を確認する'}
+                {isSubmitting ? '処理中...' : (isMerchantAccount ? '申請する' : '登録内容を確認する')}
               </Button>
             </div>
           </div>

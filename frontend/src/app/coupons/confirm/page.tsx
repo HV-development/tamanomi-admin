@@ -66,7 +66,8 @@ function CouponConfirmPageContent() {
         description: couponData.couponContent || null,
         conditions: couponData.couponConditions || null,
         imageUrl: couponData.imageUrl || null,
-        status: (couponData.publishStatus === '1' ? 'active' : 'inactive') as CouponStatus
+        status: (couponData.publishStatus === '1' ? 'approved' : 'pending') as CouponStatus,
+        isPublic: couponData.publishStatus === '1'
       };
       
       await apiClient.createCoupon(createData);

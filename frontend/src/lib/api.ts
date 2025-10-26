@@ -42,17 +42,18 @@ class ApiClient {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit & { skipAuthRedirect?: boolean } = {}
   ): Promise<T> {
+    const { skipAuthRedirect, ...fetchOptions } = options;
     const url = `${this.baseUrl}${endpoint}`;
-    console.log('🚀 API Request (via Next.js API Route):', { url, method: options.method || 'GET', endpoint });
+    console.log('🚀 API Request (via Next.js API Route):', { url, method: fetchOptions.method || 'GET', endpoint });
 
     try {
       const response = await fetch(url, {
-        ...options,
+        ...fetchOptions,
         headers: {
           'Content-Type': 'application/json',
-          ...options.headers,
+          ...fetchOptions.headers,
         },
       });
 
@@ -62,19 +63,44 @@ class ApiClient {
           error: { message: 'Failed to parse error response' }
         }));
         
-        // 401/403エラー（認証エラー）の場合はログイン画面へリダイレクト
-        if (response.status === 401 || response.status === 403) {
-          console.warn('🔒 Session timeout or authentication failed: Redirecting to login page');
-          // ローカルストレージをクリア
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          localStorage.removeItem('userData');
-          // ログイン画面へリダイレクト（セッション切れのメッセージ付き）
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login?session=expired';
+        // 401/403エラー（認証エラー）の場合の処理
+        if ((response.status === 401 || response.status === 403) && !skipAuthRedirect) {
+          console.warn('🔒 Authentication failed: Attempting token refresh...');
+          
+          // リフレッシュトークンで自動更新を試行
+          try {
+            await this.refreshToken();
+            console.log('✅ Token refreshed successfully, retrying request...');
+            
+            // リフレッシュ成功後、元のリクエストを再実行
+            const retryResponse = await fetch(url, {
+              ...fetchOptions,
+              headers: {
+                'Content-Type': 'application/json',
+                ...fetchOptions.headers,
+              },
+            });
+            
+            if (!retryResponse.ok) {
+              throw new Error(`Retry failed with status: ${retryResponse.status}`);
+            }
+            
+            return await retryResponse.json();
+          } catch (refreshError) {
+            console.error('❌ Token refresh failed:', refreshError);
+            console.warn('🔒 Redirecting to login page due to refresh failure');
+            
+            // リフレッシュに失敗した場合はログイン画面へリダイレクト
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userData');
+            
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login?session=expired';
+            }
+            
+            return new Promise(() => {}) as Promise<T>;
           }
-          // リダイレクト後はPromiseを返して処理を止める
-          return new Promise(() => {}) as Promise<T>;
         }
         
         // エラーオブジェクトを作成して投げる
@@ -103,6 +129,7 @@ class ApiClient {
     return this.request<LoginResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
+      skipAuthRedirect: true, // ログイン時は自動リダイレクトを無効にする
     });
   }
 
@@ -111,15 +138,35 @@ class ApiClient {
     return this.request<RegisterResponse>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
+      skipAuthRedirect: true, // 登録時は自動リダイレクトを無効にする
     });
   }
 
-  async refreshToken(refreshData: RefreshRequest): Promise<RefreshResponse> {
+  async refreshToken(refreshData?: RefreshRequest): Promise<RefreshResponse> {
     console.log('🔄 API: refreshToken called (via Next.js API Route)');
-    return this.request<RefreshResponse>('/auth/refresh', {
+    
+    // refreshDataが提供されていない場合は、ローカルストレージから取得
+    const refreshTokenValue = refreshData?.refreshToken || localStorage.getItem('refreshToken');
+    
+    if (!refreshTokenValue) {
+      throw new Error('No refresh token available');
+    }
+    
+    const response = await this.request<RefreshResponse>('/auth/refresh', {
       method: 'POST',
-      body: JSON.stringify(refreshData),
+      body: JSON.stringify({ refreshToken: refreshTokenValue }),
+      skipAuthRedirect: true, // トークンリフレッシュ時は自動リダイレクトを無効にする
     });
+    
+    // 新しいトークンをローカルストレージに保存
+    if (response.accessToken) {
+      localStorage.setItem('accessToken', response.accessToken);
+    }
+    if (response.refreshToken) {
+      localStorage.setItem('refreshToken', response.refreshToken);
+    }
+    
+    return response;
   }
 
   async logout(): Promise<void> {
@@ -135,7 +182,15 @@ class ApiClient {
     }
   }
 
-  // 会社関連
+  // アプリケーション関連
+  async getApplications(): Promise<unknown> {
+    console.log('📱 API: getApplications called (via Next.js API Route)');
+    return this.request<unknown>('/applications', {
+      method: 'GET',
+    });
+  }
+
+  // 事業者関連
   async getMerchants(params?: { search?: string; page?: number; limit?: number; status?: string }): Promise<unknown> {
     console.log('🌐 API: getMerchants called (via Next.js API Route)', { params });
     console.log('🔗 API Base URL:', this.baseUrl);
@@ -359,6 +414,99 @@ class ApiClient {
       method: 'DELETE',
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
+  }
+
+  async updateCouponStatus(id: string, statusData: { status: string }): Promise<unknown> {
+    console.log('🔄 API: updateCouponStatus called (via Next.js API Route)', { id, statusData });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/coupons/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(statusData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async updateCouponPublicStatus(id: string, publicStatusData: { isPublic: boolean }): Promise<unknown> {
+    console.log('🌐 API: updateCouponPublicStatus called (via Next.js API Route)', { id, publicStatusData });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/coupons/${id}/public-status`, {
+      method: 'PATCH',
+      body: JSON.stringify(publicStatusData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async updateCouponPublicStatusServerSide(id: string, publicStatusData: { isPublic: boolean }, authToken?: string): Promise<unknown> {
+    console.log('🌐 API: updateCouponPublicStatusServerSide called', { id, publicStatusData, authToken: authToken ? 'present' : 'missing' });
+    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3002/api/v1';
+    
+    try {
+      const response = await fetch(`${backendUrl}/coupons/${id}/public-status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': authToken }),
+        },
+        body: JSON.stringify(publicStatusData),
+      });
+      
+      console.log('📡 Server-side API Response:', { status: response.status, statusText: response.statusText });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('❌ Server-side API Error:', errorData);
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Server-side API Success:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Server-side API Request failed:', error);
+      throw error;
+    }
+  }
+
+  async updateCouponStatusServerSide(id: string, statusData: { status: string }, authToken?: string): Promise<unknown> {
+    console.log('🔄 API: updateCouponStatusServerSide called', { id, statusData, authToken: authToken ? 'present' : 'missing' });
+    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3002/api/v1';
+    
+    try {
+      const response = await fetch(`${backendUrl}/coupons/${id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': authToken }),
+        },
+        body: JSON.stringify(statusData),
+      });
+      
+      console.log('📡 Server-side API Response:', { status: response.status, statusText: response.statusText });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('❌ Server-side API Error:', errorData);
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Server-side API Success:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Server-side API Request failed:', error);
+      throw error;
+    }
+  }
+
+  async issueAccounts(merchantIds: string[]): Promise<{ success: number; failed: number }> {
+    console.log('🎫 API: issueAccounts called', { merchantIds });
+    const token = localStorage.getItem('accessToken');
+    const response = await this.request<{ success: boolean; data: { success: number; failed: number } }>('/merchants/issue-accounts', {
+      method: 'POST',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      body: JSON.stringify({ merchantIds }),
+    });
+    return response.data;
   }
 }
 

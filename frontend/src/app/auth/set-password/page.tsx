@@ -37,7 +37,7 @@ function SetPasswordContent() {
 
       try {
         const response = await fetch(
-          `http://localhost:3002/api/v1/password/verify-token?token=${token}`
+          `/api/password/verify-token?token=${token}`
         );
 
         if (!response.ok) {
@@ -144,7 +144,7 @@ function SetPasswordContent() {
 
     try {
       const response = await fetch(
-        'http://localhost:3002/api/v1/password/set-password',
+        '/api/password/set-password',
         {
           method: 'POST',
           headers: {

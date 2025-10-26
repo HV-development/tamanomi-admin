@@ -2,112 +2,87 @@
 
 import React from 'react';
 import Button from '@/components/atoms/Button';
-import Icon from '@/components/atoms/Icon';
-import { statusOptions } from '@/lib/constants/merchant';
 
 interface FloatingFooterProps {
   selectedCount: number;
-  onStatusChange: (status: string) => void;
-  onExecute: () => void;
-  onIssueAccount: () => void;
-  selectedStatus: string;
-  isExecuting?: boolean;
-  isIssuingAccount?: boolean;
+  onBulkUpdateStatus?: (status: string) => void;
+  isUpdating?: boolean;
 }
-
 
 export default function FloatingFooter({
   selectedCount,
-  onStatusChange,
-  onExecute,
-  onIssueAccount,
-  selectedStatus,
-  isExecuting = false,
-  isIssuingAccount = false
+  onBulkUpdateStatus,
+  isUpdating = false
 }: FloatingFooterProps) {
-  // ステータスカラー関数（MerchantManagementと同じ）
-  const _getStatusColor = (status: string) => {
-    switch (status) {
-      case 'registering': return 'text-blue-600';
-      case 'collection_requested': return 'text-purple-600';
-      case 'approval_pending': return 'text-yellow-600';
-      case 'approval_expired': return 'text-red-600';
-      case 'promotional_materials_preparing': return 'text-orange-600';
-      case 'promotional_materials_shipping': return 'text-indigo-600';
-      case 'operating': return 'text-green-600';
-      case 'active': return 'text-green-600'; // 旧ステータス
-      case 'suspended': return 'text-red-600';
-      case 'terminated': return 'text-gray-600';
-      default: return 'text-gray-600';
-    }
-  };
+  const [pendingStatus, setPendingStatus] = React.useState('');
 
   if (selectedCount === 0) {
     return null;
   }
 
+  const handleStatusChange = () => {
+    if (pendingStatus && onBulkUpdateStatus) {
+      onBulkUpdateStatus(pendingStatus);
+      setPendingStatus(''); // 更新後にリセット
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'registering':
+        return 'text-gray-700';
+      case 'collection_requested':
+        return 'text-yellow-700';
+      case 'approval_pending':
+        return 'text-orange-700';
+      case 'promotional_materials_preparing':
+        return 'text-blue-700';
+      case 'promotional_materials_shipping':
+        return 'text-indigo-700';
+      case 'operating':
+        return 'text-green-700';
+      case 'suspended':
+        return 'text-red-700';
+      case 'terminated':
+        return 'text-gray-500';
+      default:
+        return 'text-gray-700';
+    }
+  };
+
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
       <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="flex items-center justify-center space-x-12">
+        <div className="flex items-center justify-center space-x-6">
           <span className="text-sm font-medium text-gray-700">
             {selectedCount}件選択中
           </span>
 
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2">
-              <label className="text-sm font-medium text-gray-700">
-                ステータス変更:
-              </label>
-              <select
-                value={selectedStatus}
-                onChange={(e) => onStatusChange(e.target.value)}
-                className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 min-w-[140px] ${_getStatusColor(selectedStatus)}`}
-              >
-                {statusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <Button
-              onClick={onExecute}
-              disabled={isExecuting}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm font-medium rounded-lg flex items-center space-x-2"
+          <div className="flex items-center space-x-2">
+            <select
+              value={pendingStatus}
+              onChange={(e) => setPendingStatus(e.target.value)}
+              disabled={isUpdating}
+              className={`px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 ${getStatusColor(pendingStatus)}`}
             >
-              {isExecuting ? (
-                <>
-                  <Icon name="info" size="sm" className="animate-spin" />
-                  <span>実行中...</span>
-                </>
-              ) : (
-                <>
-                  <Icon name="check" size="sm" />
-                  <span>実行</span>
-                </>
-              )}
+              <option value="" className="text-gray-700">ステータスを選択</option>
+              <option value="registering" className="text-gray-700">登録中</option>
+              <option value="collection_requested" className="text-yellow-700">情報収集依頼済み</option>
+              <option value="approval_pending" className="text-orange-700">承認待ち</option>
+              <option value="promotional_materials_preparing" className="text-blue-700">宣材作成中</option>
+              <option value="promotional_materials_shipping" className="text-indigo-700">宣材配送中</option>
+              <option value="operating" className="text-green-700">運営中</option>
+              <option value="suspended" className="text-red-700">停止中</option>
+              <option value="terminated" className="text-gray-500">終了</option>
+            </select>
+            <Button
+              onClick={handleStatusChange}
+              disabled={isUpdating || !pendingStatus}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              更新
             </Button>
           </div>
-
-          <Button
-            onClick={onIssueAccount}
-            disabled={isIssuingAccount}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium rounded-lg flex items-center space-x-2"
-          >
-            {isIssuingAccount ? (
-              <>
-                <Icon name="info" size="sm" className="animate-spin" />
-                <span>発行中...</span>
-              </>
-            ) : (
-              <>
-                <Icon name="users" size="sm" />
-                <span>アカウント発行</span>
-              </>
-            )}
-          </Button>
         </div>
       </div>
     </div>

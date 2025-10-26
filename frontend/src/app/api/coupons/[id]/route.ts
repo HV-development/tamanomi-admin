@@ -20,7 +20,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
     console.log('🎟️ API Route: Get coupon request received', { couponId: id });
     
-    const response = await fetch(`${API_BASE_URL}/coupons/`, {
+    const response = await fetch(`${API_BASE_URL}/coupons/${id}`, {
       method: 'GET',
       headers: getAuthHeaders(request),
     });
@@ -47,7 +47,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const body = await request.json();
     console.log('✏️ API Route: Update coupon request received', { couponId: id, title: body.title });
     
-    const response = await fetch(`${API_BASE_URL}/coupons/`, {
+    const response = await fetch(`${API_BASE_URL}/coupons/${id}`, {
       method: 'PATCH',
       headers: getAuthHeaders(request),
       body: JSON.stringify(body),

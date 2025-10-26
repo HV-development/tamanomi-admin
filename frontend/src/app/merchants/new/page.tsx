@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import ToastContainer from '@/components/molecules/toast-container';
 import { useToast } from '@/hooks/use-toast';
-import { validateMerchantField, validateMerchantForm, type MerchantFormData } from '@hv-development/schemas';
+import { validateMerchantField, type MerchantFormData } from '@hv-development/schemas';
+import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-search';
+import { useAuth } from '@/components/contexts/auth-context';
 
 const prefectures = [
   '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
@@ -19,9 +21,21 @@ const prefectures = [
   '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'
 ];
 
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic';
+
 export default function MerchantNewPage() {
   const router = useRouter();
+  const auth = useAuth();
   const { toasts, removeToast, showSuccess, showError } = useToast();
+  
+  // 事業者アカウントの場合はアクセス拒否
+  useEffect(() => {
+    if (auth?.user?.accountType === 'merchant') {
+      router.push('/merchants');
+      return;
+    }
+  }, [auth, router]);
   
   // フォームデータに追加のフィールドを含める
   const [formData, setFormData] = useState<MerchantFormData & { email: string }>({
@@ -38,20 +52,45 @@ export default function MerchantNewPage() {
     city: '',
     address1: '',
     address2: '',
+    applications: [],
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string>('');
-  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  const [issueAccount, setIssueAccount] = useState(true); // アカウント発行チェックボックス
+  
+  // 住所検索フック
+  const { isSearching: isSearchingAddress, searchAddress } = useAddressSearch(
+    (result) => {
+      setFormData(prev => applyAddressSearchResult(prev, result));
+      // 住所フィールドのエラーをクリア
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.prefecture;
+        delete newErrors.city;
+        delete newErrors.address1;
+        return newErrors;
+      });
+      showSuccess('住所を取得しました');
+    },
+    (error) => {
+      setErrors(prev => ({ ...prev, postalCode: error }));
+      showError(error);
+    }
+  );
   
   const fieldRefs = useRef<{ [key: string]: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null }>({});
 
+  // エラー状態の変更を監視
+  useEffect(() => {
+    console.log('🔍 Errors state changed:', errors);
+  }, [errors]);
 
   const handleInputChange = (field: keyof (MerchantFormData & { email: string }), value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     
-    // リアルタイムバリデーション（emailフィールドは個別にバリデーション）
+    // リアルタイムバリデーション（emailとapplicationsフィールドは個別にバリデーション）
     if (field === 'email') {
       // emailの簡易バリデーション
       if (!value.trim()) {
@@ -62,6 +101,18 @@ export default function MerchantNewPage() {
         setErrors((prev) => {
           const newErrors = { ...prev };
           delete newErrors.email;
+          return newErrors;
+        });
+      }
+    } else if (field === 'applications') {
+      // applicationsフィールドの簡易バリデーション
+      const apps = value.split(',').filter(app => app.trim() !== '');
+      if (apps.length === 0) {
+        setErrors((prev) => ({ ...prev, applications: '少なくとも1つのアプリケーションを選択してください' }));
+      } else {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.applications;
           return newErrors;
         });
       }
@@ -84,9 +135,10 @@ export default function MerchantNewPage() {
     
     if (field === 'email') {
       // emailの簡易バリデーション
-      if (!value || !value.trim()) {
+      const emailValue = value as string;
+      if (!emailValue || !emailValue.trim()) {
         setErrors((prev) => ({ ...prev, email: 'メールアドレスは必須です' }));
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
         setErrors((prev) => ({ ...prev, email: '有効なメールアドレスを入力してください' }));
       } else {
         setErrors((prev) => {
@@ -95,8 +147,8 @@ export default function MerchantNewPage() {
           return newErrors;
         });
       }
-    } else {
-      const error = validateMerchantField(field as keyof MerchantFormData, value || '');
+    } else if (field !== 'applications') {
+      const error = validateMerchantField(field as keyof MerchantFormData, (value as string) || '');
       if (error) {
         setErrors((prev) => ({ ...prev, [field]: error }));
       } else {
@@ -110,60 +162,60 @@ export default function MerchantNewPage() {
   };
 
   const handleZipcodeSearch = async () => {
-    // 郵便番号の存在チェック
-    if (formData.postalCode.length !== 7) {
-      showError('郵便番号を正しく入力してください（7桁の数字）');
-      return;
-    }
-
-    setIsSearchingAddress(true);
-
-    try {
-      const response = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${formData.postalCode}`);
-      const data = await response.json();
-
-      if (data.status === 200 && data.results && data.results.length > 0) {
-        const result = data.results[0];
-        setFormData((prev) => ({
-          ...prev,
-          prefecture: result.address1,
-          city: result.address2,
-          address1: result.address3,
-        }));
-        
-        // エラーをクリア
-        setErrors(prev => {
-          const newErrors = { ...prev };
-          delete newErrors.prefecture;
-          delete newErrors.city;
-          delete newErrors.address1;
-          return newErrors;
-        });
-        showSuccess('住所を取得しました');
-      } else {
-        const newErrors = { ...errors };
-        newErrors.postalCode = '入力された郵便番号は存在しません';
-        setErrors(newErrors);
-        showError('該当する住所が見つかりませんでした');
-      }
-    } catch (error) {
-      console.error('住所検索エラー:', error);
-      showError('住所検索に失敗しました');
-    } finally {
-      setIsSearchingAddress(false);
-    }
+    await searchAddress(formData.postalCode);
   };
 
   const validateFormData = (): boolean => {
-    const validationError = validateMerchantForm(formData);
-    
-    if (validationError) {
-      // バリデーションエラーがある場合
-      setErrors({ general: validationError });
+    console.log('🔍 Validating form data:', formData);
+    const fieldErrors: Record<string, string> = {};
+    let hasErrors = false;
+
+    // 各フィールドを個別にバリデーション
+    const fieldsToValidate: (keyof MerchantFormData)[] = [
+      'name',
+      'nameKana', 
+      'representativeNameLast',
+      'representativeNameFirst',
+      'representativeNameLastKana',
+      'representativeNameFirstKana',
+      'representativePhone',
+      'postalCode',
+      'prefecture',
+      'city',
+      'address1'
+    ];
+
+    fieldsToValidate.forEach(field => {
+      const value = (formData[field] as string) || '';
+      const error = validateMerchantField(field, value);
+      if (error) {
+        fieldErrors[field] = error;
+        hasErrors = true;
+        console.log(`❌ ${field} validation failed:`, error);
+      }
+    });
+
+    // emailフィールドの個別バリデーション
+    if (!formData.email.trim()) {
+      fieldErrors.email = 'メールアドレスは必須です';
+      hasErrors = true;
+      console.log('❌ Email validation failed: empty');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      fieldErrors.email = '有効なメールアドレスを入力してください';
+      hasErrors = true;
+      console.log('❌ Email validation failed: invalid format');
+    }
+
+    console.log('🔍 Validation result:', { hasErrors, fieldErrors });
+
+    if (hasErrors) {
+      console.log('🚨 Setting errors:', fieldErrors);
+      setErrors(fieldErrors);
       return false;
     }
     
     // バリデーション成功
+    console.log('✅ Validation successful');
     setErrors({});
     return true;
   };
@@ -173,7 +225,10 @@ export default function MerchantNewPage() {
     e.preventDefault();
     setServerError('');
     
+    console.log('📝 Form submit started, current errors:', errors);
+    
     if (!validateFormData()) {
+      console.log('❌ Validation failed, stopping submit');
       return;
     }
 
@@ -196,6 +251,7 @@ export default function MerchantNewPage() {
         city: formData.city,
         address1: formData.address1,
         address2: formData.address2 || undefined,
+        issueAccount, // アカウント発行フラグ
       };
       
       console.log('📤 Sending merchant data:', requestData);
@@ -253,8 +309,10 @@ export default function MerchantNewPage() {
             setServerError(errorData.error?.message || errorData.message || '入力内容に誤りがあります');
           }
         } else {
-          // その他のエラーの場合
-          showError(errorData.message || '登録中にエラーが発生しました');
+          // その他のエラーの場合（409 Conflictなど）
+          console.error('Error data:', errorData);
+          const errorMessage = errorData.error?.message || errorData.message || '登録中にエラーが発生しました';
+          showError(errorMessage);
         }
         return;
       }
@@ -284,9 +342,9 @@ export default function MerchantNewPage() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">会社新規登録</h1>
+              <h1 className="text-2xl font-bold text-gray-900">事業者新規登録</h1>
               <p className="text-gray-600">
-                新しい会社を登録します
+                新しい事業者を登録します
               </p>
             </div>
             <div className="text-sm text-gray-600">
@@ -311,15 +369,15 @@ export default function MerchantNewPage() {
         )}
 
         {/* フォーム */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" suppressHydrationWarning>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-lg font-medium text-gray-900 mb-6">基本情報</h3>
             
             <div className="space-y-6">
-              {/* 会社名 / 会社名 */}
+              {/* 事業者名 / 代表店舗名 */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  会社名 / 会社名 <span className="text-red-500">*</span>
+                  事業者名 / 代表店舗名 <span className="text-red-500">*</span>
                 </label>
                 <input
                   ref={(el) => { fieldRefs.current.name = el; }}
@@ -331,7 +389,7 @@ export default function MerchantNewPage() {
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.name ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="会社名 / 会社名を入力してください"
+                  placeholder="事業者名 / 代表店舗名を入力してください"
                 />
                 <div className="mt-1 flex justify-between items-center">
                   {errors.name ? (
@@ -343,10 +401,10 @@ export default function MerchantNewPage() {
                 </div>
               </div>
 
-              {/* 会社名（カナ） */}
+              {/* 事業者名（カナ） */}
               <div>
                 <label htmlFor="nameKana" className="block text-sm font-medium text-gray-700 mb-2">
-                  会社名（カナ） <span className="text-red-500">*</span>
+                  事業者名（カナ） <span className="text-red-500">*</span>
                 </label>
                 <input
                   ref={(el) => { fieldRefs.current.nameKana = el; }}
@@ -358,7 +416,7 @@ export default function MerchantNewPage() {
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.nameKana ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="会社名（カナ）を入力してください"
+                  placeholder="事業者名（カナ）を入力してください"
                 />
                 <div className="mt-1 flex justify-between items-center">
                   {errors.nameKana ? (
@@ -533,6 +591,20 @@ export default function MerchantNewPage() {
                   )}
                   <p className="text-sm text-gray-500">{formData.email.length} / 255</p>
                 </div>
+              </div>
+
+              {/* アカウント発行チェックボックス */}
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="issueAccount"
+                  checked={issueAccount}
+                  onChange={(e) => setIssueAccount(e.target.checked)}
+                  className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                />
+                <label htmlFor="issueAccount" className="ml-2 text-sm font-medium text-gray-700">
+                  アカウントを発行する（パスワード設定メールを送信）
+                </label>
               </div>
             </div>
           </div>

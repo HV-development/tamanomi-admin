@@ -10,6 +10,10 @@ import Icon from '@/components/atoms/Icon';
 import { apiClient } from '@/lib/api';
 import type { CouponWithShop, CouponStatus, CouponListResponse } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
+import { useToast } from '@/hooks/use-toast';
+import ToastContainer from '@/components/molecules/toast-container';
+import Checkbox from '@/components/atoms/Checkbox';
+import CouponBulkUpdateFooter from '@/components/molecules/coupon-bulk-update-footer';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -27,10 +31,11 @@ type PaginationData = CouponListResponse['pagination'];
 
 export default function CouponsPage() {
   const auth = useAuth();
+  const { toasts, removeToast, showSuccess, showError } = useToast();
   const isShopAccount = auth?.user?.accountType === 'shop';
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
   const shopId = isShopAccount ? auth?.user?.shopId : undefined; // 店舗アカウントの場合は自身のshopIdを使用
-  const merchantId = isMerchantAccount ? auth?.user?.merchantId : undefined; // 会社アカウントの場合は自身のmerchantIdを使用
+  const merchantId = isMerchantAccount ? auth?.user?.merchantId : undefined; // 事業者アカウントの場合は自身のmerchantIdを使用
   const router = useRouter();
   const [shop, setShop] = useState<Shop | null>(null);
   const [coupons, setCoupons] = useState<CouponWithShop[]>([]);
@@ -53,6 +58,12 @@ export default function CouponsPage() {
   const [appliedStatusFilter, setAppliedStatusFilter] = useState<'all' | CouponStatus>('all');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
+  // チェックボックス関連の状態
+  const [selectedCoupons, setSelectedCoupons] = useState<Set<string>>(new Set());
+  const [isAllSelected, setIsAllSelected] = useState(false);
+  const [isIndeterminate, setIsIndeterminate] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
   // クーポン一覧の取得
   const fetchCoupons = async () => {
     try {
@@ -67,7 +78,7 @@ export default function CouponsPage() {
         params.append('shopId', shopId);
       }
       
-      // 会社アカウントの場合
+      // 事業者アカウントの場合
       if (merchantId) {
         console.log('🔍 CouponsPage: Fetching coupons for merchantId:', merchantId);
         params.append('merchantId', merchantId);
@@ -81,7 +92,7 @@ export default function CouponsPage() {
         params.append('status', appliedStatusFilter);
       }
 
-      const data: any = await apiClient.getCoupons(params.toString());
+      const data: { coupons: CouponWithShop[]; pagination: PaginationData } = await apiClient.getCoupons(params.toString()) as { coupons: CouponWithShop[]; pagination: PaginationData };
       console.log('✅ CouponsPage: Coupons fetched:', data.coupons?.length || 0);
       setCoupons(data.coupons || []);
       setPagination(data.pagination || pagination);
@@ -142,29 +153,179 @@ export default function CouponsPage() {
     setAppliedStatusFilter('all');
   };
 
-  const _getStatusLabel = (status: CouponStatus) => {
+  const handleStatusChange = async (couponId: string, status: string) => {
+    try {
+      await apiClient.updateCouponStatus(couponId, { status: status as CouponStatus });
+      showSuccess('ステータスを更新しました');
+      fetchCoupons();
+    } catch (error) {
+      console.error('ステータスの更新に失敗しました:', error);
+      showError('ステータスの更新に失敗しました');
+    }
+  };
+
+  const handlePublicStatusChange = async (couponId: string, isPublic: boolean) => {
+    try {
+      await apiClient.updateCouponPublicStatus(couponId, { isPublic });
+      showSuccess('公開ステータスを更新しました');
+      fetchCoupons();
+    } catch (error) {
+      console.error('公開ステータスの更新に失敗しました:', error);
+      showError('公開ステータスの更新に失敗しました');
+    }
+  };
+
+  const _getStatusLabel = (status: string) => {
     switch (status) {
-      case 'active':
-        return '有効';
-      case 'inactive':
-        return '無効';
-      case 'expired':
-        return '期限切れ';
+      case 'pending':
+        return '申請中';
+      case 'approved':
+        return '承認済み';
+      case 'suspended':
+        return '停止中';
       default:
         return status;
     }
   };
 
-  const _getStatusColor = (status: CouponStatus) => {
+  const _getStatusColor = (status: string) => {
     switch (status) {
-      case 'active':
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'approved':
         return 'bg-green-100 text-green-800';
-      case 'inactive':
-        return 'bg-gray-100 text-gray-800';
-      case 'expired':
+      case 'suspended':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const _getStatusSelectColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'text-yellow-700';
+      case 'approved':
+        return 'text-green-700';
+      case 'suspended':
+        return 'text-red-700';
+      default:
+        return 'text-gray-700';
+    }
+  };
+
+  const _getPublicStatusSelectColor = (isPublic: boolean) => {
+    if (isPublic) {
+      return 'text-blue-700';
+    } else {
+      return 'text-red-700';
+    }
+  };
+
+  // チェックボックス関連の関数
+  useEffect(() => {
+    const allCount = filteredCoupons.length;
+    const selectedCount = selectedCoupons.size;
+    setIsAllSelected(allCount > 0 && selectedCount === allCount);
+    setIsIndeterminate(selectedCount > 0 && selectedCount < allCount);
+  }, [selectedCoupons, filteredCoupons]);
+
+  const handleToggleAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedCoupons(new Set(filteredCoupons.map(coupon => coupon.id)));
+    } else {
+      setSelectedCoupons(new Set());
+    }
+  };
+
+  const handleToggleCoupon = (couponId: string, checked: boolean) => {
+    const newSelected = new Set(selectedCoupons);
+    if (checked) {
+      newSelected.add(couponId);
+    } else {
+      newSelected.delete(couponId);
+    }
+    setSelectedCoupons(newSelected);
+  };
+
+  // 一括更新関数
+  const handleBulkUpdateStatus = async (status: string) => {
+    setIsUpdating(true);
+    try {
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const couponId of selectedCoupons) {
+        try {
+          await apiClient.updateCouponStatus(couponId, { status: status as CouponStatus });
+          successCount++;
+        } catch (error) {
+          console.error(`クーポン ${couponId} の更新に失敗:`, error);
+          failCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        showSuccess(`${successCount}件のステータスを更新しました`);
+      }
+      if (failCount > 0) {
+        showError(`${failCount}件の更新に失敗しました`);
+      }
+
+      setSelectedCoupons(new Set());
+      fetchCoupons();
+    } catch (error) {
+      console.error('一括更新に失敗しました:', error);
+      showError('一括更新に失敗しました');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleBulkUpdatePublicStatus = async (isPublic: boolean) => {
+    setIsUpdating(true);
+    try {
+      let successCount = 0;
+      let excludedCount = 0;
+      let failCount = 0;
+
+      for (const couponId of selectedCoupons) {
+        const coupon = filteredCoupons.find(c => c.id === couponId);
+        
+        // 未承認のクーポンをチェック（全アカウント共通）
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const couponStatus = (coupon as any)?.status;
+        if (coupon && couponStatus !== 'approved' && isPublic) {
+          excludedCount++;
+          continue;
+        }
+
+        try {
+          await apiClient.updateCouponPublicStatus(couponId, { isPublic });
+          successCount++;
+        } catch (error) {
+          console.error(`クーポン ${couponId} の更新に失敗:`, error);
+          failCount++;
+        }
+      }
+
+      if (excludedCount > 0) {
+        showError(`${excludedCount}件の未承認クーポンは除外されました`);
+      }
+      if (successCount > 0) {
+        showSuccess(`${successCount}件の公開ステータスを更新しました`);
+      }
+      if (failCount > 0) {
+        showError(`${failCount}件の更新に失敗しました`);
+      }
+
+      setSelectedCoupons(new Set());
+      fetchCoupons();
+    } catch (error) {
+      console.error('一括更新に失敗しました:', error);
+      showError('一括更新に失敗しました');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -323,22 +484,32 @@ export default function CouponsPage() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="pl-6 pr-0 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                    <Checkbox
+                      checked={isAllSelected}
+                      indeterminate={isIndeterminate}
+                      onChange={handleToggleAll}
+                    />
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
                     アクション
                   </th>
-                  <th className="pl-2 pr-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    会社名
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  事業者名
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     店舗名
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
                     クーポン名
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ステータス
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px]">
+                    承認ステータス
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px]">
+                    公開ステータス
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[160px]">
                     作成日時
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -349,33 +520,67 @@ export default function CouponsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredCoupons.map((coupon) => (
                   <tr key={coupon.id} className="hover:bg-gray-50">
-                    <td className="pl-6 pr-0 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-1">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Checkbox
+                        checked={selectedCoupons.has(coupon.id)}
+                        onChange={(checked) => handleToggleCoupon(coupon.id, checked)}
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium min-w-[120px]">
+                      <div className="flex items-center gap-2">
                         <Link href={`/coupons/${coupon.id}/edit`}>
-                          <button className="p-1 transition-opacity hover:opacity-70">
+                          <button className="p-1 transition-opacity hover:opacity-70 cursor-pointer">
                             <Image src="/edit.svg" alt="編集" width={24} height={24} />
                           </button>
                         </Link>
                         <Link href={`/coupons/${coupon.id}/history`}>
-                          <button className="p-1 pl-6 transition-opacity hover:opacity-70">
+                          <button className="p-1 transition-opacity hover:opacity-70 cursor-pointer">
                             <Image src="/history.png" alt="利用履歴" width={24} height={24} />
                           </button>
                         </Link>
                       </div>
                     </td>
-                    <td className="pl-2 pr-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{coupon.shop?.merchant?.name || '-'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{coupon.shop?.name || '-'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                       <div className="text-sm text-gray-900">{coupon.title}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{_getStatusLabel(coupon.status)}</div>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
+                      {isMerchantAccount ? (
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        <span className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium ${_getStatusSelectColor((coupon as any).status)}`}>
+                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                          {(coupon as any).status === 'pending' ? '申請中' : (coupon as any).status === 'approved' ? '承認済み' : '停止中'}
+                        </span>
+                      ) : (
+                        <select
+                          value={coupon.status}
+                          onChange={(e) => handleStatusChange(coupon.id, e.target.value)}
+                          className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[120px] ${_getStatusSelectColor(coupon.status)}`}
+                        >
+                          <option value="pending">申請中</option>
+                          <option value="approved">承認済み</option>
+                          <option value="suspended">停止中</option>
+                        </select>
+                      )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      <select
+                        value={(coupon as any).isPublic ? 'true' : 'false'}
+                        onChange={(e) => handlePublicStatusChange(coupon.id, e.target.value === 'true')}
+                        disabled={isMerchantAccount && (coupon as any).status !== 'approved'}
+                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[100px] ${_getPublicStatusSelectColor((coupon as any).isPublic)} ${isMerchantAccount && (coupon as any).status !== 'approved' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <option value="true">公開中</option>
+                        <option value="false">非公開</option>
+                      </select>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[160px]">
                       <div className="text-sm text-gray-900">{new Date(coupon.createdAt).toLocaleString('ja-JP')}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -396,6 +601,20 @@ export default function CouponsPage() {
           )}
         </div>
       </div>
+      <CouponBulkUpdateFooter
+        selectedCount={selectedCoupons.size}
+        isAdminAccount={!isMerchantAccount && !isShopAccount}
+        isMerchantAccount={isMerchantAccount}
+        onBulkUpdateStatus={handleBulkUpdateStatus}
+        onBulkUpdatePublicStatus={handleBulkUpdatePublicStatus}
+        isUpdating={isUpdating}
+        unapprovedCount={Array.from(selectedCoupons).filter(couponId => {
+          const coupon = filteredCoupons.find(c => c.id === couponId);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return coupon && (coupon as any).status !== 'approved';
+        }).length}
+      />
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
   );
 }

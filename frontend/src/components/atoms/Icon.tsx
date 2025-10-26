@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 interface IconProps {
   name: string;
   size?: 'sm' | 'md' | 'lg';
@@ -41,6 +43,35 @@ const iconMap: Record<string, { type: 'emoji' | 'material' | 'image'; value: str
 };
 
 export default function Icon({ name, size = 'md', className = '' }: IconProps) {
+  const [isFontLoaded, setIsFontLoaded] = useState(false);
+
+  useEffect(() => {
+    // Material Iconsフォントの読み込み状態をチェック
+    const checkFontLoaded = () => {
+      if (document.fonts && document.fonts.check) {
+        // document.fonts.check()が利用可能な場合
+        const isLoaded = document.fonts.check('24px "Material Symbols Outlined"');
+        setIsFontLoaded(isLoaded);
+        
+        if (!isLoaded) {
+          // フォントがまだ読み込まれていない場合、読み込み完了を待つ
+          document.fonts.ready.then(() => {
+            setIsFontLoaded(true);
+          });
+        }
+      } else {
+        // document.fonts.check()が利用できない場合、少し待ってから表示
+        const timer = setTimeout(() => {
+          setIsFontLoaded(true);
+        }, 100);
+        
+        return () => clearTimeout(timer);
+      }
+    };
+
+    checkFontLoaded();
+  }, []);
+
   const sizeClasses = {
     sm: 'text-sm leading-none',
     md: 'text-lg leading-none',
@@ -64,6 +95,20 @@ export default function Icon({ name, size = 'md', className = '' }: IconProps) {
   }
 
   if (icon.type === 'material') {
+    // フォントが読み込まれていない場合は非表示
+    if (!isFontLoaded) {
+      return (
+        <span 
+          className={`inline-block ${sizeClasses[size]} ${className}`}
+          style={{ 
+            width: size === 'sm' ? '16px' : size === 'md' ? '20px' : '24px',
+            height: size === 'sm' ? '16px' : size === 'md' ? '20px' : '24px',
+            backgroundColor: 'transparent'
+          }}
+        />
+      );
+    }
+
     return (
       <span 
         className={`material-symbols-outlined inline-block align-text-bottom ${sizeClasses[size]} ${className}`}
