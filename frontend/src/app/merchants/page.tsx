@@ -8,7 +8,6 @@ import Button from '@/components/atoms/Button';
 import Checkbox from '@/components/atoms/Checkbox';
 import ToastContainer from '@/components/molecules/toast-container';
 import FloatingFooter from '@/components/molecules/floating-footer';
-import AccountIssueConfirmModal from '@/components/molecules/account-issue-confirm-modal';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { prefectures } from '@/lib/constants/merchant';
@@ -44,8 +43,9 @@ export default function MerchantsPage() {
   const [selectedMerchants, setSelectedMerchants] = useState<Set<string>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [isIndeterminate, setIsIndeterminate] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('active');
+  const [isExecuting, setIsExecuting] = useState(false);
   const [isIssuingAccount, setIsIssuingAccount] = useState(false);
-  const [showAccountIssueModal, setShowAccountIssueModal] = useState(false);
   
   const [searchForm, setSearchForm] = useState({
     merchantId: '',
@@ -56,7 +56,6 @@ export default function MerchantsPage() {
     postalCode: '',
     address: '',
     prefecture: '',
-    accountNotIssued: false,
   });
   const [appliedSearchForm, setAppliedSearchForm] = useState({
     merchantId: '',
@@ -67,23 +66,15 @@ export default function MerchantsPage() {
     postalCode: '',
     address: '',
     prefecture: '',
-    accountNotIssued: false,
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // データ取得
   useEffect(() => {
     let isMounted = true;
-    let hasFetched = false;
     const abortController = new AbortController();
 
     const fetchMerchants = async () => {
-      // 重複実行を防止
-      if (hasFetched) {
-        console.log('🔍 MerchantsPage: Already fetched, skipping...');
-        return;
-      }
-      hasFetched = true;
       try {
         setIsLoading(true);
         setError(null);
@@ -108,9 +99,7 @@ export default function MerchantsPage() {
           return;
         }
         
-        console.log('🔍 MerchantsPage: Starting to fetch merchants data');
         const data = await apiClient.getMerchants();
-        console.log('🔍 MerchantsPage: API call completed, data received');
         
         // コンポーネントがアンマウントされている場合は処理を中断
         if (!isMounted) return;
@@ -215,6 +204,10 @@ export default function MerchantsPage() {
     }
   };
 
+  const handleStatusChange = (status: string) => {
+    setSelectedStatus(status);
+  };
+
   const handleResendRegistration = async (merchantId: string) => {
     if (!confirm('登録用URLを再発行しますか？')) {
       return;
@@ -229,17 +222,30 @@ export default function MerchantsPage() {
     }
   };
 
+  const handleExecute = async () => {
+    if (selectedMerchants.size === 0) return;
+
+    setIsExecuting(true);
+    try {
+      // 一括処理（今後実装予定）
+      await new Promise(resolve => setTimeout(resolve, 1500)); // 模擬APIコール
+      showSuccess(`${selectedMerchants.size}件の会社に対して処理を実行しました`);
+      
+      // 選択をクリア
+      setSelectedMerchants(new Set());
+      setIsAllSelected(false);
+      setIsIndeterminate(false);
+    } catch (error: unknown) {
+      console.error('一括処理エラー:', error);
+      showError('一括処理に失敗しました');
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
   const handleIssueAccount = async () => {
     if (selectedMerchants.size === 0) return;
 
-    // アカウント発行確認モーダルを表示
-    setShowAccountIssueModal(true);
-  };
-
-  const handleConfirmAccountIssue = async () => {
-    if (selectedMerchants.size === 0) return;
-
-    setShowAccountIssueModal(false);
     setIsIssuingAccount(true);
     try {
       // アカウント発行処理（実装は後で）
@@ -259,10 +265,6 @@ export default function MerchantsPage() {
     }
   };
 
-  const handleCancelAccountIssue = () => {
-    setShowAccountIssueModal(false);
-  };
-
   const getAccountStatusLabel = (status: string) => {
     switch (status) {
       case 'active': return '契約中';
@@ -271,17 +273,6 @@ export default function MerchantsPage() {
       case 'terminated': return '終了';
       default: return status;
     }
-  };
-
-  // 選択された会社のアカウント発行済み数を取得
-  const getExistingAccountCount = () => {
-    const selectedMerchantList = Array.from(selectedMerchants);
-    const existingAccounts = selectedMerchantList.filter(merchantId => {
-      const merchant = filteredMerchants.find(m => m.id === merchantId);
-      return merchant && merchant.account && merchant.account.status === 'active';
-    });
-    
-    return existingAccounts.length;
   };
 
   const getAccountStatusColor = (status: string) => {
@@ -307,26 +298,14 @@ export default function MerchantsPage() {
       (appliedSearchForm.address === '' || 
         `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(appliedSearchForm.address.toLowerCase())) &&
       (appliedSearchForm.prefecture === '' || merchant.prefecture.toLowerCase().includes(appliedSearchForm.prefecture.toLowerCase()));
-
-    // アカウント未発行のフィルタ
-    const matchesAccountFilter = appliedSearchForm.accountNotIssued 
-      ? !merchant.account || merchant.account.status !== 'active'
-      : true;
     
-    return matchesSearch && matchesAccountFilter;
+    return matchesSearch;
   }) : [];
 
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {
     setSearchForm(prev => ({
       ...prev,
       [field]: value
-    }));
-  };
-
-  const handleCheckboxChange = (field: keyof typeof searchForm, checked: boolean) => {
-    setSearchForm(prev => ({
-      ...prev,
-      [field]: checked
     }));
   };
 
@@ -346,7 +325,6 @@ export default function MerchantsPage() {
       postalCode: '',
       address: '',
       prefecture: '',
-      accountNotIssued: false,
     });
     setAppliedSearchForm({
       merchantId: '',
@@ -357,7 +335,6 @@ export default function MerchantsPage() {
       postalCode: '',
       address: '',
       prefecture: '',
-      accountNotIssued: false,
     });
   };
 
@@ -696,25 +673,10 @@ export default function MerchantsPage() {
                 ))}
               </select>
             </div>
-
-            {/* アカウント未発行 */}
-            <div>
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={searchForm.accountNotIssued}
-                  onChange={(e) => handleCheckboxChange('accountNotIssued', e.target.checked)}
-                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                />
-                <span className="ml-2 text-sm text-gray-700">
-                  アカウント未発行のみ
-                </span>
-              </label>
-            </div>
             </div>
 
             {/* 検索・クリアボタン */}
-            <div className="flex justify-center gap-2 mt-6">
+            <div className="flex justify-end gap-2 mt-6">
               <Button variant="outline" onClick={handleClear}>
                 クリア
               </Button>
@@ -741,7 +703,7 @@ export default function MerchantsPage() {
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1320px]">
+            <table className="w-full min-w-[1200px]">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48 whitespace-nowrap">
@@ -759,9 +721,6 @@ export default function MerchantsPage() {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                     代表者名
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
-                    電話番号
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
                     メールアドレス
@@ -825,14 +784,12 @@ export default function MerchantsPage() {
                     <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
                       <div className="text-sm font-medium text-gray-900">{merchant.representativeNameLast} {merchant.representativeNameFirst}</div>
                       <div className="text-sm text-gray-500">{merchant.representativeNameLastKana} {merchant.representativeNameFirstKana}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[120px]">
-                      <div className="text-sm text-gray-900">{merchant.representativePhone}</div>
+                      <div className="text-sm text-gray-500 mt-1">{merchant.representativePhone}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                       <div className="text-sm text-gray-900">{merchant.email}</div>
                     </td>
-                    <td className="px-6 py-4 min-w-[250px]">
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[250px]">
                       <div className="text-sm text-gray-900">
                         〒{merchant.postalCode}<br />
                         {merchant.prefecture}{merchant.city}{merchant.address1}{merchant.address2}
@@ -891,20 +848,15 @@ export default function MerchantsPage() {
       
       <FloatingFooter
         selectedCount={selectedMerchants.size}
+        onStatusChange={handleStatusChange}
+        onExecute={handleExecute}
         onIssueAccount={handleIssueAccount}
+        selectedStatus={selectedStatus}
+        isExecuting={isExecuting}
         isIssuingAccount={isIssuingAccount}
       />
       
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
-      
-      <AccountIssueConfirmModal
-        isOpen={showAccountIssueModal}
-        onClose={handleCancelAccountIssue}
-        onConfirm={handleConfirmAccountIssue}
-        selectedCount={selectedMerchants.size}
-        existingAccountCount={getExistingAccountCount()}
-        isExecuting={isIssuingAccount}
-      />
     </AdminLayout>
   );
 }

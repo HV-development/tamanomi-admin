@@ -46,6 +46,7 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
+    console.log('✅ API Route: Get coupons successful', { count: data.coupons?.length || 0 });
     return NextResponse.json(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Get coupons error', error);

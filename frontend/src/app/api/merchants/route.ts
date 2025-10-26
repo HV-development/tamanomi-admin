@@ -52,18 +52,14 @@ export async function GET(request: Request) {
       responseStatus: response.status,
       dataType: typeof data,
       dataKeys: Object.keys(data),
-      hasSuccess: 'success' in data,
-      hasData: 'data' in data,
-      dataTypeof: typeof data.data,
-      dataDataKeys: data.data ? Object.keys(data.data) : [],
       merchantsCount: data.data?.merchants?.length || data.merchants?.length || 0,
-      firstMerchant: data.data?.merchants?.[0] || data.merchants?.[0] || null,
-      fullResponse: JSON.stringify(data, null, 2)
+      firstMerchant: data.data?.merchants?.[0] || data.merchants?.[0] || null
     });
     console.log('✅ API Route: 会社一覧取得成功', { 
-      count: data.data?.merchants?.length || data.merchants?.length || 0,
+      count: data.merchants?.length || data.length,
       dataStructure: Object.keys(data),
-      merchantsStructure: (data.data?.merchants || data.merchants)?.[0] ? Object.keys((data.data?.merchants || data.merchants)[0]) : 'no merchants'
+      merchantsStructure: data.merchants ? Object.keys(data.merchants[0] || {}) : 'no merchants',
+      fullResponse: JSON.stringify(data, null, 2)
     });
     return NextResponse.json(data);
   } catch (error: unknown) {

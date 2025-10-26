@@ -131,14 +131,6 @@ function CouponEditPageContent() {
         }
         break;
 
-      case 'publishStatus':
-        const publishStatusError = validateRequired(value, '公開 / 非公開');
-        if (publishStatusError) {
-          newErrors.publishStatus = publishStatusError;
-        } else {
-          delete newErrors.publishStatus;
-        }
-        break;
     }
 
     setErrors(newErrors);
@@ -225,9 +217,6 @@ function CouponEditPageContent() {
     const couponContentError = validateRequired(formData.couponContent, 'クーポン内容') || validateMaxLength(formData.couponContent, 100, 'クーポン内容');
     if (couponContentError) newErrors.couponContent = couponContentError;
 
-    const publishStatusError = validateRequired(formData.publishStatus, '公開 / 非公開');
-    if (publishStatusError) newErrors.publishStatus = publishStatusError;
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -239,8 +228,7 @@ function CouponEditPageContent() {
         const updateData: CouponUpdateRequest = {
           title: formData.couponName,
           description: formData.couponContent || null,
-          imageUrl: formData.imageUrl || null,
-          status: (formData.publishStatus === '1' ? 'active' : 'inactive') as CouponStatus
+          imageUrl: formData.imageUrl || null
         };
         
         await apiClient.updateCoupon(couponId, updateData);
@@ -400,40 +388,6 @@ function CouponEditPageContent() {
               </div>
               {errors.couponImage && (
                 <p className="mt-1 text-sm text-red-500">{errors.couponImage}</p>
-              )}
-            </div>
-
-            {/* 公開/非公開 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                公開 / 非公開 <span className="text-red-500">*</span>
-              </label>
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="publishStatus"
-                    value="1"
-                    checked={formData.publishStatus === '1'}
-                    onChange={(e) => handleInputChange('publishStatus', e.target.value)}
-                    className="mr-2 text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">公開する</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="publishStatus"
-                    value="2"
-                    checked={formData.publishStatus === '2'}
-                    onChange={(e) => handleInputChange('publishStatus', e.target.value)}
-                    className="mr-2 text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">公開しない</span>
-                </label>
-              </div>
-              {errors.publishStatus && (
-                <p className="mt-1 text-sm text-red-500">{errors.publishStatus}</p>
               )}
             </div>
 

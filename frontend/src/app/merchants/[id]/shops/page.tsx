@@ -9,22 +9,17 @@ import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/toast-container';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/components/contexts/auth-context';
 import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
 
 export default function MerchantShopsPage() {
   const params = useParams();
   const merchantId = params.id as string;
-  const auth = useAuth();
   const [shops, setShops] = useState<Shop[]>([]);
   const [merchantName, setMerchantName] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
-  
-  // 会社アカウントかどうかを判定
-  const isMerchantAccount = auth?.user?.accountType === 'merchant';
   
   // 検索フォームの状態（拡張版）
   const [searchForm, setSearchForm] = useState({
@@ -248,7 +243,7 @@ export default function MerchantShopsPage() {
           {merchantName && (
             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center">
-                <span className="text-sm font-medium text-gray-700 mr-2">事業者名:</span>
+                <span className="text-sm font-medium text-gray-700 mr-2">会社名:</span>
                 <span className="text-sm font-bold text-gray-900">{merchantName}</span>
               </div>
             </div>
@@ -549,24 +544,18 @@ export default function MerchantShopsPage() {
                     <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
                       <div className="text-sm text-gray-900">{shop.phone}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[220px]">
-                      {isMerchantAccount ? (
-                        <span className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium ${getStatusColor(shop.status)}`}>
-                          {statusOptions.find(opt => opt.value === shop.status)?.label || shop.status}
-                        </span>
-                      ) : (
-                        <select
-                          value={shop.status}
-                          onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
-                          className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full ${getStatusColor(shop.status)}`}
-                        >
-                          {statusOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      )}
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
+                      <select
+                        value={shop.status}
+                        onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
+                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full ${getStatusColor(shop.status)}`}
+                      >
+                        {statusOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                   </tr>
               ))}
