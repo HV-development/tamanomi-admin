@@ -131,20 +131,20 @@ export default function ShopCouponsPage() {
         return '有効';
       case 'inactive':
         return '無効';
-      case 'suspended':
-        return '停止中';
+      case 'expired':
+        return '期限切れ';
       default:
-        return status;
+        return String(status);
     }
   };
 
   const _getStatusColor = (status: CouponStatus) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'approved':
+      case 'active':
         return 'bg-green-100 text-green-800';
-      case 'suspended':
+      case 'inactive':
+        return 'bg-gray-100 text-gray-800';
+      case 'expired':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
