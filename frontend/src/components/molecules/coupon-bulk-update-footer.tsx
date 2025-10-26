@@ -11,6 +11,7 @@ interface CouponBulkUpdateFooterProps {
   onBulkUpdateStatus?: (status: string) => void;
   onBulkUpdatePublicStatus?: (isPublic: boolean) => void;
   isUpdating?: boolean;
+  unapprovedCount?: number; // 未承認クーポンの件数
 }
 
 export default function CouponBulkUpdateFooter({
@@ -19,7 +20,8 @@ export default function CouponBulkUpdateFooter({
   isMerchantAccount,
   onBulkUpdateStatus,
   onBulkUpdatePublicStatus,
-  isUpdating = false
+  isUpdating = false,
+  unapprovedCount = 0
 }: CouponBulkUpdateFooterProps) {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showPublicStatusModal, setShowPublicStatusModal] = useState(false);
@@ -176,6 +178,7 @@ export default function CouponBulkUpdateFooter({
         selectedCount={selectedCount}
         title="公開ステータスの一括変更"
         message={`選択中の${selectedCount}件のクーポンを「${getPublicStatusLabel(pendingPublicStatus)}」に変更しますか？`}
+        unapprovedCount={unapprovedCount}
       />
     </>
   );

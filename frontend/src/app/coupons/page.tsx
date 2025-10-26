@@ -608,6 +608,11 @@ export default function CouponsPage() {
         onBulkUpdateStatus={handleBulkUpdateStatus}
         onBulkUpdatePublicStatus={handleBulkUpdatePublicStatus}
         isUpdating={isUpdating}
+        unapprovedCount={Array.from(selectedCoupons).filter(couponId => {
+          const coupon = filteredCoupons.find(c => c.id === couponId);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return coupon && (coupon as any).status !== 'approved';
+        }).length}
       />
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
