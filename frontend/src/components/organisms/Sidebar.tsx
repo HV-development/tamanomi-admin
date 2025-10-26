@@ -79,7 +79,7 @@ export default function Sidebar() {
     <div className={`bg-white shadow-lg transition-all duration-300 relative flex-shrink-0 ${
       isCollapsed ? 'w-16' : 'w-64'
     } ${!isLoaded ? 'opacity-0' : 'opacity-100'}`}>
-      <SidebarHeader isCollapsed={isCollapsed} />
+      <SidebarHeader isCollapsed={isCollapsed} onToggleCollapse={handleToggleCollapse} />
 
       {/* メニュー */}
       <nav className={`p-4 ${isCollapsed ? 'pt-6' : ''}`}>
@@ -116,15 +116,6 @@ export default function Sidebar() {
           >
             <Icon name="logout" size="md" />
             {!isCollapsed && <span>ログアウト</span>}
-          </button>
-        </div>
-        
-        <div className="p-4 flex justify-end">
-          <button
-            onClick={handleToggleCollapse}
-            className="p-2 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
-          >
-            <Icon name={isCollapsed ? "chevronRight" : "chevronLeft"} size="sm" />
           </button>
         </div>
         
