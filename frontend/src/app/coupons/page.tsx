@@ -292,10 +292,10 @@ export default function CouponsPage() {
       for (const couponId of selectedCoupons) {
         const coupon = filteredCoupons.find(c => c.id === couponId);
         
-        // 会社アカウントの場合、未承認のクーポンをチェック
+        // 未承認のクーポンをチェック（全アカウント共通）
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const couponStatus = (coupon as any)?.status;
-        if (isMerchantAccount && coupon && couponStatus !== 'approved' && isPublic) {
+        if (coupon && couponStatus !== 'approved' && isPublic) {
           excludedCount++;
           continue;
         }
