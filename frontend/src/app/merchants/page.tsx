@@ -7,7 +7,6 @@ import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Checkbox from '@/components/atoms/Checkbox';
 import ToastContainer from '@/components/molecules/toast-container';
-import FloatingFooter from '@/components/molecules/floating-footer';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { prefectures } from '@/lib/constants/merchant';
@@ -43,9 +42,6 @@ export default function MerchantsPage() {
   const [selectedMerchants, setSelectedMerchants] = useState<Set<string>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [isIndeterminate, setIsIndeterminate] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState('active');
-  const [isExecuting, setIsExecuting] = useState(false);
-  const [isIssuingAccount, setIsIssuingAccount] = useState(false);
   
   const [searchForm, setSearchForm] = useState({
     merchantId: '',
@@ -204,9 +200,6 @@ export default function MerchantsPage() {
     }
   };
 
-  const handleStatusChange = (status: string) => {
-    setSelectedStatus(status);
-  };
 
   const handleResendRegistration = async (merchantId: string) => {
     if (!confirm('登録用URLを再発行しますか？')) {
@@ -222,48 +215,7 @@ export default function MerchantsPage() {
     }
   };
 
-  const handleExecute = async () => {
-    if (selectedMerchants.size === 0) return;
 
-    setIsExecuting(true);
-    try {
-      // 一括処理（今後実装予定）
-      await new Promise(resolve => setTimeout(resolve, 1500)); // 模擬APIコール
-      showSuccess(`${selectedMerchants.size}件の会社に対して処理を実行しました`);
-      
-      // 選択をクリア
-      setSelectedMerchants(new Set());
-      setIsAllSelected(false);
-      setIsIndeterminate(false);
-    } catch (error: unknown) {
-      console.error('一括処理エラー:', error);
-      showError('一括処理に失敗しました');
-    } finally {
-      setIsExecuting(false);
-    }
-  };
-
-  const handleIssueAccount = async () => {
-    if (selectedMerchants.size === 0) return;
-
-    setIsIssuingAccount(true);
-    try {
-      // アカウント発行処理（実装は後で）
-      await new Promise(resolve => setTimeout(resolve, 2000)); // 仮の処理
-      
-      showSuccess(`${selectedMerchants.size}件の会社にアカウントを発行しました`);
-      
-      // 選択をクリア
-      setSelectedMerchants(new Set());
-      setIsAllSelected(false);
-      setIsIndeterminate(false);
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
-      showError(`アカウント発行に失敗しました: ${errorMessage}`);
-    } finally {
-      setIsIssuingAccount(false);
-    }
-  };
 
   const getAccountStatusLabel = (status: string) => {
     switch (status) {
@@ -845,16 +797,6 @@ export default function MerchantsPage() {
           )}
         </div>
       </div>
-      
-      <FloatingFooter
-        selectedCount={selectedMerchants.size}
-        onStatusChange={handleStatusChange}
-        onExecute={handleExecute}
-        onIssueAccount={handleIssueAccount}
-        selectedStatus={selectedStatus}
-        isExecuting={isExecuting}
-        isIssuingAccount={isIssuingAccount}
-      />
       
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
