@@ -47,6 +47,7 @@ export default function MerchantEditPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSendingResetEmail, setIsSendingResetEmail] = useState(false);
   
   // 事業者アカウントの場合はアクセス拒否
   useEffect(() => {
@@ -81,7 +82,7 @@ export default function MerchantEditPage() {
     let isMounted = true;
     const abortController = new AbortController();
 
-    const loadMerchantData = async () => {
+    const loadMerchantData = async (retryCount = 0) => {
       try {
         // APIから会社データを取得
         const token = localStorage.getItem('accessToken');
@@ -94,6 +95,13 @@ export default function MerchantEditPage() {
         
         // コンポーネントがアンマウントされている場合は処理を中断
         if (!isMounted) return;
+        
+        // 404エラーの場合は1回だけリトライ
+        if (!response.ok && response.status === 404 && retryCount < 1) {
+          console.log('⚠️ 会社データの取得に失敗、リトライします...', { retryCount });
+          await new Promise(resolve => setTimeout(resolve, 500)); // 500ms待機
+          return loadMerchantData(retryCount + 1);
+        }
         
         if (response.ok) {
           const result = await response.json();
@@ -404,6 +412,33 @@ export default function MerchantEditPage() {
     }
   };
 
+  const handleSendPasswordReset = async () => {
+    if (!confirm('パスワード再設定用のメールを送信しますか？')) {
+      return;
+    }
+    try {
+      setIsSendingResetEmail(true);
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`/api/merchants/${merchantId}/send-password-reset`, {
+        method: 'POST',
+        headers: token ? {
+          'Authorization': `Bearer ${token}`
+        } : {},
+      });
+      if (response.ok) {
+        alert('パスワード再設定メールを送信しました');
+      } else {
+        const errorData = await response.json();
+        alert(`パスワード再設定メールの送信に失敗しました: ${errorData.message || '不明なエラー'}`);
+      }
+    } catch (error) {
+      console.error('Failed to send password reset email:', error);
+      alert('パスワード再設定メールの送信に失敗しました');
+    } finally {
+      setIsSendingResetEmail(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <AdminLayout>
@@ -657,6 +692,7 @@ export default function MerchantEditPage() {
                   <p className="text-sm text-gray-500">{getCharacterCount('email', 255)}</p>
                 </div>
               </div>
+
             </div>
           </div>
 
@@ -814,7 +850,7 @@ export default function MerchantEditPage() {
           </div>
 
           {/* ボタン */}
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-4 items-center">
             <Button
               type="button"
               variant="outline"
@@ -829,6 +865,18 @@ export default function MerchantEditPage() {
             >
               {isSubmitting ? '更新中...' : '更新'}
             </Button>
+            <button
+              type="button"
+              onClick={handleSendPasswordReset}
+              disabled={isSendingResetEmail}
+              className={`px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium text-sm ${
+                isSendingResetEmail
+                  ? 'opacity-50 cursor-not-allowed'
+                  : ''
+              }`}
+            >
+              {isSendingResetEmail ? '送信中...' : 'パスワード再設定メール送信'}
+            </button>
           </div>
         </form>
       </div>

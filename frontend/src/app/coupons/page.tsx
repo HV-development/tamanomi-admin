@@ -450,15 +450,21 @@ export default function CouponsPage() {
                       <div className="text-sm text-gray-900">{coupon.title}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
-                      <select
-                        value={coupon.status}
-                        onChange={(e) => handleStatusChange(coupon.id, e.target.value)}
-                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[120px] ${_getStatusSelectColor(coupon.status)}`}
-                      >
-                        <option value="pending">申請中</option>
-                        <option value="approved">承認済み</option>
-                        <option value="suspended">停止中</option>
-                      </select>
+                      {isMerchantAccount ? (
+                        <span className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium ${_getStatusSelectColor(coupon.status)}`}>
+                          {coupon.status === 'pending' ? '申請中' : coupon.status === 'approved' ? '承認済み' : '停止中'}
+                        </span>
+                      ) : (
+                        <select
+                          value={coupon.status}
+                          onChange={(e) => handleStatusChange(coupon.id, e.target.value)}
+                          className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[120px] ${_getStatusSelectColor(coupon.status)}`}
+                        >
+                          <option value="pending">申請中</option>
+                          <option value="approved">承認済み</option>
+                          <option value="suspended">停止中</option>
+                        </select>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
                       <select

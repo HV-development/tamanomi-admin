@@ -450,10 +450,10 @@ class ApiClient {
   // サーバーサイド用メソッド（localStorageを使用しない）
   async updateCouponStatusServerSide(id: string, statusData: { status: string }, authToken?: string): Promise<unknown> {
     console.log('🔄 API: updateCouponStatusServerSide called', { id, statusData, authToken: authToken ? 'present' : 'missing' });
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://tamanomi-api:3002';
+    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3002/api/v1';
     
     try {
-      const response = await fetch(`${backendUrl}/api/v1/coupons/${id}/status`, {
+      const response = await fetch(`${backendUrl}/coupons/${id}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -481,10 +481,10 @@ class ApiClient {
 
   async updateCouponPublicStatusServerSide(id: string, publicStatusData: { isPublic: boolean }, authToken?: string): Promise<unknown> {
     console.log('🌐 API: updateCouponPublicStatusServerSide called', { id, publicStatusData, authToken: authToken ? 'present' : 'missing' });
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://tamanomi-api:3002';
+    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3002/api/v1';
     
     try {
-      const response = await fetch(`${backendUrl}/api/v1/coupons/${id}/public-status`, {
+      const response = await fetch(`${backendUrl}/coupons/${id}/public-status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
