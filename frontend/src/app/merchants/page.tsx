@@ -787,8 +787,8 @@ export default function MerchantsPage() {
             </div>
 
             {/* 郵便番号、都道府県、住所 */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
+            <div className="flex gap-4">
+              <div className="flex-shrink-0">
                 <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
                   郵便番号
                 </label>
@@ -798,10 +798,10 @@ export default function MerchantsPage() {
                   placeholder="郵便番号を入力"
                   value={searchForm.postalCode}
                   onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                  className="w-full max-w-[120px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-[120px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
               </div>
-              <div>
+              <div className="flex-shrink-0">
                 <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
                   都道府県
                 </label>
@@ -809,7 +809,7 @@ export default function MerchantsPage() {
                   id="prefecture"
                   value={searchForm.prefecture}
                   onChange={(e) => handleInputChange('prefecture', e.target.value)}
-                  className="w-full max-w-[180px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-[180px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 >
                   <option value="">すべて</option>
                   {prefectures.map((pref) => (
@@ -817,7 +817,7 @@ export default function MerchantsPage() {
                   ))}
                 </select>
               </div>
-              <div>
+              <div className="flex-1">
                 <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
                   住所
                 </label>
