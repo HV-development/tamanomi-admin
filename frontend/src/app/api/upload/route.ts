@@ -9,6 +9,9 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     
+    // Authorizationヘッダーを取得
+    const authHeader = request.headers.get('authorization');
+    
     console.log('📤 Upload: Forwarding to', `${API_BASE_URL}/api/upload`);
     
     // バックエンドAPIに転送
@@ -16,7 +19,8 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       body: formData,
       headers: {
-        // FormDataの場合、Content-Typeは自動で設定されるため不要
+        // Authorizationヘッダーを転送
+        ...(authHeader ? { Authorization: authHeader } : {}),
         // Cookieを転送
         ...(request.headers.get('cookie') ? { cookie: request.headers.get('cookie')! } : {}),
       },
