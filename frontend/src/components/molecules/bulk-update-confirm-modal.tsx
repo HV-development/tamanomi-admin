@@ -31,7 +31,7 @@ export default function BulkUpdateConfirmModal({
   const statusLabel = selectedStatus ? (statusLabels[selectedStatus] || selectedStatus) : '';
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+    <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 border border-gray-200">
         <div className="p-6">
           {/* ヘッダー */}
