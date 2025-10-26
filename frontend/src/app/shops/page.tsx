@@ -44,8 +44,6 @@ export default function ShopsPage() {
   const [selectedShops, setSelectedShops] = useState<Set<string>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [isIndeterminate, setIsIndeterminate] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState('operating');
-  const [isExecuting, setIsExecuting] = useState(false);
 
   // 会社アカウントの場合、自分の会社IDを取得
   useEffect(() => {
@@ -329,30 +327,6 @@ export default function ShopsPage() {
     }
   };
 
-  const handleStatusChange = (status: string) => {
-    setSelectedStatus(status);
-  };
-
-  const handleExecute = async () => {
-    if (selectedShops.size === 0) return;
-
-    setIsExecuting(true);
-    try {
-      // 一括処理（今後実装予定）
-      await new Promise(resolve => setTimeout(resolve, 1500)); // 模擬APIコール
-      showSuccess(`${selectedShops.size}件の店舗に対して処理を実行しました`);
-      
-      // 選択をクリア
-      setSelectedShops(new Set());
-      setIsAllSelected(false);
-      setIsIndeterminate(false);
-    } catch (error: unknown) {
-      console.error('一括処理エラー:', error);
-      showError('一括処理に失敗しました');
-    } finally {
-      setIsExecuting(false);
-    }
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -794,9 +768,6 @@ export default function ShopsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                     ステータス
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
-                    掲載サイト
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -880,15 +851,6 @@ export default function ShopsPage() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {(shop as Shop & { applications?: string[] }).applications && Array.isArray((shop as Shop & { applications?: string[] }).applications) 
-                          ? (shop as Shop & { applications?: string[] }).applications.map((app: string) => 
-                              app === 'tamanomi' ? 'たまのみ' : app === 'nomoca_kagawa' ? 'のもかかがわ' : app
-                            ).join(', ')
-                          : '-'}
-                      </div>
-                    </td>
                   </tr>
               ))}
               </tbody>
@@ -914,11 +876,7 @@ export default function ShopsPage() {
 
       <FloatingFooter
         selectedCount={selectedShops.size}
-        onStatusChange={handleStatusChange}
-        onExecute={handleExecute}
         onIssueAccount={() => {}} // 店舗では使用しない
-        selectedStatus={selectedStatus}
-        isExecuting={isExecuting}
         isIssuingAccount={false}
       />
       
