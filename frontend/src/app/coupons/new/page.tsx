@@ -286,15 +286,20 @@ function CouponNewPageContent() {
         const createdCoupon = await apiClient.createCoupon(couponData) as Coupon;
         
         // 画像がある場合はアップロードして更新
-        if (formData.couponImage) {
+        if (formData.couponImage && createdCoupon.id) {
           try {
             setIsUploading(true);
+            
+            // タイムスタンプを生成
+            const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '').split('.')[0];
+            
             const uploadFormData = new FormData();
-            uploadFormData.append('file', formData.couponImage);
+            uploadFormData.append('image', formData.couponImage);
             uploadFormData.append('type', 'coupon');
             uploadFormData.append('shopId', formData.shopId);
             uploadFormData.append('merchantId', 'temp');
             uploadFormData.append('couponId', createdCoupon.id);
+            uploadFormData.append('timestamp', timestamp);
             
             const response = await fetch('/api/upload', {
               method: 'POST',
@@ -306,12 +311,15 @@ function CouponNewPageContent() {
             
             if (response.ok) {
               const uploadData = await response.json();
+              console.log('📤 Image upload successful:', uploadData);
+              
               // 画像URLを更新
               await apiClient.updateCoupon(createdCoupon.id, {
                 imageUrl: uploadData.url
               });
             } else {
-              console.error('画像アップロード失敗:', await response.text());
+              const errorData = await response.json().catch(() => ({}));
+              console.error('画像アップロード失敗:', response.status, errorData);
             }
           } catch (error) {
             console.error('画像アップロードエラー:', error);
