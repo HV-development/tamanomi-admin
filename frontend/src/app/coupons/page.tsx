@@ -196,21 +196,21 @@ export default function CouponsPage() {
   const _getStatusSelectColor = (status: CouponStatus) => {
     switch (status) {
       case 'pending':
-        return 'text-yellow-600 bg-yellow-50';
+        return 'text-yellow-700';
       case 'approved':
-        return 'text-green-600 bg-green-50';
+        return 'text-green-700';
       case 'suspended':
-        return 'text-red-600 bg-red-50';
+        return 'text-red-700';
       default:
-        return 'text-gray-600 bg-gray-50';
+        return 'text-gray-700';
     }
   };
 
   const _getPublicStatusSelectColor = (isPublic: boolean) => {
     if (isPublic) {
-      return 'text-blue-600 bg-blue-50';
+      return 'text-blue-700';
     } else {
-      return 'text-gray-600 bg-gray-50';
+      return 'text-gray-700';
     }
   };
 
