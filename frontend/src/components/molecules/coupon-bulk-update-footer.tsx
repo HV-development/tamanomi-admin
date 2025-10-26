@@ -75,6 +75,28 @@ export default function CouponBulkUpdateFooter({
     return isPublic === 'true' ? '公開中' : isPublic === 'false' ? '非公開' : '';
   };
 
+  const getStatusSelectColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'text-yellow-700';
+      case 'approved':
+        return 'text-green-700';
+      case 'suspended':
+        return 'text-red-700';
+      default:
+        return 'text-gray-700';
+    }
+  };
+
+  const getPublicStatusSelectColor = (isPublic: string) => {
+    if (isPublic === 'true') {
+      return 'text-blue-700';
+    } else if (isPublic === 'false') {
+      return 'text-red-700';
+    }
+    return 'text-gray-700';
+  };
+
   return (
     <>
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
@@ -90,12 +112,12 @@ export default function CouponBulkUpdateFooter({
                   value={pendingStatus}
                   onChange={(e) => setPendingStatus(e.target.value)}
                   disabled={isUpdating}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className={`px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 ${getStatusSelectColor(pendingStatus)}`}
                 >
-                  <option value="">承認ステータスを選択</option>
-                  <option value="pending">申請中</option>
-                  <option value="approved">承認済み</option>
-                  <option value="suspended">停止中</option>
+                  <option value="" className="text-gray-700">承認ステータスを選択</option>
+                  <option value="pending" className="text-yellow-700">申請中</option>
+                  <option value="approved" className="text-green-700">承認済み</option>
+                  <option value="suspended" className="text-red-700">停止中</option>
                 </select>
                 <Button
                   onClick={handleStatusChange}
@@ -113,11 +135,11 @@ export default function CouponBulkUpdateFooter({
                   value={pendingPublicStatus}
                   onChange={(e) => setPendingPublicStatus(e.target.value)}
                   disabled={isUpdating}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className={`px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 ${getPublicStatusSelectColor(pendingPublicStatus)}`}
                 >
-                  <option value="">公開ステータスを選択</option>
-                  <option value="true">公開中</option>
-                  <option value="false">非公開</option>
+                  <option value="" className="text-gray-700">公開ステータスを選択</option>
+                  <option value="true" className="text-blue-700">公開中</option>
+                  <option value="false" className="text-red-700">非公開</option>
                 </select>
                 <Button
                   onClick={handlePublicStatusChange}
