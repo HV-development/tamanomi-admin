@@ -48,24 +48,36 @@ export default function MerchantsPage() {
   const [isIssuingAccount, setIsIssuingAccount] = useState(false);
   
   const [searchForm, setSearchForm] = useState({
-    merchantId: '',
+    keyword: '',
     merchantName: '',
+    merchantNameKana: '',
     representativeName: '',
-    email: '',
+    representativeNameKana: '',
     phone: '',
-    postalCode: '',
+    email: '',
     address: '',
+    postalCode: '',
     prefecture: '',
+    accountStatus: '',
+    contractStatus: '',
+    createdAtFrom: '',
+    createdAtTo: '',
   });
   const [appliedSearchForm, setAppliedSearchForm] = useState({
-    merchantId: '',
+    keyword: '',
     merchantName: '',
+    merchantNameKana: '',
     representativeName: '',
-    email: '',
+    representativeNameKana: '',
     phone: '',
-    postalCode: '',
+    email: '',
     address: '',
+    postalCode: '',
     prefecture: '',
+    accountStatus: '',
+    contractStatus: '',
+    createdAtFrom: '',
+    createdAtTo: '',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
@@ -209,29 +221,120 @@ export default function MerchantsPage() {
 
   // フィルタリング処理
   const filteredMerchants = Array.isArray(merchants) ? merchants.filter((merchant) => {
+    // フリーワード検索（全フィールドを対象）
+    const keyword = appliedSearchForm.keyword.toLowerCase();
+    const matchesKeyword = keyword === '' || 
+      merchant.id.toLowerCase().includes(keyword) ||
+      merchant.name.toLowerCase().includes(keyword) ||
+      merchant.nameKana.toLowerCase().includes(keyword) ||
+      `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(keyword) ||
+      `${merchant.representativeNameLastKana} ${merchant.representativeNameFirstKana}`.toLowerCase().includes(keyword) ||
+      merchant.representativePhone.includes(keyword) ||
+      (merchant.account?.email || merchant.email || '').toLowerCase().includes(keyword) ||
+      `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(keyword) ||
+      merchant.postalCode.includes(keyword);
+    
+    // 各項目のフィルタ
     const matchesSearch = 
-      (appliedSearchForm.merchantId === '' || merchant.id.includes(appliedSearchForm.merchantId)) &&
+      matchesKeyword &&
       (appliedSearchForm.merchantName === '' || merchant.name.toLowerCase().includes(appliedSearchForm.merchantName.toLowerCase())) &&
+      (appliedSearchForm.merchantNameKana === '' || merchant.nameKana.toLowerCase().includes(appliedSearchForm.merchantNameKana.toLowerCase())) &&
       (appliedSearchForm.representativeName === '' || 
         `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(appliedSearchForm.representativeName.toLowerCase())) &&
-      (appliedSearchForm.email === '' || merchant.account?.email.toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
+      (appliedSearchForm.representativeNameKana === '' || 
+        `${merchant.representativeNameLastKana} ${merchant.representativeNameFirstKana}`.toLowerCase().includes(appliedSearchForm.representativeNameKana.toLowerCase())) &&
       (appliedSearchForm.phone === '' || merchant.representativePhone.includes(appliedSearchForm.phone)) &&
-      (appliedSearchForm.postalCode === '' || merchant.postalCode.includes(appliedSearchForm.postalCode)) &&
+      (appliedSearchForm.email === '' || (merchant.account?.email || merchant.email || '').toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
       (appliedSearchForm.address === '' || 
         `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(appliedSearchForm.address.toLowerCase())) &&
-      (appliedSearchForm.prefecture === '' || merchant.prefecture.toLowerCase().includes(appliedSearchForm.prefecture.toLowerCase()));
+      (appliedSearchForm.postalCode === '' || merchant.postalCode.includes(appliedSearchForm.postalCode)) &&
+      (appliedSearchForm.prefecture === '' || merchant.prefecture.toLowerCase().includes(appliedSearchForm.prefecture.toLowerCase())) &&
+      (appliedSearchForm.accountStatus === '' || (merchant.account?.status || 'inactive') === appliedSearchForm.accountStatus) &&
+      (appliedSearchForm.contractStatus === '' || merchant.status === appliedSearchForm.contractStatus);
     
-    return matchesSearch;
+    // 日付範囲のフィルタ
+    let matchesDateRange = true;
+    if (appliedSearchForm.createdAtFrom || appliedSearchForm.createdAtTo) {
+      const merchantDate = new Date(merchant.createdAt);
+      merchantDate.setHours(0, 0, 0, 0);
+      
+      if (appliedSearchForm.createdAtFrom && appliedSearchForm.createdAtTo) {
+        const fromDate = new Date(appliedSearchForm.createdAtFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        const toDate = new Date(appliedSearchForm.createdAtTo);
+        toDate.setHours(23, 59, 59, 999);
+        matchesDateRange = merchantDate >= fromDate && merchantDate <= toDate;
+      } else if (appliedSearchForm.createdAtFrom) {
+        const fromDate = new Date(appliedSearchForm.createdAtFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        matchesDateRange = merchantDate >= fromDate;
+      } else if (appliedSearchForm.createdAtTo) {
+        const toDate = new Date(appliedSearchForm.createdAtTo);
+        toDate.setHours(23, 59, 59, 999);
+        matchesDateRange = merchantDate <= toDate;
+      }
+    }
+    
+    return matchesSearch && matchesDateRange;
   }) : [];
+
+  const [searchErrors, setSearchErrors] = useState<{createdAtFrom?: string; createdAtTo?: string}>({});
 
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {
     setSearchForm(prev => ({
       ...prev,
       [field]: value
     }));
+    // エラーがある場合、値を変更したらエラーをクリア
+    if (searchErrors.createdAtFrom || searchErrors.createdAtTo) {
+      setSearchErrors({});
+    }
+  };
+
+  const validateSearchForm = (): boolean => {
+    const errors: {createdAtFrom?: string; createdAtTo?: string} = {};
+    
+    // 開始日のバリデーション
+    if (searchForm.createdAtFrom) {
+      const fromDate = new Date(searchForm.createdAtFrom);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999); // 今日の終わりまで
+      
+      if (fromDate > today) {
+        errors.createdAtFrom = '開始日は今日以前の日付を指定してください';
+      }
+    }
+    
+    // 終了日のバリデーション
+    if (searchForm.createdAtTo) {
+      const toDate = new Date(searchForm.createdAtTo);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      
+      if (toDate > today) {
+        errors.createdAtTo = '終了日は今日以前の日付を指定してください';
+      }
+    }
+    
+    // 日付の範囲バリデーション
+    if (searchForm.createdAtFrom && searchForm.createdAtTo) {
+      const fromDate = new Date(searchForm.createdAtFrom);
+      const toDate = new Date(searchForm.createdAtTo);
+      
+      if (fromDate > toDate) {
+        errors.createdAtFrom = '開始日は終了日より前の日付を指定してください';
+        errors.createdAtTo = '終了日は開始日より後の日付を指定してください';
+      }
+    }
+    
+    setSearchErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSearch = () => {
+    if (!validateSearchForm()) {
+      return;
+    }
     // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
     setAppliedSearchForm({ ...searchForm });
     console.log('検索実行:', searchForm);
@@ -239,24 +342,36 @@ export default function MerchantsPage() {
 
   const handleClear = () => {
     setSearchForm({
-      merchantId: '',
+      keyword: '',
       merchantName: '',
+      merchantNameKana: '',
       representativeName: '',
-      email: '',
+      representativeNameKana: '',
       phone: '',
-      postalCode: '',
+      email: '',
       address: '',
+      postalCode: '',
       prefecture: '',
+      accountStatus: '',
+      contractStatus: '',
+      createdAtFrom: '',
+      createdAtTo: '',
     });
     setAppliedSearchForm({
-      merchantId: '',
+      keyword: '',
       merchantName: '',
+      merchantNameKana: '',
       representativeName: '',
-      email: '',
+      representativeNameKana: '',
       phone: '',
-      postalCode: '',
+      email: '',
       address: '',
+      postalCode: '',
       prefecture: '',
+      accountStatus: '',
+      contractStatus: '',
+      createdAtFrom: '',
+      createdAtTo: '',
     });
   };
 
@@ -565,134 +680,236 @@ export default function MerchantsPage() {
           </div>
           
           {isSearchExpanded && (
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* 事業者ID */}
+          <div className="p-6 space-y-4">
+            {/* フリーワード検索 */}
             <div>
-              <label htmlFor="merchantId" className="block text-sm font-medium text-gray-700 mb-2">
-                事業者ID
+              <label htmlFor="keyword" className="block text-sm font-medium text-gray-700 mb-2">
+                フリーワード検索
               </label>
               <input
                 type="text"
-                id="merchantId"
-                placeholder="事業者IDを入力"
-                value={searchForm.merchantId}
-                onChange={(e) => handleInputChange('merchantId', e.target.value)}
+                id="keyword"
+                placeholder="事業者名、代表者名、メールアドレス、電話番号などで検索"
+                value={searchForm.keyword}
+                onChange={(e) => handleInputChange('keyword', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
 
-            {/* 事業者名 */}
-            <div>
-              <label htmlFor="merchantName" className="block text-sm font-medium text-gray-700 mb-2">
-                事業者名
-              </label>
-              <input
-                type="text"
-                id="merchantName"
-                placeholder="事業者名を入力"
-                value={searchForm.merchantName}
-                onChange={(e) => handleInputChange('merchantName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
+            {/* 事業者名と事業者名（カナ） */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="merchantName" className="block text-sm font-medium text-gray-700 mb-2">
+                  事業者名
+                </label>
+                <input
+                  type="text"
+                  id="merchantName"
+                  placeholder="事業者名を入力"
+                  value={searchForm.merchantName}
+                  onChange={(e) => handleInputChange('merchantName', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="merchantNameKana" className="block text-sm font-medium text-gray-700 mb-2">
+                  事業者名（カナ）
+                </label>
+                <input
+                  type="text"
+                  id="merchantNameKana"
+                  placeholder="事業者名（カナ）を入力"
+                  value={searchForm.merchantNameKana}
+                  onChange={(e) => handleInputChange('merchantNameKana', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
             </div>
 
-            {/* 代表者名 */}
-            <div>
-              <label htmlFor="representativeName" className="block text-sm font-medium text-gray-700 mb-2">
-                代表者名
-              </label>
-              <input
-                type="text"
-                id="representativeName"
-                placeholder="代表者名を入力"
-                value={searchForm.representativeName}
-                onChange={(e) => handleInputChange('representativeName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
+            {/* 代表者名と代表者名（カナ） */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="representativeName" className="block text-sm font-medium text-gray-700 mb-2">
+                  代表者名
+                </label>
+                <input
+                  type="text"
+                  id="representativeName"
+                  placeholder="代表者名を入力"
+                  value={searchForm.representativeName}
+                  onChange={(e) => handleInputChange('representativeName', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="representativeNameKana" className="block text-sm font-medium text-gray-700 mb-2">
+                  代表者名（カナ）
+                </label>
+                <input
+                  type="text"
+                  id="representativeNameKana"
+                  placeholder="代表者名（カナ）を入力"
+                  value={searchForm.representativeNameKana}
+                  onChange={(e) => handleInputChange('representativeNameKana', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
             </div>
 
-            {/* メールアドレス */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                メールアドレス
-              </label>
-              <input
-                type="text"
-                id="email"
-                placeholder="メールアドレスを入力"
-                value={searchForm.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
+            {/* 電話番号とメールアドレス */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                  電話番号
+                </label>
+                <input
+                  type="text"
+                  id="phone"
+                  placeholder="電話番号を入力"
+                  value={searchForm.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  メールアドレス
+                </label>
+                <input
+                  type="text"
+                  id="email"
+                  placeholder="メールアドレスを入力"
+                  value={searchForm.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
             </div>
 
-            {/* 電話番号 */}
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                電話番号
-              </label>
-              <input
-                type="text"
-                id="phone"
-                placeholder="電話番号を入力"
-                value={searchForm.phone}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
+            {/* 住所と郵便番号 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                  住所
+                </label>
+                <input
+                  type="text"
+                  id="address"
+                  placeholder="住所を入力"
+                  value={searchForm.address}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
+                  郵便番号
+                </label>
+                <input
+                  type="text"
+                  id="postalCode"
+                  placeholder="郵便番号を入力"
+                  value={searchForm.postalCode}
+                  onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
             </div>
 
-            {/* 郵便番号 */}
-            <div>
-              <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
-                郵便番号
-              </label>
-              <input
-                type="text"
-                id="postalCode"
-                placeholder="郵便番号を入力"
-                value={searchForm.postalCode}
-                onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
+            {/* 都道府県とアカウント発行ステータス */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
+                  都道府県
+                </label>
+                <select
+                  id="prefecture"
+                  value={searchForm.prefecture}
+                  onChange={(e) => handleInputChange('prefecture', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="">すべて</option>
+                  {prefectures.map((pref) => (
+                    <option key={pref} value={pref}>{pref}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="accountStatus" className="block text-sm font-medium text-gray-700 mb-2">
+                  アカウント発行
+                </label>
+                <select
+                  id="accountStatus"
+                  value={searchForm.accountStatus}
+                  onChange={(e) => handleInputChange('accountStatus', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="">すべて</option>
+                  <option value="inactive">未発行</option>
+                  <option value="pending">承認待ち</option>
+                  <option value="active">発行済み</option>
+                  <option value="suspended">停止中</option>
+                </select>
+              </div>
             </div>
 
-            {/* 住所 */}
-            <div>
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                住所
-              </label>
-              <input
-                type="text"
-                id="address"
-                placeholder="住所を入力"
-                value={searchForm.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
+            {/* 契約ステータス */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="contractStatus" className="block text-sm font-medium text-gray-700 mb-2">
+                  契約ステータス
+                </label>
+                <select
+                  id="contractStatus"
+                  value={searchForm.contractStatus}
+                  onChange={(e) => handleInputChange('contractStatus', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="">すべて</option>
+                  <option value="active">契約中</option>
+                  <option value="inactive">未契約</option>
+                  <option value="terminated">解約済み</option>
+                </select>
+              </div>
+              <div></div>
             </div>
 
-            {/* 都道府県 */}
-            <div>
-              <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
-                都道府県
-              </label>
-              <select
-                id="prefecture"
-                value={searchForm.prefecture}
-                onChange={(e) => handleInputChange('prefecture', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              >
-                <option value="">都道府県を選択してください</option>
-                {prefectures.map((pref) => (
-                  <option key={pref} value={pref}>{pref}</option>
-                ))}
-              </select>
-            </div>
+            {/* 登録日の範囲 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="createdAtFrom" className="block text-sm font-medium text-gray-700 mb-2">
+                  登録日（開始）
+                </label>
+                <input
+                  type="date"
+                  id="createdAtFrom"
+                  value={searchForm.createdAtFrom}
+                  onChange={(e) => handleInputChange('createdAtFrom', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+                {searchErrors.createdAtFrom && (
+                  <p className="text-red-600 text-sm mt-1">{searchErrors.createdAtFrom}</p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="createdAtTo" className="block text-sm font-medium text-gray-700 mb-2">
+                  登録日（終了）
+                </label>
+                <input
+                  type="date"
+                  id="createdAtTo"
+                  value={searchForm.createdAtTo}
+                  onChange={(e) => handleInputChange('createdAtTo', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+                {searchErrors.createdAtTo && (
+                  <p className="text-red-600 text-sm mt-1">{searchErrors.createdAtTo}</p>
+                )}
+              </div>
             </div>
 
             {/* 検索・クリアボタン */}
-            <div className="flex justify-end gap-2 mt-6">
+            <div className="flex justify-center gap-2 mt-6">
               <Button variant="outline" onClick={handleClear}>
                 クリア
               </Button>
