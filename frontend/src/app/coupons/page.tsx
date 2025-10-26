@@ -470,7 +470,8 @@ export default function CouponsPage() {
                       <select
                         value={coupon.isPublic ? 'true' : 'false'}
                         onChange={(e) => handlePublicStatusChange(coupon.id, e.target.value === 'true')}
-                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[100px] ${_getPublicStatusSelectColor(coupon.isPublic)}`}
+                        disabled={isMerchantAccount && coupon.status !== 'approved'}
+                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[100px] ${_getPublicStatusSelectColor(coupon.isPublic)} ${isMerchantAccount && coupon.status !== 'approved' ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <option value="true">公開中</option>
                         <option value="false">非公開</option>
