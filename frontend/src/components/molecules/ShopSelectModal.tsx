@@ -9,7 +9,7 @@ interface ShopSelectModalProps {
   onClose: () => void;
   onSelect: (shop: Shop) => void;
   selectedShopId?: string;
-  merchantId?: string; // 会社でフィルタリングする場合に使用
+  merchantId?: string; // 事業者でフィルタリングする場合に使用
 }
 
 export default function ShopSelectModal({
@@ -182,7 +182,7 @@ export default function ShopSelectModal({
                     <div className="flex-1">
                       <div className="font-medium text-gray-900">{shop.name}</div>
                       {shop.merchant && (
-                        <div className="text-sm text-gray-500 mt-1">会社: {shop.merchant.name}</div>
+                        <div className="text-sm text-gray-500 mt-1">事業者: {shop.merchant.name}</div>
                       )}
                     </div>
                     {selectedShopId === shop.id && (

@@ -14,7 +14,7 @@ interface MenuItemData {
 }
 
 const menuItems: MenuItemData[] = [
-  { name: '会社管理', href: '/merchants', iconName: 'domain' },
+  { name: '事業者管理', href: '/merchants', iconName: 'domain' },
   { name: '店舗管理', href: '/shops', iconName: 'store' },
   { name: 'クーポン管理', href: '/coupons', iconName: 'confirmation_number' },
   { name: 'ユーザー管理', href: '/users', iconName: 'groups' },
@@ -38,7 +38,7 @@ export default function Sidebar() {
         if (auth?.user?.accountType === 'shop') {
           return item.href === '/shops' || item.href === '/coupons' || item.href === '/coupon-history';
         }
-        // 会社アカウントの場合、ユーザー管理と管理者アカウントを非表示
+        // 事業者アカウントの場合、ユーザー管理と管理者アカウントを非表示
         if (auth?.user?.accountType === 'merchant') {
           return item.href !== '/users' && item.href !== '/admins';
         }
@@ -79,7 +79,7 @@ export default function Sidebar() {
     <div className={`bg-white shadow-lg transition-all duration-300 relative flex-shrink-0 ${
       isCollapsed ? 'w-16' : 'w-64'
     } ${!isLoaded ? 'opacity-0' : 'opacity-100'}`}>
-      <SidebarHeader isCollapsed={isCollapsed} />
+      <SidebarHeader isCollapsed={isCollapsed} onToggleCollapse={handleToggleCollapse} />
 
       {/* メニュー */}
       <nav className={`p-4 ${isCollapsed ? 'pt-6' : ''}`}>
@@ -116,15 +116,6 @@ export default function Sidebar() {
           >
             <Icon name="logout" size="md" />
             {!isCollapsed && <span>ログアウト</span>}
-          </button>
-        </div>
-        
-        <div className="p-4 flex justify-end">
-          <button
-            onClick={handleToggleCollapse}
-            className="p-2 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
-          >
-            <Icon name={isCollapsed ? "chevronRight" : "chevronLeft"} size="sm" />
           </button>
         </div>
         

@@ -1,4 +1,4 @@
-// 会社ステータスの日本語マッピング
+// 事業者ステータスの日本語マッピング
 export const statusLabels: Record<string, string> = {
   pending_registration: '登録待ち',
   active: '営業中',

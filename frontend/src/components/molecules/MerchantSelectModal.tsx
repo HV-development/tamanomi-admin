@@ -106,7 +106,7 @@ export default function MerchantSelectModal({
       <div className="relative bg-white rounded-lg shadow-2xl border border-gray-300 max-w-2xl w-full max-h-[80vh] flex flex-col animate-fadeIn">
         {/* ヘッダー */}
         <div className="flex items-center justify-between px-6 py-4 bg-green-600 rounded-t-lg">
-          <h2 className="text-lg font-semibold text-white">会社選択</h2>
+          <h2 className="text-lg font-semibold text-white">事業者選択</h2>
           <button
             onClick={handleClose}
             className="text-white hover:text-green-100 focus:outline-none"
@@ -125,7 +125,7 @@ export default function MerchantSelectModal({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="会社名またはメールアドレスで検索..."
+              placeholder="事業者名またはメールアドレスで検索..."
               className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               autoFocus
             />
@@ -150,14 +150,14 @@ export default function MerchantSelectModal({
           </div>
         </div>
 
-        {/* 会社リスト */}
+        {/* 事業者リスト */}
         <div className="flex-1 overflow-y-auto p-6">
           {!hasSearched ? (
             <div className="text-center py-12 text-gray-500">
               <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <p>会社名またはメールアドレスで検索してください</p>
+              <p>事業者名またはメールアドレスで検索してください</p>
             </div>
           ) : searchResults.length === 0 ? (
             <div className="text-center py-12 text-gray-500">

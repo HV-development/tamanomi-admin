@@ -12,7 +12,7 @@ interface User {
   name: string;
   accountType: 'admin' | 'merchant' | 'user' | 'shop';
   shopId?: string; // 店舗アカウントの場合の店舗ID
-  merchantId?: string; // 会社アカウントまたは店舗アカウントの場合の会社ID
+  merchantId?: string; // 事業者アカウントまたは店舗アカウントの場合の事業者ID
 }
 
 interface AuthContextType {
@@ -59,7 +59,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (accessToken && refreshToken) {
           // トークンが有効かチェック（簡単な検証）
           try {
-            await apiClient.refreshToken({ refreshToken });
+            await apiClient.refreshToken();
             // ユーザー情報を取得（実際の実装では、トークンからユーザー情報を取得）
             const userData = localStorage.getItem('userData');
             if (userData) {
@@ -123,7 +123,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         refreshTokenMatch: savedRefreshToken === response.refreshToken
       });
       
-      const accountData = response.account as any;
+      const accountData = response.account as { 
+        accountType: string; 
+        shopId?: string; 
+        merchantId?: string;
+        email: string;
+        displayName?: string;
+      };
       console.log('🔍 AuthContext: Received account data from API', {
         accountType: accountData.accountType,
         shopId: accountData.shopId,
@@ -157,7 +163,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiClient.register(userData);
       
       // トークンを保存
-      const accountData = response.account as any;
+      const accountData = response.account as { 
+        accountType: string; 
+        shopId?: string; 
+        merchantId?: string;
+        email: string;
+        displayName?: string;
+      };
       localStorage.setItem('accessToken', response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
       localStorage.setItem('userData', JSON.stringify(accountData));
@@ -193,19 +205,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const refreshToken = async () => {
+  const refreshToken = async (): Promise<void> => {
     try {
-      const refreshTokenValue = localStorage.getItem('refreshToken');
-      if (!refreshTokenValue) {
-        throw new Error('No refresh token available');
-      }
-
-      const response = await apiClient.refreshToken({ refreshToken: refreshTokenValue });
-      
-      // 新しいトークンを保存
-      localStorage.setItem('accessToken', response.accessToken);
-      localStorage.setItem('refreshToken', response.refreshToken);
-      
+      await apiClient.refreshToken();
       console.log('✅ AuthContext: tokens refreshed');
     } catch (error) {
       console.error('❌ AuthContext: token refresh failed', error);

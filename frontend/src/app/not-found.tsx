@@ -31,7 +31,7 @@ export default function NotFound() {
             </Link>
             {' | '}
             <Link href="/merchants" className="hover:text-blue-600">
-              会社管理
+              事業者管理
             </Link>
           </div>
         </div>

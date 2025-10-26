@@ -6,12 +6,13 @@ import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { apiClient } from '@/lib/api';
-import type { CouponWithShop, CouponUpdateRequest, CouponStatus } from '@hv-development/schemas';
+import type { CouponWithShop, CouponUpdateRequest } from '@hv-development/schemas';
 import { 
   validateRequired, 
   validateMaxLength, 
   validateFileSize
 } from '@/utils/validation';
+import { useAuth } from '@/components/contexts/auth-context';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,8 @@ function CouponEditPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const couponId = params.id as string;
+  const auth = useAuth();
+  const isMerchantAccount = auth?.user?.accountType === 'merchant';
 
   const [formData, setFormData] = useState<CouponFormData>({
     couponName: '',
@@ -46,7 +49,7 @@ function CouponEditPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   
-  // 会社・店舗情報（読み取り専用）
+  //事業者・店舗情報（読み取り専用）
   const [merchantName, setMerchantName] = useState<string>('');
   const [shopName, setShopName] = useState<string>('');
 
@@ -65,7 +68,7 @@ function CouponEditPageContent() {
           publishStatus: data.status === 'active' ? '1' : '2',
         });
         
-        // 会社・店舗情報を設定
+        // 事業者・店舗情報を設定
         if (data.shop) {
           setShopName(data.shop.name);
           if (data.shop.merchant) {
@@ -131,14 +134,6 @@ function CouponEditPageContent() {
         }
         break;
 
-      case 'publishStatus':
-        const publishStatusError = validateRequired(value, '公開 / 非公開');
-        if (publishStatusError) {
-          newErrors.publishStatus = publishStatusError;
-        } else {
-          delete newErrors.publishStatus;
-        }
-        break;
     }
 
     setErrors(newErrors);
@@ -225,9 +220,6 @@ function CouponEditPageContent() {
     const couponContentError = validateRequired(formData.couponContent, 'クーポン内容') || validateMaxLength(formData.couponContent, 100, 'クーポン内容');
     if (couponContentError) newErrors.couponContent = couponContentError;
 
-    const publishStatusError = validateRequired(formData.publishStatus, '公開 / 非公開');
-    if (publishStatusError) newErrors.publishStatus = publishStatusError;
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -239,8 +231,7 @@ function CouponEditPageContent() {
         const updateData: CouponUpdateRequest = {
           title: formData.couponName,
           description: formData.couponContent || null,
-          imageUrl: formData.imageUrl || null,
-          status: (formData.publishStatus === '1' ? 'active' : 'inactive') as CouponStatus
+          imageUrl: formData.imageUrl || null
         };
         
         await apiClient.updateCoupon(couponId, updateData);
@@ -293,11 +284,11 @@ function CouponEditPageContent() {
         {/* 編集フォーム */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="space-y-6">
-            {/* 会社情報（読み取り専用） */}
+            {/* 事業者情報（読み取り専用） */}
             {merchantName && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  会社
+                  事業者
                 </label>
                 <div className="text-sm text-gray-900">
                   {merchantName}
@@ -403,40 +394,6 @@ function CouponEditPageContent() {
               )}
             </div>
 
-            {/* 公開/非公開 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                公開 / 非公開 <span className="text-red-500">*</span>
-              </label>
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="publishStatus"
-                    value="1"
-                    checked={formData.publishStatus === '1'}
-                    onChange={(e) => handleInputChange('publishStatus', e.target.value)}
-                    className="mr-2 text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">公開する</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="publishStatus"
-                    value="2"
-                    checked={formData.publishStatus === '2'}
-                    onChange={(e) => handleInputChange('publishStatus', e.target.value)}
-                    className="mr-2 text-green-600 focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-700">公開しない</span>
-                </label>
-              </div>
-              {errors.publishStatus && (
-                <p className="mt-1 text-sm text-red-500">{errors.publishStatus}</p>
-              )}
-            </div>
-
             {/* アクションボタン */}
             <div className="flex justify-center space-x-4 pt-6">
               <Button
@@ -454,7 +411,7 @@ function CouponEditPageContent() {
                 disabled={isSubmitting || isUploading}
                 className="px-8"
               >
-                {isSubmitting ? '更新中...' : '更新する'}
+                {isSubmitting ? '更新中...' : (isMerchantAccount ? '申請する' : '更新する')}
               </Button>
             </div>
           </div>
