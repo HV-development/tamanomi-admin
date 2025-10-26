@@ -458,148 +458,143 @@ export default function ShopsPage() {
               />
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* 事業者名 */}
+            {/* 事業者名と事業者名（カナ） */}
             {!merchantId && (
-              <div>
-                <label htmlFor="merchantName" className="block text-sm font-medium text-gray-700 mb-2">
-                  事業者名
-                </label>
-                <input
-                  type="text"
-                  id="merchantName"
-                  placeholder="事業者名を入力"
-                  value={searchForm.merchantName}
-                  onChange={(e) => handleInputChange('merchantName', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label htmlFor="merchantName" className="block text-sm font-medium text-gray-700 mb-2">
+                    事業者名
+                  </label>
+                  <input
+                    type="text"
+                    id="merchantName"
+                    placeholder="事業者名を入力"
+                    value={searchForm.merchantName}
+                    onChange={(e) => handleInputChange('merchantName', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="merchantNameKana" className="block text-sm font-medium text-gray-700 mb-2">
+                    事業者名（カナ）
+                  </label>
+                  <input
+                    type="text"
+                    id="merchantNameKana"
+                    placeholder="事業者名（カナ）を入力"
+                    value={searchForm.merchantNameKana}
+                    onChange={(e) => handleInputChange('merchantNameKana', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
               </div>
             )}
 
-            {/* 事業者名（カナ） */}
-            {!merchantId && (
-              <div>
-                <label htmlFor="merchantNameKana" className="block text-sm font-medium text-gray-700 mb-2">
-                  事業者名（カナ）
+            {/* 店舗名と店舗名（カナ） */}
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                  店舗名
                 </label>
                 <input
                   type="text"
-                  id="merchantNameKana"
-                  placeholder="事業者名（カナ）を入力"
-                  value={searchForm.merchantNameKana}
-                  onChange={(e) => handleInputChange('merchantNameKana', e.target.value)}
+                  id="name"
+                  placeholder="店舗名を入力"
+                  value={searchForm.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
               </div>
-            )}
-
-            {/* 店舗名 */}
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                店舗名
-              </label>
-              <input
-                type="text"
-                id="name"
-                placeholder="店舗名を入力"
-                value={searchForm.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
+              <div className="flex-1">
+                <label htmlFor="nameKana" className="block text-sm font-medium text-gray-700 mb-2">
+                  店舗名（カナ）
+                </label>
+                <input
+                  type="text"
+                  id="nameKana"
+                  placeholder="店舗名（カナ）を入力"
+                  value={searchForm.nameKana}
+                  onChange={(e) => handleInputChange('nameKana', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
             </div>
 
-            {/* 店舗名（カナ） */}
-            <div>
-              <label htmlFor="nameKana" className="block text-sm font-medium text-gray-700 mb-2">
-                店舗名（カナ）
-              </label>
-              <input
-                type="text"
-                id="nameKana"
-                placeholder="店舗名（カナ）を入力"
-                value={searchForm.nameKana}
-                onChange={(e) => handleInputChange('nameKana', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
+            {/* 電話番号とメールアドレス */}
+            <div className="flex gap-4">
+              <div className="flex-shrink-0">
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                  電話番号
+                </label>
+                <input
+                  type="text"
+                  id="phone"
+                  placeholder="電話番号を入力"
+                  value={searchForm.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="accountEmail" className="block text-sm font-medium text-gray-700 mb-2">
+                  メールアドレス
+                </label>
+                <input
+                  type="text"
+                  id="accountEmail"
+                  placeholder="メールアドレスを入力"
+                  value={searchForm.accountEmail}
+                  onChange={(e) => handleInputChange('accountEmail', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
             </div>
 
-            {/* メールアドレス */}
-            <div>
-              <label htmlFor="accountEmail" className="block text-sm font-medium text-gray-700 mb-2">
-                メールアドレス
-              </label>
-              <input
-                type="text"
-                id="accountEmail"
-                placeholder="メールアドレスを入力"
-                value={searchForm.accountEmail}
-                onChange={(e) => handleInputChange('accountEmail', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-
-            {/* 電話番号 */}
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                電話番号
-              </label>
-              <input
-                type="text"
-                id="phone"
-                placeholder="電話番号を入力"
-                value={searchForm.phone}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-
-            {/* 郵便番号 */}
-            <div>
-              <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
-                郵便番号
-              </label>
-              <input
-                type="text"
-                id="postalCode"
-                placeholder="郵便番号を入力"
-                value={searchForm.postalCode}
-                onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-
-            {/* 都道府県 */}
-            <div>
-              <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
-                都道府県
-              </label>
-              <input
-                type="text"
-                id="prefecture"
-                placeholder="都道府県を入力"
-                value={searchForm.prefecture}
-                onChange={(e) => handleInputChange('prefecture', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-
-            {/* 住所 */}
-            <div>
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                住所
-              </label>
-              <input
-                type="text"
-                id="address"
-                placeholder="住所を入力"
-                value={searchForm.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
+            {/* 郵便番号、都道府県、住所 */}
+            <div className="flex gap-4">
+              <div className="flex-shrink-0">
+                <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
+                  郵便番号
+                </label>
+                <input
+                  type="text"
+                  id="postalCode"
+                  placeholder="郵便番号を入力"
+                  value={searchForm.postalCode}
+                  onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                  className="w-[120px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+              <div className="flex-shrink-0">
+                <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
+                  都道府県
+                </label>
+                <input
+                  type="text"
+                  id="prefecture"
+                  placeholder="都道府県を入力"
+                  value={searchForm.prefecture}
+                  onChange={(e) => handleInputChange('prefecture', e.target.value)}
+                  className="w-[150px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                  住所
+                </label>
+                <input
+                  type="text"
+                  id="address"
+                  placeholder="住所を入力"
+                  value={searchForm.address}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
             </div>
 
             {/* 承認ステータス */}
-            <div>
+            <div className="max-w-[200px]">
               <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
                 承認ステータス
               </label>
@@ -614,7 +609,6 @@ export default function ShopsPage() {
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
-            </div>
             </div>
 
             {/* 検索・クリアボタン */}
@@ -860,6 +854,9 @@ export default function ShopsPage() {
                         <div className="text-sm font-medium text-gray-900">
                           {shop.merchant?.name || '-'}
                         </div>
+                        {shop.merchant?.nameKana && (
+                          <div className="text-sm text-gray-500">{shop.merchant.nameKana}</div>
+                        )}
                       </td>
                     )}
                     <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
