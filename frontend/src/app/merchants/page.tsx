@@ -25,6 +25,7 @@ type Merchant = Omit<MerchantWithDetails, 'createdAt' | 'updatedAt' | 'deletedAt
     status: string;
     displayName: string | null;
     lastLoginAt: string | null;
+    passwordHash?: string | null;
   };
 };
 
@@ -819,8 +820,12 @@ export default function MerchantsPage() {
       
       <FloatingFooterMerchant
         selectedCount={selectedMerchants.size}
-        onIssueAccount={handleIssueAccount}
+        onConfirmIssue={handleIssueAccount}
         isIssuingAccount={isIssuingAccount}
+        alreadyIssuedCount={Array.from(selectedMerchants).filter(merchantId => {
+          const merchant = filteredMerchants.find(m => m.id === merchantId);
+          return merchant && merchant.account && merchant.account.passwordHash;
+        }).length}
       />
       
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
