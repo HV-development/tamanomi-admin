@@ -48,7 +48,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const body = await request.json();
-    console.log('✏️ API Route: 事業者更新リクエスト受信', { merchantId: id, name: body.name });
+    console.log('✏️ API Route: 事業者更新リクエスト受信', { merchantId: id, name: body.name, status: body.status, issueAccount: body.issueAccount });
 
     const response = await fetch(`${API_BASE_URL}/admin/merchants/${id}`, {
       method: 'PUT',

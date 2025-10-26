@@ -409,6 +409,8 @@ export default function MerchantEditPage() {
         issueAccount, // アカウント発行フラグ
         status, // 契約ステータス
       };
+      
+      console.log('📤 送信データ:', { updateData, status, issueAccount });
 
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`/api/merchants/${merchantId}`, {
