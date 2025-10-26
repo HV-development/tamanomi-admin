@@ -9,7 +9,9 @@ interface BulkUpdateConfirmModalProps {
   onClose: () => void;
   onConfirm: () => void;
   selectedCount: number;
-  selectedStatus: string;
+  selectedStatus?: string; // オプショナルにして後方互換性を保つ
+  title?: string; // カスタムタイトル対応
+  message?: string; // カスタムメッセージ対応
   isExecuting?: boolean;
 }
 
@@ -19,29 +21,36 @@ export default function BulkUpdateConfirmModal({
   onConfirm,
   selectedCount,
   selectedStatus,
+  title,
+  message,
   isExecuting = false
 }: BulkUpdateConfirmModalProps) {
   if (!isOpen) return null;
 
-  const statusLabel = statusLabels[selectedStatus] || selectedStatus;
+  // 既存の店舗管理用のロジック
+  const statusLabel = selectedStatus ? (statusLabels[selectedStatus] || selectedStatus) : '';
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50">
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 border border-gray-200">
         <div className="p-6">
           {/* ヘッダー */}
           <div className="mb-6 text-center">
             <h3 className="text-lg font-semibold text-gray-900">
-              ステータス一括更新
+              {title || 'ステータス一括更新'}
             </h3>
           </div>
 
           {/* メッセージ */}
           <div className="mb-8 text-center">
-            <p className="text-gray-700">
-              <span className="font-medium">{selectedCount}件</span>を
-              <span className="font-medium text-green-600 mx-1">「{statusLabel}」</span>に更新します。
-            </p>
+            {message ? (
+              <p className="text-gray-700">{message}</p>
+            ) : (
+              <p className="text-gray-700">
+                <span className="font-medium">{selectedCount}件</span>を
+                <span className="font-medium text-green-600 mx-1">「{statusLabel}」</span>に更新します。
+              </p>
+            )}
             <p className="text-sm text-gray-500 mt-2">
               この操作は取り消すことができません。
             </p>

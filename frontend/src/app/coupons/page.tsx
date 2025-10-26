@@ -12,6 +12,8 @@ import type { CouponWithShop, CouponStatus, CouponListResponse } from '@hv-devel
 import { useAuth } from '@/components/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
+import Checkbox from '@/components/atoms/Checkbox';
+import CouponBulkUpdateFooter from '@/components/molecules/coupon-bulk-update-footer';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -55,6 +57,12 @@ export default function CouponsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | CouponStatus>('all');
   const [appliedStatusFilter, setAppliedStatusFilter] = useState<'all' | CouponStatus>('all');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+
+  // チェックボックス関連の状態
+  const [selectedCoupons, setSelectedCoupons] = useState<Set<string>>(new Set());
+  const [isAllSelected, setIsAllSelected] = useState(false);
+  const [isIndeterminate, setIsIndeterminate] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // クーポン一覧の取得
   const fetchCoupons = async () => {
@@ -169,12 +177,12 @@ export default function CouponsPage() {
 
   const _getStatusLabel = (status: CouponStatus) => {
     switch (status) {
-      case 'active':
-        return '有効';
-      case 'inactive':
-        return '無効';
-      case 'expired':
-        return '期限切れ';
+      case 'pending':
+        return '申請中';
+      case 'approved':
+        return '承認済み';
+      case 'suspended':
+        return '停止中';
       default:
         return status;
     }
@@ -182,11 +190,11 @@ export default function CouponsPage() {
 
   const _getStatusColor = (status: CouponStatus) => {
     switch (status) {
-      case 'active':
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'approved':
         return 'bg-green-100 text-green-800';
-      case 'inactive':
-        return 'bg-gray-100 text-gray-800';
-      case 'expired':
+      case 'suspended':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -211,6 +219,111 @@ export default function CouponsPage() {
       return 'text-blue-700';
     } else {
       return 'text-red-700';
+    }
+  };
+
+  // チェックボックス関連の関数
+  useEffect(() => {
+    const allCount = filteredCoupons.length;
+    const selectedCount = selectedCoupons.size;
+    setIsAllSelected(allCount > 0 && selectedCount === allCount);
+    setIsIndeterminate(selectedCount > 0 && selectedCount < allCount);
+  }, [selectedCoupons, filteredCoupons]);
+
+  const handleToggleAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedCoupons(new Set(filteredCoupons.map(coupon => coupon.id)));
+    } else {
+      setSelectedCoupons(new Set());
+    }
+  };
+
+  const handleToggleCoupon = (couponId: string, checked: boolean) => {
+    const newSelected = new Set(selectedCoupons);
+    if (checked) {
+      newSelected.add(couponId);
+    } else {
+      newSelected.delete(couponId);
+    }
+    setSelectedCoupons(newSelected);
+  };
+
+  // 一括更新関数
+  const handleBulkUpdateStatus = async (status: string) => {
+    setIsUpdating(true);
+    try {
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const couponId of selectedCoupons) {
+        try {
+          await apiClient.updateCouponStatus(couponId, { status: status as CouponStatus });
+          successCount++;
+        } catch (error) {
+          console.error(`クーポン ${couponId} の更新に失敗:`, error);
+          failCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        showSuccess(`${successCount}件のステータスを更新しました`);
+      }
+      if (failCount > 0) {
+        showError(`${failCount}件の更新に失敗しました`);
+      }
+
+      setSelectedCoupons(new Set());
+      fetchCoupons();
+    } catch (error) {
+      console.error('一括更新に失敗しました:', error);
+      showError('一括更新に失敗しました');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleBulkUpdatePublicStatus = async (isPublic: boolean) => {
+    setIsUpdating(true);
+    try {
+      let successCount = 0;
+      let excludedCount = 0;
+      let failCount = 0;
+
+      for (const couponId of selectedCoupons) {
+        const coupon = filteredCoupons.find(c => c.id === couponId);
+        
+        // 会社アカウントの場合、未承認のクーポンをチェック
+        if (isMerchantAccount && coupon && coupon.status !== 'approved' && isPublic) {
+          excludedCount++;
+          continue;
+        }
+
+        try {
+          await apiClient.updateCouponPublicStatus(couponId, { isPublic });
+          successCount++;
+        } catch (error) {
+          console.error(`クーポン ${couponId} の更新に失敗:`, error);
+          failCount++;
+        }
+      }
+
+      if (excludedCount > 0) {
+        showError(`${excludedCount}件の未承認クーポンは除外されました`);
+      }
+      if (successCount > 0) {
+        showSuccess(`${successCount}件の公開ステータスを更新しました`);
+      }
+      if (failCount > 0) {
+        showError(`${failCount}件の更新に失敗しました`);
+      }
+
+      setSelectedCoupons(new Set());
+      fetchCoupons();
+    } catch (error) {
+      console.error('一括更新に失敗しました:', error);
+      showError('一括更新に失敗しました');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -369,6 +482,13 @@ export default function CouponsPage() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                    <Checkbox
+                      checked={isAllSelected}
+                      indeterminate={isIndeterminate}
+                      onChange={handleToggleAll}
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
                     アクション
                   </th>
@@ -398,6 +518,12 @@ export default function CouponsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredCoupons.map((coupon) => (
                   <tr key={coupon.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Checkbox
+                        checked={selectedCoupons.has(coupon.id)}
+                        onChange={(checked) => handleToggleCoupon(coupon.id, checked)}
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium min-w-[120px]">
                       <div className="flex items-center gap-2">
                         <Link href={`/coupons/${coupon.id}/edit`}>
@@ -470,6 +596,14 @@ export default function CouponsPage() {
           )}
         </div>
       </div>
+      <CouponBulkUpdateFooter
+        selectedCount={selectedCoupons.size}
+        isAdminAccount={!isMerchantAccount && !isShopAccount}
+        isMerchantAccount={isMerchantAccount}
+        onBulkUpdateStatus={handleBulkUpdateStatus}
+        onBulkUpdatePublicStatus={handleBulkUpdatePublicStatus}
+        isUpdating={isUpdating}
+      />
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
   );
