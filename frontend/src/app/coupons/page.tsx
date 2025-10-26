@@ -210,7 +210,7 @@ export default function CouponsPage() {
     if (isPublic) {
       return 'text-blue-700';
     } else {
-      return 'text-gray-700';
+      return 'text-red-700';
     }
   };
 
