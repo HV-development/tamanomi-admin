@@ -310,6 +310,8 @@ function CouponNewPageContent() {
         };
         
         console.log('📤 Creating coupon with data:', couponData);
+        console.log('📤 formData:', formData);
+        console.log('📤 imageUrl:', formData.imageUrl);
         
         await apiClient.createCoupon(couponData);
         
