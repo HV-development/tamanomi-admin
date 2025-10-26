@@ -110,9 +110,9 @@ export default function MerchantEditPage() {
               isArray: Array.isArray(merchantData.applications)
             });
             
-            // アカウント発行済みかどうかを確認
-            const accountPasswordHash = merchantData.account?.passwordHash;
-            setHasAccount(!!accountPasswordHash);
+            // アカウント発行済みかどうかを確認（statusが'inactive'の場合は未発行）
+            const accountStatus = merchantData.account?.status;
+            setHasAccount(accountStatus === 'active');
             
             // APIレスポンスをフォームデータに変換
             setFormData({
