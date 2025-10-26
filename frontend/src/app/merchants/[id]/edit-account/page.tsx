@@ -31,7 +31,6 @@ export default function MerchantAccountEditPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSendingResetEmail, setIsSendingResetEmail] = useState(false);
   const [serverError, setServerError] = useState<string>('');
 
   const fieldRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -193,30 +192,6 @@ export default function MerchantAccountEditPage() {
     }
   };
 
-  const handleSendPasswordReset = async () => {
-    if (!confirm('パスワード再設定用のメールを送信しますか？')) {
-      return;
-    }
-
-    try {
-      setIsSendingResetEmail(true);
-      setServerError('');
-
-      const response = await apiClient.sendPasswordResetEmail(merchantId) as { success: boolean; error?: string };
-      
-      if (response.success) {
-        addToast({ type: 'success', message: 'パスワード再設定メールを送信しました' });
-      } else {
-        setServerError(response.error || 'パスワード再設定メールの送信に失敗しました');
-      }
-    } catch (error) {
-      console.error('Failed to send password reset email:', error);
-      setServerError('パスワード再設定メールの送信に失敗しました');
-    } finally {
-      setIsSendingResetEmail(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <AdminLayout>
@@ -348,30 +323,6 @@ export default function MerchantAccountEditPage() {
                   </div>
                 </div>
               )}
-
-              {/* パスワード再設定ボタン */}
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-1">パスワード再設定メール</h4>
-                    <p className="text-sm text-gray-600">
-                      メールアドレスにパスワード再設定用のリンクを送信します
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleSendPasswordReset}
-                    disabled={isSendingResetEmail}
-                    className={`px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium text-sm ${
-                      isSendingResetEmail
-                        ? 'opacity-50 cursor-not-allowed'
-                        : ''
-                    }`}
-                  >
-                    {isSendingResetEmail ? '送信中...' : 'メール送信'}
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
 

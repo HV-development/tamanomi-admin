@@ -12,8 +12,7 @@ import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
 import Checkbox from '@/components/atoms/Checkbox';
-import ShopFloatingFooter from '@/components/molecules/shop-floating-footer';
-import BulkUpdateConfirmModal from '@/components/molecules/bulk-update-confirm-modal';
+import FloatingFooter from '@/components/molecules/floating-footer';
 
 export default function ShopsPage() {
   const auth = useAuth();
@@ -37,6 +36,7 @@ export default function ShopsPage() {
     prefecture: '',
     city: '',
     status: 'all' as 'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
+    appName: 'all' as 'all' | 'tamanomi' | 'nomoca_kagawa',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
@@ -46,7 +46,6 @@ export default function ShopsPage() {
   const [isIndeterminate, setIsIndeterminate] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('operating');
   const [isExecuting, setIsExecuting] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // 会社アカウントの場合、自分の会社IDを取得
   useEffect(() => {
@@ -138,6 +137,9 @@ export default function ShopsPage() {
       if (searchForm.city) queryParams.append('city', searchForm.city);
       if (searchForm.status && searchForm.status !== 'all') {
         queryParams.append('status', searchForm.status);
+      }
+      if (searchForm.appName && searchForm.appName !== 'all') {
+        queryParams.append('appName', searchForm.appName);
       }
       
       const data = await apiClient.getShops(queryParams.toString());
@@ -251,6 +253,7 @@ export default function ShopsPage() {
       prefecture: '',
       city: '',
       status: 'all',
+      appName: 'all',
     });
     // クリア後にデータを再取得
     setTimeout(() => fetchShops(), 100);
@@ -333,43 +336,11 @@ export default function ShopsPage() {
   const handleExecute = async () => {
     if (selectedShops.size === 0) return;
 
-    // 確認モーダルを表示
-    setShowConfirmModal(true);
-  };
-
-  const handleConfirmExecute = async () => {
-    if (selectedShops.size === 0) return;
-
-    setShowConfirmModal(false);
     setIsExecuting(true);
     try {
-      const shopIds = Array.from(selectedShops);
-      let updatedCount = 0;
-      let failedCount = 0;
-      const errors: string[] = [];
-      
-      // 個別に店舗ステータスを更新
-      for (const shopId of shopIds) {
-        try {
-          await apiClient.updateShopStatus(shopId, { status: selectedStatus });
-          updatedCount++;
-        } catch (error) {
-          failedCount++;
-          errors.push(`店舗ID ${shopId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-      }
-      
-      if (failedCount === 0) {
-        showSuccess(`${updatedCount}件の店舗のステータスを更新しました`);
-      } else {
-        showSuccess(`${updatedCount}件の店舗のステータスを更新しました（${failedCount}件失敗）`);
-        if (errors.length > 0) {
-          console.warn('一部の店舗でエラーが発生しました:', errors);
-        }
-      }
-      
-      // データを再取得
-      await fetchShops();
+      // 一括処理（今後実装予定）
+      await new Promise(resolve => setTimeout(resolve, 1500)); // 模擬APIコール
+      showSuccess(`${selectedShops.size}件の店舗に対して処理を実行しました`);
       
       // 選択をクリア
       setSelectedShops(new Set());
@@ -381,10 +352,6 @@ export default function ShopsPage() {
     } finally {
       setIsExecuting(false);
     }
-  };
-
-  const handleCancelExecute = () => {
-    setShowConfirmModal(false);
   };
 
   const getStatusColor = (status: string) => {
@@ -617,6 +584,23 @@ export default function ShopsPage() {
                 ))}
               </select>
             </div>
+
+            {/* 掲載サイト */}
+            <div>
+              <label htmlFor="appName" className="block text-sm font-medium text-gray-700 mb-2">
+                掲載サイト
+              </label>
+              <select
+                id="appName"
+                value={searchForm.appName}
+                onChange={(e) => handleInputChange('appName', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              >
+                <option value="all">すべて</option>
+                <option value="tamanomi">たまのみ</option>
+                <option value="nomoca_kagawa">のもかかがわ</option>
+              </select>
+            </div>
             </div>
 
             {/* 検索・クリアボタン */}
@@ -810,6 +794,9 @@ export default function ShopsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                     ステータス
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                    掲載サイト
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -868,7 +855,9 @@ export default function ShopsPage() {
                     </td>
                     <td className="px-6 py-4 min-w-[250px]">
                       <div className="text-sm text-gray-900">
-                        {shop.postalCode ? `〒${shop.postalCode}` : '-'}<br />
+                        {shop.postalCode ? `〒${shop.postalCode}` : '-'}
+                      </div>
+                      <div className="text-sm text-gray-900 mt-1">
                         {shop.address || '-'}
                       </div>
                     </td>
@@ -878,24 +867,27 @@ export default function ShopsPage() {
                     <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
                       <div className="text-sm text-gray-900">{shop.phone}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[220px]">
-                      {isMerchantAccount ? (
-                        <span className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium ${getStatusColor(shop.status)}`}>
-                          {statusOptions.find(opt => opt.value === shop.status)?.label || shop.status}
-                        </span>
-                      ) : (
-                        <select
-                          value={shop.status}
-                          onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
-                          className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full ${getStatusColor(shop.status)}`}
-                        >
-                          {statusOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      )}
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
+                      <select
+                        value={shop.status}
+                        onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
+                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full ${getStatusColor(shop.status)}`}
+                      >
+                        {statusOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[120px]">
+                      <div className="text-sm text-gray-900">
+                        {(shop as Shop & { applications?: string[] }).applications && Array.isArray((shop as Shop & { applications?: string[] }).applications) 
+                          ? (shop as Shop & { applications?: string[] }).applications.map((app: string) => 
+                              app === 'tamanomi' ? 'たまのみ' : app === 'nomoca_kagawa' ? 'のもかかがわ' : app
+                            ).join(', ')
+                          : '-'}
+                      </div>
                     </td>
                   </tr>
               ))}
@@ -920,24 +912,17 @@ export default function ShopsPage() {
         )}
       </div>
 
-      <ShopFloatingFooter
+      <FloatingFooter
         selectedCount={selectedShops.size}
         onStatusChange={handleStatusChange}
         onExecute={handleExecute}
+        onIssueAccount={() => {}} // 店舗では使用しない
         selectedStatus={selectedStatus}
         isExecuting={isExecuting}
+        isIssuingAccount={false}
       />
       
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
-      
-      <BulkUpdateConfirmModal
-        isOpen={showConfirmModal}
-        onClose={handleCancelExecute}
-        onConfirm={handleConfirmExecute}
-        selectedCount={selectedShops.size}
-        selectedStatus={selectedStatus}
-        isExecuting={isExecuting}
-      />
     </AdminLayout>
   );
 }
