@@ -48,6 +48,8 @@ export default function MerchantEditPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [issueAccount, setIssueAccount] = useState(false); // アカウント発行チェックボックス
+  const [hasAccount, setHasAccount] = useState(false); // アカウント発行済みかどうか
+  const [isSendingPasswordReset, setIsSendingPasswordReset] = useState(false);
   
   // 事業者アカウントの場合はアクセス拒否
   useEffect(() => {
@@ -107,6 +109,10 @@ export default function MerchantEditPage() {
               type: typeof merchantData.applications,
               isArray: Array.isArray(merchantData.applications)
             });
+            
+            // アカウント発行済みかどうかを確認
+            const accountPasswordHash = merchantData.account?.passwordHash;
+            setHasAccount(!!accountPasswordHash);
             
             // APIレスポンスをフォームデータに変換
             setFormData({
@@ -344,6 +350,29 @@ export default function MerchantEditPage() {
     console.log('✅ Edit validation successful');
     setErrors({});
     return true;
+  };
+
+  const handlePasswordReset = async () => {
+    if (window.confirm('パスワード再設定メールを送信しますか？')) {
+      setIsSendingPasswordReset(true);
+      try {
+        const response = await fetch(`/api/merchants/${merchantId}/send-password-reset`, {
+          method: 'POST',
+        });
+        
+        if (response.ok) {
+          alert('パスワード再設定メールを送信しました');
+        } else {
+          const errorData = await response.json();
+          alert(`パスワード再設定メールの送信に失敗しました: ${errorData.error?.message || '不明なエラー'}`);
+        }
+      } catch (error) {
+        console.error('パスワード再設定メールの送信に失敗しました:', error);
+        alert('パスワード再設定メールの送信に失敗しました');
+      } finally {
+        setIsSendingPasswordReset(false);
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -660,19 +689,21 @@ export default function MerchantEditPage() {
                 </div>
               </div>
 
-              {/* アカウント発行チェックボックス */}
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="issueAccount"
-                  checked={issueAccount}
-                  onChange={(e) => setIssueAccount(e.target.checked)}
-                  className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                />
-                <label htmlFor="issueAccount" className="ml-2 text-sm font-medium text-gray-700">
-                  アカウントを発行する（パスワード設定メールを送信）
-                </label>
-              </div>
+              {/* アカウント発行チェックボックス（アカウント未発行の場合のみ表示） */}
+              {!hasAccount && (
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="issueAccount"
+                    checked={issueAccount}
+                    onChange={(e) => setIssueAccount(e.target.checked)}
+                    className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                  />
+                  <label htmlFor="issueAccount" className="ml-2 text-sm font-medium text-gray-700">
+                    アカウントを発行する（パスワード設定メールを送信）
+                  </label>
+                </div>
+              )}
             </div>
           </div>
 
@@ -838,6 +869,16 @@ export default function MerchantEditPage() {
             >
               キャンセル
             </Button>
+            {hasAccount && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handlePasswordReset}
+                disabled={isSendingPasswordReset}
+              >
+                {isSendingPasswordReset ? '送信中...' : 'パスワード再設定'}
+              </Button>
+            )}
             <Button
               type="submit"
               variant="primary"
