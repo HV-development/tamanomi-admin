@@ -257,6 +257,65 @@ export default function ShopsPage() {
     setTimeout(() => fetchShops(), 100);
   };
 
+  // チェックボックス関連の関数
+  useEffect(() => {
+    const allCount = shops.length;
+    const selectedCount = selectedShops.size;
+    setIsAllSelected(allCount > 0 && selectedCount === allCount);
+    setIsIndeterminate(selectedCount > 0 && selectedCount < allCount);
+  }, [selectedShops, shops]);
+
+  const handleToggleAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedShops(new Set(shops.map(shop => shop.id)));
+    } else {
+      setSelectedShops(new Set());
+    }
+  };
+
+  const handleToggleShop = (shopId: string, checked: boolean) => {
+    const newSelected = new Set(selectedShops);
+    if (checked) {
+      newSelected.add(shopId);
+    } else {
+      newSelected.delete(shopId);
+    }
+    setSelectedShops(newSelected);
+  };
+
+  // 一括更新処理
+  const handleBulkUpdateStatus = async (status: string) => {
+    if (selectedShops.size === 0) return;
+
+    try {
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const shopId of selectedShops) {
+        try {
+          await apiClient.updateShopStatus(shopId, { status });
+          successCount++;
+        } catch (error) {
+          console.error(`店舗 ${shopId} の更新に失敗:`, error);
+          failCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        showSuccess(`${successCount}件のステータスを更新しました`);
+      }
+      if (failCount > 0) {
+        showError(`${failCount}件の更新に失敗しました`);
+      }
+
+      setSelectedShops(new Set());
+      fetchShops();
+    } catch (error) {
+      console.error('一括更新に失敗しました:', error);
+      showError('一括更新に失敗しました');
+    }
+  };
+
   const handleIndividualStatusChange = async (shopId: string, newStatus: string) => {
     const originalShop = shops.find(s => s.id === shopId);
     if (!originalShop) return;
@@ -289,43 +348,6 @@ export default function ShopsPage() {
   };
 
   // チェックボックス関連の関数を追加
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      const allIds = new Set(shops.map(shop => shop.id));
-      setSelectedShops(allIds);
-      setIsAllSelected(true);
-      setIsIndeterminate(false);
-    } else {
-      setSelectedShops(new Set());
-      setIsAllSelected(false);
-      setIsIndeterminate(false);
-    }
-  };
-
-  const handleSelectShop = (shopId: string, checked: boolean) => {
-    const newSelected = new Set(selectedShops);
-    if (checked) {
-      newSelected.add(shopId);
-    } else {
-      newSelected.delete(shopId);
-    }
-    setSelectedShops(newSelected);
-
-    // 全選択状態の更新
-    const totalCount = shops.length;
-    const selectedCount = newSelected.size;
-    
-    if (selectedCount === 0) {
-      setIsAllSelected(false);
-      setIsIndeterminate(false);
-    } else if (selectedCount === totalCount) {
-      setIsAllSelected(true);
-      setIsIndeterminate(false);
-    } else {
-      setIsAllSelected(false);
-      setIsIndeterminate(true);
-    }
-  };
 
 
   const getStatusColor = (status: string) => {
@@ -738,13 +760,15 @@ export default function ShopsPage() {
             <table className="w-full min-w-[1200px]">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
-                    <Checkbox
-                      checked={isAllSelected}
-                      indeterminate={isIndeterminate}
-                      onChange={handleSelectAll}
-                    />
-                  </th>
+                  {!isMerchantAccount && !isShopAccount && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
+                      <Checkbox
+                        checked={isAllSelected}
+                        indeterminate={isIndeterminate}
+                        onChange={handleToggleAll}
+                      />
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
                     アクション
                   </th>
@@ -773,12 +797,14 @@ export default function ShopsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
               {shops.map((shop) => (
                   <tr key={shop.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap w-32">
-                      <Checkbox
-                        checked={selectedShops.has(shop.id)}
-                        onChange={(checked) => handleSelectShop(shop.id, checked)}
-                      />
-                    </td>
+                    {!isMerchantAccount && !isShopAccount && (
+                      <td className="px-6 py-4 whitespace-nowrap w-32">
+                        <Checkbox
+                          checked={selectedShops.has(shop.id)}
+                          onChange={(checked) => handleToggleShop(shop.id, checked)}
+                        />
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap w-32">
                       <div className="flex justify-center gap-2">
                         <Link href={`/merchants/${merchantId || shop.merchantId}/shops/${shop.id}/edit`}>
@@ -874,11 +900,12 @@ export default function ShopsPage() {
         )}
       </div>
 
-      <FloatingFooter
-        selectedCount={selectedShops.size}
-        onIssueAccount={() => {}} // 店舗では使用しない
-        isIssuingAccount={false}
-      />
+      {!isMerchantAccount && !isShopAccount && (
+        <FloatingFooter
+          selectedCount={selectedShops.size}
+          onBulkUpdateStatus={handleBulkUpdateStatus}
+        />
+      )}
       
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
