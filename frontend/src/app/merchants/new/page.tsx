@@ -309,8 +309,10 @@ export default function MerchantNewPage() {
             setServerError(errorData.error?.message || errorData.message || '入力内容に誤りがあります');
           }
         } else {
-          // その他のエラーの場合
-          showError(errorData.message || '登録中にエラーが発生しました');
+          // その他のエラーの場合（409 Conflictなど）
+          console.error('Error data:', errorData);
+          const errorMessage = errorData.error?.message || errorData.message || '登録中にエラーが発生しました';
+          showError(errorMessage);
         }
         return;
       }
@@ -372,10 +374,10 @@ export default function MerchantNewPage() {
             <h3 className="text-lg font-medium text-gray-900 mb-6">基本情報</h3>
             
             <div className="space-y-6">
-              {/* 事業者名 / 事業者名 */}
+              {/* 事業者名 / 代表店舗名 */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  事業者名 / 事業者名 <span className="text-red-500">*</span>
+                  事業者名 / 代表店舗名 <span className="text-red-500">*</span>
                 </label>
                 <input
                   ref={(el) => { fieldRefs.current.name = el; }}
@@ -387,7 +389,7 @@ export default function MerchantNewPage() {
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.name ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="事業者名 / 事業者名を入力してください"
+                  placeholder="事業者名 / 代表店舗名を入力してください"
                 />
                 <div className="mt-1 flex justify-between items-center">
                   {errors.name ? (
