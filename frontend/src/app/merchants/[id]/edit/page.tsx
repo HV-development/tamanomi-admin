@@ -49,6 +49,7 @@ export default function MerchantEditPage() {
   const [issueAccount, setIssueAccount] = useState(false); // アカウント発行チェックボックス
   const [hasAccount, setHasAccount] = useState(false); // アカウント発行済みかどうか
   const [isSendingPasswordReset, setIsSendingPasswordReset] = useState(false);
+  const [status, setStatus] = useState<'inactive' | 'active' | 'terminated'>('inactive'); // 契約ステータス
   
   // 事業者アカウントの場合はアクセス拒否
   useEffect(() => {
@@ -112,6 +113,9 @@ export default function MerchantEditPage() {
             // アカウント発行済みかどうかを確認（statusが'pending'または'active'の場合は発行済み）
             const accountStatus = merchantData.account?.status;
             setHasAccount(accountStatus === 'pending' || accountStatus === 'active');
+            
+            // 契約ステータスを設定
+            setStatus(merchantData.status || 'inactive');
             
             // APIレスポンスをフォームデータに変換
             setFormData({
@@ -403,6 +407,7 @@ export default function MerchantEditPage() {
         address1: formData.address1,
         address2: formData.address2,
         issueAccount, // アカウント発行フラグ
+        status, // 契約ステータス
       };
 
       const token = localStorage.getItem('accessToken');
@@ -855,6 +860,29 @@ export default function MerchantEditPage() {
                   )}
                   <p className="text-sm text-gray-500">{getCharacterCount('address2', 255)}</p>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 契約ステータス */}
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 mb-6">契約ステータス</h3>
+            
+            <div className="space-y-6">
+              <div className="w-60">
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                  契約ステータス <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="status"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as 'inactive' | 'active' | 'terminated')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="inactive">未契約</option>
+                  <option value="active">契約中</option>
+                  <option value="terminated">解約済み</option>
+                </select>
               </div>
             </div>
           </div>
