@@ -415,6 +415,26 @@ class ApiClient {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
+
+  async updateCouponStatus(id: string, statusData: { status: string }): Promise<unknown> {
+    console.log('🔄 API: updateCouponStatus called (via Next.js API Route)', { id, statusData });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/coupons/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(statusData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async updateCouponPublicStatus(id: string, publicStatusData: { isPublic: boolean }): Promise<unknown> {
+    console.log('🌐 API: updateCouponPublicStatus called (via Next.js API Route)', { id, publicStatusData });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/coupons/${id}/public-status`, {
+      method: 'PATCH',
+      body: JSON.stringify(publicStatusData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
 }
 
 export const apiClient = new ApiClient();
