@@ -127,10 +127,10 @@ export default function ShopCouponsPage() {
 
   const _getStatusLabel = (status: CouponStatus) => {
     switch (status) {
-      case 'pending':
-        return '申請中';
-      case 'approved':
-        return '承認済み';
+      case 'active':
+        return '有効';
+      case 'inactive':
+        return '無効';
       case 'suspended':
         return '停止中';
       default:
