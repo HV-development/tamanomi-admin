@@ -369,10 +369,10 @@ export default function CouponsPage() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="pl-6 pr-0 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
                     アクション
                   </th>
-                  <th className="pl-2 pr-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     会社名
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -398,21 +398,21 @@ export default function CouponsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredCoupons.map((coupon) => (
                   <tr key={coupon.id} className="hover:bg-gray-50">
-                    <td className="pl-6 pr-0 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-1">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium min-w-[120px]">
+                      <div className="flex items-center gap-2">
                         <Link href={`/coupons/${coupon.id}/edit`}>
                           <button className="p-1 transition-opacity hover:opacity-70">
                             <Image src="/edit.svg" alt="編集" width={24} height={24} />
                           </button>
                         </Link>
                         <Link href={`/coupons/${coupon.id}/history`}>
-                          <button className="p-1 pl-6 transition-opacity hover:opacity-70">
+                          <button className="p-1 transition-opacity hover:opacity-70">
                             <Image src="/history.png" alt="利用履歴" width={24} height={24} />
                           </button>
                         </Link>
                       </div>
                     </td>
-                    <td className="pl-2 pr-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{coupon.shop?.merchant?.name || '-'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
