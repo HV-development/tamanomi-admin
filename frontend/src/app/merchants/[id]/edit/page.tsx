@@ -19,7 +19,6 @@ const prefectures = [
   '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'
 ];
 
-
 export default function MerchantEditPage() {
   const params = useParams();
   const router = useRouter();
@@ -86,7 +85,7 @@ export default function MerchantEditPage() {
 
     const loadMerchantData = async () => {
       try {
-        // APIから会社データを取得
+        // APIから事業者データを取得
         const token = localStorage.getItem('accessToken');
         const response = await fetch(`/api/merchants/${merchantId}`, {
           signal: abortController.signal,
@@ -138,7 +137,7 @@ export default function MerchantEditPage() {
           
           const errorData = await response.json();
           console.error('❌ 事業者データの取得に失敗しました:', { status: response.status, error: errorData });
-          alert(`会社データの取得に失敗しました: ${errorData.error?.message || '不明なエラー'}`);
+          alert(`事業者データの取得に失敗しました: ${errorData.error?.message || '不明なエラー'}`);
         }
       } catch (error) {
         // アボート時のエラーは無視
@@ -149,7 +148,7 @@ export default function MerchantEditPage() {
         if (!isMounted) return;
         
         console.error('❌ 事業者データの読み込みエラー:', error);
-        alert(`会社データの読み込みに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+        alert(`事業者データの読み込みに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -417,8 +416,8 @@ export default function MerchantEditPage() {
       });
 
       if (response.ok) {
-        console.log('会社更新データ:', formData);
-        alert('会社の更新が完了しました。');
+        console.log('事業者更新データ:', formData);
+        alert('事業者の更新が完了しました。');
         // 事業者一覧に遷移
         router.push('/merchants');
       } else {
@@ -514,7 +513,7 @@ export default function MerchantEditPage() {
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                     errors.nameKana ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="会社名（カナ）を入力"
+                  placeholder="事業者名（カナ）を入力"
                 />
                 <div className="mt-1 flex justify-between items-center">
                   {errors.nameKana ? (
@@ -869,23 +868,25 @@ export default function MerchantEditPage() {
             >
               キャンセル
             </Button>
-            {hasAccount && (
+            <div className="flex gap-2">
               <Button
-                type="button"
-                variant="secondary"
-                onClick={handlePasswordReset}
-                disabled={isSendingPasswordReset}
+                type="submit"
+                variant="primary"
+                disabled={isSubmitting}
               >
-                {isSendingPasswordReset ? '送信中...' : 'パスワード再設定'}
+                {isSubmitting ? '更新中...' : '更新する'}
               </Button>
-            )}
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? '更新中...' : '更新'}
-            </Button>
+              {hasAccount && (
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm border border-blue-600 bg-white text-blue-600 hover:bg-blue-50 focus:ring-blue-500"
+                  onClick={handlePasswordReset}
+                  disabled={isSendingPasswordReset}
+                >
+                  {isSendingPasswordReset ? '送信中...' : 'パスワード再設定'}
+                </button>
+              )}
+            </div>
           </div>
         </form>
       </div>

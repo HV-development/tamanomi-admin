@@ -49,7 +49,7 @@ function CouponEditPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   
-  // 会社・店舗情報（読み取り専用）
+  //事業者・店舗情報（読み取り専用）
   const [merchantName, setMerchantName] = useState<string>('');
   const [shopName, setShopName] = useState<string>('');
 
@@ -68,7 +68,7 @@ function CouponEditPageContent() {
           publishStatus: data.status === 'approved' ? '1' : '2',
         });
         
-        // 会社・店舗情報を設定
+        // 事業者・店舗情報を設定
         if (data.shop) {
           setShopName(data.shop.name);
           if (data.shop.merchant) {
@@ -284,11 +284,11 @@ function CouponEditPageContent() {
         {/* 編集フォーム */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="space-y-6">
-            {/* 会社情報（読み取り専用） */}
+            {/* 事業者情報（読み取り専用） */}
             {merchantName && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  会社
+                  事業者
                 </label>
                 <div className="text-sm text-gray-900">
                   {merchantName}

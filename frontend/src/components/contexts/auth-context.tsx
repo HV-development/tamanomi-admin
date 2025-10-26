@@ -12,7 +12,7 @@ interface User {
   name: string;
   accountType: 'admin' | 'merchant' | 'user' | 'shop';
   shopId?: string; // 店舗アカウントの場合の店舗ID
-  merchantId?: string; // 会社アカウントまたは店舗アカウントの場合の会社ID
+  merchantId?: string; // 事業者アカウントまたは店舗アカウントの場合の事業者ID
 }
 
 interface AuthContextType {

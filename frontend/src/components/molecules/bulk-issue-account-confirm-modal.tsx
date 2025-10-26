@@ -36,7 +36,7 @@ export default function BulkIssueAccountConfirmModal({
           {/* メッセージ */}
           <div className="mb-8 text-center">
             <p className="text-gray-700">
-              <span className="font-medium">{selectedCount}件</span>の会社にアカウントを発行します。
+              <span className="font-medium">{selectedCount}件</span>の事業者にアカウントを発行します。
             </p>
             {alreadyIssuedCount > 0 && (
               <p className="text-yellow-600 mt-2 font-medium">

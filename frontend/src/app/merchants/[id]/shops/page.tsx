@@ -239,11 +239,11 @@ export default function MerchantShopsPage() {
             </div>
           </div>
           
-          {/* 親会社名の表示 */}
+          {/* 親事業者名の表示 */}
           {merchantName && (
             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center">
-                <span className="text-sm font-medium text-gray-700 mr-2">会社名:</span>
+                <span className="text-sm font-medium text-gray-700 mr-2">事業者名:</span>
                 <span className="text-sm font-bold text-gray-900">{merchantName}</span>
               </div>
             </div>
@@ -462,7 +462,7 @@ export default function MerchantShopsPage() {
                   </th>
                   {!merchantId && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-                      会社名
+                    事業者名
                     </th>
                   )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">

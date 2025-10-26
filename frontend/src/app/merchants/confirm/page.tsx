@@ -44,10 +44,10 @@ function MerchantConfirmContent() {
       // API呼び出しをシミュレート
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      console.log('会社登録データ:', formData);
+      console.log('事業者登録データ:', formData);
       
       // 成功時の処理（実際の実装では適切なページにリダイレクト）
-      alert('会社の登録が完了しました。');
+      alert('事業者の登録が完了しました。');
       
     } catch (error) {
       console.error('登録エラー:', error);

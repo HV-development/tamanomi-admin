@@ -81,7 +81,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    console.log('➕ API Route: 会社作成リクエスト受信', { 
+    console.log('➕ API Route: 事業者作成リクエスト受信', { 
       name: body.name,
       fullBody: body,
       bodyKeys: Object.keys(body)
@@ -95,15 +95,15 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('❌ API Route: 会社作成失敗', { status: response.status, error: errorData });
+      console.error('❌ API Route: 事業者作成失敗', { status: response.status, error: errorData });
       return NextResponse.json(errorData, { status: response.status });
     }
 
     const data = await response.json();
-    console.log('✅ API Route: 会社作成成功', { merchantId: data.id });
+    console.log('✅ API Route: 事業者作成成功', { merchantId: data.id });
     return NextResponse.json(data);
   } catch (error: unknown) {
-    console.error('❌ API Route: 会社作成エラー', error);
+    console.error('❌ API Route: 事業者作成エラー', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
   }
