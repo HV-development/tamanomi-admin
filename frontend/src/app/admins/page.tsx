@@ -135,7 +135,7 @@ export default function AdminsPage() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-900">管理者アカウント管理</h1>
+            <h1 className="text-2xl font-bold text-gray-900">管理者アカウント</h1>
             <p className="text-gray-600">
               管理者アカウントの管理・編集を行います
             </p>

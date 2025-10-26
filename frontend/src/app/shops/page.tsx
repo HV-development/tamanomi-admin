@@ -38,8 +38,18 @@ export default function ShopsPage() {
     prefecture: '',
     address: '',
     status: 'all' as 'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
+    createdAtFrom: '',
+    createdAtTo: '',
+    updatedAtFrom: '',
+    updatedAtTo: '',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [searchErrors, setSearchErrors] = useState({
+    createdAtFrom: '',
+    createdAtTo: '',
+    updatedAtFrom: '',
+    updatedAtTo: '',
+  });
 
   // チェックボックス関連の状態を追加
   const [selectedShops, setSelectedShops] = useState<Set<string>>(new Set());
@@ -139,6 +149,10 @@ export default function ShopsPage() {
       if (searchForm.status && searchForm.status !== 'all') {
         queryParams.append('status', searchForm.status);
       }
+      if (searchForm.createdAtFrom) queryParams.append('createdAtFrom', searchForm.createdAtFrom);
+      if (searchForm.createdAtTo) queryParams.append('createdAtTo', searchForm.createdAtTo);
+      if (searchForm.updatedAtFrom) queryParams.append('updatedAtFrom', searchForm.updatedAtFrom);
+      if (searchForm.updatedAtTo) queryParams.append('updatedAtTo', searchForm.updatedAtTo);
       
       const data = await apiClient.getShops(queryParams.toString());
         
@@ -235,8 +249,90 @@ export default function ShopsPage() {
 
   // 検索実行ハンドラー
   const handleSearch = () => {
+    if (!validateSearchForm()) {
+      return;
+    }
     console.log('検索実行:', searchForm);
     fetchShops();
+  };
+
+  // 日付バリデーション関数
+  const validateSearchForm = (): boolean => {
+    const errors: {createdAtFrom?: string; createdAtTo?: string; updatedAtFrom?: string; updatedAtTo?: string} = {};
+    
+    // 登録日開始日のバリデーション
+    if (searchForm.createdAtFrom) {
+      const fromDate = new Date(searchForm.createdAtFrom);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      
+      if (fromDate > today) {
+        errors.createdAtFrom = '開始日は今日以前の日付を指定してください';
+      }
+    }
+    
+    // 登録日終了日のバリデーション
+    if (searchForm.createdAtTo) {
+      const toDate = new Date(searchForm.createdAtTo);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      
+      if (toDate > today) {
+        errors.createdAtTo = '終了日は今日以前の日付を指定してください';
+      }
+    }
+    
+    // 登録日の範囲バリデーション
+    if (searchForm.createdAtFrom && searchForm.createdAtTo) {
+      const fromDate = new Date(searchForm.createdAtFrom);
+      const toDate = new Date(searchForm.createdAtTo);
+      
+      if (fromDate > toDate) {
+        errors.createdAtFrom = '開始日は終了日より前の日付を指定してください';
+        errors.createdAtTo = '終了日は開始日より後の日付を指定してください';
+      }
+    }
+    
+    // 更新日開始日のバリデーション
+    if (searchForm.updatedAtFrom) {
+      const fromDate = new Date(searchForm.updatedAtFrom);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      
+      if (fromDate > today) {
+        errors.updatedAtFrom = '開始日は今日以前の日付を指定してください';
+      }
+    }
+    
+    // 更新日終了日のバリデーション
+    if (searchForm.updatedAtTo) {
+      const toDate = new Date(searchForm.updatedAtTo);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      
+      if (toDate > today) {
+        errors.updatedAtTo = '終了日は今日以前の日付を指定してください';
+      }
+    }
+    
+    // 更新日の範囲バリデーション
+    if (searchForm.updatedAtFrom && searchForm.updatedAtTo) {
+      const fromDate = new Date(searchForm.updatedAtFrom);
+      const toDate = new Date(searchForm.updatedAtTo);
+      
+      if (fromDate > toDate) {
+        errors.updatedAtFrom = '開始日は終了日より前の日付を指定してください';
+        errors.updatedAtTo = '終了日は開始日より後の日付を指定してください';
+      }
+    }
+    
+    setSearchErrors({
+      createdAtFrom: errors.createdAtFrom || '',
+      createdAtTo: errors.createdAtTo || '',
+      updatedAtFrom: errors.updatedAtFrom || '',
+      updatedAtTo: errors.updatedAtTo || '',
+    });
+    return Object.keys(errors).length === 0;
   };
 
   // クリアハンドラー
@@ -253,6 +349,16 @@ export default function ShopsPage() {
       prefecture: '',
       address: '',
       status: 'all',
+      createdAtFrom: '',
+      createdAtTo: '',
+      updatedAtFrom: '',
+      updatedAtTo: '',
+    });
+    setSearchErrors({
+      createdAtFrom: '',
+      createdAtTo: '',
+      updatedAtFrom: '',
+      updatedAtTo: '',
     });
     // クリア後にデータを再取得
     setTimeout(() => fetchShops(), 100);
@@ -442,9 +548,9 @@ export default function ShopsPage() {
           </div>
           
           {isSearchExpanded && (
-          <div className="p-6">
+          <div className="p-6 space-y-4">
             {/* フリーワード検索 */}
-            <div className="mb-4">
+            <div>
               <label htmlFor="keyword" className="block text-sm font-medium text-gray-700 mb-2">
                 フリーワード検索
               </label>
@@ -460,7 +566,7 @@ export default function ShopsPage() {
             
             {/* 事業者名と事業者名（カナ） */}
             {!merchantId && (
-              <div className="flex gap-4">
+              <div className="flex gap-4" style={{ marginTop: '16px' }}>
                 <div className="flex-1">
                   <label htmlFor="merchantName" className="block text-sm font-medium text-gray-700 mb-2">
                     事業者名
@@ -491,7 +597,7 @@ export default function ShopsPage() {
             )}
 
             {/* 店舗名と店舗名（カナ） */}
-            <div className="flex gap-4">
+            <div className="flex gap-4" style={{ marginTop: '16px' }}>
               <div className="flex-1">
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
                   店舗名
@@ -521,7 +627,7 @@ export default function ShopsPage() {
             </div>
 
             {/* 電話番号とメールアドレス */}
-            <div className="flex gap-4">
+            <div className="flex gap-4" style={{ marginTop: '16px' }}>
               <div className="flex-shrink-0">
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
                   電話番号
@@ -551,7 +657,7 @@ export default function ShopsPage() {
             </div>
 
             {/* 郵便番号、都道府県、住所 */}
-            <div className="flex gap-4">
+            <div className="flex gap-4" style={{ marginTop: '16px' }}>
               <div className="flex-shrink-0">
                 <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
                   郵便番号
@@ -594,7 +700,7 @@ export default function ShopsPage() {
             </div>
 
             {/* 承認ステータス */}
-            <div className="max-w-[200px]">
+            <div className="max-w-[200px]" style={{ marginTop: '16px' }}>
               <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
                 承認ステータス
               </label>
@@ -609,6 +715,70 @@ export default function ShopsPage() {
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
+            </div>
+
+            {/* 登録日・更新日の範囲 */}
+            <div className="flex gap-4" style={{ marginTop: '16px' }}>
+              <div>
+                <label htmlFor="createdAtFrom" className="block text-sm font-medium text-gray-700 mb-2">
+                  登録日（開始）
+                </label>
+                <input
+                  type="date"
+                  id="createdAtFrom"
+                  value={searchForm.createdAtFrom}
+                  onChange={(e) => handleInputChange('createdAtFrom', e.target.value)}
+                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+                {searchErrors.createdAtFrom && (
+                  <p className="text-red-600 text-sm mt-1">{searchErrors.createdAtFrom}</p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="createdAtTo" className="block text-sm font-medium text-gray-700 mb-2">
+                  登録日（終了）
+                </label>
+                <input
+                  type="date"
+                  id="createdAtTo"
+                  value={searchForm.createdAtTo}
+                  onChange={(e) => handleInputChange('createdAtTo', e.target.value)}
+                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+                {searchErrors.createdAtTo && (
+                  <p className="text-red-600 text-sm mt-1">{searchErrors.createdAtTo}</p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="updatedAtFrom" className="block text-sm font-medium text-gray-700 mb-2">
+                  更新日（開始）
+                </label>
+                <input
+                  type="date"
+                  id="updatedAtFrom"
+                  value={searchForm.updatedAtFrom}
+                  onChange={(e) => handleInputChange('updatedAtFrom', e.target.value)}
+                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+                {searchErrors.updatedAtFrom && (
+                  <p className="text-red-600 text-sm mt-1">{searchErrors.updatedAtFrom}</p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="updatedAtTo" className="block text-sm font-medium text-gray-700 mb-2">
+                  更新日（終了）
+                </label>
+                <input
+                  type="date"
+                  id="updatedAtTo"
+                  value={searchForm.updatedAtTo}
+                  onChange={(e) => handleInputChange('updatedAtTo', e.target.value)}
+                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+                {searchErrors.updatedAtTo && (
+                  <p className="text-red-600 text-sm mt-1">{searchErrors.updatedAtTo}</p>
+                )}
+              </div>
             </div>
 
             {/* 検索・クリアボタン */}
@@ -804,6 +974,12 @@ export default function ShopsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                     承認ステータス
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
+                    登録日時
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
+                    更新日時
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -854,9 +1030,9 @@ export default function ShopsPage() {
                         <div className="text-sm font-medium text-gray-900">
                           {shop.merchant?.name || '-'}
                         </div>
-                        {shop.merchant?.nameKana && (
+                        {/* shop.merchant?.nameKana && (
                           <div className="text-sm text-gray-500">{shop.merchant.nameKana}</div>
-                        )}
+                        ) */}
                       </td>
                     )}
                     <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
@@ -897,6 +1073,28 @@ export default function ShopsPage() {
                           ))}
                         </select>
                       )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
+                      <div className="text-sm text-gray-900">
+                        {new Date(shop.createdAt).toLocaleDateString('ja-JP', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
+                      <div className="text-sm text-gray-900">
+                        {new Date(shop.updatedAt).toLocaleDateString('ja-JP', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
                     </td>
                   </tr>
               ))}
