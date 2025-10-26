@@ -47,6 +47,7 @@ export default function MerchantEditPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [issueAccount, setIssueAccount] = useState(false); // アカウント発行チェックボックス
   
   // 事業者アカウントの場合はアクセス拒否
   useEffect(() => {
@@ -373,6 +374,7 @@ export default function MerchantEditPage() {
         city: formData.city,
         address1: formData.address1,
         address2: formData.address2,
+        issueAccount, // アカウント発行フラグ
       };
 
       const token = localStorage.getItem('accessToken');
@@ -388,7 +390,7 @@ export default function MerchantEditPage() {
       if (response.ok) {
         console.log('会社更新データ:', formData);
         alert('会社の更新が完了しました。');
-        // 会社一覧に遷移
+        // 事業者一覧に遷移
         router.push('/merchants');
       } else {
         const errorData = await response.json();
@@ -656,6 +658,20 @@ export default function MerchantEditPage() {
                   )}
                   <p className="text-sm text-gray-500">{getCharacterCount('email', 255)}</p>
                 </div>
+              </div>
+
+              {/* アカウント発行チェックボックス */}
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="issueAccount"
+                  checked={issueAccount}
+                  onChange={(e) => setIssueAccount(e.target.checked)}
+                  className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                />
+                <label htmlFor="issueAccount" className="ml-2 text-sm font-medium text-gray-700">
+                  アカウントを発行する（パスワード設定メールを送信）
+                </label>
               </div>
             </div>
           </div>
