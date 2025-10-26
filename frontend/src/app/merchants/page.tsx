@@ -680,7 +680,7 @@ export default function MerchantsPage() {
           </div>
           
           {isSearchExpanded && (
-          <div className="p-6 space-y-4">
+          <div className="p-6 space-y-3">
             {/* フリーワード検索 */}
             <div>
               <label htmlFor="keyword" className="block text-sm font-medium text-gray-700 mb-2">
@@ -697,7 +697,7 @@ export default function MerchantsPage() {
             </div>
 
             {/* 事業者名と事業者名（カナ） */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
                 <label htmlFor="merchantName" className="block text-sm font-medium text-gray-700 mb-2">
                   事業者名
@@ -727,7 +727,7 @@ export default function MerchantsPage() {
             </div>
 
             {/* 代表者名と代表者名（カナ） */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
                 <label htmlFor="representativeName" className="block text-sm font-medium text-gray-700 mb-2">
                   代表者名
@@ -756,8 +756,8 @@ export default function MerchantsPage() {
               </div>
             </div>
 
-            {/* 電話番号とメールアドレス */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 電話番号、メールアドレス、住所、郵便番号 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
                   電話番号
@@ -784,10 +784,6 @@ export default function MerchantsPage() {
                   className="w-full max-w-[500px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
               </div>
-            </div>
-
-            {/* 住所と郵便番号 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
                   住所
@@ -816,8 +812,8 @@ export default function MerchantsPage() {
               </div>
             </div>
 
-            {/* 都道府県とアカウント発行ステータス */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 都道府県、アカウント発行、契約ステータス */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               <div>
                 <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
                   都道府県
@@ -851,10 +847,6 @@ export default function MerchantsPage() {
                   <option value="suspended">停止中</option>
                 </select>
               </div>
-            </div>
-
-            {/* 契約ステータス */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="contractStatus" className="block text-sm font-medium text-gray-700 mb-2">
                   契約ステータス
@@ -871,11 +863,10 @@ export default function MerchantsPage() {
                   <option value="terminated">解約済み</option>
                 </select>
               </div>
-              <div></div>
             </div>
 
             {/* 登録日の範囲 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label htmlFor="createdAtFrom" className="block text-sm font-medium text-gray-700 mb-2">
                   登録日（開始）
@@ -909,7 +900,7 @@ export default function MerchantsPage() {
             </div>
 
             {/* 検索・クリアボタン */}
-            <div className="flex justify-center gap-2 mt-6">
+            <div className="flex justify-center gap-2 mt-4">
               <Button variant="outline" onClick={handleClear}>
                 クリア
               </Button>
