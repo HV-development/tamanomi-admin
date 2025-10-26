@@ -738,6 +738,9 @@ export default function MerchantsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                     代表者名
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                    電話番号
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
                     メールアドレス
                   </th>
@@ -803,7 +806,9 @@ export default function MerchantsPage() {
                     <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
                       <div className="text-sm font-medium text-gray-900">{merchant.representativeNameLast} {merchant.representativeNameFirst}</div>
                       <div className="text-sm text-gray-500">{merchant.representativeNameLastKana} {merchant.representativeNameFirstKana}</div>
-                      <div className="text-sm text-gray-500 mt-1">{merchant.representativePhone}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap min-w-[120px]">
+                      <div className="text-sm text-gray-900">{merchant.representativePhone}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                       <div className="text-sm text-gray-900">{merchant.email}</div>
