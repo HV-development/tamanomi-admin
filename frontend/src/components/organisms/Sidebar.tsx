@@ -79,6 +79,17 @@ export default function Sidebar() {
     <div className={`bg-white shadow-lg transition-all duration-300 relative flex-shrink-0 ${
       isCollapsed ? 'w-16' : 'w-64'
     } ${!isLoaded ? 'opacity-0' : 'opacity-100'}`}>
+      {/* アコーディオンボタンを右端に配置 */}
+      {isLoaded && (
+        <button
+          onClick={handleToggleCollapse}
+          className={`absolute top-4 right-0 ${isCollapsed ? 'pr-0' : 'pr-2'} p-2 pt-2 pb-2 pl-2 rounded-lg transition-colors text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 z-10`}
+          title={isCollapsed ? "展開" : "折りたたみ"}
+        >
+          <Icon name={isCollapsed ? "chevronRight" : "chevronLeft"} size="sm" />
+        </button>
+      )}
+
       <SidebarHeader isCollapsed={isCollapsed} />
 
       {/* メニュー */}
@@ -116,15 +127,6 @@ export default function Sidebar() {
           >
             <Icon name="logout" size="md" />
             {!isCollapsed && <span>ログアウト</span>}
-          </button>
-        </div>
-        
-        <div className="p-4 flex justify-end">
-          <button
-            onClick={handleToggleCollapse}
-            className="p-2 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
-          >
-            <Icon name={isCollapsed ? "chevronRight" : "chevronLeft"} size="sm" />
           </button>
         </div>
         

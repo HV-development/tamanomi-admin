@@ -74,9 +74,16 @@ export default function MerchantsPage() {
   // データ取得
   useEffect(() => {
     let isMounted = true;
+    let hasFetched = false;
     const abortController = new AbortController();
 
     const fetchMerchants = async () => {
+      // 重複実行を防止
+      if (hasFetched) {
+        console.log('🔍 MerchantsPage: Already fetched, skipping...');
+        return;
+      }
+      hasFetched = true;
       try {
         setIsLoading(true);
         setError(null);
@@ -101,7 +108,9 @@ export default function MerchantsPage() {
           return;
         }
         
+        console.log('🔍 MerchantsPage: Starting to fetch merchants data');
         const data = await apiClient.getMerchants();
+        console.log('🔍 MerchantsPage: API call completed, data received');
         
         // コンポーネントがアンマウントされている場合は処理を中断
         if (!isMounted) return;
