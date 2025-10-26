@@ -110,9 +110,9 @@ export default function MerchantEditPage() {
               isArray: Array.isArray(merchantData.applications)
             });
             
-            // アカウント発行済みかどうかを確認（statusが'inactive'の場合は未発行）
+            // アカウント発行済みかどうかを確認（statusが'pending'または'active'の場合は発行済み）
             const accountStatus = merchantData.account?.status;
-            setHasAccount(accountStatus === 'active');
+            setHasAccount(accountStatus === 'pending' || accountStatus === 'active');
             
             // APIレスポンスをフォームデータに変換
             setFormData({
