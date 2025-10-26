@@ -607,7 +607,7 @@ function CouponNewPageContent() {
                 disabled={isSubmitting}
                 className="px-8"
               >
-                {isSubmitting ? '処理中...' : '登録内容を確認する'}
+                {isSubmitting ? '処理中...' : (isMerchantAccount ? '申請する' : '登録内容を確認する')}
               </Button>
             </div>
           </div>

@@ -12,6 +12,7 @@ import {
   validateMaxLength, 
   validateFileSize
 } from '@/utils/validation';
+import { useAuth } from '@/components/contexts/auth-context';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,8 @@ function CouponEditPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const couponId = params.id as string;
+  const auth = useAuth();
+  const isMerchantAccount = auth?.user?.accountType === 'merchant';
 
   const [formData, setFormData] = useState<CouponFormData>({
     couponName: '',
@@ -408,7 +411,7 @@ function CouponEditPageContent() {
                 disabled={isSubmitting || isUploading}
                 className="px-8"
               >
-                {isSubmitting ? '更新中...' : '更新する'}
+                {isSubmitting ? '更新中...' : (isMerchantAccount ? '申請する' : '更新する')}
               </Button>
             </div>
           </div>
