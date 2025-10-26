@@ -2467,28 +2467,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         </div>
 
         {/* ボタン */}
-        <div className="relative flex justify-center items-center">
-          {isEdit && (
-            <Button 
-              type="button" 
-              variant="secondary"
-              onClick={async () => {
-                if (confirm('この店舗を削除しますか？この操作は取り消せません。')) {
-                  try {
-                    await apiClient.deleteShop(shopId);
-                    showSuccess('店舗を削除しました');
-                    const redirectPath = merchantId ? `/merchants/${merchantId}/shops` : '/shops';
-                    router.push(redirectPath);
-                  } catch (_error) {
-                    showError('店舗削除に失敗しました');
-                  }
-                }
-              }}
-              className="bg-red-600 hover:bg-red-700 text-white absolute left-0"
-            >
-              削除
-            </Button>
-          )}
+        <div className="flex justify-center items-center">
           <div className="flex space-x-3">
             <Button type="button" variant="outline" onClick={handleCancel}>
               キャンセル

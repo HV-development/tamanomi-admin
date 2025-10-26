@@ -395,7 +395,7 @@ export default function ShopsPage() {
           </div>
           
           {/* 親事業者名の表示 */}
-          {merchantName && (
+          {merchantName && !isMerchantAccount && (
             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center">
                 <span className="text-sm font-medium text-gray-700 mr-2">事業者名:</span>
@@ -772,7 +772,7 @@ export default function ShopsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
                     アクション
                   </th>
-                  {!merchantId && (
+                  {!merchantId && !isMerchantAccount && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
                       事業者名
                     </th>
@@ -837,7 +837,7 @@ export default function ShopsPage() {
                         </Link>
                       </div>
                     </td>
-                    {!merchantId && (
+                    {!merchantId && !isMerchantAccount && (
                       <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                         <div className="text-sm font-medium text-gray-900">
                           {shop.merchant?.name || '-'}
@@ -865,17 +865,23 @@ export default function ShopsPage() {
                       <div className="text-sm text-gray-900">{shop.phone}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
-                      <select
-                        value={shop.status}
-                        onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
-                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[180px] ${getStatusColor(shop.status)}`}
-                      >
-                        {statusOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                      {isMerchantAccount ? (
+                        <div className={`text-sm font-medium rounded-lg px-3 py-2 ${getStatusColor(shop.status)}`}>
+                          {statusLabels[shop.status] || shop.status}
+                        </div>
+                      ) : (
+                        <select
+                          value={shop.status}
+                          onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
+                          className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[180px] ${getStatusColor(shop.status)}`}
+                        >
+                          {statusOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </td>
                   </tr>
               ))}

@@ -305,9 +305,11 @@ function CouponNewPageContent() {
           description: formData.couponContent || null,
           conditions: formData.couponConditions || null,
           imageUrl: formData.imageUrl && formData.imageUrl.trim() !== '' ? formData.imageUrl : null,
-          status: 'pending' as CouponStatus,
+          status: 'active' as CouponStatus,
           isPublic: false
         };
+        
+        console.log('📤 Creating coupon with data:', couponData);
         
         await apiClient.createCoupon(couponData);
         
