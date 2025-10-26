@@ -289,6 +289,15 @@ class ApiClient {
     });
   }
 
+  async sendPasswordResetEmail(id: string): Promise<unknown> {
+    console.log('📧 API: sendPasswordResetEmail called (via Next.js API Route)', { id });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/merchants/${id}/send-password-reset`, {
+      method: 'POST',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
   // ジャンルカテゴリー関連
   async getGenres(): Promise<unknown> {
     console.log('🏷️ API: getGenres called (via Next.js API Route)');
