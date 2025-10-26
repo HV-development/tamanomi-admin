@@ -6,7 +6,7 @@ import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { apiClient } from '@/lib/api';
-import type { CouponWithShop, CouponUpdateRequest, CouponStatus } from '@hv-development/schemas';
+import type { CouponWithShop, CouponUpdateRequest } from '@hv-development/schemas';
 import { 
   validateRequired, 
   validateMaxLength, 
