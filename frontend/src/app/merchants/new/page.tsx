@@ -55,6 +55,7 @@ export default function MerchantNewPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string>('');
+  const [issueAccount, setIssueAccount] = useState(true); // アカウント発行チェックボックス
   
   // 住所検索フック
   const { isSearching: isSearchingAddress, searchAddress } = useAddressSearch(
@@ -247,6 +248,7 @@ export default function MerchantNewPage() {
         city: formData.city,
         address1: formData.address1,
         address2: formData.address2 || undefined,
+        issueAccount, // アカウント発行フラグ
       };
       
       console.log('📤 Sending merchant data:', requestData);
@@ -584,6 +586,20 @@ export default function MerchantNewPage() {
                   )}
                   <p className="text-sm text-gray-500">{formData.email.length} / 255</p>
                 </div>
+              </div>
+
+              {/* アカウント発行チェックボックス */}
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="issueAccount"
+                  checked={issueAccount}
+                  onChange={(e) => setIssueAccount(e.target.checked)}
+                  className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                />
+                <label htmlFor="issueAccount" className="ml-2 text-sm font-medium text-gray-700">
+                  アカウントを発行する（パスワード設定メールを送信）
+                </label>
               </div>
             </div>
           </div>
