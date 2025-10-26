@@ -435,6 +435,37 @@ class ApiClient {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
+
+  async updateCouponPublicStatusServerSide(id: string, publicStatusData: { isPublic: boolean }, authToken?: string): Promise<unknown> {
+    console.log('🌐 API: updateCouponPublicStatusServerSide called', { id, publicStatusData, authToken: authToken ? 'present' : 'missing' });
+    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3002/api/v1';
+    
+    try {
+      const response = await fetch(`${backendUrl}/coupons/${id}/public-status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': authToken }),
+        },
+        body: JSON.stringify(publicStatusData),
+      });
+      
+      console.log('📡 Server-side API Response:', { status: response.status, statusText: response.statusText });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('❌ Server-side API Error:', errorData);
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Server-side API Success:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Server-side API Request failed:', error);
+      throw error;
+    }
+  }
 }
 
 export const apiClient = new ApiClient();
