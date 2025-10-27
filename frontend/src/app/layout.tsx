@@ -11,10 +11,6 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "たまのみ - 管理画面",
   description: "たまのみの管理画面です",
-  icons: {
-    icon: '/favicon.ico',
-    apple: '/favicon.png',
-  },
 };
 
 export default function RootLayout({
