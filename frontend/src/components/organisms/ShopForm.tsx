@@ -1272,14 +1272,57 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   <div className="text-gray-900 mb-2">
                     {merchantName || '読み込み中...'}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsMerchantModalOpen(true)}
-                    className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
-                    title="事業者を変更"
-                  >
-                    事業者を変更
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsMerchantModalOpen(true)}
+                      className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
+                      title="事業者を変更"
+                    >
+                      事業者を変更
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // 親事業者の情報を取得
+                        const merchant = merchants.find(m => m.id === formData.merchantId);
+                        if (merchant) {
+                          
+                          // 親事業者の情報をフォームに反映
+                          setFormData(prev => {
+                            const newFormData = {
+                              ...prev,
+                              // 店舗名（事業者名をそのまま使用）
+                              name: merchant.name,
+                              // 店舗名（カナ）
+                              nameKana: merchant.nameKana,
+                              // 電話番号
+                              phone: merchant.representativePhone || '',
+                              // 郵便番号
+                              postalCode: merchant.postalCode || '',
+                              // 都道府県
+                              prefecture: merchant.prefecture || '',
+                              // 市区町村
+                              city: merchant.city || '',
+                              // 番地以降
+                              address1: merchant.address1 || '',
+                              // 建物名
+                              address2: merchant.address2 || ''
+                            };
+                            
+                            
+                            return newFormData;
+                          });
+                        }
+                      }}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      親事業者からコピー
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div>
