@@ -1,48 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+import Pagination from '@/components/molecules/Pagination';
 import { type Admin, type AdminSearchForm } from '@hv-development/schemas';
+import { apiClient } from '@/lib/api';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
-
-// サンプルデータ
-const sampleAdmins: Admin[] = [
-  { id: 'ADM001', name: '管理者太郎', email: 'admin@tamanomi.com', role: 1, createdAt: '2024/01/15' },
-  { id: 'ADM002', name: '一般花子', email: 'general@tamanomi.com', role: 2, createdAt: '2024/01/20' },
-  { id: 'ADM003', name: '管理者次郎', email: 'admin2@tamanomi.com', role: 1, createdAt: '2024/02/01' },
-  { id: 'ADM004', name: '一般美咲', email: 'general2@tamanomi.com', role: 2, createdAt: '2024/02/10' },
-  { id: 'ADM005', name: '管理者三郎', email: 'admin3@tamanomi.com', role: 1, createdAt: '2024/02/15' },
-  { id: 'ADM006', name: '一般由美', email: 'general3@tamanomi.com', role: 2, createdAt: '2024/02/20' },
-  { id: 'ADM007', name: '管理者四郎', email: 'admin4@tamanomi.com', role: 1, createdAt: '2024/02/25' },
-  { id: 'ADM008', name: '一般恵子', email: 'general4@tamanomi.com', role: 2, createdAt: '2024/03/01' },
-  { id: 'ADM009', name: '管理者五郎', email: 'admin5@tamanomi.com', role: 1, createdAt: '2024/03/05' },
-  { id: 'ADM010', name: '一般真理', email: 'general5@tamanomi.com', role: 2, createdAt: '2024/03/10' },
-  { id: 'ADM011', name: '管理者六郎', email: 'admin6@tamanomi.com', role: 1, createdAt: '2024/03/15' },
-  { id: 'ADM012', name: '一般智子', email: 'general6@tamanomi.com', role: 2, createdAt: '2024/03/20' },
-  { id: 'ADM013', name: '管理者七郎', email: 'admin7@tamanomi.com', role: 1, createdAt: '2024/03/25' },
-  { id: 'ADM014', name: '一般裕子', email: 'general7@tamanomi.com', role: 2, createdAt: '2024/03/30' },
-  { id: 'ADM015', name: '管理者八郎', email: 'admin8@tamanomi.com', role: 1, createdAt: '2024/04/01' },
-  { id: 'ADM016', name: '一般明美', email: 'general8@tamanomi.com', role: 2, createdAt: '2024/04/05' },
-  { id: 'ADM017', name: '管理者九郎', email: 'admin9@tamanomi.com', role: 1, createdAt: '2024/04/10' },
-  { id: 'ADM018', name: '一般直子', email: 'general9@tamanomi.com', role: 2, createdAt: '2024/04/15' },
-  { id: 'ADM019', name: '管理者十郎', email: 'admin10@tamanomi.com', role: 1, createdAt: '2024/04/20' },
-  { id: 'ADM020', name: '一般和子', email: 'general10@tamanomi.com', role: 2, createdAt: '2024/04/25' },
-  { id: 'ADM021', name: '管理者十一郎', email: 'admin11@tamanomi.com', role: 1, createdAt: '2024/05/01' },
-  { id: 'ADM022', name: '一般京子', email: 'general11@tamanomi.com', role: 2, createdAt: '2024/05/05' },
-  { id: 'ADM023', name: '管理者十二郎', email: 'admin12@tamanomi.com', role: 1, createdAt: '2024/05/10' },
-  { id: 'ADM024', name: '一般雅子', email: 'general12@tamanomi.com', role: 2, createdAt: '2024/05/15' },
-  { id: 'ADM025', name: '管理者十三郎', email: 'admin13@tamanomi.com', role: 1, createdAt: '2024/05/20' },
-  { id: 'ADM026', name: '一般典子', email: 'general13@tamanomi.com', role: 2, createdAt: '2024/05/25' },
-  { id: 'ADM027', name: '管理者十四郎', email: 'admin14@tamanomi.com', role: 1, createdAt: '2024/05/30' },
-  { id: 'ADM028', name: '一般文子', email: 'general14@tamanomi.com', role: 2, createdAt: '2024/06/01' },
-  { id: 'ADM029', name: '管理者十五郎', email: 'admin15@tamanomi.com', role: 1, createdAt: '2024/06/05' },
-  { id: 'ADM030', name: '一般節子', email: 'general15@tamanomi.com', role: 2, createdAt: '2024/06/10' },
-];
 
 export default function AdminsPage() {
   const [searchForm, setSearchForm] = useState<AdminSearchForm>({
@@ -58,17 +27,55 @@ export default function AdminsPage() {
     role: '',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
-
-  // フィルタリング処理
-  const filteredAdmins = sampleAdmins.filter((admin) => {
-    const matchesSearch = 
-      (!appliedSearchForm.accountId || appliedSearchForm.accountId === '' || admin.id.toLowerCase().includes(appliedSearchForm.accountId.toLowerCase())) &&
-      (!appliedSearchForm.name || appliedSearchForm.name === '' || admin.name.toLowerCase().includes(appliedSearchForm.name.toLowerCase())) &&
-      (!appliedSearchForm.email || appliedSearchForm.email === '' || admin.email.toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
-      (!appliedSearchForm.role || appliedSearchForm.role === '' || admin.role.toString() === appliedSearchForm.role);
-    
-    return matchesSearch;
+  const [admins, setAdmins] = useState<Admin[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
   });
+
+  // データ取得
+  const fetchAdmins = useCallback(async (searchParams?: AdminSearchForm) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const response = await apiClient.getAdminAccounts({
+        ...searchParams,
+        page: pagination.page,
+        limit: pagination.limit,
+      });
+      
+      const responseData = response as { 
+        accounts?: Admin[]; 
+        pagination?: { page: number; limit: number; total: number; pages: number } 
+      };
+      
+      const adminData = responseData.accounts || [];
+      const paginationData = responseData.pagination || { page: 1, limit: 10, total: 0, pages: 0 };
+      
+      setAdmins(adminData);
+      setPagination(paginationData);
+    } catch (err) {
+      console.error('管理者データの取得に失敗しました:', err);
+      setError('管理者データの取得に失敗しました');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [pagination.page, pagination.limit]);
+
+  // データ取得（初回読み込み・検索・ページ変更）
+  useEffect(() => {
+    fetchAdmins(appliedSearchForm);
+  }, [fetchAdmins, appliedSearchForm]);
+
+  // ページ変更ハンドラー
+  const handlePageChange = (page: number) => {
+    setPagination(prev => ({ ...prev, page }));
+  };
 
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {
     setSearchForm(prev => ({
@@ -80,6 +87,8 @@ export default function AdminsPage() {
   const handleSearch = () => {
     // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
     setAppliedSearchForm({ ...searchForm });
+    // ページを1にリセット
+    setPagination(prev => ({ ...prev, page: 1 }));
     console.log('検索実行:', searchForm);
   };
 
@@ -96,27 +105,18 @@ export default function AdminsPage() {
       email: '',
       role: '',
     });
+    // ページを1にリセット
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
-  const _getRoleLabel = (role: number) => {
+  const _getRoleLabel = (role: string) => {
     switch (role) {
-      case 1:
+      case 'sysadmin':
         return '管理者';
-      case 2:
+      case 'operator':
         return '一般';
       default:
         return '一般';
-    }
-  };
-
-  const _getRoleColor = (role: number) => {
-    switch (role) {
-      case 1:
-        return 'bg-blue-100 text-blue-800';
-      case 2:
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -127,6 +127,35 @@ export default function AdminsPage() {
       alert('管理者アカウントを削除しました');
     }
   };
+
+  // ローディング状態 - 初回読み込み時のみ全体表示
+  if (isLoading && admins.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">管理者データを読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // エラー状態
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <Icon name="admin" size="lg" className="mx-auto text-red-400 mb-4" />
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button variant="outline" onClick={() => fetchAdmins()}>
+              再試行
+            </Button>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -166,20 +195,6 @@ export default function AdminsPage() {
           {isSearchExpanded && (
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* アカウントID */}
-            <div>
-              <label htmlFor="accountId" className="block text-sm font-medium text-gray-700 mb-2">
-                アカウントID
-              </label>
-              <input
-                type="text"
-                id="accountId"
-                placeholder="アカウントIDを入力"
-                value={searchForm.accountId}
-                onChange={(e) => handleInputChange('accountId', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
 
             {/* 氏名 */}
             <div>
@@ -223,8 +238,8 @@ export default function AdminsPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               >
                 <option value="">すべて</option>
-                <option value="1">管理者</option>
-                <option value="2">一般</option>
+                <option value="sysadmin">管理者</option>
+                <option value="operator">一般</option>
               </select>
             </div>
             </div>
@@ -241,12 +256,20 @@ export default function AdminsPage() {
           </div>
           )}
         </div>
+        {/* ページネーション */}
+        {pagination.pages > 1 && (
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.pages}
+            onPageChange={handlePageChange}
+          />
+        )}
 
         {/* アカウント一覧 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
-              アカウント一覧 ({filteredAdmins.length}件)
+              アカウント一覧 ({pagination.total}件)
             </h3>
             <Link href="/admins/new">
               <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
@@ -257,63 +280,84 @@ export default function AdminsPage() {
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    アカウントID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    氏名
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    メールアドレス
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    権限
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    アクション
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredAdmins.map((admin) => (
-                  <tr key={admin.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{admin.id}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{admin.name}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{admin.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{_getRoleLabel(admin.role)}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <Link href={`/admins/${admin.id}/edit`}>
-                        <Button variant="outline" size="sm" className="text-green-600 border-green-300 hover:bg-green-50">
-                          編集
-                        </Button>
-                      </Link>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="text-red-600 border-red-300 hover:bg-red-50"
-                        onClick={() => handleDelete(admin.id, admin.name)}
-                      >
-                        削除
-                      </Button>
-                    </td>
+            {/* ローディング状態 - テーブル内のみ */}
+            {isLoading && admins.length > 0 ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-2"></div>
+                  <p className="text-sm text-gray-600">読み込み中...</p>
+                </div>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      アクション
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      氏名
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      メールアドレス
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      権限
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {admins.map((admin, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap w-48">
+                        <div className="flex items-center gap-2">
+                          <Link href={`/admins/${admin.id}/edit`}>
+                            <button 
+                              className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                              title="編集"
+                            >
+                              <Image 
+                                src="/edit.svg" 
+                                alt="編集" 
+                                width={24}
+                                height={24}
+                                className="w-6 h-6 flex-shrink-0"
+                              />
+                            </button>
+                          </Link>
+                          <button 
+                            onClick={() => handleDelete(admin.id, `${admin.lastName} ${admin.firstName}`)}
+                            className="p-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] group"
+                            title="削除"
+                          >
+                            <Image 
+                              src="/trash.svg" 
+                              alt="削除" 
+                              width={24}
+                              height={24}
+                              className="w-6 h-6 flex-shrink-0"
+                            />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{admin.lastName} {admin.firstName}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{admin.email}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{_getRoleLabel(admin.role.toString())}</div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
+          
 
-          {filteredAdmins.length === 0 && (
+          {admins.length === 0 && !isLoading && (
             <div className="text-center py-12">
               <Icon name="admin" size="lg" className="mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">管理者アカウントが見つかりません</h3>

@@ -508,6 +508,30 @@ class ApiClient {
     });
     return response.data;
   }
+
+  // 管理者アカウント関連
+  async getAdminAccounts(params?: { name?: string; email?: string; role?: string; page?: number; limit?: number }): Promise<unknown> {
+    console.log('👥 API: getAdminAccounts called (via Next.js API Route)', { params });
+    console.log('🔗 API Base URL:', this.baseUrl);
+    
+    const queryParams = new URLSearchParams();
+    if (params?.name) queryParams.append('name', params.name); 
+    if (params?.email) queryParams.append('email', params.email);
+    if (params?.role) queryParams.append('role', params.role);
+    if (params?.page) queryParams.append('page', params.page.toString());    
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/admin?${queryString}` : '/admin';
+    console.log('🔗 Full URL:', `${this.baseUrl}${endpoint}`);
+    
+    const token = localStorage.getItem('accessToken');
+    console.log('🔑 API: getAdminAccounts', token);
+    return this.request<unknown>(endpoint, {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
 }
 
 export const apiClient = new ApiClient();
