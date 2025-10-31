@@ -3,6 +3,7 @@ import {
   type AdminLoginInput, 
   type AdminRegisterInput,
   type RefreshTokenInput,
+  type AdminAccountInput,
 } from '@hv-development/schemas';
 
 type RegisterInput = AdminRegisterInput;
@@ -147,15 +148,16 @@ class ApiClient {
     });
   }
 
-  async refreshToken(refreshData?: RefreshRequest): Promise<RefreshResponse> {
+  async refreshToken(refreshData?: RefreshRequest): Promise<RefreshResponse | void> {
     console.log('🔄 API: refreshToken called (via Next.js API Route)');
     
     // refreshDataが提供されていない場合は、ローカルストレージから取得
     const refreshTokenValue = refreshData?.refreshToken || localStorage.getItem('refreshToken');
     
     if (!refreshTokenValue) {
-      // トークン未保持時は静かに失敗させる
-      return Promise.reject(new Error('No refresh token available'));
+      // トークン未保持時は何もせず終了（想定内）
+      console.warn('🔄 No refresh token available (skipping refresh)');
+      return;
     }
 
     try {
@@ -175,11 +177,12 @@ class ApiClient {
 
       return response;
     } catch (error) {
-      // 無効なリフレッシュトークンはクリアして呼び出し側でハンドリング
+      // 無効なリフレッシュトークンはクリアし、throwしない（想定内のため）
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('userData');
-      throw error as Error;
+      console.warn('🔄 Refresh token invalid (cleared and continuing)');
+      return;
     }
   }
 
@@ -521,6 +524,69 @@ class ApiClient {
       body: JSON.stringify({ merchantIds }),
     });
     return response.data;
+  }
+
+  // 管理者アカウント関連
+  async getAdminAccounts(params?: { name?: string; email?: string; role?: string; page?: number; limit?: number }): Promise<unknown> {
+    console.log('👥 API: getAdminAccounts called (via Next.js API Route)', { params });
+    console.log('🔗 API Base URL:', this.baseUrl);
+    
+    const queryParams = new URLSearchParams();
+    if (params?.name) queryParams.append('name', params.name); 
+    if (params?.email) queryParams.append('email', params.email);
+    if (params?.role) queryParams.append('role', params.role);
+    if (params?.page) queryParams.append('page', params.page.toString());    
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/admin?${queryString}` : '/admin';
+    console.log('🔗 Full URL:', `${this.baseUrl}${endpoint}`);
+    
+    const token = localStorage.getItem('accessToken');
+    console.log('🔑 API: getAdminAccounts', token);
+    return this.request<unknown>(endpoint, {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  // 管理者アカウント関連
+  async createAdminAccount(adminAccountData: AdminAccountInput): Promise<unknown> {
+    console.log('➕ API: createAdminAccount called (via Next.js API Route)');
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>('/admin', {
+      method: 'POST',
+      body: JSON.stringify(adminAccountData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async getAdminAccount(email: string): Promise<unknown> {
+    console.log('👥 API: getAdminAccount called (via Next.js API Route)', { email });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/admin/${email}`, {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async updateAdminAccount(email: string, adminAccountData: AdminAccountInput): Promise<unknown> {
+    console.log('✏️ API: updateAdminAccount called (via Next.js API Route)', { email });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/admin/${email}`, {
+      method: 'PATCH',
+      body: JSON.stringify(adminAccountData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async deleteAdminAccount(email: string): Promise<void> {
+    console.log('🗑️ API: deleteAdminAccount called (via Next.js API Route)', { email });
+    const token = localStorage.getItem('accessToken');
+    return this.request<void>(`/admin/${email}`, {
+      method: 'DELETE',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
   }
 }
 

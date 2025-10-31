@@ -293,8 +293,7 @@ export default function CouponsPage() {
         const coupon = filteredCoupons.find(c => c.id === couponId);
         
         // 未承認のクーポンをチェック（全アカウント共通）
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const couponStatus = (coupon as any)?.status;
+        const couponStatus = coupon?.status;
         if (coupon && couponStatus !== 'approved' && isPublic) {
           excludedCount++;
           continue;
@@ -551,10 +550,8 @@ export default function CouponsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
                       {isMerchantAccount ? (
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        <span className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium ${_getStatusSelectColor((coupon as any).status)}`}>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          {(coupon as any).status === 'pending' ? '申請中' : (coupon as any).status === 'approved' ? '承認済み' : '停止中'}
+                        <span className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium ${_getStatusSelectColor(coupon.status)}`}>
+                          {coupon.status === 'pending' ? '申請中' : coupon.status === 'approved' ? '承認済み' : '停止中'}
                         </span>
                       ) : (
                         <select
@@ -569,12 +566,11 @@ export default function CouponsPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       <select
-                        value={(coupon as any).isPublic ? 'true' : 'false'}
+                        value={coupon.isPublic ? 'true' : 'false'}
                         onChange={(e) => handlePublicStatusChange(coupon.id, e.target.value === 'true')}
-                        disabled={isMerchantAccount && (coupon as any).status !== 'approved'}
-                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[100px] ${_getPublicStatusSelectColor((coupon as any).isPublic)} ${isMerchantAccount && (coupon as any).status !== 'approved' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={isMerchantAccount && coupon.status !== 'approved'}
+                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[100px] ${_getPublicStatusSelectColor(coupon.isPublic)} ${isMerchantAccount && coupon.status !== 'approved' ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <option value="true">公開中</option>
                         <option value="false">非公開</option>
@@ -610,8 +606,7 @@ export default function CouponsPage() {
         isUpdating={isUpdating}
         unapprovedCount={Array.from(selectedCoupons).filter(couponId => {
           const coupon = filteredCoupons.find(c => c.id === couponId);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return coupon && (coupon as any).status !== 'approved';
+          return coupon && coupon.status !== 'approved';
         }).length}
       />
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
