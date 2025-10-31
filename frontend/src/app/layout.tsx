@@ -11,6 +11,15 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "たまのみ - 管理画面",
   description: "たまのみの管理画面です",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon.png", type: "image/png" },
+    ],
+    apple: [
+      { url: "/favicon.png" },
+    ],
+  },
 };
 
 export default function RootLayout({
