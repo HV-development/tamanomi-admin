@@ -1,57 +1,78 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams, useParams } from 'next/navigation';
+import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-import { type AdminFormData } from '@hv-development/schemas';
+import AdminConfirmationFields from '@/components/molecules/admin-confirmation-fields';
+import { type AdminFormData, type AdminAccountInput } from '@hv-development/schemas';
+import { apiClient } from '@/lib/api';
+import { handleAdminError } from '@/hooks/use-admin-error-handler';
 
 function AdminEditConfirmationContent() {
   const searchParams = useSearchParams();
   const params = useParams();
-  const adminId = params.id as string;
+  const adminEmail = params.email as string;
   const [adminData, setAdminData] = useState<AdminFormData | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const data: AdminFormData = {
       role: searchParams.get('role') || '',
-      name: searchParams.get('name') || '',
-      email: searchParams.get('email') || '',
+      firstName: searchParams.get('firstName') || '',
+      lastName: searchParams.get('lastName') || '',
+      email: searchParams.get('formEmail') || '',
       password: searchParams.get('password') || '',
+      passwordConfirm: searchParams.get('passwordConfirm') || '',
     };
     setAdminData(data);
   }, [searchParams]);
-
-  const _getRoleLabel = (role: string) => {
-    switch (role) {
-      case '1':
-        return '管理者';
-      case '2':
-        return '一般';
-      default:
-        return '';
-    }
-  };
 
   const handleModify = () => {
     // 管理者アカウント編集画面に戻る（データを保持）
     const queryParams = new URLSearchParams({
       role: adminData?.role || '',
-      name: adminData?.name || '',
+      firstName: adminData?.firstName || '',
+      lastName: adminData?.lastName || '',
       email: adminData?.email || '',
       password: adminData?.password || '',
+      passwordConfirm: adminData?.passwordConfirm || '',
     });
     
-    window.location.href = `/admins/${adminId}/edit?${queryParams.toString()}`;
+    window.location.href = `/admins/${adminEmail}/edit?${queryParams.toString()}`;
   };
 
-  const handleUpdate = () => {
-    // 実際の更新処理（APIコール等）
-    console.log('管理者アカウント更新:', adminData);
-    alert('管理者アカウントを更新しました');
-    // 更新後は管理者アカウント一覧画面に遷移
-    window.location.href = '/admins';
+  const handleUpdate = async () => {
+    if (!adminData) return;
+    
+    setIsSubmitting(true);
+    try {
+      const updateData: AdminAccountInput = {
+        role: adminData.role,
+        firstName: adminData.firstName,
+        lastName: adminData.lastName,
+        email: adminData.email,
+        password: adminData.password,
+      };
+
+      await apiClient.updateAdminAccount(adminEmail, updateData);
+      alert('管理者アカウント情報を更新しました');
+      router.push('/admins');
+    } catch (error: unknown) {
+      const errorInfo = handleAdminError(error);
+      
+      if (errorInfo.isEmailConflict) {
+        alert(errorInfo.message);
+        setIsSubmitting(false);
+        return;
+      }
+      
+      console.error('管理者アカウント情報の更新に失敗しました:', error);
+      alert('管理者アカウント情報の更新に失敗しました。もう一度お試しください。');
+      setIsSubmitting(false);
+    }
   };
 
   if (!adminData) {
@@ -87,37 +108,7 @@ function AdminEditConfirmationContent() {
 
         {/* 確認内容 */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                権限
-              </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{_getRoleLabel(adminData.role)}</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                氏名
-              </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{adminData.name}</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                メールアドレス
-              </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{adminData.email}</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                パスワード
-              </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">
-                {'*'.repeat(adminData.password.length)}
-              </p>
-            </div>
-          </div>
+          <AdminConfirmationFields adminData={adminData} />
 
           {/* アクションボタン */}
           <div className="flex justify-center space-x-4 pt-6 mt-6 border-t border-gray-200">
@@ -134,8 +125,9 @@ function AdminEditConfirmationContent() {
               size="lg"
               onClick={handleUpdate}
               className="px-8"
+              disabled={isSubmitting}
             >
-              変更する
+              {isSubmitting ? '更新中...' : '更新する'}
             </Button>
           </div>
         </div>
