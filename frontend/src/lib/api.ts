@@ -148,15 +148,16 @@ class ApiClient {
     });
   }
 
-  async refreshToken(refreshData?: RefreshRequest): Promise<RefreshResponse> {
+  async refreshToken(refreshData?: RefreshRequest): Promise<RefreshResponse | void> {
     console.log('🔄 API: refreshToken called (via Next.js API Route)');
     
     // refreshDataが提供されていない場合は、ローカルストレージから取得
     const refreshTokenValue = refreshData?.refreshToken || localStorage.getItem('refreshToken');
     
     if (!refreshTokenValue) {
-      // トークン未保持時は静かに失敗させる
-      return Promise.reject(new Error('No refresh token available'));
+      // トークン未保持時は何もせず終了（想定内）
+      console.warn('🔄 No refresh token available (skipping refresh)');
+      return;
     }
 
     try {
@@ -176,11 +177,12 @@ class ApiClient {
 
       return response;
     } catch (error) {
-      // 無効なリフレッシュトークンはクリアして呼び出し側でハンドリング
+      // 無効なリフレッシュトークンはクリアし、throwしない（想定内のため）
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('userData');
-      throw error as Error;
+      console.warn('🔄 Refresh token invalid (cleared and continuing)');
+      return;
     }
   }
 
