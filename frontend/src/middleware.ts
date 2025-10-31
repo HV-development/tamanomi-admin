@@ -10,6 +10,15 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/api') &&
     ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)
   ) {
+    // 認証系の一部エンドポイントはCSRF対象外（ログイン/リフレッシュなど）
+    const csrfSkip = (
+      pathname === '/api/auth/login' ||
+      pathname === '/api/auth/refresh'
+    );
+    if (csrfSkip) {
+      return NextResponse.next();
+    }
+
     const origin = request.headers.get('origin');
     const referer = request.headers.get('referer');
     const sameOrigin = (() => {
