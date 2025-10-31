@@ -89,6 +89,7 @@ export default function MerchantEditPage() {
         // APIから事業者データを取得（Cookieベース認証）
         const response = await fetch(`/api/merchants/${merchantId}`, {
           signal: abortController.signal,
+          credentials: 'include',
         });
         
         // コンポーネントがアンマウントされている場合は処理を中断
@@ -413,6 +414,7 @@ export default function MerchantEditPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(updateData),
       });
 

@@ -50,12 +50,17 @@ class ApiClient {
     console.log('🚀 API Request (via Next.js API Route):', { url, method: fetchOptions.method || 'GET', endpoint });
 
     try {
+      const isFormData = typeof fetchOptions.body !== 'undefined' && fetchOptions.body instanceof FormData;
+      const hasBody = typeof fetchOptions.body !== 'undefined';
+      const headers: Record<string, string> = {
+        ...(fetchOptions.headers as Record<string, string> | undefined),
+        ...(hasBody && !isFormData ? { 'Content-Type': 'application/json' } : {}),
+      };
+
       const response = await fetch(url, {
         ...fetchOptions,
-        headers: {
-          'Content-Type': 'application/json',
-          ...fetchOptions.headers,
-        },
+        credentials: 'include',
+        headers,
       });
 
       if (!response.ok) {
@@ -76,10 +81,8 @@ class ApiClient {
             // リフレッシュ成功後、元のリクエストを再実行
             const retryResponse = await fetch(url, {
               ...fetchOptions,
-              headers: {
-                'Content-Type': 'application/json',
-                ...fetchOptions.headers,
-              },
+              credentials: 'include',
+              headers,
             });
             
             if (!retryResponse.ok) {

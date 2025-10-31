@@ -305,6 +305,7 @@ function CouponNewPageContent() {
               method: 'POST',
               body: uploadFormData,
               // Cookieベース認証によりヘッダー注入は不要
+              credentials: 'include',
             });
             
             if (response.ok) {
