@@ -116,7 +116,12 @@ class ApiClient {
 
       return response.json();
     } catch (error) {
-      console.error('❌ API Request failed:', error);
+      // リフレッシュ時の失敗は想定されるため、ログレベルを下げる
+      if (endpoint === '/auth/refresh') {
+        console.warn('🔄 Refresh request failed (suppressed):', error);
+      } else {
+        console.error('❌ API Request failed:', error);
+      }
       throw error;
     }
   }
@@ -150,24 +155,33 @@ class ApiClient {
     const refreshTokenValue = refreshData?.refreshToken || localStorage.getItem('refreshToken');
     
     if (!refreshTokenValue) {
-      throw new Error('No refresh token available');
+      // トークン未保持時は静かに失敗させる
+      return Promise.reject(new Error('No refresh token available'));
     }
-    
-    const response = await this.request<RefreshResponse>('/auth/refresh', {
-      method: 'POST',
-      body: JSON.stringify({ refreshToken: refreshTokenValue }),
-      skipAuthRedirect: true, // トークンリフレッシュ時は自動リダイレクトを無効にする
-    });
-    
-    // 新しいトークンをローカルストレージに保存
-    if (response.accessToken) {
-      localStorage.setItem('accessToken', response.accessToken);
+
+    try {
+      const response = await this.request<RefreshResponse>('/auth/refresh', {
+        method: 'POST',
+        body: JSON.stringify({ refreshToken: refreshTokenValue }),
+        skipAuthRedirect: true, // トークンリフレッシュ時は自動リダイレクトを無効にする
+      });
+
+      // 新しいトークンをローカルストレージに保存
+      if (response.accessToken) {
+        localStorage.setItem('accessToken', response.accessToken);
+      }
+      if (response.refreshToken) {
+        localStorage.setItem('refreshToken', response.refreshToken);
+      }
+
+      return response;
+    } catch (error) {
+      // 無効なリフレッシュトークンはクリアして呼び出し側でハンドリング
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userData');
+      throw error as Error;
     }
-    if (response.refreshToken) {
-      localStorage.setItem('refreshToken', response.refreshToken);
-    }
-    
-    return response;
   }
 
   async logout(): Promise<void> {
