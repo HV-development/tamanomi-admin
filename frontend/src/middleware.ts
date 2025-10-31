@@ -14,14 +14,30 @@ export function middleware(request: NextRequest) {
     const referer = request.headers.get('referer');
     const sameOrigin = (() => {
       try {
-        if (origin) return new URL(origin).host === host;
-        if (referer) return new URL(referer).host === host;
+        const allowed = new Set<string>();
+        allowed.add(host);
+        // ローカル開発での localhost/127.0.0.1 換算を許可
+        const [, port] = host.split(':');
+        if (port) {
+          allowed.add(`localhost:${port}`);
+          allowed.add(`127.0.0.1:${port}`);
+        }
+
+        if (origin) {
+          const originHost = new URL(origin).host;
+          if (allowed.has(originHost)) return true;
+        }
+        if (referer) {
+          const refererHost = new URL(referer).host;
+          if (allowed.has(refererHost)) return true;
+        }
+        return false;
       } catch {
         // 解析失敗時は不正とみなす
         return false;
       }
       // Origin/Referer が無い場合はサーバ内呼び出し等の可能性もあるため許可
-      return true;
+      // return true; // ここには到達しない
     })();
 
     if (!sameOrigin) {
