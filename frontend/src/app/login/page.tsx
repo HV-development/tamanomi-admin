@@ -117,7 +117,7 @@ function LoginFormWithParams() {
         // API経由でログイン
         await login({ email: formData.email, password: formData.password });
         console.log('✅ LoginPage: Login successful, preparing redirect...');
-        const userDataStr = localStorage.getItem('userData');
+        const userDataStr = sessionStorage.getItem('userData') || localStorage.getItem('userData');
         
         // アカウントタイプに応じてリダイレクト先を決定
         let redirectPath = '/merchants';
