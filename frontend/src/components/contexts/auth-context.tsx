@@ -58,8 +58,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await apiClient.refreshToken();
         } catch {}
 
-        // ローカルに保持しているユーザ表示用データを読み込み
-        const userData = localStorage.getItem('userData');
+        // ユーザ表示用データは sessionStorage を優先（localStorageは後方互換）
+        const userData = sessionStorage.getItem('userData') || localStorage.getItem('userData');
         if (userData) {
           const accountData = JSON.parse(userData);
           setUser({
@@ -93,7 +93,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email: string;
         displayName?: string;
       };
-      localStorage.setItem('userData', JSON.stringify(accountData));
+      sessionStorage.setItem('userData', JSON.stringify(accountData));
       
       setUser({
         id: accountData.email, // 仮のIDとしてemailを使用
@@ -126,7 +126,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email: string;
         displayName?: string;
       };
-      localStorage.setItem('userData', JSON.stringify(accountData));
+      sessionStorage.setItem('userData', JSON.stringify(accountData));
       
       setUser({
         id: accountData.email, // 仮のIDとしてemailを使用
@@ -151,6 +151,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('❌ AuthContext: logout failed', error);
     } finally {
       // 表示用ユーザーデータのみクリア
+      sessionStorage.removeItem('userData');
       localStorage.removeItem('userData');
       setUser(null);
       console.log('✅ AuthContext: logout completed');
