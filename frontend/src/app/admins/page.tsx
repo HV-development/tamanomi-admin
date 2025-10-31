@@ -293,7 +293,7 @@ export default function AdminsPage() {
                       <div className="text-sm text-gray-900">{_getRoleLabel(admin.role)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <Link href={`/admins/${admin.id}/edit`}>
+                      <Link href={`/admins/${admin.email}/edit`}>
                         <Button variant="outline" size="sm" className="text-green-600 border-green-300 hover:bg-green-50">
                           編集
                         </Button>

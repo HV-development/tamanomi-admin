@@ -3,6 +3,7 @@ import {
   type AdminLoginInput, 
   type AdminRegisterInput,
   type RefreshTokenInput,
+  type AdminAccountInput,
 } from '@hv-development/schemas';
 
 type RegisterInput = AdminRegisterInput;
@@ -507,6 +508,36 @@ class ApiClient {
       body: JSON.stringify({ merchantIds }),
     });
     return response.data;
+  }
+
+  // 管理者アカウント関連
+  async createAdminAccount(adminAccountData: AdminAccountInput): Promise<unknown> {
+    console.log('➕ API: createAdminAccount called (via Next.js API Route)');
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>('/admin', {
+      method: 'POST',
+      body: JSON.stringify(adminAccountData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async getAdminAccount(email: string): Promise<unknown> {
+    console.log('👥 API: getAdminAccount called (via Next.js API Route)', { email });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/admin/${email}`, {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
+
+  async updateAdminAccount(email: string, adminAccountData: AdminAccountInput): Promise<unknown> {
+    console.log('✏️ API: updateAdminAccount called (via Next.js API Route)', { email });
+    const token = localStorage.getItem('accessToken');
+    return this.request<unknown>(`/admin/${email}`, {
+      method: 'PATCH',
+      body: JSON.stringify(adminAccountData),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
   }
 }
 
