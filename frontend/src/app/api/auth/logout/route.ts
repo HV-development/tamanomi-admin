@@ -11,9 +11,7 @@ export async function POST(request: Request) {
     const authHeader = headerToken || (cookieToken ? `Bearer ${cookieToken}` : null);
     console.log('🚪 API Route: Logout request received');
     
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
+    const headers: HeadersInit = {};
     if (authHeader) {
       headers['Authorization'] = authHeader;
     }
@@ -23,16 +21,8 @@ export async function POST(request: Request) {
       headers: headers,
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('❌ API Route: Logout failed', { status: response.status, error: errorData });
-      return NextResponse.json(errorData, { status: response.status });
-    }
-
-    console.log('✅ API Route: Logout successful');
-    
-    // セッションクッキーを削除
-    const nextResponse = NextResponse.json({ message: 'Logout successful' });
+    const ok = response.ok;
+    const nextResponse = NextResponse.json(ok ? { message: 'Logout successful' } : { message: 'Logout locally cleared', upstream: response.status });
     
     // accessToken クッキーを削除
     nextResponse.cookies.set('accessToken', '', {
@@ -56,7 +46,21 @@ export async function POST(request: Request) {
     return nextResponse;
   } catch (error: unknown) {
     console.error('❌ API Route: Logout error', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+    const res = NextResponse.json({ message: 'Local logout executed' }, { status: 200 });
+    res.cookies.set('accessToken', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0,
+      path: '/',
+    });
+    res.cookies.set('refreshToken', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0,
+      path: '/',
+    });
+    return res;
   }
 }
