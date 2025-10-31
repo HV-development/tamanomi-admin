@@ -120,11 +120,15 @@ export default function AdminsPage() {
     }
   };
 
-  const handleDelete = (adminId: string, adminName: string) => {
-    if (confirm(`${adminName}のアカウントを削除しますか？`)) {
-      // 実際の削除処理（APIコール等）
-      console.log('管理者アカウント削除:', adminId);
+  const handleDelete = async (adminEmail: string) => {
+    if (!adminEmail) return;
+    if (!confirm(`${adminEmail}のアカウントを削除しますか？`)) return;
+    try {
+      await apiClient.deleteAdminAccount(adminEmail);
       alert('管理者アカウントを削除しました');
+    } catch (error: unknown) {
+      console.error('管理者アカウントの削除に失敗しました:', error);
+      alert('管理者アカウントの削除に失敗しました。もう一度お試しください。');
     }
   };
 
