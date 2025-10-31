@@ -72,3 +72,28 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ em
     return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ email: string }> }) {
+  try {
+    const { email } = await params;
+    console.log('🗑️ API Route: Delete admin account request received', { email });
+    
+    const response = await fetch(`${API_BASE_URL}/admin-accounts/${email}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(request),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('❌ API Route: Delete admin account failed', { status: response.status, error: errorData });
+      return NextResponse.json(errorData, { status: response.status });
+    }
+
+    console.log('✅ API Route: Delete admin account successful', { email });
+    return NextResponse.json({ message: '管理者アカウントが削除されました' });
+  } catch (error: unknown) {
+    console.error(`❌ API Route: Delete admin account error`, error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+  }
+}

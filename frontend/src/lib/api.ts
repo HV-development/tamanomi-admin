@@ -539,6 +539,15 @@ class ApiClient {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
+
+  async deleteAdminAccount(email: string): Promise<void> {
+    console.log('🗑️ API: deleteAdminAccount called (via Next.js API Route)', { email });
+    const token = localStorage.getItem('accessToken');
+    return this.request<void>(`/admin/${email}`, {
+      method: 'DELETE',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  }
 }
 
 export const apiClient = new ApiClient();
