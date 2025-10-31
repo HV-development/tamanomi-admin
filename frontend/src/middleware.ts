@@ -31,13 +31,13 @@ export function middleware(request: NextRequest) {
           const refererHost = new URL(referer).host;
           if (allowed.has(refererHost)) return true;
         }
+        // Origin/Referer が両方無い場合は同一オリジン遷移等の可能性が高いので許可
+        if (!origin && !referer) return true;
         return false;
       } catch {
         // 解析失敗時は不正とみなす
         return false;
       }
-      // Origin/Referer が無い場合はサーバ内呼び出し等の可能性もあるため許可
-      // return true; // ここには到達しない
     })();
 
     if (!sameOrigin) {
