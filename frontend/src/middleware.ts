@@ -21,6 +21,12 @@ export function middleware(request: NextRequest) {
 
     const origin = request.headers.get('origin');
     const referer = request.headers.get('referer');
+    const secFetchSite = request.headers.get('sec-fetch-site');
+
+    // ブラウザが same-origin / same-site と自己申告している場合は許可
+    if (secFetchSite === 'same-origin' || secFetchSite === 'same-site' || secFetchSite === 'none') {
+      return NextResponse.next();
+    }
     const sameOrigin = (() => {
       try {
         const allowed = new Set<string>();
