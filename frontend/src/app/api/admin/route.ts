@@ -56,7 +56,8 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     console.log('➕ API Route: admin account creation request received', { 
-      name: body.name,
+      firstName: body.firstName,
+      lastName: body.lastName,
       fullBody: body,
       bodyKeys: Object.keys(body)
     });
