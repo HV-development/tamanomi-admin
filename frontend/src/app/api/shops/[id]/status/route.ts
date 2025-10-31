@@ -3,15 +3,18 @@ import { NextResponse } from 'next/server';
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
 function getAuthHeaders(request: Request): Record<string, string> {
-  const authToken = request.headers.get('authorization');
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  
-  if (authToken) {
-    headers['Authorization'] = authToken;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const headerToken = request.headers.get('authorization');
+  if (headerToken) {
+    headers['Authorization'] = headerToken;
+    return headers;
   }
-
+  const cookieHeader = request.headers.get('cookie') || '';
+  const accessPair = cookieHeader.split(';').map(v => v.trim()).find(v => v.startsWith('accessToken='));
+  const accessToken = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
   return headers;
 }
 

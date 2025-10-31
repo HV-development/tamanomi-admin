@@ -53,38 +53,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const accessToken = localStorage.getItem('accessToken');
-        const refreshToken = localStorage.getItem('refreshToken');
-        
-        if (accessToken && refreshToken) {
-          // トークンが有効かチェック（簡単な検証）
-          try {
-            await apiClient.refreshToken();
-            // ユーザー情報を取得（実際の実装では、トークンからユーザー情報を取得）
-            const userData = localStorage.getItem('userData');
-            if (userData) {
-              const accountData = JSON.parse(userData);
-              console.log('🔍 AuthContext: Loading user data from localStorage', {
-                accountType: accountData.accountType,
-                shopId: accountData.shopId,
-                merchantId: accountData.merchantId,
-                email: accountData.email
-              });
-              setUser({
-                id: accountData.email,
-                email: accountData.email,
-                name: accountData.displayName || accountData.email,
-                accountType: accountData.accountType,
-                shopId: accountData.shopId,
-                merchantId: accountData.merchantId
-              });
-            }
-          } catch (error) {
-            console.warn('Token validation failed (refresh skipped):', error);
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            localStorage.removeItem('userData');
-          }
+        // Cookieベースでのリフレッシュを試行（存在しない場合はスキップされる）
+        try {
+          await apiClient.refreshToken();
+        } catch {}
+
+        // ローカルに保持しているユーザ表示用データを読み込み
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+          const accountData = JSON.parse(userData);
+          setUser({
+            id: accountData.email,
+            email: accountData.email,
+            name: accountData.displayName || accountData.email,
+            accountType: accountData.accountType,
+            shopId: accountData.shopId,
+            merchantId: accountData.merchantId
+          });
         }
       } catch (error) {
         console.error('Auth initialization failed:', error);
@@ -100,43 +85,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('🔐 AuthContext: login called', { email: credentials.email });
       const response = await apiClient.login(credentials);
-      
-      console.log('🔑 AuthContext: Received tokens', { 
-        hasAccessToken: !!response.accessToken,
-        hasRefreshToken: !!response.refreshToken,
-        accessTokenLength: response.accessToken?.length,
-        refreshTokenLength: response.refreshToken?.length
-      });
-      
-      // トークンを保存
-      localStorage.setItem('accessToken', response.accessToken);
-      localStorage.setItem('refreshToken', response.refreshToken);
-      localStorage.setItem('userData', JSON.stringify(response.account));
-      
-      // 保存を確認
-      const savedAccessToken = localStorage.getItem('accessToken');
-      const savedRefreshToken = localStorage.getItem('refreshToken');
-      console.log('💾 AuthContext: Tokens saved to localStorage', { 
-        accessTokenSaved: !!savedAccessToken,
-        refreshTokenSaved: !!savedRefreshToken,
-        accessTokenMatch: savedAccessToken === response.accessToken,
-        refreshTokenMatch: savedRefreshToken === response.refreshToken
-      });
-      
-      const accountData = response.account as { 
+
+      const accountData = (response as unknown as { account: unknown }).account as { 
         accountType: string; 
         shopId?: string; 
         merchantId?: string;
         email: string;
         displayName?: string;
       };
-      console.log('🔍 AuthContext: Received account data from API', {
-        accountType: accountData.accountType,
-        shopId: accountData.shopId,
-        merchantId: accountData.merchantId,
-        hasShopId: !!accountData.shopId,
-        hasMerchantId: !!accountData.merchantId
-      });
+      localStorage.setItem('userData', JSON.stringify(accountData));
       
       setUser({
         id: accountData.email, // 仮のIDとしてemailを使用
@@ -162,7 +119,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('📝 AuthContext: register called', { email: userData.email });
       const response = await apiClient.register(userData);
       
-      // トークンを保存
       const accountData = response.account as { 
         accountType: string; 
         shopId?: string; 
@@ -170,8 +126,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email: string;
         displayName?: string;
       };
-      localStorage.setItem('accessToken', response.accessToken);
-      localStorage.setItem('refreshToken', response.refreshToken);
       localStorage.setItem('userData', JSON.stringify(accountData));
       
       setUser({
@@ -196,9 +150,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('❌ AuthContext: logout failed', error);
     } finally {
-      // ローカルストレージをクリア
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      // 表示用ユーザーデータのみクリア
       localStorage.removeItem('userData');
       setUser(null);
       console.log('✅ AuthContext: logout completed');

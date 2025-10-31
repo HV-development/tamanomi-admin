@@ -92,10 +92,6 @@ class ApiClient {
             console.warn('🔒 Redirecting to login page due to refresh failure');
             
             // リフレッシュに失敗した場合はログイン画面へリダイレクト
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            localStorage.removeItem('userData');
-            
             if (typeof window !== 'undefined') {
               window.location.href = '/login?session=expired';
             }
@@ -151,36 +147,15 @@ class ApiClient {
   async refreshToken(refreshData?: RefreshRequest): Promise<RefreshResponse | void> {
     console.log('🔄 API: refreshToken called (via Next.js API Route)');
     
-    // refreshDataが提供されていない場合は、ローカルストレージから取得
-    const refreshTokenValue = refreshData?.refreshToken || localStorage.getItem('refreshToken');
-    
-    if (!refreshTokenValue) {
-      // トークン未保持時は何もせず終了（想定内）
-      console.warn('🔄 No refresh token available (skipping refresh)');
-      return;
-    }
-
     try {
       const response = await this.request<RefreshResponse>('/auth/refresh', {
         method: 'POST',
-        body: JSON.stringify({ refreshToken: refreshTokenValue }),
+        body: JSON.stringify({}),
         skipAuthRedirect: true, // トークンリフレッシュ時は自動リダイレクトを無効にする
       });
 
-      // 新しいトークンをローカルストレージに保存
-      if (response.accessToken) {
-        localStorage.setItem('accessToken', response.accessToken);
-      }
-      if (response.refreshToken) {
-        localStorage.setItem('refreshToken', response.refreshToken);
-      }
-
       return response;
     } catch (error) {
-      // 無効なリフレッシュトークンはクリアし、throwしない（想定内のため）
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('userData');
       console.warn('🔄 Refresh token invalid (cleared and continuing)');
       return;
     }
@@ -188,15 +163,7 @@ class ApiClient {
 
   async logout(): Promise<void> {
     console.log('🚪 API: logout called (via Next.js API Route)');
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      await this.request('/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-    }
+    await this.request('/auth/logout', { method: 'POST' });
   }
 
   // アプリケーション関連
@@ -222,85 +189,67 @@ class ApiClient {
     const endpoint = queryString ? `/merchants?${queryString}` : '/merchants';
     console.log('🔗 Full URL:', `${this.baseUrl}${endpoint}`);
     
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>(endpoint, {
       method: 'GET',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async getMerchant(id: string): Promise<unknown> {
     console.log('🏢 API: getMerchant called (via Next.js API Route)', { id });
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>(`/merchants/${id}`, {
       method: 'GET',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async getMyMerchant(): Promise<unknown> {
     console.log('👤 API: getMyMerchant called (via Next.js API Route)');
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>('/merchants/me', {
       method: 'GET',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async getMyShop(): Promise<unknown> {
     console.log('🏪 API: getMyShop called (via Next.js API Route)');
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>('/shops/me', {
       method: 'GET',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async createMerchant(merchantData: unknown): Promise<unknown> {
     console.log('➕ API: createMerchant called (via Next.js API Route)');
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>('/merchants', {
       method: 'POST',
       body: JSON.stringify(merchantData),
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async updateMerchant(id: string, merchantData: unknown): Promise<unknown> {
     console.log('✏️ API: updateMerchant called (via Next.js API Route)', { id });
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>(`/merchants/${id}`, {
       method: 'PUT',
       body: JSON.stringify(merchantData),
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async deleteMerchant(id: string): Promise<void> {
     console.log('🗑️ API: deleteMerchant called (via Next.js API Route)', { id });
-    const token = localStorage.getItem('accessToken');
     return this.request<void>(`/merchants/${id}`, {
       method: 'DELETE',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async updateMerchantStatus(id: string, status: string): Promise<unknown> {
     console.log('🔄 API: updateMerchantStatus called (via Next.js API Route)', { id, status });
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>(`/merchants/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async resendMerchantRegistration(id: string): Promise<unknown> {
     console.log('📧 API: resendMerchantRegistration called (via Next.js API Route)', { id });
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>(`/merchants/${id}/resend-registration`, {
       method: 'POST',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
@@ -323,133 +272,103 @@ class ApiClient {
   // 店舗関連
   async getShops(queryParams?: string): Promise<unknown> {
     console.log('🏪 API: getShops called (via Next.js API Route)');
-    const token = localStorage.getItem('accessToken');
-    console.log('🔑 API: getShops - Token check', { 
-      hasToken: !!token, 
-      tokenLength: token?.length,
-      tokenPreview: token ? `${token.substring(0, 20)}...` : 'no token'
-    });
+    
     const endpoint = queryParams ? `/shops?${queryParams}` : '/shops';
     return this.request<unknown>(endpoint, {
       method: 'GET',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async getShop(id: string): Promise<unknown> {
     console.log('🏪 API: getShop called (via Next.js API Route)', { id });
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>(`/shops/${id}`, {
       method: 'GET',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async createShop(shopData: unknown): Promise<unknown> {
     console.log('➕ API: createShop called (via Next.js API Route)');
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>('/shops', {
       method: 'POST',
       body: JSON.stringify(shopData),
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async updateShop(id: string, shopData: unknown): Promise<unknown> {
     console.log('✏️ API: updateShop called (via Next.js API Route)', { id });
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>(`/shops/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(shopData),
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async deleteShop(id: string): Promise<void> {
     console.log('🗑️ API: deleteShop called (via Next.js API Route)', { id });
-    const token = localStorage.getItem('accessToken');
     return this.request<void>(`/shops/${id}`, {
       method: 'DELETE',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async updateShopStatus(id: string, statusData: { status: string }): Promise<unknown> {
     console.log('🔄 API: updateShopStatus called (via Next.js API Route)', { id, statusData });
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>(`/shops/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify(statusData),
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   // クーポン関連
   async getCoupons(queryParams?: string): Promise<unknown> {
     console.log('🎟️ API: getCoupons called (via Next.js API Route)');
-    const token = localStorage.getItem('accessToken');
     const endpoint = queryParams ? `/coupons?${queryParams}` : '/coupons';
     return this.request<unknown>(endpoint, {
       method: 'GET',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async getCoupon(id: string): Promise<unknown> {
     console.log('🎟️ API: getCoupon called (via Next.js API Route)', { id });
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>(`/coupons/${id}`, {
       method: 'GET',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async createCoupon(couponData: unknown): Promise<unknown> {
     console.log('➕ API: createCoupon called (via Next.js API Route)');
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>('/coupons', {
       method: 'POST',
       body: JSON.stringify(couponData),
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async updateCoupon(id: string, couponData: unknown): Promise<unknown> {
     console.log('✏️ API: updateCoupon called (via Next.js API Route)', { id });
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>(`/coupons/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(couponData),
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async deleteCoupon(id: string): Promise<void> {
     console.log('🗑️ API: deleteCoupon called (via Next.js API Route)', { id });
-    const token = localStorage.getItem('accessToken');
     return this.request<void>(`/coupons/${id}`, {
       method: 'DELETE',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async updateCouponStatus(id: string, statusData: { status: string }): Promise<unknown> {
     console.log('🔄 API: updateCouponStatus called (via Next.js API Route)', { id, statusData });
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>(`/coupons/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify(statusData),
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async updateCouponPublicStatus(id: string, publicStatusData: { isPublic: boolean }): Promise<unknown> {
     console.log('🌐 API: updateCouponPublicStatus called (via Next.js API Route)', { id, publicStatusData });
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>(`/coupons/${id}/public-status`, {
       method: 'PATCH',
       body: JSON.stringify(publicStatusData),
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
@@ -517,10 +436,8 @@ class ApiClient {
 
   async issueAccounts(merchantIds: string[]): Promise<{ success: number; failed: number }> {
     console.log('🎫 API: issueAccounts called', { merchantIds });
-    const token = localStorage.getItem('accessToken');
     const response = await this.request<{ success: boolean; data: { success: number; failed: number } }>('/merchants/issue-accounts', {
       method: 'POST',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       body: JSON.stringify({ merchantIds }),
     });
     return response.data;
@@ -542,50 +459,39 @@ class ApiClient {
     const endpoint = queryString ? `/admin?${queryString}` : '/admin';
     console.log('🔗 Full URL:', `${this.baseUrl}${endpoint}`);
     
-    const token = localStorage.getItem('accessToken');
-    console.log('🔑 API: getAdminAccounts', token);
     return this.request<unknown>(endpoint, {
       method: 'GET',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   // 管理者アカウント関連
   async createAdminAccount(adminAccountData: AdminAccountInput): Promise<unknown> {
     console.log('➕ API: createAdminAccount called (via Next.js API Route)');
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>('/admin', {
       method: 'POST',
       body: JSON.stringify(adminAccountData),
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async getAdminAccount(email: string): Promise<unknown> {
     console.log('👥 API: getAdminAccount called (via Next.js API Route)', { email });
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>(`/admin/${email}`, {
       method: 'GET',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async updateAdminAccount(email: string, adminAccountData: AdminAccountInput): Promise<unknown> {
     console.log('✏️ API: updateAdminAccount called (via Next.js API Route)', { email });
-    const token = localStorage.getItem('accessToken');
     return this.request<unknown>(`/admin/${email}`, {
       method: 'PATCH',
       body: JSON.stringify(adminAccountData),
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 
   async deleteAdminAccount(email: string): Promise<void> {
     console.log('🗑️ API: deleteAdminAccount called (via Next.js API Route)', { email });
-    const token = localStorage.getItem('accessToken');
     return this.request<void>(`/admin/${email}`, {
       method: 'DELETE',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
   }
 }

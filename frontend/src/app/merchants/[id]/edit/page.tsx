@@ -86,13 +86,9 @@ export default function MerchantEditPage() {
 
     const loadMerchantData = async () => {
       try {
-        // APIから事業者データを取得
-        const token = localStorage.getItem('accessToken');
+        // APIから事業者データを取得（Cookieベース認証）
         const response = await fetch(`/api/merchants/${merchantId}`, {
           signal: abortController.signal,
-          headers: token ? {
-            'Authorization': `Bearer ${token}`
-          } : {},
         });
         
         // コンポーネントがアンマウントされている場合は処理を中断
@@ -412,12 +408,10 @@ export default function MerchantEditPage() {
       
       console.log('📤 送信データ:', { updateData, status, issueAccount });
 
-      const token = localStorage.getItem('accessToken');
       const response = await fetch(`/api/merchants/${merchantId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
         },
         body: JSON.stringify(updateData),
       });

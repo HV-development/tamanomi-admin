@@ -116,22 +116,8 @@ function LoginFormWithParams() {
         
         // API経由でログイン
         await login({ email: formData.email, password: formData.password });
-        console.log('✅ LoginPage: Login successful, waiting for storage...');
-        
-        // localStorageへの保存を確実にするため少し待機
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // トークンが保存されたか確認
-        const token = localStorage.getItem('accessToken');
+        console.log('✅ LoginPage: Login successful, preparing redirect...');
         const userDataStr = localStorage.getItem('userData');
-        console.log('🔍 LoginPage: Token verification before redirect', { 
-          hasToken: !!token,
-          tokenLength: token?.length 
-        });
-        
-        if (!token) {
-          throw new Error('トークンの保存に失敗しました。再度お試しください。');
-        }
         
         // アカウントタイプに応じてリダイレクト先を決定
         let redirectPath = '/merchants';
