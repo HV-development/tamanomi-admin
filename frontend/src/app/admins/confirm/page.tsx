@@ -55,6 +55,7 @@ function AdminConfirmationContent() {
         role: adminData.role,
         firstName: adminData.firstName,
         lastName: adminData.lastName,
+        status: "active",
         sendInvite: true, // TODO: 管理者アカウント登録時に招待メールを送信するかどうかを設定する
         inviteTemplate: "default", // TODO: 管理者アカウント登録時に招待メールのテンプレートを設定する
         metadata: {"note": "新規入社"}, // TODO: 管理者アカウント登録時に任意のメモを設定する
