@@ -6,6 +6,7 @@ import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { type Admin, type AdminSearchForm } from '@hv-development/schemas';
+import { apiClient } from '@/lib/api';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -120,11 +121,15 @@ export default function AdminsPage() {
     }
   };
 
-  const handleDelete = (adminId: string, adminName: string) => {
-    if (confirm(`${adminName}のアカウントを削除しますか？`)) {
-      // 実際の削除処理（APIコール等）
-      console.log('管理者アカウント削除:', adminId);
+  const handleDelete = async (adminEmail: string) => {
+    if (!adminEmail) return;
+    if (!confirm(`${adminEmail}のアカウントを削除しますか？`)) return;
+    try {
+      await apiClient.deleteAdminAccount(adminEmail);
       alert('管理者アカウントを削除しました');
+    } catch (error: unknown) {
+      console.error('管理者アカウントの削除に失敗しました:', error);
+      alert('管理者アカウントの削除に失敗しました。もう一度お試しください。');
     }
   };
 
@@ -302,7 +307,7 @@ export default function AdminsPage() {
                         variant="outline" 
                         size="sm" 
                         className="text-red-600 border-red-300 hover:bg-red-50"
-                        onClick={() => handleDelete(admin.id, admin.name)}
+                        onClick={() => handleDelete(admin.email)}
                       >
                         削除
                       </Button>
