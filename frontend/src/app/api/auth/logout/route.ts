@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     nextResponse.cookies.set('accessToken', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       maxAge: 0,
       path: '/',
     });
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     nextResponse.cookies.set('refreshToken', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       maxAge: 0,
       path: '/',
     });
@@ -50,14 +50,14 @@ export async function POST(request: Request) {
     res.cookies.set('accessToken', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       maxAge: 0,
       path: '/',
     });
     res.cookies.set('refreshToken', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       maxAge: 0,
       path: '/',
     });
