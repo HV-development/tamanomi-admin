@@ -4,7 +4,11 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get('Authorization');
+    const headerToken = request.headers.get('authorization');
+    const cookieHeader = request.headers.get('cookie') || '';
+    const accessPair = cookieHeader.split(';').map(v => v.trim()).find(v => v.startsWith('accessToken='));
+    const cookieToken = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
+    const authHeader = headerToken || (cookieToken ? `Bearer ${cookieToken}` : null);
     console.log('🚪 API Route: Logout request received');
     
     const headers: HeadersInit = {

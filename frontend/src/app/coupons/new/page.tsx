@@ -304,9 +304,7 @@ function CouponNewPageContent() {
             const response = await fetch('/api/upload', {
               method: 'POST',
               body: uploadFormData,
-              headers: {
-                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-              }
+              // Cookieベース認証によりヘッダー注入は不要
             });
             
             if (response.ok) {

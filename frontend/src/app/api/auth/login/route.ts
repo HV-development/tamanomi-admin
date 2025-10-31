@@ -24,7 +24,28 @@ export async function POST(request: Request) {
 
     const data = await response.json();
     console.log('✅ API Route: Admin login successful', { accountType: data.account?.accountType });
-    return NextResponse.json(data);
+
+    // トークンはhttpOnly Cookieに保存し、ボディでは返却しない
+    const res = NextResponse.json({ account: data.account });
+    if (data.accessToken) {
+      res.cookies.set('accessToken', data.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 60 * 15,
+      });
+    }
+    if (data.refreshToken) {
+      res.cookies.set('refreshToken', data.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30,
+      });
+    }
+    return res;
   } catch (error: unknown) {
     console.error('❌ API Route: Admin login error', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
