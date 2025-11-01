@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { jwtVerify } from 'jose';
 
 // 認証必須ページへのアクセスをサーバー側でガード
 export function middleware(request: NextRequest) {
@@ -70,12 +71,23 @@ export function middleware(request: NextRequest) {
     '/applications',
   ];
   if (protectedPaths.some(p => pathname === p || pathname.startsWith(`${p}/`))) {
-    const accessToken = request.cookies.get('accessToken')?.value || request.cookies.get('__Host-accessToken')?.value;
-    if (!accessToken) {
+    const token = request.cookies.get('accessToken')?.value || request.cookies.get('__Host-accessToken')?.value;
+    if (!token) {
       const url = request.nextUrl.clone();
       url.pathname = '/login';
       url.searchParams.set('session', 'expired');
       return NextResponse.redirect(url);
+    }
+    const secret = process.env.JWT_SECRET;
+    if (secret) {
+      try {
+        await jwtVerify(token, new TextEncoder().encode(secret));
+      } catch {
+        const url = request.nextUrl.clone();
+        url.pathname = '/login';
+        url.searchParams.set('session', 'expired');
+        return NextResponse.redirect(url);
+      }
     }
   }
 
