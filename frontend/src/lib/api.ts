@@ -127,7 +127,8 @@ class ApiClient {
 
   // 認証関連
   async getMe(): Promise<unknown> {
-    return this.request<unknown>('/me', { method: 'GET' });
+    // ログイン画面等で401になっても自動リフレッシュしない
+    return this.request<unknown>('/me', { method: 'GET', skipAuthRedirect: true });
   }
 
   async login(credentials: LoginRequest): Promise<LoginResponse> {
