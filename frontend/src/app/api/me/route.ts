@@ -29,11 +29,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: 'accountType not found in token' }, { status: 400 });
     }
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       accountType,
       email: email || '',
       id: accountId,
     });
+    res.headers.set('Cache-Control', 'no-store');
+    res.headers.set('Pragma', 'no-cache');
+    return res;
   } catch (error) {
     return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
   }

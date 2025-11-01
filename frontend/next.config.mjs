@@ -72,6 +72,10 @@ const nextConfig = {
               value: 'nosniff',
             },
             {
+              key: 'X-DNS-Prefetch-Control',
+              value: 'off',
+            },
+            {
               key: 'Cross-Origin-Opener-Policy',
               value: 'same-origin',
             },
@@ -82,6 +86,10 @@ const nextConfig = {
             {
               key: 'Cross-Origin-Embedder-Policy',
               value: 'require-corp',
+            },
+            {
+              key: 'Origin-Agent-Cluster',
+              value: '?1',
             },
             {
               key: 'X-Permitted-Cross-Domain-Policies',
