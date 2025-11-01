@@ -35,10 +35,9 @@ function LoginFormWithParams() {
     if (sessionExpired === 'expired') {
       setLoginError('セッションの有効期限が切れました。再度ログインしてください。');
       setIsSessionExpired(true);
-      // URLからクエリパラメータを削除
-      router.replace('/login');
+      // クエリは残しておく（リダイレクト連鎖を防止）
     }
-  }, [searchParams, router]);
+  }, [searchParams]);
 
   const handleInputChange = (field: keyof LoginFormData, value: string) => {
     setFormData((prev: LoginFormData) => ({
@@ -116,22 +115,8 @@ function LoginFormWithParams() {
         
         // API経由でログイン
         await login({ email: formData.email, password: formData.password });
-        console.log('✅ LoginPage: Login successful, waiting for storage...');
-        
-        // localStorageへの保存を確実にするため少し待機
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // トークンが保存されたか確認
-        const token = localStorage.getItem('accessToken');
-        const userDataStr = localStorage.getItem('userData');
-        console.log('🔍 LoginPage: Token verification before redirect', { 
-          hasToken: !!token,
-          tokenLength: token?.length 
-        });
-        
-        if (!token) {
-          throw new Error('トークンの保存に失敗しました。再度お試しください。');
-        }
+        console.log('✅ LoginPage: Login successful, preparing redirect...');
+        const userDataStr = sessionStorage.getItem('userData') || localStorage.getItem('userData');
         
         // アカウントタイプに応じてリダイレクト先を決定
         let redirectPath = '/merchants';

@@ -10,11 +10,19 @@ export async function PATCH(request: Request) {
       status: body.status 
     });
     
+    const cookieHeader = request.headers.get('cookie') || '';
+    const pairs = cookieHeader.split(';').map(v => v.trim());
+    const accessPair = pairs.find(v => v.startsWith('accessToken=')) || pairs.find(v => v.startsWith('__Host-accessToken='));
+    const access = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
     const response = await fetch(`${API_BASE_URL}/shops/bulk-status`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': request.headers.get('Authorization') || '',
+        ...(request.headers.get('authorization')
+          ? { Authorization: request.headers.get('authorization') as string }
+          : access
+          ? { Authorization: `Bearer ${access}` }
+          : {}),
       },
       body: JSON.stringify(body),
     });

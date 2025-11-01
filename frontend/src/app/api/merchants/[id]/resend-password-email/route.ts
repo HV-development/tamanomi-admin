@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -21,7 +23,7 @@ export async function POST(
     });
 
     // バックエンドAPIを呼び出し
-    const response = await fetch('http://api:3002/api/v1/password/resend-setup-email', {
+    const response = await fetch(`${API_BASE_URL}/password/resend-setup-email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
