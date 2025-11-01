@@ -53,12 +53,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // Cookieベースでのリフレッシュを試行（存在しない場合はスキップされる）
-        try {
-          await apiClient.refreshToken();
-        } catch {}
-
-        // /api/me から現在のアカウント種別を取得
+        // /api/me から現在のアカウント種別を取得（401時に自動リフレッシュはしない）
         type MeResponse = {
           accountType?: 'admin' | 'merchant' | 'user' | 'shop';
           email?: string | null;
