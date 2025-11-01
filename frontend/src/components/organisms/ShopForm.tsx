@@ -724,21 +724,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     // カンマがない場合は通常の貼り付け動作
   };
 
-  // Google Mapで住所を開く（手動で緯度経度を確認）
+  // Google Mapで住所を開く（常に住所検索で地図表示）
   const openGoogleMapsForAddress = () => {
-    const latitude = formData.latitude ? String(formData.latitude).trim() : '';
-    const longitude = formData.longitude ? String(formData.longitude).trim() : '';
-    
-    // 緯度経度が両方入力されている場合は座標でピンを表示（最大ズーム）
-    if (latitude && longitude) {
-      // 複数の方法を試して最大ズームレベルで表示
-      const url = `https://www.google.com/maps/@${latitude},${longitude},21z/data=!3m1!1e3`;
-      window.open(url, '_blank', 'noopener,noreferrer');
-      showSuccess('Google Mapで座標のピンを最大ズームで表示しました。');
-      return;
-    }
-    
-    // 緯度経度がない場合は住所で検索（最大ズーム）
     const _postalCode = formData.postalCode?.trim();
     const prefecture = formData.prefecture?.trim();
     const city = formData.city?.trim();
@@ -761,8 +748,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     
     const address = addressParts.join(' ');
     
-    // Google Mapsで住所検索を開く（検索ボックスに入力された状態、最大ズーム）
-    // 住所検索専用のURL形式を使用
+    // Google Mapsで住所検索を開く（標準地図）
     const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}&zoom=21`;
     window.open(url, '_blank', 'noopener,noreferrer');
     
@@ -805,7 +791,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         holidays: selectedHolidays.join(','),
         paymentCredit: paymentCreditJson,
         paymentCode: paymentCodeJson,
+        latitude: formData.latitude ? Number(formData.latitude) : undefined,
+        longitude: formData.longitude ? Number(formData.longitude) : undefined,
       };
+
+      // applications は更新時は送信しない（サーバー側で管理）
+      delete (dataToValidate as any).applications;
       
       console.log('📝 バリデーション前のデータ:', dataToValidate);
       console.log('📧 accountEmail:', formData.accountEmail, '→', dataToValidate.accountEmail);
@@ -876,6 +867,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       if (!formData.latitude || String(formData.latitude).trim().length === 0) {
         console.log('❌ 緯度エラー追加');
         customErrors.latitude = '緯度は必須です';
+      } else {
+        const latNum = Number(formData.latitude);
+        if (Number.isNaN(latNum) || latNum < -90 || latNum > 90) {
+          customErrors.latitude = '緯度は-90〜90の範囲で入力してください';
+        }
       }
 
       // 経度
@@ -883,6 +879,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       if (!formData.longitude || String(formData.longitude).trim().length === 0) {
         console.log('❌ 経度エラー追加');
         customErrors.longitude = '経度は必須です';
+      } else {
+        const lonNum = Number(formData.longitude);
+        if (Number.isNaN(lonNum) || lonNum < -180 || lonNum > 180) {
+          customErrors.longitude = '経度は-180〜180の範囲で入力してください';
+        }
       }
       
       // ジャンル
@@ -1112,10 +1113,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       const submitData = {
         ...formData,
         accountEmail,
-        address: fullAddress,  // 結合した住所
-        // latitude/longitudeを文字列に変換
-        latitude: formData.latitude ? String(formData.latitude) : undefined,
-        longitude: formData.longitude ? String(formData.longitude) : undefined,
+        // latitude/longitudeは数値で送信
+        latitude: formData.latitude ? Number(formData.latitude) : undefined,
+        longitude: formData.longitude ? Number(formData.longitude) : undefined,
         images: allImageUrls,  // 画像削除時にも空配列を送信
         holidays: selectedHolidays.join(','),
         sceneIds: selectedScenes,  // 利用シーンの配列を追加
@@ -1123,6 +1123,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         paymentCredit: paymentCreditJson,
         paymentCode: paymentCodeJson,
       };
+
+      // applications は更新時は送信しない（サーバー側で管理）
+      delete (submitData as any).applications;
       
       if (isEdit) {
         await apiClient.updateShop(shopId, submitData);
@@ -1712,7 +1715,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               {formData.latitude && formData.longitude && (
                 <div className="mt-2">
                   <a
-                    href={`https://www.google.com/maps/@${formData.latitude},${formData.longitude},21z/data=!3m1!1e3`}
+                    href={`https://www.google.com/maps/@?api=1&map_action=map&center=${formData.latitude},${formData.longitude}&zoom=21`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"

@@ -65,7 +65,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('❌ API Route: Update shop failed', { status: response.status, error: errorData });
+      try {
+        console.error('❌ API Route: Update shop failed', { status: response.status, error: errorData });
+        console.error('❌ API Route: Update shop failed (stringified)', JSON.stringify(errorData, null, 2));
+      } catch {}
       return NextResponse.json(errorData, { status: response.status });
     }
 
