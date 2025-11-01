@@ -10,7 +10,8 @@ function getAuthHeaders(request: Request): Record<string, string> {
     return headers;
   }
   const cookieHeader = request.headers.get('cookie') || '';
-  const accessPair = cookieHeader.split(';').map(v => v.trim()).find(v => v.startsWith('accessToken='));
+  const pairs = cookieHeader.split(';').map(v => v.trim());
+  const accessPair = pairs.find(v => v.startsWith('accessToken=')) || pairs.find(v => v.startsWith('__Host-accessToken='));
   const accessToken = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
   if (accessToken) {
     headers['Authorization'] = `Bearer ${accessToken}`;
