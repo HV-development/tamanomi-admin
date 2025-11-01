@@ -26,6 +26,7 @@ export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const auth = useAuth();
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isFontReady, setIsFontReady] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -57,6 +58,23 @@ export default function Sidebar() {
     }
   }, []);
 
+  // Material Symbols フォントの読み込み完了まで待機してから描画
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if ((document as any).fonts && (document as any).fonts.check) {
+      const loaded = (document as any).fonts.check('24px "Material Symbols Outlined"');
+      if (loaded) {
+        setIsFontReady(true);
+      } else {
+        (document as any).fonts.ready.then(() => setIsFontReady(true));
+      }
+    } else {
+      // フォントAPIが使えない環境では短い遅延の後に表示
+      const timer = setTimeout(() => setIsFontReady(true), 150);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   // サイドバーの状態をローカルストレージに保存
   useEffect(() => {
     if (isLoaded && typeof window !== 'undefined') {
@@ -75,10 +93,15 @@ export default function Sidebar() {
     setIsCollapsed(!isCollapsed);
   };
 
+  if (!isLoaded || auth?.isLoading || !isFontReady) {
+    // 完全に準備できるまでサイドバーを表示しない
+    return <div className={`bg-white shadow-lg transition-all duration-300 relative flex-shrink-0 ${isCollapsed ? 'w-16' : 'w-64'}`} />;
+  }
+
   return (
     <div className={`bg-white shadow-lg transition-all duration-300 relative flex-shrink-0 ${
       isCollapsed ? 'w-16' : 'w-64'
-    } ${!isLoaded ? 'opacity-0' : 'opacity-100'}`}>
+    }`}>
       <SidebarHeader isCollapsed={isCollapsed} onToggleCollapse={handleToggleCollapse} />
 
       {/* メニュー */}

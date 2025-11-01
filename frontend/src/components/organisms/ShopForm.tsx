@@ -104,6 +104,12 @@ const ErrorMessage = ({ message, field }: { message?: string; field?: string }) 
   return <p className="mt-1 text-sm text-red-600">{message}</p>;
 };
 
+type ExtendedShopCreateRequest = ShopCreateRequest & {
+  homepageUrl?: string | null;
+  couponUsageStart?: string | null;
+  couponUsageEnd?: string | null;
+};
+
 export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps = {}) {
   const params = useParams();
   const router = useRouter();
@@ -122,7 +128,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   // merchantIdの決定（props > URLパラメータ）
   const merchantId = propMerchantId || merchantIdFromParams;
   
-  const [formData, setFormData] = useState<ShopCreateRequest>({
+  const [formData, setFormData] = useState<ExtendedShopCreateRequest>({
     merchantId: merchantId || '',
     genreId: '',
     accountEmail: '',
@@ -141,6 +147,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     details: '',
     holidays: '',
     smokingType: '',
+    homepageUrl: '',
+    couponUsageStart: '',
+    couponUsageEnd: '',
     paymentSaicoin: false,
     paymentTamapon: false,
     paymentCash: true,
@@ -160,6 +169,14 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   const [customCreditText, setCustomCreditText] = useState<string>('');
   const [selectedQrBrands, setSelectedQrBrands] = useState<string[]>([]);
   const [customQrText, setCustomQrText] = useState<string>('');
+
+  // 喫煙タイプの選択肢（enumコード + 日本語表示）
+  const smokingOptions = [
+    { value: 'non_smoking', label: '禁煙' },
+    { value: 'separated', label: '分煙' },
+    { value: 'smoking_allowed', label: '喫煙可' },
+    { value: 'electronic_only', label: '電子のみ' },
+  ];
   
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
@@ -521,7 +538,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     setIsMerchantModalOpen(false);
   };
 
-  const handleInputChange = (field: keyof ShopCreateRequest, value: string | number | boolean) => {
+  const handleInputChange = (field: keyof ExtendedShopCreateRequest, value: string | number | boolean) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -540,7 +557,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   };
 
   // onBlurイベントハンドラー（フィールドが触られたことを記録してバリデーション実行）
-  const handleFieldBlur = (field: keyof ShopCreateRequest, value: string | boolean | number | undefined) => {
+  const handleFieldBlur = (field: keyof ExtendedShopCreateRequest, value: string | boolean | number | undefined) => {
     // フィールドが触られたことを記録
     setTouchedFields((prev) => ({
       ...prev,
@@ -552,7 +569,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   };
 
   // 個別フィールドのバリデーション（入力時とblur時に実行）
-  const validateField = (field: keyof ShopCreateRequest, value: string | boolean | number | undefined) => {
+  const validateField = (field: keyof ExtendedShopCreateRequest, value: string | boolean | number | undefined) => {
     let errorMessage = '';
 
     // フィールドごとのバリデーションロジック
@@ -626,6 +643,40 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           errorMessage = '経度は必須です';
         }
         break;
+
+      case 'homepageUrl': {
+        if (typeof value === 'string' && value.trim().length > 0) {
+          try {
+            const u = new URL(value);
+            if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+              errorMessage = '有効なURLを入力してください（http/https）';
+            }
+          } catch {
+            errorMessage = '有効なURLを入力してください（http/https）';
+          }
+        }
+        break;
+      }
+
+      case 'couponUsageStart':
+      case 'couponUsageEnd': {
+        const start = (field === 'couponUsageStart' ? (typeof value === 'string' ? value : '') : (formData.couponUsageStart || ''));
+        const end = (field === 'couponUsageEnd' ? (typeof value === 'string' ? value : '') : (formData.couponUsageEnd || ''));
+        const hasStart = !!start;
+        const hasEnd = !!end;
+        if ((hasStart && !hasEnd) || (!hasStart && hasEnd)) {
+          const msg = 'クーポン利用時間は開始・終了をセットで入力してください';
+          setValidationErrors(prev => ({ ...prev, couponUsageStart: msg, couponUsageEnd: msg }));
+        } else {
+          setValidationErrors(prev => {
+            const ne = { ...prev } as Record<string, string>;
+            delete ne.couponUsageStart;
+            delete ne.couponUsageEnd;
+            return ne;
+          });
+        }
+        return; // ここで終了（下の単項目処理は行わない）
+      }
     }
 
     // エラーメッセージの設定またはクリア
@@ -672,6 +723,80 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
 
     console.log('✅ New previews created:', newPreviews.length);
     setImagePreviews([...imagePreviews, ...newPreviews]);
+  };
+
+  // 画像圧縮（WebP変換 + リサイズ + 目標サイズまでクオリティ調整）
+  const compressImageFile = async (
+    sourceFile: File,
+    options?: {
+      maxBytes?: number; // 目標最大サイズ（バイト）
+      maxWidth?: number;
+      maxHeight?: number;
+      initialQuality?: number; // 0.0 - 1.0
+      minQuality?: number; // 0.0 - 1.0
+      qualityStep?: number; // 品質の減衰量
+    }
+  ): Promise<File> => {
+    const {
+      maxBytes = 9.5 * 1024 * 1024,
+      maxWidth = 2560,
+      maxHeight = 2560,
+      initialQuality = 0.9,
+      minQuality = 0.5,
+      qualityStep = 0.1,
+    } = options || {};
+
+    // すでに十分小さい場合は変換せず返す
+    if (sourceFile.size <= maxBytes && sourceFile.type === 'image/webp') {
+      return sourceFile;
+    }
+
+    const objectUrl = URL.createObjectURL(sourceFile);
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = objectUrl;
+      });
+
+      // リサイズ後の幅・高さを計算
+      const scale = Math.min(1, maxWidth / img.width, maxHeight / img.height);
+      const targetWidth = Math.max(1, Math.floor(img.width * scale));
+      const targetHeight = Math.max(1, Math.floor(img.height * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return sourceFile;
+      ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+      let quality = initialQuality;
+      let blob: Blob | null = null;
+
+      // 品質を下げながら maxBytes 以下を目指す
+      while (quality >= minQuality) {
+        blob = await new Promise<Blob | null>((resolve) =>
+          canvas.toBlob((b) => resolve(b), 'image/webp', quality)
+        );
+        if (blob && blob.size <= maxBytes) break;
+        quality -= qualityStep;
+      }
+
+      // 生成できなかった場合は元ファイルを返す
+      if (!blob) return sourceFile;
+
+      // まだ大きい場合は元ファイルを優先して返す（失敗扱いにしない）
+      if (blob.size > maxBytes && sourceFile.size <= maxBytes) return sourceFile;
+
+      const newName = sourceFile.name.replace(/\.[^.]+$/, '.webp');
+      return new File([blob], newName, { type: 'image/webp' });
+    } catch {
+      return sourceFile;
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
   };
 
   // 画像削除処理（新規アップロード画像）
@@ -1002,7 +1127,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       const schema = isEdit ? shopUpdateRequestSchema : shopCreateRequestSchema;
       
       // アカウント発行が無効な場合はパスワードフィールドを除外
-      let dataForZodValidation = { ...dataToValidate };
+      let dataForZodValidation: ExtendedShopCreateRequest & { applications?: string[] } = { ...dataToValidate } as any;
+      // applications はZodチェック前に除去（後で送信データに 'tamanomi' を設定）
+      if ('applications' in dataForZodValidation) {
+        delete (dataForZodValidation as Record<string, unknown>).applications;
+      }
       if (!formData.createAccount) {
         const { password: _password, ...rest } = dataForZodValidation;
         dataForZodValidation = { ...rest, accountEmail: null };
@@ -1046,7 +1175,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             console.log(`📤 Uploading image ${index}/${imagePreviews.length}:`, preview.file.name);
             
             const uploadFormData = new FormData();
-            uploadFormData.append('image', preview.file);
+            const fileForUpload = await compressImageFile(preview.file, {
+              maxBytes: 9.5 * 1024 * 1024,
+              maxWidth: 2560,
+              maxHeight: 2560,
+              initialQuality: 0.9,
+              minQuality: 0.6,
+              qualityStep: 0.1,
+            });
+            uploadFormData.append('image', fileForUpload);
             uploadFormData.append('type', 'shop');
             uploadFormData.append('merchantId', formData.merchantId);
             uploadFormData.append('shopId', targetShopId);
@@ -1096,6 +1233,10 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       
       // 画像URLを結合（既存画像 + 新規アップロード画像）
       const allImageUrls = [...existingImages, ...uploadedImageUrls];
+      // 画面上の既存画像も即時更新（古い世代で404になるのを避ける）
+      if (uploadedImageUrls.length > 0) {
+        setExistingImages(allImageUrls);
+      }
       console.log('🖼️ All image URLs:', { existing: existingImages.length, uploaded: uploadedImageUrls.length, total: allImageUrls.length, urls: allImageUrls });
       
       // アカウントメールの設定
@@ -1114,8 +1255,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         accountEmail,
         address: fullAddress,  // 結合した住所
         // latitude/longitudeを文字列に変換
-        latitude: formData.latitude ? String(formData.latitude) : undefined,
-        longitude: formData.longitude ? String(formData.longitude) : undefined,
+        latitude: formData.latitude ? (isEdit ? Number(formData.latitude) : String(formData.latitude)) : undefined,
+        longitude: formData.longitude ? (isEdit ? Number(formData.longitude) : String(formData.longitude)) : undefined,
         images: allImageUrls,  // 画像削除時にも空配列を送信
         holidays: selectedHolidays.join(','),
         sceneIds: selectedScenes,  // 利用シーンの配列を追加
@@ -1956,23 +2097,85 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               </div>
             </div>
             
+            {/* ホームページURL（任意） */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ホームページURL（任意）
+              </label>
+              <input
+                type="url"
+                name="homepageUrl"
+                value={formData.homepageUrl || ''}
+                onChange={(e) => handleInputChange('homepageUrl', e.target.value)}
+                onBlur={(e) => handleFieldBlur('homepageUrl', e.target.value)}
+                placeholder="https://example.com"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  validationErrors.homepageUrl 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
+              />
+              <ErrorMessage message={validationErrors.homepageUrl} field="homepageUrl" />
+            </div>
+
+            {/* クーポン利用時間（任意、開始・終了） */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                クーポン利用時間（任意）
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="time"
+                  name="couponUsageStart"
+                  value={formData.couponUsageStart || ''}
+                  onChange={(e) => handleInputChange('couponUsageStart', e.target.value)}
+                  onBlur={(e) => handleFieldBlur('couponUsageStart', e.target.value)}
+                  className={`px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    validationErrors.couponUsageStart 
+                      ? 'border-red-500 focus:ring-red-500' 
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
+                />
+                <span className="text-gray-500">〜</span>
+                <input
+                  type="time"
+                  name="couponUsageEnd"
+                  value={formData.couponUsageEnd || ''}
+                  onChange={(e) => handleInputChange('couponUsageEnd', e.target.value)}
+                  onBlur={(e) => handleFieldBlur('couponUsageEnd', e.target.value)}
+                  className={`px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    validationErrors.couponUsageEnd 
+                      ? 'border-red-500 focus:ring-red-500' 
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
+                />
+              </div>
+              {(validationErrors.couponUsageStart || validationErrors.couponUsageEnd) && (
+                <ErrorMessage
+                  message={validationErrors.couponUsageStart || validationErrors.couponUsageEnd}
+                  field="couponUsage"
+                />
+              )}
+              <p className="mt-1 text-xs text-gray-500">両方入力するか、両方未入力にしてください</p>
+            </div>
+
             {/* 喫煙タイプ */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 喫煙タイプ
               </label>
               <div className="flex flex-wrap gap-4">
-                {['禁煙', '分煙', '喫煙可'].map((type) => (
-                  <label key={type} className="flex items-center space-x-2 cursor-pointer">
+                {smokingOptions.map((opt) => (
+                  <label key={opt.value} className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="radio"
                       name="smokingType"
-                      value={type}
-                      checked={formData.smokingType === type}
+                      value={opt.value}
+                      checked={formData.smokingType === opt.value}
                       onChange={(e) => handleInputChange('smokingType', e.target.value)}
                       className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700">{type}</span>
+                    <span className="text-sm text-gray-700">{opt.label}</span>
                   </label>
                 ))}
               </div>
@@ -2293,7 +2496,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                     console.log('🖼️ Rendering existing image:', imageUrl);
                     return (
                       <div key={index} className="relative group">
-                        <div className="relative w-full aspect-[3/2] rounded-md overflow-hidden border border-gray-300 bg-gray-100">
+                        <div className="relative w-full aspect-[4/3] md:aspect-[16/9] rounded-md overflow-hidden border border-gray-300 bg-gray-100">
                           <img
                             src={imageUrl}
                             alt={`店舗画像 ${index + 1}`}
@@ -2301,16 +2504,10 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                             onLoad={() => {
                               console.log('✅ Image loaded successfully:', imageUrl);
                             }}
-                            onError={(e) => {
+                            onError={(_e) => {
                               console.error('❌ 画像の読み込みに失敗しました:', imageUrl);
-                              e.currentTarget.style.display = 'none';
-                              const parent = e.currentTarget.parentElement;
-                              if (parent) {
-                                const errorMsg = document.createElement('div');
-                                errorMsg.className = 'absolute inset-0 flex items-center justify-center text-xs text-red-500';
-                                errorMsg.textContent = '画像を読み込めません';
-                                parent.appendChild(errorMsg);
-                              }
+                              // 壊れたURLは一覧から取り除く（古い世代のURLを自動で非表示）
+                              setExistingImages((prev) => prev.filter((_, i) => i !== index));
                             }}
                           />
                         </div>
@@ -2339,7 +2536,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 <div className="grid grid-cols-3 gap-4">
                   {imagePreviews.map((preview, index) => (
                     <div key={index} className="relative group">
-                      <div className="relative w-full aspect-[3/2] rounded-md overflow-hidden border border-gray-300 bg-gray-100">
+                      <div className="relative w-full aspect-[4/3] md:aspect-[16/9] rounded-md overflow-hidden border border-gray-300 bg-gray-100">
                         <img
                           src={preview.url}
                           alt={`プレビュー ${index + 1}`}
