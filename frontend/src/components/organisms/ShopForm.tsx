@@ -1250,6 +1250,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       }
       
       // クレジットカードとQRコードをJSON形式で送信データに追加
+      // 空文字はnullに正規化（未入力と区別し、明示的にDBをクリアできるようにする）
+      const normalizedHomepageUrl = (formData.homepageUrl && formData.homepageUrl.trim() !== '') ? formData.homepageUrl.trim() : null;
+      const normalizedCouponStart = (formData.couponUsageStart && formData.couponUsageStart !== '') ? formData.couponUsageStart : null;
+      const normalizedCouponEnd = (formData.couponUsageEnd && formData.couponUsageEnd !== '') ? formData.couponUsageEnd : null;
+
       const submitData = {
         ...formData,
         accountEmail,
@@ -1263,6 +1268,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customSceneText: isOtherSceneSelected ? customSceneText : undefined,  // 「その他」選択時のみ送信
         paymentCredit: paymentCreditJson,
         paymentCode: paymentCodeJson,
+        homepageUrl: normalizedHomepageUrl,
+        couponUsageStart: normalizedCouponStart,
+        couponUsageEnd: normalizedCouponEnd,
       };
       
       if (isEdit) {
