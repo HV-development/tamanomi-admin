@@ -28,6 +28,15 @@ export async function POST(request: NextRequest) {
     
     // Authorizationヘッダーを取得
     const authHeader = request.headers.get('authorization');
+    // CookieからAuthorizationを補完
+    let finalAuth = authHeader || '';
+    if (!finalAuth) {
+      const cookieHeader = request.headers.get('cookie') || '';
+      const pairs = cookieHeader.split(';').map(v => v.trim());
+      const accessPair = pairs.find(v => v.startsWith('accessToken=')) || pairs.find(v => v.startsWith('__Host-accessToken='));
+      const token = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
+      if (token) finalAuth = `Bearer ${token}`;
+    }
     
     console.log('📤 Upload: Forwarding to', `${API_BASE_URL}/api/upload`);
     
@@ -36,8 +45,8 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       body: formData,
       headers: {
-        // Authorizationヘッダーを転送
-        ...(authHeader ? { Authorization: authHeader } : {}),
+        // Authorizationヘッダーを転送（Cookieからの補完含む）
+        ...(finalAuth ? { Authorization: finalAuth } : {}),
         // Cookieを転送
         ...(request.headers.get('cookie') ? { cookie: request.headers.get('cookie')! } : {}),
       },

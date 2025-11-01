@@ -24,6 +24,8 @@ export async function POST(request: Request) {
 
     const ok = response.ok;
     const nextResponse = NextResponse.json(ok ? { message: 'Logout successful' } : { message: 'Logout locally cleared', upstream: response.status });
+    nextResponse.headers.set('Cache-Control', 'no-store');
+    nextResponse.headers.set('Pragma', 'no-cache');
     
     // accessToken クッキーを削除
     nextResponse.cookies.set('accessToken', '', {
@@ -62,6 +64,8 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     console.error('❌ API Route: Logout error', error);
     const res = NextResponse.json({ message: 'Local logout executed' }, { status: 200 });
+    res.headers.set('Cache-Control', 'no-store');
+    res.headers.set('Pragma', 'no-cache');
     res.cookies.set('accessToken', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
