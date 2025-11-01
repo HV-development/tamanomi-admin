@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
 // 認証必須ページへのアクセスをサーバー側でガード
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname, host } = request.nextUrl;
 
   // CSRF: /api 以下の unsafe メソッドは Origin/Referer を検証
