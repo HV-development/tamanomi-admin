@@ -48,6 +48,9 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
+    const isSecure = (() => {
+      try { return new URL(request.url).protocol === 'https:'; } catch { return process.env.NODE_ENV === 'production'; }
+    })();
     console.log('✅ API Route: Admin login successful', { accountType: data.account?.accountType });
 
     // トークンはhttpOnly Cookieに保存し、ボディでは返却しない
@@ -57,7 +60,7 @@ export async function POST(request: Request) {
     if (data.accessToken) {
       res.cookies.set('accessToken', data.accessToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: isSecure,
         sameSite: 'strict',
         path: '/',
         maxAge: 60 * 15,
@@ -65,7 +68,7 @@ export async function POST(request: Request) {
       // __Host- prefix for hardened cookie (no Domain, path=/, secure required)
       res.cookies.set('__Host-accessToken', data.accessToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: isSecure,
         sameSite: 'strict',
         path: '/',
         maxAge: 60 * 15,
@@ -74,14 +77,14 @@ export async function POST(request: Request) {
     if (data.refreshToken) {
       res.cookies.set('refreshToken', data.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: isSecure,
         sameSite: 'strict',
         path: '/',
         maxAge: 60 * 60 * 24 * 30,
       });
       res.cookies.set('__Host-refreshToken', data.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: isSecure,
         sameSite: 'strict',
         path: '/',
         maxAge: 60 * 60 * 24 * 30,
