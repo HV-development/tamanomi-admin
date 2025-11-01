@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { jwtVerify } from 'jose';
 
 // 認証必須ページへのアクセスをサーバー側でガード
 export async function middleware(request: NextRequest) {
@@ -78,17 +77,7 @@ export async function middleware(request: NextRequest) {
       url.searchParams.set('session', 'expired');
       return NextResponse.redirect(url);
     }
-    const secret = process.env.JWT_SECRET;
-    if (secret) {
-      try {
-        await jwtVerify(token, new TextEncoder().encode(secret));
-      } catch {
-        const url = request.nextUrl.clone();
-        url.pathname = '/login';
-        url.searchParams.set('session', 'expired');
-        return NextResponse.redirect(url);
-      }
-    }
+    // 署名検証はAPI層で実施。ここではCookieの存在のみでガード。
   }
 
   return NextResponse.next();
