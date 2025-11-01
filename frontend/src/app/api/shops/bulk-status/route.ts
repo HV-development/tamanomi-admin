@@ -11,7 +11,8 @@ export async function PATCH(request: Request) {
     });
     
     const cookieHeader = request.headers.get('cookie') || '';
-    const accessPair = cookieHeader.split(';').map(v => v.trim()).find(v => v.startsWith('accessToken='));
+    const pairs = cookieHeader.split(';').map(v => v.trim());
+    const accessPair = pairs.find(v => v.startsWith('accessToken=')) || pairs.find(v => v.startsWith('__Host-accessToken='));
     const access = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
     const response = await fetch(`${API_BASE_URL}/shops/bulk-status`, {
       method: 'PATCH',
