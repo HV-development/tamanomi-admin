@@ -72,6 +72,10 @@ const nextConfig = {
               value: 'nosniff',
             },
             {
+              key: 'X-Permitted-Cross-Domain-Policies',
+              value: 'none',
+            },
+            {
               key: 'Referrer-Policy',
               value: 'origin-when-cross-origin',
             },
@@ -92,7 +96,13 @@ const nextConfig = {
                 "form-action 'self'",
                 "object-src 'none'",
                 "frame-ancestors 'none'",
+                "report-uri /api/security/csp-report",
+                "report-to csp-endpoint",
               ].join('; '),
+            },
+            {
+              key: 'Reporting-Endpoints',
+              value: 'csp-endpoint="/api/security/csp-report"',
             },
             {
               key: 'Permissions-Policy',

@@ -6,7 +6,8 @@ export async function POST(request: Request) {
   try {
     const headerToken = request.headers.get('authorization');
     const cookieHeader = request.headers.get('cookie') || '';
-    const accessPair = cookieHeader.split(';').map(v => v.trim()).find(v => v.startsWith('accessToken='));
+    const pairs = cookieHeader.split(';').map(v => v.trim());
+    const accessPair = pairs.find(v => v.startsWith('accessToken=')) || pairs.find(v => v.startsWith('__Host-accessToken='));
     const cookieToken = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
     const authHeader = headerToken || (cookieToken ? `Bearer ${cookieToken}` : null);
     console.log('🚪 API Route: Logout request received');
@@ -32,9 +33,23 @@ export async function POST(request: Request) {
       maxAge: 0,
       path: '/',
     });
+    nextResponse.cookies.set('__Host-accessToken', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 0,
+      path: '/',
+    });
     
     // refreshToken クッキーを削除
     nextResponse.cookies.set('refreshToken', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 0,
+      path: '/',
+    });
+    nextResponse.cookies.set('__Host-refreshToken', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
@@ -54,7 +69,21 @@ export async function POST(request: Request) {
       maxAge: 0,
       path: '/',
     });
+    res.cookies.set('__Host-accessToken', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 0,
+      path: '/',
+    });
     res.cookies.set('refreshToken', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 0,
+      path: '/',
+    });
+    res.cookies.set('__Host-refreshToken', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',

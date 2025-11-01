@@ -11,7 +11,8 @@ export function middleware(request: NextRequest) {
     ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)
   ) {
     // 認証系の一部エンドポイントはCSRF対象外（ログイン/リフレッシュなど）
-    const csrfSkip = (
+    const isProd = process.env.NODE_ENV === 'production';
+    const csrfSkip = !isProd && (
       pathname === '/api/auth/login' ||
       pathname === '/api/auth/refresh'
     );
@@ -69,7 +70,7 @@ export function middleware(request: NextRequest) {
     '/applications',
   ];
   if (protectedPaths.some(p => pathname === p || pathname.startsWith(`${p}/`))) {
-    const accessToken = request.cookies.get('accessToken')?.value;
+    const accessToken = request.cookies.get('accessToken')?.value || request.cookies.get('__Host-accessToken')?.value;
     if (!accessToken) {
       const url = request.nextUrl.clone();
       url.pathname = '/login';
