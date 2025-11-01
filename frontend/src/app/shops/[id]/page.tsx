@@ -112,6 +112,16 @@ export default function ShopDetailPage() {
     return statusClasses[status] || 'bg-gray-100 text-gray-800';
   };
 
+  const getSmokingLabel = (code?: string | null) => {
+    const map: Record<string, string> = {
+      non_smoking: '禁煙',
+      separated: '分煙',
+      smoking_allowed: '喫煙可',
+      electronic_only: '電子のみ',
+    };
+    return (code && map[code]) || '-';
+  };
+
   if (isLoading) {
     return (
       <AdminLayout>
@@ -250,7 +260,21 @@ export default function ShopDetailPage() {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">喫煙タイプ</label>
-              <div className="text-sm text-gray-900">{shop.smokingType || '-'}</div>
+              <div className="text-sm text-gray-900">{getSmokingLabel(shop.smokingType as any)}</div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">ホームページURL</label>
+              <div className="text-sm text-gray-900">
+                {(shop as any).homepageUrl ? (
+                  <a href={(shop as any).homepageUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{(shop as any).homepageUrl}</a>
+                ) : '-'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">クーポン利用時間</label>
+              <div className="text-sm text-gray-900">
+                {(shop as any).couponUsageStart && (shop as any).couponUsageEnd ? `${(shop as any).couponUsageStart}〜${(shop as any).couponUsageEnd}` : '-'}
+              </div>
             </div>
             
             <div>
