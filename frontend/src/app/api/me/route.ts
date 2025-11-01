@@ -1,44 +1,44 @@
 import { NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
-function getAccessTokenFromCookie(request: Request): string | null {
+function getAuthHeader(request: Request): string | null {
   const cookieHeader = request.headers.get('cookie') || '';
   const pairs = cookieHeader.split(';').map(v => v.trim());
   const accessPair = pairs.find(v => v.startsWith('accessToken=')) || pairs.find(v => v.startsWith('__Host-accessToken='));
   const token = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
-  return token || null;
+  return token ? `Bearer ${token}` : null;
 }
 
 export async function GET(request: Request) {
   try {
-    const token = getAccessTokenFromCookie(request);
-    if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const auth = getAuthHeader(request);
+    if (!auth) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
-    const secret = process.env.JWT_SECRET;
-    if (!secret) return NextResponse.json({ message: 'JWT secret not configured' }, { status: 500 });
-
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
-    const accountType = payload.accountType as string | undefined;
-    const email = (payload.email as string | undefined) || (payload.sub as string | undefined) || undefined;
-    const accountId = payload.accountId as string | undefined;
-
-    if (!accountType) {
-      // 後方互換: 既存バックエンドで未付与の場合はフォールバック判定（必要なら拡張）
-      return NextResponse.json({ message: 'accountType not found in token' }, { status: 400 });
+    // merchant優先で判定
+    const mr = await fetch(`${API_BASE_URL}/admin/merchants/me`, { headers: { 'Content-Type': 'application/json', Authorization: auth } });
+    if (mr.ok) {
+      const data = await mr.json().catch(() => ({}));
+      const m = data?.data || data;
+      const res = NextResponse.json({ accountType: 'merchant', merchantId: m?.id, email: m?.account?.email || m?.accountEmail || null });
+      res.headers.set('Cache-Control', 'no-store'); res.headers.set('Pragma', 'no-cache');
+      return res;
     }
 
-    const res = NextResponse.json({
-      accountType,
-      email: email || '',
-      id: accountId,
-    });
-    res.headers.set('Cache-Control', 'no-store');
-    res.headers.set('Pragma', 'no-cache');
+    // shop 次に判定
+    const sr = await fetch(`${API_BASE_URL}/shops/me`, { headers: { 'Content-Type': 'application/json', Authorization: auth } });
+    if (sr.ok) {
+      const s = await sr.json().catch(() => ({}));
+      const res = NextResponse.json({ accountType: 'shop', shopId: s?.id || s?.data?.id || null, merchantId: s?.merchant?.id || s?.data?.merchant?.id || null, email: s?.account?.email || null });
+      res.headers.set('Cache-Control', 'no-store'); res.headers.set('Pragma', 'no-cache');
+      return res;
+    }
+
+    const res = NextResponse.json({ accountType: 'admin' });
+    res.headers.set('Cache-Control', 'no-store'); res.headers.set('Pragma', 'no-cache');
     return res;
-  } catch (error) {
-    return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
+  } catch {
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
 
