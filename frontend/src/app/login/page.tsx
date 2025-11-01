@@ -35,10 +35,9 @@ function LoginFormWithParams() {
     if (sessionExpired === 'expired') {
       setLoginError('セッションの有効期限が切れました。再度ログインしてください。');
       setIsSessionExpired(true);
-      // URLからクエリパラメータを削除
-      router.replace('/login');
+      // クエリは残しておく（リダイレクト連鎖を防止）
     }
-  }, [searchParams, router]);
+  }, [searchParams]);
 
   const handleInputChange = (field: keyof LoginFormData, value: string) => {
     setFormData((prev: LoginFormData) => ({
