@@ -58,17 +58,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await apiClient.refreshToken();
         } catch {}
 
-        // ユーザ表示用データは sessionStorage を優先（localStorageは後方互換）
-        const userData = sessionStorage.getItem('userData') || localStorage.getItem('userData');
-        if (userData) {
-          const accountData = JSON.parse(userData);
+        // /api/me から現在のアカウント種別を取得
+        type MeResponse = {
+          accountType?: 'admin' | 'merchant' | 'user' | 'shop';
+          email?: string | null;
+          shopId?: string | null;
+          merchantId?: string | null;
+        } | null;
+        const me = await apiClient.getMe().catch(() => null) as MeResponse;
+        if (me && me.accountType) {
           setUser({
-            id: accountData.email,
-            email: accountData.email,
-            name: accountData.displayName || accountData.email,
-            accountType: accountData.accountType,
-            shopId: accountData.shopId,
-            merchantId: accountData.merchantId
+            id: me.email || 'me',
+            email: me.email || '',
+            name: me.email || 'Account',
+            accountType: me.accountType,
+            shopId: (me.shopId ?? undefined) || undefined,
+            merchantId: (me.merchantId ?? undefined) || undefined,
           });
         }
       } catch (error) {
@@ -93,8 +98,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email: string;
         displayName?: string;
       };
-      sessionStorage.setItem('userData', JSON.stringify(accountData));
-      
       setUser({
         id: accountData.email, // 仮のIDとしてemailを使用
         email: accountData.email,
@@ -126,8 +129,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email: string;
         displayName?: string;
       };
-      sessionStorage.setItem('userData', JSON.stringify(accountData));
-      
       setUser({
         id: accountData.email, // 仮のIDとしてemailを使用
         email: accountData.email,
@@ -150,9 +151,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('❌ AuthContext: logout failed', error);
     } finally {
-      // 表示用ユーザーデータのみクリア
-      sessionStorage.removeItem('userData');
-      localStorage.removeItem('userData');
+      // 表示用ユーザーデータの保存を廃止
       setUser(null);
       console.log('✅ AuthContext: logout completed');
     }
