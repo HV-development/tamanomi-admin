@@ -1056,6 +1056,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               const response = await fetch('/api/upload', {
                 method: 'POST',
                 body: uploadFormData,
+                credentials: 'include',
               });
               
               if (!response.ok) {
