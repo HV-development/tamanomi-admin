@@ -126,6 +126,10 @@ class ApiClient {
   }
 
   // 認証関連
+  async getMe(): Promise<unknown> {
+    return this.request<unknown>('/me', { method: 'GET' });
+  }
+
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     console.log('🔐 API: login called (via Next.js API Route)');
     console.log('🔗 API Base URL:', this.baseUrl);
