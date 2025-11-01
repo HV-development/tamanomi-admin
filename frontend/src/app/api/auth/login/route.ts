@@ -52,6 +52,8 @@ export async function POST(request: Request) {
 
     // トークンはhttpOnly Cookieに保存し、ボディでは返却しない
     const res = NextResponse.json({ account: data.account });
+    res.headers.set('Cache-Control', 'no-store');
+    res.headers.set('Pragma', 'no-cache');
     if (data.accessToken) {
       res.cookies.set('accessToken', data.accessToken, {
         httpOnly: true,

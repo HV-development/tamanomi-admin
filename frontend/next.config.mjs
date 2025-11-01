@@ -80,6 +80,10 @@ const nextConfig = {
               value: 'same-origin',
             },
             {
+              key: 'Cross-Origin-Embedder-Policy',
+              value: 'require-corp',
+            },
+            {
               key: 'X-Permitted-Cross-Domain-Policies',
               value: 'none',
             },
