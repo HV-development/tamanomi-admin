@@ -155,14 +155,6 @@ export default function ShopsPage() {
       if (searchForm.updatedAtTo) queryParams.append('updatedAtTo', searchForm.updatedAtTo);
       
       const data = await apiClient.getShops(queryParams.toString());
-        
-      console.log('🔍 ShopManagement: API Response received', { 
-        data, 
-        dataType: typeof data, 
-        isArray: Array.isArray(data),
-        hasShops: data && typeof data === 'object' && 'shops' in data,
-        hasDataShops: data && typeof data === 'object' && 'data' in data && data.data && typeof data.data === 'object' && 'shops' in data.data
-      });
       
       // APIレスポンスの処理
       let shopsArray: Shop[] = [];
@@ -180,12 +172,6 @@ export default function ShopsPage() {
           shopsArray = ((data as { shops: Shop[] }).shops || []) as Shop[];
         }
       }
-      
-      console.log('🔍 ShopManagement: Processed shops array', { 
-        shopsArray, 
-        length: shopsArray.length,
-        firstShop: shopsArray[0] || 'no shops'
-      });
       
       // 最初の店舗からmerchant情報を取得
       if (shopsArray.length > 0 && shopsArray[0].merchant) {

@@ -95,11 +95,7 @@ interface ShopFormProps {
 }
 
 // エラーメッセージコンポーネント
-const ErrorMessage = ({ message, field }: { message?: string; field?: string }) => {
-  // デバッグ用：エラーメッセージが渡された時のみログ出力
-  if (message) {
-    console.log(`🔴 ErrorMessage表示 [${field || 'unknown'}]:`, message);
-  }
+const ErrorMessage = ({ message, field: _field }: { message?: string; field?: string }) => {
   if (!message) return null;
   return <p className="mt-1 text-sm text-red-600">{message}</p>;
 };
@@ -219,14 +215,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   // フィールドが触られたかを追跡（初期表示時は必須エラーを表示しない）
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
   
-  // デバッグ用：validationErrorsの変更を監視
+  // validationErrorsの変更を監視（必要に応じてデバッグ用）
   useEffect(() => {
-    console.log('🔄 validationErrors更新:', validationErrors);
-    console.log('🔄 エラー件数:', Object.keys(validationErrors).length);
-    if (Object.keys(validationErrors).length > 0) {
-      console.log('🔄 エラーキー:', Object.keys(validationErrors));
-      console.log('🔄 エラー内容:', validationErrors);
-    }
+    // デバッグログは削除済み
   }, [validationErrors]);
   
   // 既存のアカウントがあるかどうか（API取得時の初期データで判定）
@@ -284,12 +275,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           // コンポーネントがアンマウントされている場合は処理を中断
           if (!isMounted) return;
           
-          console.log('🏢 Merchants data received:', { 
-            merchantsData, 
-            isArray: Array.isArray(merchantsData),
-            hasData: merchantsData && typeof merchantsData === 'object' && 'data' in merchantsData,
-            hasMerchants: merchantsData && typeof merchantsData === 'object' && 'merchants' in merchantsData
-          });
           
           if (Array.isArray(merchantsData)) {
             merchantsArray = merchantsData as Merchant[];
@@ -304,12 +289,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             }
           }
           
-          console.log('🏢 Processed merchants array:', { 
-            merchantsArray, 
-            length: merchantsArray.length,
-            firstMerchant: merchantsArray[0] || 'no merchants',
-            firstMerchantApplications: merchantsArray[0]?.applications
-          });
           
           setMerchants(merchantsArray);
         }
@@ -331,13 +310,10 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         // 編集モードの場合は店舗データを取得
         if (isEdit && isMounted) {
           const shopData = await apiClient.getShop(shopId) as ShopDataResponse;
-          console.log('📦 Shop data received:', shopData);
-          console.log('🆔 Shop merchantId:', shopData.merchantId);
           
           if (isMounted) {
             // merchantIdがpropsで渡されている場合は上書きしない
             const finalMerchantId = merchantId || shopData.merchantId;
-            console.log('🔑 Final merchant ID:', { merchantId, shopDataMerchantId: shopData.merchantId, finalMerchantId });
             
             // accountEmailが存在する場合、createAccountをtrueに設定
             const accountEmail = shopData.accountEmail;
@@ -362,26 +338,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             
             // 加盟店名を設定（APIレスポンスから直接取得）
             const merchantFromShop = shopData.merchant;
-            console.log('🏢 Merchant from shop data:', merchantFromShop);
             
             if (merchantFromShop?.name) {
               // APIレスポンスにmerchant情報が含まれている場合はそれを使用
               setMerchantName(merchantFromShop.name);
-              console.log('✅ Merchant name set from shop data:', merchantFromShop.name);
             } else {
               // fallback: merchants配列から検索
               const merchant = merchantsArray.find(m => m.id === finalMerchantId);
-              console.log('🔍 Searching in merchants array:', { 
-                finalMerchantId, 
-                merchant, 
-                merchantsCount: merchantsArray.length,
-                allMerchantIds: merchantsArray.map(m => m.id)
-              });
               if (merchant) {
                 setMerchantName(merchant.name);
-                console.log('✅ Merchant name set from array:', merchant.name);
-              } else {
-                console.error('❌ Merchant not found for ID:', finalMerchantId);
               }
             }
             
@@ -389,16 +354,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             if (shopData.images && Array.isArray(shopData.images)) {
               const validImages = shopData.images.filter(img => img && typeof img === 'string' && img.length > 0);
               setExistingImages(validImages);
-              console.log('🖼️ Setting existing images:', validImages);
-              if (validImages.length !== shopData.images.length) {
-                console.warn('⚠️ Some invalid images were filtered out:', shopData.images);
-              }
             }
             
             // クレジットカードブランドの設定（JSON形式から読み込み）
             const shopDataWithPayment = shopData as ShopCreateRequest & { paymentCredit?: { brands: string[]; other?: string }; paymentCode?: string };
             const creditValue = shopDataWithPayment.paymentCredit;
-            console.log('💳 Credit value from API:', creditValue);
             if (creditValue) {
               // JSONオブジェクトとして扱う
               if (typeof creditValue === 'object' && creditValue.brands) {
@@ -408,7 +368,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   setCustomCreditText(creditValue.other);
                 }
                 setSelectedCreditBrands(brands);
-                console.log('💳 Credit brands set:', brands, 'custom:', creditValue.other);
               } else if (typeof creditValue === 'string') {
                 // 旧形式（カンマ区切り）のフォールバック
                 const brands = creditValue.split(',').map((b: string) => b.trim());
@@ -418,7 +377,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             
             // QRコード決済の設定（JSON形式から読み込み）
             const qrValue = shopDataWithPayment.paymentCode;
-            console.log('📱 QR value from API:', qrValue);
             if (qrValue) {
               // JSONオブジェクトとして扱う
               if (typeof qrValue === 'object' && qrValue.services) {
@@ -428,7 +386,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   setCustomQrText(qrValue.other);
                 }
                 setSelectedQrBrands(services);
-                console.log('📱 QR services set:', services, 'custom:', qrValue.other);
               } else if (typeof qrValue === 'string') {
                 // 旧形式（カンマ区切り）のフォールバック
                 const services = qrValue.split(',').map((s: string) => s.trim());
@@ -444,29 +401,19 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             
             // 利用シーンの設定
             const shopDataWithScenes = shopData as ShopCreateRequest & { sceneIds?: string[]; customSceneText?: string };
-            console.log('🎯 Scene data from API:', {
-              sceneIds: shopDataWithScenes.sceneIds, 
-              customSceneText: shopDataWithScenes.customSceneText,
-              availableScenes: scenesArray.map(s => ({ id: s.id, name: s.name }))
-            });
             if (shopDataWithScenes.sceneIds && Array.isArray(shopDataWithScenes.sceneIds)) {
               setSelectedScenes(shopDataWithScenes.sceneIds);
-              console.log('✅ Selected scenes set:', shopDataWithScenes.sceneIds);
-            } else {
-              console.warn('⚠️ No sceneIds found in shop data');
             }
             
             // カスタム利用シーンテキストの設定
             if (shopDataWithScenes.customSceneText) {
               setCustomSceneText(shopDataWithScenes.customSceneText);
-              console.log('✅ Custom scene text set:', shopDataWithScenes.customSceneText);
             }
             
           }
         } else if (merchantId && merchantsArray.length > 0 && isMounted) {
           // 新規作成モードで加盟店が指定されている場合
           const merchant = merchantsArray.find(m => m.id === merchantId);
-          console.log('🏢 Setting merchant name (new mode):', { merchantId, merchant, merchantsCount: merchantsArray.length });
           if (merchant) {
             setMerchantName(merchant.name);
           }
@@ -502,11 +449,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   useEffect(() => {
     if (formData.merchantId && merchants.length > 0) {
       const merchant = merchants.find(m => m.id === formData.merchantId) as Merchant;
-      console.log('🔄 Updating merchant name from formData:', { 
-        merchantId: formData.merchantId, 
-        merchant, 
-        merchantsCount: merchants.length
-      });
       if (merchant) {
         setMerchantName(merchant.name);
       }
@@ -515,7 +457,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
 
   // 加盟店選択ハンドラー
   const handleMerchantSelect = (merchant: Merchant) => {
-    console.log('🏢 Merchant selected:', merchant);
     setFormData(prev => ({
       ...prev,
       merchantId: merchant.id,
@@ -700,10 +641,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     if (!files) return;
 
     const newFiles = Array.from(files);
-    console.log('🖼️ Selected files:', newFiles.length, newFiles.map(f => f.name));
     
     const totalImages = imagePreviews.length + existingImages.length + newFiles.length;
-    console.log('📊 Total images:', { existing: existingImages.length, previews: imagePreviews.length, new: newFiles.length, total: totalImages });
 
     if (totalImages > 3) {
       showError('画像は最大3枚までアップロードできます');
@@ -721,7 +660,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       newPreviews.push({ file, url });
     });
 
-    console.log('✅ New previews created:', newPreviews.length);
     setImagePreviews([...imagePreviews, ...newPreviews]);
   };
 
@@ -895,14 +833,10 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('🚀 handleSubmit呼び出し開始');
     e.preventDefault();
-    console.log('✅ preventDefault実行完了');
     
     try {
-      console.log('✅ tryブロック開始');
       setIsSubmitting(true);
-      console.log('✅ isSubmitting=true設定完了');
       
       // 送信前の総合バリデーション
       // クレジットカードとQRコードをJSON形式に変換
@@ -932,19 +866,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         paymentCode: paymentCodeJson,
       };
       
-      console.log('📝 バリデーション前のデータ:', dataToValidate);
-      console.log('📧 accountEmail:', formData.accountEmail, '→', dataToValidate.accountEmail);
-      console.log('🔍 formData全体:', formData);
-      console.log('🔍 isMerchantAccount:', isMerchantAccount);
-      console.log('🔍 isEdit:', isEdit);
-      
       // Submit時は全フィールドのカスタムバリデーションを実行
       const customErrors: Record<string, string> = {};
       
       // 店舗名
-      console.log('🔍 店舗名チェック:', { name: formData.name, isEmpty: !formData.name, isTrimEmpty: formData.name?.trim().length === 0 });
       if (!formData.name || formData.name.trim().length === 0) {
-        console.log('❌ 店舗名エラー追加');
         customErrors.name = '店舗名は必須です';
       } else if (formData.name.length > 100) {
         customErrors.name = '店舗名は100文字以内で入力してください';
@@ -958,69 +884,51 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       }
       
       // 電話番号
-      console.log('🔍 電話番号チェック:', { phone: formData.phone, isEmpty: !formData.phone, isTrimEmpty: formData.phone?.trim().length === 0 });
       if (!formData.phone || formData.phone.trim().length === 0) {
-        console.log('❌ 電話番号エラー追加');
         customErrors.phone = '電話番号は必須です';
       } else if (!isValidPhone(formData.phone)) {
         customErrors.phone = '有効な電話番号を入力してください（10-11桁の数字）';
       }
       
       // 郵便番号
-      console.log('🔍 郵便番号チェック:', { postalCode: formData.postalCode, isEmpty: !formData.postalCode });
       if (!formData.postalCode || formData.postalCode.trim().length === 0) {
-        console.log('❌ 郵便番号エラー追加');
         customErrors.postalCode = '郵便番号は必須です';
       } else if (!isValidPostalCode(formData.postalCode)) {
         customErrors.postalCode = '郵便番号は7桁の数字で入力してください';
       }
       
       // 都道府県
-      console.log('🔍 都道府県チェック:', { prefecture: formData.prefecture, isEmpty: !formData.prefecture });
       if (!formData.prefecture || formData.prefecture.trim().length === 0) {
-        console.log('❌ 都道府県エラー追加');
         customErrors.prefecture = '都道府県を選択してください';
       }
       
       // 市区町村
-      console.log('🔍 市区町村チェック:', { city: formData.city, isEmpty: !formData.city });
       if (!formData.city || formData.city.trim().length === 0) {
-        console.log('❌ 市区町村エラー追加');
         customErrors.city = '市区町村は必須です';
       }
       
       // 番地以降
-      console.log('🔍 番地チェック:', { address1: formData.address1, isEmpty: !formData.address1 });
       if (!formData.address1 || formData.address1.trim().length === 0) {
-        console.log('❌ 番地エラー追加');
         customErrors.address1 = '番地以降は必須です';
       }
       
       // 緯度
-      console.log('🔍 緯度チェック:', { latitude: formData.latitude, isEmpty: !formData.latitude });
       if (!formData.latitude || String(formData.latitude).trim().length === 0) {
-        console.log('❌ 緯度エラー追加');
         customErrors.latitude = '緯度は必須です';
       }
 
       // 経度
-      console.log('🔍 経度チェック:', { longitude: formData.longitude, isEmpty: !formData.longitude });
       if (!formData.longitude || String(formData.longitude).trim().length === 0) {
-        console.log('❌ 経度エラー追加');
         customErrors.longitude = '経度は必須です';
       }
       
       // ジャンル
-      console.log('🔍 ジャンルチェック:', { genreId: formData.genreId, isEmpty: !formData.genreId });
       if (!formData.genreId || formData.genreId.trim().length === 0) {
-        console.log('❌ ジャンルエラー追加');
         customErrors.genreId = 'ジャンルを選択してください';
       }
       
       // 事業者（管理者アカウントの場合のみ）
-      console.log('🔍 事業者チェック:', { isMerchantAccount, merchantId: formData.merchantId, isEmpty: !formData.merchantId });
       if (!isMerchantAccount && (!formData.merchantId || formData.merchantId.trim().length === 0)) {
-        console.log('❌ 事業者エラー追加');
         customErrors.merchantId = '事業者を選択してください';
       }
       
@@ -1074,10 +982,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       
       // カスタムエラーがある場合は表示して終了
       if (Object.keys(customErrors).length > 0) {
-        console.log('❌ カスタムバリデーションエラー:', customErrors);
-        console.log('❌ エラー件数:', Object.keys(customErrors).length);
-        console.log('❌ エラーキー:', Object.keys(customErrors));
-        
         // エラーをstateに設定
         setValidationErrors(customErrors);
         showError('入力内容に誤りがあります。各項目を確認してください。');
@@ -1085,18 +989,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         
         // エラー設定後、次のレンダリングサイクルでスクロール
         setTimeout(() => {
-          console.log('🔍 validationErrors設定後、スクロール実行');
-          
           // 最初のエラー項目にスクロール
           const firstErrorField = Object.keys(customErrors)[0];
           if (firstErrorField) {
-            console.log('🎯 最初のエラーフィールド:', firstErrorField);
-            
             // フィールド名から対応するinput要素を探す
             const errorElement = document.querySelector(`[name="${firstErrorField}"]`) as HTMLElement;
             if (errorElement) {
-              console.log('✅ エラー要素が見つかりました:', errorElement);
-              
               // input要素の親要素（ラベルを含むコンテナ）を見つけてスクロール
               const fieldContainer = errorElement.closest('div') as HTMLElement;
               if (fieldContainer) {
@@ -1107,14 +1005,10 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               // フォーカスはinput要素に当てる
               errorElement.focus();
             } else {
-              console.log('❌ name属性の要素が見つからない。data-field属性で検索:', firstErrorField);
               // name属性がない場合は、idやdata属性で検索
               const errorSection = document.querySelector(`[data-field="${firstErrorField}"]`) as HTMLElement;
               if (errorSection) {
-                console.log('✅ data-field要素が見つかりました:', errorSection);
                 errorSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              } else {
-                console.log('❌ data-field要素も見つかりませんでした');
               }
             }
           }
@@ -1148,9 +1042,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           }
         });
         
-        console.log('❌ Zodバリデーションエラー:', zodErrors);
-        console.log('📝 送信しようとしたデータ:', dataToValidate);
-        
         setValidationErrors(zodErrors);
         showError('入力内容に誤りがあります。各項目を確認してください。');
         setIsSubmitting(false);
@@ -1161,18 +1052,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       // 画像をアップロード
       // 画像アップロード処理を関数化
       const uploadImages = async (targetShopId: string): Promise<string[]> => {
-        console.log('📤 Starting image upload:', { count: imagePreviews.length, shopId: targetShopId });
         const uploadedImageUrls: string[] = [];
         
         if (imagePreviews.length > 0) {
           // 全画像で同じタイムスタンプを使用
           const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '').split('.')[0];
-          console.log('📅 Using timestamp for all images:', timestamp);
           
           let index = 0;
           for (const preview of imagePreviews) {
             index++;
-            console.log(`📤 Uploading image ${index}/${imagePreviews.length}:`, preview.file.name);
             
             const uploadFormData = new FormData();
             const fileForUpload = await compressImageFile(preview.file, {
@@ -1203,7 +1091,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               }
               
               const result = await response.json();
-              console.log(`✅ Upload successful ${index}:`, result.url);
               uploadedImageUrls.push(result.url);
             } catch (uploadErr) {
               console.error(`❌ Image upload failed for ${index}:`, uploadErr);
@@ -1212,7 +1099,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             }
           }
         }
-        console.log('✅ All uploads complete:', uploadedImageUrls.length, 'images');
         return uploadedImageUrls;
       };
       
@@ -1237,8 +1123,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       if (uploadedImageUrls.length > 0) {
         setExistingImages(allImageUrls);
       }
-      console.log('🖼️ All image URLs:', { existing: existingImages.length, uploaded: uploadedImageUrls.length, total: allImageUrls.length, urls: allImageUrls });
-      
       // アカウントメールの設定
       let accountEmail: string | null | undefined;
       if (formData.createAccount) {
@@ -1254,6 +1138,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       const normalizedHomepageUrl = (formData.homepageUrl && formData.homepageUrl.trim() !== '') ? formData.homepageUrl.trim() : null;
       const normalizedCouponStart = (formData.couponUsageStart && formData.couponUsageStart !== '') ? formData.couponUsageStart : null;
       const normalizedCouponEnd = (formData.couponUsageEnd && formData.couponUsageEnd !== '') ? formData.couponUsageEnd : null;
+
+      console.log('📤 ShopForm: 送信データ準備中', {
+        homepageUrl: formData.homepageUrl,
+        normalizedHomepageUrl,
+        couponUsageStart: formData.couponUsageStart,
+        normalizedCouponStart,
+        couponUsageEnd: formData.couponUsageEnd,
+        normalizedCouponEnd,
+      });
 
       const submitData = {
         ...formData,
@@ -1272,6 +1165,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         couponUsageStart: normalizedCouponStart,
         couponUsageEnd: normalizedCouponEnd,
       };
+
+      console.log('📦 ShopForm: submitData', {
+        homepageUrl: submitData.homepageUrl,
+        couponUsageStart: submitData.couponUsageStart,
+        couponUsageEnd: submitData.couponUsageEnd,
+        hasHomepageUrl: 'homepageUrl' in submitData,
+        hasCouponUsageStart: 'couponUsageStart' in submitData,
+        hasCouponUsageEnd: 'couponUsageEnd' in submitData,
+      });
       
       if (isEdit) {
         await apiClient.updateShop(shopId, submitData);
@@ -1356,7 +1258,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       <form 
         noValidate
         onSubmit={(e) => {
-          console.log('📋 フォームのonSubmitイベント発火');
           handleSubmit(e);
         }} 
         className="space-y-6"
@@ -2498,10 +2399,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 <div className="grid grid-cols-3 gap-4">
                   {existingImages.map((imageUrl, index) => {
                     if (!imageUrl || typeof imageUrl !== 'string') {
-                      console.warn('⚠️ Invalid image URL at index', index, ':', imageUrl);
                       return null;
                     }
-                    console.log('🖼️ Rendering existing image:', imageUrl);
                     return (
                       <div key={index} className="relative group">
                         <div className="relative w-full aspect-[4/3] md:aspect-[16/9] rounded-md overflow-hidden border border-gray-300 bg-gray-100">
@@ -2510,7 +2409,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                             alt={`店舗画像 ${index + 1}`}
                             className="absolute inset-0 w-full h-full object-cover"
                             onLoad={() => {
-                              console.log('✅ Image loaded successfully:', imageUrl);
+                              // Image loaded successfully
                             }}
                             onError={(_e) => {
                               console.error('❌ 画像の読み込みに失敗しました:', imageUrl);
@@ -2725,7 +2624,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               type="submit" 
               variant="primary" 
               disabled={isSubmitting}
-              onClick={() => console.log('🔘 送信ボタンがクリックされました', { isSubmitting, isEdit })}
+              onClick={() => {
+                // Submit button clicked
+              }}
             >
               {isSubmitting ? '保存中...' : (isEdit ? '更新' : '作成')}
             </Button>
