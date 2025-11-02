@@ -21,6 +21,7 @@ export const dynamicParams = true;
 interface CouponFormData {
   couponName: string;
   couponContent: string;
+  drinkType: string;
   couponImage: File | null;
   imagePreview: string;
   imageUrl: string;
@@ -38,6 +39,7 @@ function CouponEditPageContent() {
   const [formData, setFormData] = useState<CouponFormData>({
     couponName: '',
     couponContent: '',
+    drinkType: '',
     couponImage: null,
     imagePreview: '',
     imageUrl: '',
@@ -62,6 +64,7 @@ function CouponEditPageContent() {
         setFormData({
           couponName: data.title,
           couponContent: data.description || '',
+          drinkType: data.drinkType || '',
           couponImage: null,
           imagePreview: data.imageUrl || '',
           imageUrl: data.imageUrl || '',
@@ -230,6 +233,7 @@ function CouponEditPageContent() {
         const updateData: CouponUpdateRequest = {
           title: formData.couponName,
           description: formData.couponContent || null,
+          drinkType: formData.drinkType || null,
           imageUrl: formData.imageUrl || null
         };
         
@@ -346,6 +350,40 @@ function CouponEditPageContent() {
               />
               {errors.couponContent && (
                 <p className="mt-1 text-sm text-red-500">{errors.couponContent}</p>
+              )}
+            </div>
+
+            {/* ドリンク種別 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ドリンク種別
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="drinkType"
+                    value="alcohol"
+                    checked={formData.drinkType === 'alcohol'}
+                    onChange={(e) => handleInputChange('drinkType', e.target.value)}
+                    className="mr-2"
+                  />
+                  <span>アルコール</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="drinkType"
+                    value="soft_drink"
+                    checked={formData.drinkType === 'soft_drink'}
+                    onChange={(e) => handleInputChange('drinkType', e.target.value)}
+                    className="mr-2"
+                  />
+                  <span>ソフトドリンク</span>
+                </label>
+              </div>
+              {errors.drinkType && (
+                <p className="mt-1 text-sm text-red-500">{errors.drinkType}</p>
               )}
             </div>
 
