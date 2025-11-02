@@ -34,6 +34,7 @@ interface CouponFormData {
   couponName: string;
   couponContent: string;
   couponConditions: string;
+  drinkType: string;
   couponImage: File | null;
   imagePreview: string;
   imageUrl: string;
@@ -57,6 +58,7 @@ function CouponNewPageContent() {
     couponName: '',
     couponContent: '',
     couponConditions: '',
+    drinkType: '',
     couponImage: null,
     imagePreview: '',
     imageUrl: '',
@@ -248,6 +250,9 @@ function CouponNewPageContent() {
 
     const couponContentError = validateRequired(formData.couponContent, 'クーポン内容') || validateMaxLength(formData.couponContent, 100, 'クーポン内容');
     if (couponContentError) newErrors.couponContent = couponContentError;
+
+    const drinkTypeError = validateRequired(formData.drinkType, 'ドリンク種別');
+    if (drinkTypeError) newErrors.drinkType = drinkTypeError;
     
     // 店舗選択チェック
     if (!formData.shopId) {
@@ -277,6 +282,7 @@ function CouponNewPageContent() {
           title: formData.couponName,
           description: formData.couponContent || null,
           conditions: formData.couponConditions || null,
+          drinkType: formData.drinkType || null,
           imageUrl: null,
           status: 'active' as CouponStatus,
           isPublic: false
@@ -552,6 +558,38 @@ function CouponNewPageContent() {
                 maxLength={100}
               />
               <ErrorMessage message={errors.couponContent} />
+            </div>
+
+            {/* ドリンク種別 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ドリンク種別 <span className="text-red-500">*</span>
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="drinkType"
+                    value="alcohol"
+                    checked={formData.drinkType === 'alcohol'}
+                    onChange={(e) => handleInputChange('drinkType', e.target.value)}
+                    className="mr-2"
+                  />
+                  <span>アルコール</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="drinkType"
+                    value="soft_drink"
+                    checked={formData.drinkType === 'soft_drink'}
+                    onChange={(e) => handleInputChange('drinkType', e.target.value)}
+                    className="mr-2"
+                  />
+                  <span>ソフトドリンク</span>
+                </label>
+              </div>
+              <ErrorMessage message={errors.drinkType} />
             </div>
 
             {/* クーポン画像 */}
