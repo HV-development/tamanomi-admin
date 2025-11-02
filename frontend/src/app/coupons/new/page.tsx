@@ -560,6 +560,25 @@ function CouponNewPageContent() {
               <ErrorMessage message={errors.couponContent} />
             </div>
 
+            {/* 利用条件 */}
+            <div>
+              <label htmlFor="couponConditions" className="block text-sm font-medium text-gray-700 mb-2">
+                利用条件
+              </label>
+              <textarea
+                id="couponConditions"
+                placeholder="利用条件を入力（最大500文字）"
+                value={formData.couponConditions}
+                onChange={(e) => handleInputChange('couponConditions', e.target.value)}
+                className={`w-150 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  errors.couponConditions ? 'border-red-500' : 'border-gray-300'
+                }`}
+                rows={3}
+                maxLength={500}
+              />
+              <ErrorMessage message={errors.couponConditions} />
+            </div>
+
             {/* ドリンク種別 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">

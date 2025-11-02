@@ -21,6 +21,7 @@ export const dynamicParams = true;
 interface CouponFormData {
   couponName: string;
   couponContent: string;
+  couponConditions: string;
   drinkType: string;
   couponImage: File | null;
   imagePreview: string;
@@ -39,6 +40,7 @@ function CouponEditPageContent() {
   const [formData, setFormData] = useState<CouponFormData>({
     couponName: '',
     couponContent: '',
+    couponConditions: '',
     drinkType: '',
     couponImage: null,
     imagePreview: '',
@@ -64,6 +66,7 @@ function CouponEditPageContent() {
         setFormData({
           couponName: data.title,
           couponContent: data.description || '',
+          couponConditions: data.conditions || '',
           drinkType: data.drinkType || '',
           couponImage: null,
           imagePreview: data.imageUrl || '',
@@ -233,6 +236,7 @@ function CouponEditPageContent() {
         const updateData: CouponUpdateRequest = {
           title: formData.couponName,
           description: formData.couponContent || null,
+          conditions: formData.couponConditions || null,
           drinkType: formData.drinkType || null,
           imageUrl: formData.imageUrl || null
         };
@@ -350,6 +354,27 @@ function CouponEditPageContent() {
               />
               {errors.couponContent && (
                 <p className="mt-1 text-sm text-red-500">{errors.couponContent}</p>
+              )}
+            </div>
+
+            {/* 利用条件 */}
+            <div>
+              <label htmlFor="couponConditions" className="block text-sm font-medium text-gray-700 mb-2">
+                利用条件
+              </label>
+              <textarea
+                id="couponConditions"
+                placeholder="利用条件を入力（最大500文字）"
+                value={formData.couponConditions}
+                onChange={(e) => handleInputChange('couponConditions', e.target.value)}
+                className={`w-150 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  errors.couponConditions ? 'border-red-500' : 'border-gray-300'
+                }`}
+                rows={3}
+                maxLength={500}
+              />
+              {errors.couponConditions && (
+                <p className="mt-1 text-sm text-red-500">{errors.couponConditions}</p>
               )}
             </div>
 
