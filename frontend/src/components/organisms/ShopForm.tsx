@@ -5,106 +5,26 @@ import { useParams, useRouter } from 'next/navigation';
 import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/toast-container';
 import MerchantSelectModal from '@/components/molecules/MerchantSelectModal';
+import ErrorMessage from '@/components/atoms/ErrorMessage';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/contexts/auth-context';
 import type { ShopCreateRequest } from '@hv-development/schemas';
 import { shopCreateRequestSchema, shopUpdateRequestSchema, isValidEmail, isValidPhone, isValidPostalCode, isValidKana } from '@hv-development/schemas';
-import { CREDIT_CARD_BRANDS, QR_PAYMENT_SERVICES } from '@/lib/constants/payment';
+import { PREFECTURES, WEEKDAYS } from '@/lib/constants/japan';
+import { SMOKING_OPTIONS } from '@/lib/constants/shop';
 import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-search';
-
-// 都道府県リスト
-const prefectures = [
-  '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
-  '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県',
-  '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県',
-  '岐阜県', '静岡県', '愛知県', '三重県',
-  '滋賀県', '京都府', '大阪府', '兵庫県', '奈良県', '和歌山県',
-  '鳥取県', '島根県', '岡山県', '広島県', '山口県',
-  '徳島県', '香川県', '愛媛県', '高知県',
-  '福岡県', '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県',
-  '沖縄県'
-];
-
-interface Merchant {
-  id: string;
-  name: string;
-  nameKana?: string;
-  representativeNameLast?: string;
-  representativeNameFirst?: string;
-  representativeNameLastKana?: string;
-  representativeNameFirstKana?: string;
-  email?: string;
-  phone?: string;
-  representativePhone?: string;
-  postalCode?: string;
-  prefecture?: string;
-  city?: string;
-  address1?: string;
-  address2?: string | null;
-  businessType?: string;
-  businessDescription?: string;
-  website?: string | null;
-  accountId?: string;
-  accountEmail?: string;
-  applications?: string[];
-  createdAt?: Date;
-  updatedAt?: Date;
-  deletedAt?: Date;
-  account: {
-    email: string;
-    displayName?: string | null;
-    status?: string;
-    lastLoginAt?: Date;
-  };
-  shops?: Array<{
-    id: string;
-    name: string;
-    status: string;
-  }>;
-}
-
-interface ShopDataResponse extends ShopCreateRequest {
-  accountEmail?: string;
-  merchant?: {
-    id: string;
-    name: string;
-  };
-  images?: string[];
-}
-
-interface Genre {
-  id: string;
-  name: string;
-  sortOrder: number;
-}
-
-interface Scene {
-  id: string;
-  name: string;
-  sortOrder: number;
-}
-
-interface ImagePreview {
-  file: File;
-  url: string;
-}
+import { useShopValidation } from '@/hooks/useShopValidation';
+import { useImageUpload } from '@/hooks/useImageUpload';
+import type { Merchant, ShopDataResponse, Genre, Scene, ExtendedShopCreateRequest } from '@/types/shop';
+import PaymentMethodSelector from '@/components/molecules/PaymentMethodSelector';
+import SceneSelector from '@/components/molecules/SceneSelector';
+import ImageUploader from '@/components/molecules/ImageUploader';
+import AccountSection from '@/components/molecules/AccountSection';
 
 interface ShopFormProps {
   merchantId?: string;
 }
-
-// エラーメッセージコンポーネント
-const ErrorMessage = ({ message, field: _field }: { message?: string; field?: string }) => {
-  if (!message) return null;
-  return <p className="mt-1 text-sm text-red-600">{message}</p>;
-};
-
-type ExtendedShopCreateRequest = ShopCreateRequest & {
-  homepageUrl?: string | null;
-  couponUsageStart?: string | null;
-  couponUsageEnd?: string | null;
-};
 
 export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps = {}) {
   const params = useParams();
@@ -165,14 +85,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   const [customCreditText, setCustomCreditText] = useState<string>('');
   const [selectedQrBrands, setSelectedQrBrands] = useState<string[]>([]);
   const [customQrText, setCustomQrText] = useState<string>('');
-
-  // 喫煙タイプの選択肢（enumコード + 日本語表示）
-  const smokingOptions = [
-    { value: 'non_smoking', label: '禁煙' },
-    { value: 'separated', label: '分煙' },
-    { value: 'smoking_allowed', label: '喫煙可' },
-    { value: 'electronic_only', label: '電子のみ' },
-  ];
   
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
@@ -223,13 +135,27 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   // 既存のアカウントがあるかどうか（API取得時の初期データで判定）
   const [hasExistingAccount, setHasExistingAccount] = useState(false);
   
-  // 画像関連
-  const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
-  const [existingImages, setExistingImages] = useState<string[]>([]);
+  // 画像アップロードフック
+  const {
+    imagePreviews,
+    existingImages,
+    setExistingImages,
+    handleImageSelect,
+    handleRemoveImage,
+    handleRemoveExistingImage,
+    uploadImages,
+  } = useImageUpload({ maxImages: 3 });
   
   // 定休日チェックボックス用
-  const weekdays = ['月', '火', '水', '木', '金', '土', '日', '祝日'] as const;
   const [selectedHolidays, setSelectedHolidays] = useState<string[]>([]);
+  
+  // バリデーションフック
+  const { validateField } = useShopValidation({
+    formData,
+    touchedFields,
+    isEdit,
+    setValidationErrors,
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -480,277 +406,39 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   };
 
   const handleInputChange = (field: keyof ExtendedShopCreateRequest, value: string | number | boolean) => {
-    setFormData((prev) => ({
-      ...prev,
+    // 更新されたformDataを作成（バリデーション用）
+    const updatedFormData = {
+      ...formData,
       [field]: value,
-    }));
+    };
     
-    // フィールドが触られたことを記録（値が空でない、または既に触られている場合）
-    if ((typeof value === 'string' && value.length > 0) || touchedFields[field]) {
-      setTouchedFields((prev) => ({
-        ...prev,
-        [field]: true,
-      }));
-    }
+    // フィールドが触られたことを記録（常に更新）
+    const updatedTouchedFields = {
+      ...touchedFields,
+      [field]: true,
+    };
     
-    // 入力時にもバリデーションを実行
-    validateField(field, value);
+    setFormData(updatedFormData);
+    setTouchedFields(updatedTouchedFields);
+    
+    // 更新されたformDataとtouchedFieldsを使ってバリデーションを実行
+    validateField(field, value, updatedFormData, updatedTouchedFields);
   };
 
   // onBlurイベントハンドラー（フィールドが触られたことを記録してバリデーション実行）
   const handleFieldBlur = (field: keyof ExtendedShopCreateRequest, value: string | boolean | number | undefined) => {
     // フィールドが触られたことを記録
-    setTouchedFields((prev) => ({
-      ...prev,
+    const updatedTouchedFields = {
+      ...touchedFields,
       [field]: true,
-    }));
+    };
     
-    // バリデーション実行
-    validateField(field, value);
-  };
-
-  // 個別フィールドのバリデーション（入力時とblur時に実行）
-  const validateField = (field: keyof ExtendedShopCreateRequest, value: string | boolean | number | undefined) => {
-    let errorMessage = '';
-
-    // フィールドごとのバリデーションロジック
-    switch (field) {
-      case 'name':
-        // 必須チェックは触られたフィールドのみ
-        if (touchedFields[field] && (!value || (typeof value === 'string' && value.trim().length === 0))) {
-          errorMessage = '店舗名は必須です';
-        } else if (typeof value === 'string' && value.length > 100) {
-          errorMessage = '店舗名は100文字以内で入力してください';
-        }
-        break;
-
-      case 'accountEmail':
-        // アカウント発行時のみ必須
-        if (formData.createAccount && !formData.accountEmail && touchedFields[field] && (!value || (typeof value === 'string' && value.trim().length === 0))) {
-          errorMessage = 'メールアドレスは必須です';
-        } else if (typeof value === 'string' && value.trim().length > 0 && !isValidEmail(value)) {
-          errorMessage = '有効なメールアドレスを入力してください';
-        }
-        break;
-
-      case 'phone':
-        // 必須チェックは触られたフィールドのみ
-        if (touchedFields[field] && (!value || (typeof value === 'string' && value.trim().length === 0))) {
-          errorMessage = '電話番号は必須です';
-        } else if (typeof value === 'string' && value.trim().length > 0 && !isValidPhone(value)) {
-          errorMessage = '有効な電話番号を入力してください（10-11桁の数字）';
-        }
-        break;
-
-      case 'postalCode':
-        // 必須チェックは触られたフィールドのみ
-        if (touchedFields[field] && (!value || (typeof value === 'string' && value.trim().length === 0))) {
-          errorMessage = '郵便番号は必須です';
-        } else if (typeof value === 'string' && value.trim().length > 0 && !isValidPostalCode(value)) {
-          errorMessage = '郵便番号は7桁の数字で入力してください';
-        }
-        break;
-
-      case 'nameKana':
-        if (typeof value === 'string' && value.length > 100) {
-          errorMessage = '店舗名（カナ）は100文字以内で入力してください';
-        } else if (typeof value === 'string' && value.trim().length > 0 && !isValidKana(value)) {
-          errorMessage = '店舗名（カナ）は全角カタカナで入力してください';
-        }
-        break;
-
-      case 'description':
-        if (typeof value === 'string' && value.length > 500) {
-          errorMessage = '店舗紹介説明は500文字以内で入力してください';
-        }
-        break;
-
-      case 'details':
-        if (typeof value === 'string' && value.length > 1000) {
-          errorMessage = '詳細情報は1000文字以内で入力してください';
-        }
-        break;
-
-      case 'latitude':
-        // 必須チェックは触られたフィールドのみ
-        if (touchedFields[field] && (!value || (typeof value === 'string' && value.trim().length === 0))) {
-          errorMessage = '緯度は必須です';
-        }
-        break;
-
-      case 'longitude':
-        // 必須チェックは触られたフィールドのみ
-        if (touchedFields[field] && (!value || (typeof value === 'string' && value.trim().length === 0))) {
-          errorMessage = '経度は必須です';
-        }
-        break;
-
-      case 'homepageUrl': {
-        if (typeof value === 'string' && value.trim().length > 0) {
-          try {
-            const u = new URL(value);
-            if (u.protocol !== 'http:' && u.protocol !== 'https:') {
-              errorMessage = '有効なURLを入力してください（http/https）';
-            }
-          } catch {
-            errorMessage = '有効なURLを入力してください（http/https）';
-          }
-        }
-        break;
-      }
-
-      case 'couponUsageStart':
-      case 'couponUsageEnd': {
-        const start = (field === 'couponUsageStart' ? (typeof value === 'string' ? value : '') : (formData.couponUsageStart || ''));
-        const end = (field === 'couponUsageEnd' ? (typeof value === 'string' ? value : '') : (formData.couponUsageEnd || ''));
-        const hasStart = !!start;
-        const hasEnd = !!end;
-        if ((hasStart && !hasEnd) || (!hasStart && hasEnd)) {
-          const msg = 'クーポン利用時間は開始・終了をセットで入力してください';
-          setValidationErrors(prev => ({ ...prev, couponUsageStart: msg, couponUsageEnd: msg }));
-        } else {
-          setValidationErrors(prev => {
-            const ne = { ...prev } as Record<string, string>;
-            delete ne.couponUsageStart;
-            delete ne.couponUsageEnd;
-            return ne;
-          });
-        }
-        return; // ここで終了（下の単項目処理は行わない）
-      }
-    }
-
-    // エラーメッセージの設定またはクリア
-    if (errorMessage) {
-      setValidationErrors((prev) => ({
-        ...prev,
-        [field]: errorMessage,
-      }));
-    } else {
-      setValidationErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
-    }
-  };
-
-  // 画像選択処理
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    const newFiles = Array.from(files);
+    setTouchedFields(updatedTouchedFields);
     
-    const totalImages = imagePreviews.length + existingImages.length + newFiles.length;
-
-    if (totalImages > 3) {
-      showError('画像は最大3枚までアップロードできます');
-      return;
-    }
-
-    const newPreviews: ImagePreview[] = [];
-    newFiles.forEach((file) => {
-      if (!file.type.startsWith('image/')) {
-        showError('画像ファイルのみアップロード可能です');
-        return;
-      }
-
-      const url = URL.createObjectURL(file);
-      newPreviews.push({ file, url });
-    });
-
-    setImagePreviews([...imagePreviews, ...newPreviews]);
+    // バリデーション実行（最新のformDataとtouchedFieldsを使用）
+    validateField(field, value, formData, updatedTouchedFields);
   };
 
-  // 画像圧縮（WebP変換 + リサイズ + 目標サイズまでクオリティ調整）
-  const compressImageFile = async (
-    sourceFile: File,
-    options?: {
-      maxBytes?: number; // 目標最大サイズ（バイト）
-      maxWidth?: number;
-      maxHeight?: number;
-      initialQuality?: number; // 0.0 - 1.0
-      minQuality?: number; // 0.0 - 1.0
-      qualityStep?: number; // 品質の減衰量
-    }
-  ): Promise<File> => {
-    const {
-      maxBytes = 9.5 * 1024 * 1024,
-      maxWidth = 2560,
-      maxHeight = 2560,
-      initialQuality = 0.9,
-      minQuality = 0.5,
-      qualityStep = 0.1,
-    } = options || {};
-
-    // すでに十分小さい場合は変換せず返す
-    if (sourceFile.size <= maxBytes && sourceFile.type === 'image/webp') {
-      return sourceFile;
-    }
-
-    const objectUrl = URL.createObjectURL(sourceFile);
-    try {
-      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-        const image = new Image();
-        image.onload = () => resolve(image);
-        image.onerror = reject;
-        image.src = objectUrl;
-      });
-
-      // リサイズ後の幅・高さを計算
-      const scale = Math.min(1, maxWidth / img.width, maxHeight / img.height);
-      const targetWidth = Math.max(1, Math.floor(img.width * scale));
-      const targetHeight = Math.max(1, Math.floor(img.height * scale));
-
-      const canvas = document.createElement('canvas');
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return sourceFile;
-      ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-
-      let quality = initialQuality;
-      let blob: Blob | null = null;
-
-      // 品質を下げながら maxBytes 以下を目指す
-      while (quality >= minQuality) {
-        blob = await new Promise<Blob | null>((resolve) =>
-          canvas.toBlob((b) => resolve(b), 'image/webp', quality)
-        );
-        if (blob && blob.size <= maxBytes) break;
-        quality -= qualityStep;
-      }
-
-      // 生成できなかった場合は元ファイルを返す
-      if (!blob) return sourceFile;
-
-      // まだ大きい場合は元ファイルを優先して返す（失敗扱いにしない）
-      if (blob.size > maxBytes && sourceFile.size <= maxBytes) return sourceFile;
-
-      const newName = sourceFile.name.replace(/\.[^.]+$/, '.webp');
-      return new File([blob], newName, { type: 'image/webp' });
-    } catch {
-      return sourceFile;
-    } finally {
-      URL.revokeObjectURL(objectUrl);
-    }
-  };
-
-  // 画像削除処理（新規アップロード画像）
-  const handleRemoveImage = (index: number) => {
-    const newPreviews = [...imagePreviews];
-    URL.revokeObjectURL(newPreviews[index].url);
-    newPreviews.splice(index, 1);
-    setImagePreviews(newPreviews);
-  };
-
-  // 既存画像削除処理
-  const handleRemoveExistingImage = (index: number) => {
-    const newExistingImages = [...existingImages];
-    newExistingImages.splice(index, 1);
-    setExistingImages(newExistingImages);
-  };
   // 郵便番号から住所を検索（zipcloud API使用）
   const handleZipcodeSearch = async () => {
     await searchAddress(formData.postalCode);
@@ -1049,64 +737,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         return;
       }
       
-      // 画像をアップロード
-      // 画像アップロード処理を関数化
-      const uploadImages = async (targetShopId: string): Promise<string[]> => {
-        const uploadedImageUrls: string[] = [];
-        
-        if (imagePreviews.length > 0) {
-          // 全画像で同じタイムスタンプを使用
-          const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '').split('.')[0];
-          
-          let index = 0;
-          for (const preview of imagePreviews) {
-            index++;
-            
-            const uploadFormData = new FormData();
-            const fileForUpload = await compressImageFile(preview.file, {
-              maxBytes: 9.5 * 1024 * 1024,
-              maxWidth: 2560,
-              maxHeight: 2560,
-              initialQuality: 0.9,
-              minQuality: 0.6,
-              qualityStep: 0.1,
-            });
-            uploadFormData.append('image', fileForUpload);
-            uploadFormData.append('type', 'shop');
-            uploadFormData.append('merchantId', formData.merchantId);
-            uploadFormData.append('shopId', targetShopId);
-            uploadFormData.append('timestamp', timestamp); // 全画像で同じタイムスタンプを使用
-            
-            try {
-              const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: uploadFormData,
-                credentials: 'include',
-              });
-              
-              if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error(`❌ Upload failed for image ${index}:`, response.status, errorData);
-                throw new Error('画像のアップロードに失敗しました');
-              }
-              
-              const result = await response.json();
-              uploadedImageUrls.push(result.url);
-            } catch (uploadErr) {
-              console.error(`❌ Image upload failed for ${index}:`, uploadErr);
-              showError('画像のアップロードに失敗しました');
-              throw uploadErr;
-            }
-          }
-        }
-        return uploadedImageUrls;
-      };
-      
       let uploadedImageUrls: string[] = [];
       
       // 編集時のみ画像を先にアップロード
       if (isEdit && shopId) {
-        uploadedImageUrls = await uploadImages(shopId);
+        // merchantIdが設定されていることを確認
+        if (!formData.merchantId || formData.merchantId.trim() === '') {
+          throw new Error('事業者IDが設定されていません。画像をアップロードできません。');
+        }
+        uploadedImageUrls = await uploadImages(shopId, formData.merchantId);
       }
       
       // 住所フィールドを結合
@@ -1176,15 +815,27 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       });
       
       if (isEdit) {
+        // 編集時：merchantIdが設定されていることを確認
+        if (!formData.merchantId || formData.merchantId.trim() === '') {
+          throw new Error('事業者IDが設定されていません');
+        }
+        
         await apiClient.updateShop(shopId, submitData);
         showSuccess('店舗を更新しました');
       } else {
         // 新規作成時は店舗を先に作成
-        const createdShop = await apiClient.createShop(submitData) as { id: string };
+        const createdShop = await apiClient.createShop(submitData) as { id: string; merchantId: string };
         
         // 作成された店舗のIDを使って画像をアップロード
+        // merchantIdはcreatedShopから取得（formData.merchantIdが空の場合でも対応）
+        const targetMerchantId = createdShop?.merchantId || formData.merchantId;
+        
         if (imagePreviews.length > 0 && createdShop?.id) {
-          const newUploadedImageUrls = await uploadImages(createdShop.id);
+          if (!targetMerchantId || targetMerchantId.trim() === '') {
+            throw new Error('事業者IDが設定されていません。画像をアップロードできません。');
+          }
+          
+          const newUploadedImageUrls = await uploadImages(createdShop.id, targetMerchantId);
           
           // 画像をアップロードした場合は店舗を更新
           if (newUploadedImageUrls.length > 0) {
@@ -1637,7 +1288,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 required
               >
                 <option value="">都道府県を選択</option>
-                {prefectures.map(pref => (
+                {PREFECTURES.map(pref => (
                   <option key={pref} value={pref}>{pref}</option>
                 ))}
               </select>
@@ -1829,104 +1480,25 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         </div>
 
         {/* 利用シーン */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">利用シーン（複数選択可）</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-            {scenes.map((scene) => (
-              <label
-                key={scene.id}
-                className="flex items-center space-x-2 cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  value={scene.id}
-                  checked={selectedScenes.includes(scene.id)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedScenes([...selectedScenes, scene.id]);
-                    } else {
-                      setSelectedScenes(selectedScenes.filter(id => id !== scene.id));
-                      // 「その他」のチェックを外したらカスタムテキストもクリア
-                      if (scene.name === 'その他') {
-                        setCustomSceneText('');
-                        setValidationErrors(prev => {
-                          const newErrors = { ...prev };
-                          delete newErrors.customSceneText;
-                          return newErrors;
-                        });
-                      }
-                    }
-                  }}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">{scene.name}</span>
-              </label>
-            ))}
-          </div>
-          
-          {/* 「その他」選択時のカスタムテキスト入力欄 */}
-          {scenes.find(s => s.name === 'その他' && selectedScenes.includes(s.id)) && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                具体的な利用シーン <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="customSceneText"
-                value={customSceneText}
-                onChange={(e) => setCustomSceneText(e.target.value)}
-                onBlur={(e) => {
-                  // blurイベントでのバリデーション
-                  const otherScene = scenes.find(s => s.name === 'その他');
-                  const isOtherSceneSelected = otherScene && selectedScenes.includes(otherScene.id);
-                  if (isOtherSceneSelected) {
-                    if (!e.target.value || e.target.value.trim().length === 0) {
-                      setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンを入力してください' }));
-                    } else if (e.target.value.length > 100) {
-                      setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンは100文字以内で入力してください' }));
-                    } else {
-                      setValidationErrors(prev => {
-                        const newErrors = { ...prev };
-                        delete newErrors.customSceneText;
-                        return newErrors;
-                      });
-                    }
-                  }
-                }}
-                onInput={(e) => {
-                  // inputイベントでのリアルタイムバリデーション（文字数チェック + 削除時の必須チェック）
-                  const target = e.target as HTMLInputElement;
-                  const otherScene = scenes.find(s => s.name === 'その他');
-                  const isOtherSceneSelected = otherScene && selectedScenes.includes(otherScene.id);
-                  if (isOtherSceneSelected) {
-                    if (target.value.length > 100) {
-                      setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンは100文字以内で入力してください' }));
-                    } else if (target.value.trim().length === 0) {
-                      setValidationErrors(prev => ({ ...prev, customSceneText: '具体的な利用シーンを入力してください' }));
-                    } else {
-                      setValidationErrors(prev => {
-                        const newErrors = { ...prev };
-                        delete newErrors.customSceneText;
-                        return newErrors;
-                      });
-                    }
-                  }
-                }}
-                maxLength={100}
-                placeholder="例：ビジネスミーティング、記念日など"
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  validationErrors.customSceneText ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {validationErrors.customSceneText && (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.customSceneText}</p>
-              )}
-              <p className="mt-1 text-xs text-gray-500">
-                「その他」を選択した場合は、具体的な利用シーンを入力してください（最大100文字）
-              </p>
-            </div>
-          )}
-        </div>
+        <SceneSelector
+          scenes={scenes}
+          selectedScenes={selectedScenes}
+          customSceneText={customSceneText}
+          validationErrors={validationErrors}
+          onScenesChange={setSelectedScenes}
+          onCustomTextChange={setCustomSceneText}
+          onValidationErrorChange={(field, error) => {
+            setValidationErrors(prev => {
+              const newErrors = { ...prev };
+              if (error === null) {
+                delete newErrors[field];
+              } else {
+                newErrors[field] = error;
+              }
+              return newErrors;
+            });
+          }}
+        />
 
         {/* 店舗紹介・詳細情報 */}
         <div className="bg-white rounded-lg shadow p-6">
@@ -1986,7 +1558,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 定休日
               </label>
               <div className="flex flex-wrap gap-4">
-                {weekdays.map((day) => (
+                {WEEKDAYS.map((day) => (
                   <label key={day} className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -2074,7 +1646,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 喫煙タイプ
               </label>
               <div className="flex flex-wrap gap-4">
-                {smokingOptions.map((opt) => (
+                {SMOKING_OPTIONS.map((opt) => (
                   <label key={opt.value} className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="radio"
@@ -2093,526 +1665,72 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         </div>
 
         {/* 決済情報 */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">決済情報</h2>
-          
-          <div className="space-y-6">
-            {/* 現金決済 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                現金決済
-              </label>
-              <div className="flex gap-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="paymentCash"
-                    checked={formData.paymentCash === true}
-                    onChange={() => handleInputChange('paymentCash', true)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <span className="ml-2 text-sm text-gray-900">可</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="paymentCash"
-                    checked={formData.paymentCash === false}
-                    onChange={() => handleInputChange('paymentCash', false)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <span className="ml-2 text-sm text-gray-900">不可</span>
-                </label>
-              </div>
-            </div>
-
-            {/* さいコイン決済 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                さいコイン決済
-              </label>
-              <div className="flex gap-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="paymentSaicoin"
-                    checked={formData.paymentSaicoin === true}
-                    onChange={() => handleInputChange('paymentSaicoin', true)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <span className="ml-2 text-sm text-gray-900">可</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="paymentSaicoin"
-                    checked={formData.paymentSaicoin === false}
-                    onChange={() => handleInputChange('paymentSaicoin', false)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <span className="ml-2 text-sm text-gray-900">不可</span>
-                </label>
-              </div>
-            </div>
-
-            {/* たまポン決済 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                たまポン決済
-              </label>
-              <div className="flex gap-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="paymentTamapon"
-                    checked={formData.paymentTamapon === true}
-                    onChange={() => handleInputChange('paymentTamapon', true)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <span className="ml-2 text-sm text-gray-900">可</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="paymentTamapon"
-                    checked={formData.paymentTamapon === false}
-                    onChange={() => handleInputChange('paymentTamapon', false)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <span className="ml-2 text-sm text-gray-900">不可</span>
-                </label>
-              </div>
-            </div>
-
-            {/* クレジットカード決済 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                クレジットカード決済（複数選択可）
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                {CREDIT_CARD_BRANDS.map((brand) => (
-                  <label
-                    key={brand}
-                    className="flex items-center space-x-2 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      value={brand}
-                      checked={selectedCreditBrands.includes(brand)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedCreditBrands([...selectedCreditBrands, brand]);
-                        } else {
-                          setSelectedCreditBrands(selectedCreditBrands.filter(b => b !== brand));
-                          // 「その他」のチェックを外したらカスタムテキストもクリア
-                          if (brand === 'その他') {
-                            setCustomCreditText('');
-                            setValidationErrors(prev => {
-                              const newErrors = { ...prev };
-                              delete newErrors.customCreditText;
-                              return newErrors;
-                            });
-                          }
-                        }
-                      }}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">{brand}</span>
-                  </label>
-                ))}
-              </div>
-              
-              {/* 「その他」選択時のカスタムテキスト入力欄 */}
-              {selectedCreditBrands.includes('その他') && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    その他のクレジットカードブランド <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="customCreditText"
-                    value={customCreditText}
-                    onChange={(e) => setCustomCreditText(e.target.value)}
-                    onBlur={(e) => {
-                      // blurイベントでのバリデーション
-                      const isCreditOtherSelected = selectedCreditBrands.includes('その他');
-                      if (isCreditOtherSelected) {
-                        if (!e.target.value || e.target.value.trim().length === 0) {
-                          setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名を入力してください' }));
-                        } else if (e.target.value.length > 100) {
-                          setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名は100文字以内で入力してください' }));
-                        } else {
-                          setValidationErrors(prev => {
-                            const newErrors = { ...prev };
-                            delete newErrors.customCreditText;
-                            return newErrors;
-                          });
-                        }
-                      }
-                    }}
-                    onInput={(e) => {
-                      // inputイベントでのリアルタイムバリデーション（文字数チェック + 削除時の必須チェック）
-                      const target = e.target as HTMLInputElement;
-                      const isCreditOtherSelected = selectedCreditBrands.includes('その他');
-                      if (isCreditOtherSelected) {
-                        if (target.value.length > 100) {
-                          setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名は100文字以内で入力してください' }));
-                        } else if (target.value.trim().length === 0) {
-                          setValidationErrors(prev => ({ ...prev, customCreditText: 'その他のクレジットカードブランド名を入力してください' }));
-                        } else {
-                          setValidationErrors(prev => {
-                            const newErrors = { ...prev };
-                            delete newErrors.customCreditText;
-                            return newErrors;
-                          });
-                        }
-                      }
-                    }}
-                    maxLength={100}
-                    placeholder="例：銀聯カード、Discoverなど"
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      validationErrors.customCreditText ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {validationErrors.customCreditText && (
-                    <p className="mt-1 text-sm text-red-600">{validationErrors.customCreditText}</p>
-                  )}
-                  <p className="mt-1 text-xs text-gray-500">
-                    「その他」を選択した場合は、具体的なブランド名を入力してください（最大100文字）
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* QRコード決済 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                QRコード決済（複数選択可）
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                {QR_PAYMENT_SERVICES.map((service) => (
-                  <label
-                    key={service}
-                    className="flex items-center space-x-2 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      value={service}
-                      checked={selectedQrBrands.includes(service)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedQrBrands([...selectedQrBrands, service]);
-                        } else {
-                          setSelectedQrBrands(selectedQrBrands.filter(s => s !== service));
-                          // 「その他」のチェックを外したらカスタムテキストもクリア
-                          if (service === 'その他') {
-                            setCustomQrText('');
-                            setValidationErrors(prev => {
-                              const newErrors = { ...prev };
-                              delete newErrors.customQrText;
-                              return newErrors;
-                            });
-                          }
-                        }
-                      }}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">{service}</span>
-                  </label>
-                ))}
-              </div>
-              
-              {/* 「その他」選択時のカスタムテキスト入力欄 */}
-              {selectedQrBrands.includes('その他') && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    その他のQRコード決済サービス <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="customQrText"
-                    value={customQrText}
-                    onChange={(e) => setCustomQrText(e.target.value)}
-                    onBlur={(e) => {
-                      // blurイベントでのバリデーション
-                      const isQrOtherSelected = selectedQrBrands.includes('その他');
-                      if (isQrOtherSelected) {
-                        if (!e.target.value || e.target.value.trim().length === 0) {
-                          setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名を入力してください' }));
-                        } else if (e.target.value.length > 100) {
-                          setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名は100文字以内で入力してください' }));
-                        } else {
-                          setValidationErrors(prev => {
-                            const newErrors = { ...prev };
-                            delete newErrors.customQrText;
-                            return newErrors;
-                          });
-                        }
-                      }
-                    }}
-                    onInput={(e) => {
-                      // inputイベントでのリアルタイムバリデーション（文字数チェック + 削除時の必須チェック）
-                      const target = e.target as HTMLInputElement;
-                      const isQrOtherSelected = selectedQrBrands.includes('その他');
-                      if (isQrOtherSelected) {
-                        if (target.value.length > 100) {
-                          setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名は100文字以内で入力してください' }));
-                        } else if (target.value.trim().length === 0) {
-                          setValidationErrors(prev => ({ ...prev, customQrText: 'その他のQRコード決済サービス名を入力してください' }));
-                        } else {
-                          setValidationErrors(prev => {
-                            const newErrors = { ...prev };
-                            delete newErrors.customQrText;
-                            return newErrors;
-                          });
-                        }
-                      }
-                    }}
-                    maxLength={100}
-                    placeholder="例：Alipay、WeChat Payなど"
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      validationErrors.customQrText ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {validationErrors.customQrText && (
-                    <p className="mt-1 text-sm text-red-600">{validationErrors.customQrText}</p>
-                  )}
-                  <p className="mt-1 text-xs text-gray-500">
-                    「その他」を選択した場合は、具体的なサービス名を入力してください（最大100文字）
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <PaymentMethodSelector
+          paymentCash={formData.paymentCash ?? false}
+          paymentSaicoin={formData.paymentSaicoin ?? false}
+          paymentTamapon={formData.paymentTamapon ?? false}
+          selectedCreditBrands={selectedCreditBrands}
+          customCreditText={customCreditText}
+          selectedQrBrands={selectedQrBrands}
+          customQrText={customQrText}
+          validationErrors={validationErrors}
+          onPaymentChange={(field, value) => handleInputChange(field, value)}
+          onCreditBrandsChange={setSelectedCreditBrands}
+          onCreditTextChange={setCustomCreditText}
+          onQrBrandsChange={setSelectedQrBrands}
+          onQrTextChange={setCustomQrText}
+          onValidationErrorChange={(field, error) => {
+            setValidationErrors(prev => {
+              const newErrors = { ...prev };
+              if (error === null) {
+                delete newErrors[field];
+              } else {
+                newErrors[field] = error;
+              }
+              return newErrors;
+            });
+          }}
+        />
 
         {/* 店舗画像 */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">店舗画像（最大3枚）</h2>
-          <div className="space-y-4">
-            {/* 既存画像の表示 */}
-            {existingImages.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  現在登録されている画像
-                </label>
-                <div className="grid grid-cols-3 gap-4">
-                  {existingImages.map((imageUrl, index) => {
-                    if (!imageUrl || typeof imageUrl !== 'string') {
-                      return null;
-                    }
-                    return (
-                      <div key={index} className="relative group">
-                        <div className="relative w-full aspect-[4/3] md:aspect-[16/9] rounded-md overflow-hidden border border-gray-300 bg-gray-100">
-                          <img
-                            src={imageUrl}
-                            alt={`店舗画像 ${index + 1}`}
-                            className="absolute inset-0 w-full h-full object-cover"
-                            onLoad={() => {
-                              // Image loaded successfully
-                            }}
-                            onError={(_e) => {
-                              console.error('❌ 画像の読み込みに失敗しました:', imageUrl);
-                              // 壊れたURLは一覧から取り除く（古い世代のURLを自動で非表示）
-                              setExistingImages((prev) => prev.filter((_, i) => i !== index));
-                            }}
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveExistingImage(index)}
-                          className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* 新規アップロード画像のプレビュー */}
-            {imagePreviews.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  新しくアップロードする画像
-                </label>
-                <div className="grid grid-cols-3 gap-4">
-                  {imagePreviews.map((preview, index) => (
-                    <div key={index} className="relative group">
-                      <div className="relative w-full aspect-[4/3] md:aspect-[16/9] rounded-md overflow-hidden border border-gray-300 bg-gray-100">
-                        <img
-                          src={preview.url}
-                          alt={`プレビュー ${index + 1}`}
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(index)}
-                        className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 画像アップロードボタン */}
-            {(imagePreviews.length + existingImages.length) < 3 && (
-              <div>
-                <label className="block">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageSelect}
-                    className="hidden"
-                    id="shop-image-upload"
-                  />
-                  <label
-                    htmlFor="shop-image-upload"
-                    className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    画像を選択
-                  </label>
-                </label>
-                <p className="mt-2 text-sm text-gray-500">
-                  PNG, JPG, WEBP形式の画像をアップロードできます（残り {3 - (imagePreviews.length + existingImages.length)} 枚）
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+        <ImageUploader
+          imagePreviews={imagePreviews}
+          existingImages={existingImages}
+          maxImages={3}
+          onImageSelect={handleImageSelect}
+          onRemoveImage={handleRemoveImage}
+          onRemoveExistingImage={handleRemoveExistingImage}
+        />
 
         {/* アカウント発行 / 店舗用アカウント情報 */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            {isEdit && hasExistingAccount ? '店舗用アカウント情報' : 'アカウント発行'}
-          </h2>
-          <div className="space-y-4">
-            {/* アカウント未発行の場合：発行チェックボックスを表示 */}
-            {!(isEdit && hasExistingAccount) && (
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="createAccount"
-                    checked={!!formData.createAccount}
-                    onChange={(e) => handleInputChange('createAccount', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label htmlFor="createAccount" className="text-sm font-medium text-gray-700">
-                    店舗用アカウントを発行する
-                  </label>
-                </div>
-                <p className="ml-6 text-xs text-gray-500">
-                  ※ チェックを入れるとアカウントが発行され、店舗側でログインできるようになります
-                </p>
-              </div>
-            )}
-            
-            {/* アカウント情報入力・表示 */}
-            {(formData.createAccount || (isEdit && hasExistingAccount)) && (
-              <>
-                {/* メールアドレス */}
-                <div className="w-1/2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    メールアドレス
-                    {!(isEdit && hasExistingAccount) && <span className="text-red-500">*</span>}
-                  </label>
-                  {isEdit && hasExistingAccount ? (
-                    <div className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-700">
-                      {formData.accountEmail}
-                    </div>
-                  ) : (
-                    <>
-                      <input
-                        type="email"
-                        name="accountEmail"
-                        value={formData.accountEmail || ''}
-                        onChange={(e) => handleInputChange('accountEmail', e.target.value)}
-                        onBlur={(e) => handleFieldBlur('accountEmail', e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                          validationErrors.accountEmail 
-                            ? 'border-red-500 focus:ring-red-500' 
-                            : 'border-gray-300 focus:ring-blue-500'
-                        }`}
-                        required={formData.createAccount && !formData.accountEmail}
-                        placeholder="例: shop@example.com"
-              />
-              <ErrorMessage message={validationErrors.accountEmail} field="accountEmail" />
-                    </>
-                  )}
-                  <p className="mt-1 text-xs text-gray-500">
-                    ※ このメールアドレスがログインIDになります
-                  </p>
-                </div>
-                
-                {/* パスワード設定 */}
-                <div className="w-1/2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    パスワード
-                    {!(isEdit && hasExistingAccount) && <span className="text-red-500">*</span>}
-                    {isEdit && hasExistingAccount && '（変更する場合のみ）'}
-                  </label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                      validationErrors.password 
-                        ? 'border-red-500 focus:ring-red-500' 
-                        : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                    required={formData.createAccount && !(isEdit && hasExistingAccount)}
-                    placeholder={isEdit && hasExistingAccount ? '新しいパスワード（8文字以上）' : '8文字以上'}
-                    minLength={8}
-                  />
-                  <ErrorMessage message={validationErrors.password} />
-                  <p className="mt-1 text-xs text-gray-500">
-                    {isEdit && hasExistingAccount 
-                      ? '※ パスワードを変更しない場合は空欄のままにしてください'
-                      : '※ メールアドレス宛にパスワード設定メールが送信されます'
-                    }
-                  </p>
-                </div>
-                
-                {/* アカウント発行済みの場合：削除チェックボックスを表示 */}
-                {isEdit && hasExistingAccount && (
-                  <div className="space-y-2 pt-4 border-t border-gray-200">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="deleteAccount"
-                        checked={!formData.createAccount}
-                        onChange={(e) => handleInputChange('createAccount', !e.target.checked)}
-                        className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                      />
-                      <label htmlFor="deleteAccount" className="text-sm font-medium text-red-600">
-                        アカウントを削除する
-                      </label>
-                    </div>
-                    <p className="ml-6 text-xs text-gray-500">
-                      ※ チェックを入れるとアカウントが無効になり、店舗側でログインできなくなります
-                    </p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
+        <AccountSection
+          isEdit={isEdit}
+          hasExistingAccount={hasExistingAccount}
+          createAccount={formData.createAccount ?? false}
+          accountEmail={formData.accountEmail || ''}
+          password={formData.password || ''}
+          validationErrors={validationErrors}
+          onCreateAccountChange={(value) => handleInputChange('createAccount', value)}
+          onAccountEmailChange={(value) => handleInputChange('accountEmail', value)}
+          onPasswordChange={(value) => handleInputChange('password', value)}
+          onValidationErrorChange={(field, error) => {
+            setValidationErrors(prev => {
+              const newErrors = { ...prev };
+              if (error === null) {
+                delete newErrors[field];
+              } else {
+                newErrors[field] = error;
+              }
+              return newErrors;
+            });
+          }}
+          onFieldBlur={(field, value) => handleFieldBlur(field as keyof ExtendedShopCreateRequest, value)}
+          onDeleteAccountChange={(deleteAccount) => {
+            if (deleteAccount) {
+              handleInputChange('createAccount', false);
+            }
+          }}
+        />
 
         {/* ボタン */}
         <div className="flex justify-center items-center">

@@ -16,6 +16,7 @@ import {
 import { useAuth } from '@/components/contexts/auth-context';
 import MerchantSelectModal from '@/components/molecules/MerchantSelectModal';
 import ShopSelectModal from '@/components/molecules/ShopSelectModal';
+import ErrorMessage from '@/components/atoms/ErrorMessage';
 
 export const dynamic = 'force-dynamic';
 export const dynamicParams = true;
@@ -448,9 +449,7 @@ function CouponNewPageContent() {
                   {!selectedMerchant && (
                     <p className="mt-1 text-xs text-gray-500">先に事業者を選択してください</p>
                   )}
-                  {errors.shopId && (
-                    <p className="mt-1 text-sm text-red-500">{errors.shopId}</p>
-                  )}
+                  <ErrorMessage message={errors.shopId} />
                 </div>
               </>
             )}
@@ -485,9 +484,7 @@ function CouponNewPageContent() {
                   >
                     店舗を選択
                   </button>
-                  {errors.shopId && (
-                    <p className="mt-1 text-sm text-red-500">{errors.shopId}</p>
-                  )}
+                  <ErrorMessage message={errors.shopId} />
                 </div>
               </>
             )}
@@ -514,9 +511,7 @@ function CouponNewPageContent() {
                     {selectedShop?.name || '読み込み中...'}
                   </div>
                   <p className="text-xs text-gray-500">自身の店舗が設定されています（変更不可）</p>
-                  {errors.shopId && (
-                    <p className="mt-1 text-sm text-red-500">{errors.shopId}</p>
-                  )}
+                  <ErrorMessage message={errors.shopId} />
                 </div>
               </>
             )}
@@ -537,9 +532,7 @@ function CouponNewPageContent() {
                 }`}
                 maxLength={15}
               />
-              {errors.couponName && (
-                <p className="mt-1 text-sm text-red-500">{errors.couponName}</p>
-              )}
+              <ErrorMessage message={errors.couponName} />
             </div>
 
             {/* クーポン内容 */}
@@ -558,9 +551,7 @@ function CouponNewPageContent() {
                 rows={3}
                 maxLength={100}
               />
-              {errors.couponContent && (
-                <p className="mt-1 text-sm text-red-500">{errors.couponContent}</p>
-              )}
+              <ErrorMessage message={errors.couponContent} />
             </div>
 
             {/* クーポン画像 */}
@@ -601,9 +592,7 @@ function CouponNewPageContent() {
                   </p>
                 </div>
               </div>
-              {errors.couponImage && (
-                <p className="mt-1 text-sm text-red-500">{errors.couponImage}</p>
-              )}
+              <ErrorMessage message={errors.couponImage} />
             </div>
 
             {/* アクションボタン */}

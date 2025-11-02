@@ -405,7 +405,7 @@ export default function MerchantShopsPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               >
                 <option value="all">すべて</option>
-                {statusOptions.map((option) => (
+                {statusOptions?.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
@@ -536,11 +536,13 @@ export default function MerchantShopsPage() {
                         onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
                         className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full ${getStatusColor(shop.status)}`}
                       >
-                        {statusOptions.map((option) => (
+                        {statusOptions?.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
-                        ))}
+                        )) || (
+                          <option value={shop.status}>{statusLabels[shop.status] || shop.status}</option>
+                        )}
                       </select>
                     </td>
                   </tr>

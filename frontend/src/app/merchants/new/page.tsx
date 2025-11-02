@@ -10,16 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { validateMerchantField, type MerchantFormData } from '@hv-development/schemas';
 import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-search';
 import { useAuth } from '@/components/contexts/auth-context';
-
-const prefectures = [
-  '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
-  '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県',
-  '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県',
-  '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県',
-  '奈良県', '和歌山県', '鳥取県', '島根県', '岡山県', '広島県', '山口県',
-  '徳島県', '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県',
-  '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'
-];
+import { PREFECTURES } from '@/lib/constants/japan';
+import ErrorMessage from '@/components/atoms/ErrorMessage';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -52,13 +44,13 @@ export default function MerchantNewPage() {
     city: '',
     address1: '',
     address2: '',
-    applications: [],
+    applications: ['たまのみ'], // デフォルトで'たまのみ'を設定
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string>('');
-  const [issueAccount, setIssueAccount] = useState(true); // アカウント発行チェックボックス
+  const [issueAccount, setIssueAccount] = useState(false); // アカウント発行チェックボックス
   
   // 住所検索フック
   const { isSearching: isSearchingAddress, searchAddress } = useAddressSearch(
@@ -118,6 +110,10 @@ export default function MerchantNewPage() {
       }
     } else {
       const error = validateMerchantField(field, value || '');
+      // デバッグ: validateMerchantFieldが返すエラーメッセージを確認
+      if (field === 'name' && error) {
+        console.log('🔍 Debug handleInputChange: validateMerchantField returned error for name field:', error);
+      }
       if (error) {
         setErrors((prev) => ({ ...prev, [field]: error }));
       } else {
@@ -149,6 +145,10 @@ export default function MerchantNewPage() {
       }
     } else if (field !== 'applications') {
       const error = validateMerchantField(field as keyof MerchantFormData, (value as string) || '');
+      // デバッグ: validateMerchantFieldが返すエラーメッセージを確認
+      if (field === 'name' && error) {
+        console.log('🔍 Debug handleBlur: validateMerchantField returned error for name field:', error);
+      }
       if (error) {
         setErrors((prev) => ({ ...prev, [field]: error }));
       } else {
@@ -192,6 +192,10 @@ export default function MerchantNewPage() {
         fieldErrors[field] = error;
         hasErrors = true;
         console.log(`❌ ${field} validation failed:`, error);
+        // デバッグ: validateMerchantFieldが返すエラーメッセージを確認
+        if (field === 'name') {
+          console.log('🔍 Debug: validateMerchantField returned error for name field:', error);
+        }
       }
     });
 
@@ -204,6 +208,13 @@ export default function MerchantNewPage() {
       fieldErrors.email = '有効なメールアドレスを入力してください';
       hasErrors = true;
       console.log('❌ Email validation failed: invalid format');
+    }
+
+    // applicationsフィールドのバリデーション
+    if (!formData.applications || formData.applications.length === 0) {
+      fieldErrors.applications = '少なくとも1つのアプリケーションを選択してください';
+      hasErrors = true;
+      console.log('❌ Applications validation failed: empty');
     }
 
     console.log('🔍 Validation result:', { hasErrors, fieldErrors });
@@ -251,6 +262,7 @@ export default function MerchantNewPage() {
         city: formData.city,
         address1: formData.address1,
         address2: formData.address2 || undefined,
+        applications: formData.applications.length > 0 ? formData.applications : ['たまのみ'], // デフォルトで'たまのみ'を設定
         issueAccount, // アカウント発行フラグ
       };
       
@@ -393,11 +405,7 @@ export default function MerchantNewPage() {
                   placeholder="事業者名 / 代表店舗名を入力してください"
                 />
                 <div className="mt-1 flex justify-between items-center">
-                  {errors.name ? (
-                    <p className="text-sm text-red-600">{errors.name}</p>
-                  ) : (
-                    <div></div>
-                  )}
+                  <ErrorMessage message={errors.name} />
                   <p className="text-sm text-gray-500">{getCharacterCount('name', 50)}</p>
                 </div>
               </div>
@@ -420,11 +428,7 @@ export default function MerchantNewPage() {
                   placeholder="事業者名（カナ）を入力してください"
                 />
                 <div className="mt-1 flex justify-between items-center">
-                  {errors.nameKana ? (
-                    <p className="text-sm text-red-600">{errors.nameKana}</p>
-                  ) : (
-                    <div></div>
-                  )}
+                  <ErrorMessage message={errors.nameKana} />
                   <p className="text-sm text-gray-500">{getCharacterCount('nameKana', 100)}</p>
                 </div>
               </div>
@@ -449,11 +453,7 @@ export default function MerchantNewPage() {
                       maxLength={25}
                     />
                   <div className="mt-1 flex justify-between items-center">
-                    {errors.representativeNameLast ? (
-                      <p className="text-sm text-red-600">{errors.representativeNameLast}</p>
-                    ) : (
-                      <div></div>
-                    )}
+                    <ErrorMessage message={errors.representativeNameLast} />
                     <p className="text-sm text-gray-500">{getCharacterCount('representativeNameLast', 25)}</p>
                   </div>
                 </div>
@@ -476,11 +476,7 @@ export default function MerchantNewPage() {
                       maxLength={25}
                     />
                     <div className="mt-1 flex justify-between items-center">
-                      {errors.representativeNameFirst ? (
-                        <p className="text-sm text-red-600">{errors.representativeNameFirst}</p>
-                      ) : (
-                        <div></div>
-                      )}
+                      <ErrorMessage message={errors.representativeNameFirst} />
                       <p className="text-sm text-gray-500">{getCharacterCount('representativeNameFirst', 25)}</p>
                     </div>
                 </div>
@@ -506,11 +502,7 @@ export default function MerchantNewPage() {
                       maxLength={50}
                     />
                     <div className="mt-1 flex justify-between items-center">
-                      {errors.representativeNameLastKana ? (
-                        <p className="text-sm text-red-600">{errors.representativeNameLastKana}</p>
-                      ) : (
-                        <div></div>
-                      )}
+                      <ErrorMessage message={errors.representativeNameLastKana} />
                       <p className="text-sm text-gray-500">{getCharacterCount('representativeNameLastKana', 50)}</p>
                     </div>
                 </div>
@@ -533,11 +525,7 @@ export default function MerchantNewPage() {
                       maxLength={50}
                     />
                   <div className="mt-1 flex justify-between items-center">
-                    {errors.representativeNameFirstKana ? (
-                      <p className="text-sm text-red-600">{errors.representativeNameFirstKana}</p>
-                    ) : (
-                      <div></div>
-                    )}
+                    <ErrorMessage message={errors.representativeNameFirstKana} />
                     <p className="text-sm text-gray-500">{getCharacterCount('representativeNameFirstKana', 50)}</p>
                   </div>
                 </div>
@@ -561,9 +549,7 @@ export default function MerchantNewPage() {
                   placeholder="電話番号を入力してください（ハイフン無し）"
                 />
                 <div className="mt-1 flex justify-between">
-                  {errors.representativePhone && (
-                    <p className="text-sm text-red-600">{errors.representativePhone}</p>
-                  )}
+                  <ErrorMessage message={errors.representativePhone} />
                 </div>
               </div>
 
@@ -585,11 +571,7 @@ export default function MerchantNewPage() {
                   placeholder="メールアドレスを入力してください"
                 />
                 <div className="mt-1 flex justify-between items-center">
-                  {errors.email ? (
-                    <p className="text-sm text-red-600">{errors.email}</p>
-                  ) : (
-                    <div></div>
-                  )}
+                  <ErrorMessage message={errors.email} />
                   <p className="text-sm text-gray-500">{formData.email.length} / 255</p>
                 </div>
               </div>
@@ -635,9 +617,7 @@ export default function MerchantNewPage() {
                     maxLength={7}
                   />
                   <div className="mt-1 flex justify-between">
-                    {errors.postalCode && (
-                      <p className="text-sm text-red-600">{errors.postalCode}</p>
-                    )}
+                    <ErrorMessage message={errors.postalCode} />
                   </div>
                 </div>
                 <div className="flex items-end">
@@ -669,14 +649,12 @@ export default function MerchantNewPage() {
                   }`}
                 >
                   <option value="">都道府県を選択</option>
-                  {prefectures.map(pref => (
+                  {PREFECTURES.map(pref => (
                     <option key={pref} value={pref}>{pref}</option>
                   ))}
                 </select>
                 <div className="mt-1 flex justify-between">
-                  {errors.prefecture && (
-                    <p className="text-sm text-red-600">{errors.prefecture}</p>
-                  )}
+                  <ErrorMessage message={errors.prefecture} />
                 </div>
               </div>
 
@@ -698,11 +676,7 @@ export default function MerchantNewPage() {
                   placeholder="市区町村を入力してください"
                 />
                 <div className="mt-1 flex justify-between items-center">
-                  {errors.city ? (
-                    <p className="text-sm text-red-600">{errors.city}</p>
-                  ) : (
-                    <div></div>
-                  )}
+                  <ErrorMessage message={errors.city} />
                   <p className="text-sm text-gray-500">{getCharacterCount('city', 255)}</p>
                 </div>
               </div>
@@ -725,11 +699,7 @@ export default function MerchantNewPage() {
                   placeholder="番地以降を入力してください"
                 />
                 <div className="mt-1 flex justify-between items-center">
-                  {errors.address1 ? (
-                    <p className="text-sm text-red-600">{errors.address1}</p>
-                  ) : (
-                    <div></div>
-                  )}
+                  <ErrorMessage message={errors.address1} />
                   <p className="text-sm text-gray-500">{getCharacterCount('address1', 255)}</p>
                 </div>
               </div>
@@ -752,11 +722,7 @@ export default function MerchantNewPage() {
                   placeholder="建物名 / 部屋番号を入力してください（任意）"
                 />
                 <div className="mt-1 flex justify-between items-center">
-                  {errors.address2 ? (
-                    <p className="text-sm text-red-600">{errors.address2}</p>
-                  ) : (
-                    <div></div>
-                  )}
+                  <ErrorMessage message={errors.address2} />
                   <p className="text-sm text-gray-500">{getCharacterCount('address2', 255)}</p>
                 </div>
               </div>
