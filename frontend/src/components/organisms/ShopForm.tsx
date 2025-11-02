@@ -142,7 +142,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     description: '',
     details: '',
     holidays: '',
-    smokingType: '',
+    smokingType: undefined,
     homepageUrl: '',
     couponUsageStart: '',
     couponUsageEnd: '',
