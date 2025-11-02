@@ -28,7 +28,10 @@ RUN rm -f .npmrc
 # Development
 FROM base AS dev
 WORKDIR /app
+# ソースコードをコピー（node_modulesは除外される）
 COPY tamanomi-admin/frontend/ .
+# 既存のnode_modules/@hv-development/schemasを削除してから、depsステージからnode_modulesをコピー
+RUN rm -rf node_modules/@hv-development/schemas 2>/dev/null || true
 COPY --from=deps /app/node_modules ./node_modules
 
 EXPOSE 3000

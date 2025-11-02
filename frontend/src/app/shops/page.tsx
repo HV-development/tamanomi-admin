@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import AdminLayout from '@/components/templates/admin-layout';
@@ -14,16 +15,25 @@ import { useAuth } from '@/components/contexts/auth-context';
 import Checkbox from '@/components/atoms/Checkbox';
 import FloatingFooter from '@/components/molecules/floating-footer';
 
-export default function ShopsPage() {
+function ShopsPageContent() {
   const auth = useAuth();
+  const searchParams = useSearchParams();
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
   const isShopAccount = auth?.user?.accountType === 'shop';
   const [merchantId, setMerchantId] = useState<string | undefined>(undefined);
-  const [shops, setShops] = useState<Shop[]>([]);
   const [merchantName, setMerchantName] = useState<string>('');
+  const [shops, setShops] = useState<Shop[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
+  
+  // URLパラメータからmerchantIdを取得
+  useEffect(() => {
+    const urlMerchantId = searchParams?.get('merchantId');
+    if (urlMerchantId) {
+      setMerchantId(urlMerchantId);
+    }
+  }, [searchParams]);
   
   // 検索フォームの状態（拡張版）
   const [searchForm, setSearchForm] = useState({
@@ -44,6 +54,37 @@ export default function ShopsPage() {
     updatedAtTo: '',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  
+  // URLパラメータから検索条件を読み込んで検索フォームに反映
+  useEffect(() => {
+    if (!searchParams) return;
+    
+    const newSearchForm = {
+      keyword: searchParams.get('keyword') || '',
+      merchantName: searchParams.get('merchantName') || '',
+      merchantNameKana: searchParams.get('merchantNameKana') || '',
+      name: searchParams.get('name') || '',
+      nameKana: searchParams.get('nameKana') || '',
+      phone: searchParams.get('phone') || '',
+      accountEmail: searchParams.get('accountEmail') || '',
+      postalCode: searchParams.get('postalCode') || '',
+      prefecture: searchParams.get('prefecture') || '',
+      address: searchParams.get('address') || '',
+      status: (searchParams.get('status') || 'all') as 'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
+      createdAtFrom: searchParams.get('createdAtFrom') || '',
+      createdAtTo: searchParams.get('createdAtTo') || '',
+      updatedAtFrom: searchParams.get('updatedAtFrom') || '',
+      updatedAtTo: searchParams.get('updatedAtTo') || '',
+    };
+    
+    setSearchForm(newSearchForm);
+    
+    // 検索条件がある場合、検索フォームを展開して表示
+    const hasSearchParams = Object.values(newSearchForm).some(value => value && value !== 'all');
+    if (hasSearchParams) {
+      setIsSearchExpanded(true);
+    }
+  }, [searchParams]);
   const [searchErrors, setSearchErrors] = useState({
     createdAtFrom: '',
     createdAtTo: '',
@@ -238,7 +279,15 @@ export default function ShopsPage() {
     if (!validateSearchForm()) {
       return;
     }
-    console.log('検索実行:', searchForm);
+    // URLパラメータを更新（ブラウザの戻る/進むボタンで検索条件を維持）
+    const params = new URLSearchParams();
+    Object.entries(searchForm).forEach(([key, value]) => {
+      if (value && value !== 'all') {
+        params.append(key, value);
+      }
+    });
+    const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+    window.history.pushState({}, '', newUrl);
     fetchShops();
   };
 
@@ -487,15 +536,56 @@ export default function ShopsPage() {
             </div>
           </div>
           
-          {/* 親事業者名の表示 */}
-          {merchantName && !isMerchantAccount && (
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center">
-                <span className="text-sm font-medium text-gray-700 mr-2">事業者名:</span>
-                <span className="text-sm font-bold text-gray-900">{merchantName}</span>
+          {/* 検索条件の表示 */}
+          {!isShopAccount && (() => {
+            const conditions: string[] = [];
+            
+            // merchantIdがある場合
+            if (merchantId && merchantName) {
+              conditions.push(`事業者: ${merchantName}`);
+            }
+            
+            // 検索フォームの条件
+            if (searchForm.keyword) conditions.push(`キーワード: ${searchForm.keyword}`);
+            if (searchForm.merchantName) conditions.push(`事業者名: ${searchForm.merchantName}`);
+            if (searchForm.merchantNameKana) conditions.push(`事業者名（カナ）: ${searchForm.merchantNameKana}`);
+            if (searchForm.name) conditions.push(`店舗名: ${searchForm.name}`);
+            if (searchForm.nameKana) conditions.push(`店舗名（カナ）: ${searchForm.nameKana}`);
+            if (searchForm.phone) conditions.push(`電話番号: ${searchForm.phone}`);
+            if (searchForm.accountEmail) conditions.push(`メールアドレス: ${searchForm.accountEmail}`);
+            if (searchForm.postalCode) conditions.push(`郵便番号: ${searchForm.postalCode}`);
+            if (searchForm.prefecture) conditions.push(`都道府県: ${searchForm.prefecture}`);
+            if (searchForm.address) conditions.push(`住所: ${searchForm.address}`);
+            if (searchForm.status && searchForm.status !== 'all') {
+              const statusLabel = statusOptions?.find(opt => opt.value === searchForm.status)?.label || searchForm.status;
+              conditions.push(`ステータス: ${statusLabel}`);
+            }
+            if (searchForm.createdAtFrom && searchForm.createdAtTo) {
+              conditions.push(`登録日: ${searchForm.createdAtFrom} 〜 ${searchForm.createdAtTo}`);
+            } else if (searchForm.createdAtFrom) {
+              conditions.push(`登録日（開始）: ${searchForm.createdAtFrom}`);
+            } else if (searchForm.createdAtTo) {
+              conditions.push(`登録日（終了）: ${searchForm.createdAtTo}`);
+            }
+            if (searchForm.updatedAtFrom && searchForm.updatedAtTo) {
+              conditions.push(`更新日: ${searchForm.updatedAtFrom} 〜 ${searchForm.updatedAtTo}`);
+            } else if (searchForm.updatedAtFrom) {
+              conditions.push(`更新日（開始）: ${searchForm.updatedAtFrom}`);
+            } else if (searchForm.updatedAtTo) {
+              conditions.push(`更新日（終了）: ${searchForm.updatedAtTo}`);
+            }
+            
+            if (conditions.length === 0) return null;
+            
+            return (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center">
+                  <span className="text-sm font-medium text-gray-700 mr-2">検索条件:</span>
+                  <span className="text-sm text-gray-900">{conditions.join(' / ')}</span>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         {/* エラーメッセージ */}
@@ -697,7 +787,7 @@ export default function ShopsPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               >
                 <option value="all">すべて</option>
-                {statusOptions.map((option) => (
+                {statusOptions?.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
@@ -1031,9 +1121,6 @@ export default function ShopsPage() {
                         <div className="text-sm font-medium text-gray-900">
                           {shop.merchant?.name || '-'}
                         </div>
-                        {/* shop.merchant?.nameKana && (
-                          <div className="text-sm text-gray-500">{shop.merchant.nameKana}</div>
-                        ) */}
                       </td>
                     )}
                     <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
@@ -1067,11 +1154,13 @@ export default function ShopsPage() {
                           onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
                           className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[180px] ${getStatusColor(shop.status)}`}
                         >
-                          {statusOptions.map((option) => (
+                          {statusOptions?.map((option) => (
                             <option key={option.value} value={option.value}>
                               {option.label}
                             </option>
-                          ))}
+                          )) || (
+                            <option value={shop.status}>{statusLabels[shop.status] || shop.status}</option>
+                          )}
                         </select>
                       )}
                     </td>
@@ -1129,5 +1218,22 @@ export default function ShopsPage() {
       
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
+  );
+}
+
+export default function ShopsPage() {
+  return (
+    <Suspense fallback={
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">読み込み中...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    }>
+      <ShopsPageContent />
+    </Suspense>
   );
 }
