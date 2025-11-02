@@ -47,7 +47,6 @@ class ApiClient {
   ): Promise<T> {
     const { skipAuthRedirect, ...fetchOptions } = options;
     const url = `${this.baseUrl}${endpoint}`;
-    console.log('🚀 API Request (via Next.js API Route):', { url, method: fetchOptions.method || 'GET', endpoint });
 
     try {
       const isFormData = typeof fetchOptions.body !== 'undefined' && fetchOptions.body instanceof FormData;
@@ -132,10 +131,6 @@ class ApiClient {
   }
 
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    console.log('🔐 API: login called (via Next.js API Route)');
-    console.log('🔗 API Base URL:', this.baseUrl);
-    console.log('🔗 Full URL:', `${this.baseUrl}/auth/login`);
-    
     return this.request<LoginResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
@@ -144,7 +139,6 @@ class ApiClient {
   }
 
   async register(userData: RegisterRequest): Promise<RegisterResponse> {
-    console.log('📝 API: register called (via Next.js API Route)');
     return this.request<RegisterResponse>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
@@ -153,8 +147,6 @@ class ApiClient {
   }
 
   async refreshToken(refreshData?: RefreshRequest): Promise<RefreshResponse | void> {
-    console.log('🔄 API: refreshToken called (via Next.js API Route)');
-    
     try {
       const response = await this.request<RefreshResponse>('/auth/refresh', {
         method: 'POST',
@@ -170,13 +162,11 @@ class ApiClient {
   }
 
   async logout(): Promise<void> {
-    console.log('🚪 API: logout called (via Next.js API Route)');
     await this.request('/auth/logout', { method: 'POST' });
   }
 
   // アプリケーション関連
   async getApplications(): Promise<unknown> {
-    console.log('📱 API: getApplications called (via Next.js API Route)');
     return this.request<unknown>('/applications', {
       method: 'GET',
     });
@@ -184,9 +174,6 @@ class ApiClient {
 
   // 事業者関連
   async getMerchants(params?: { search?: string; page?: number; limit?: number; status?: string }): Promise<unknown> {
-    console.log('🌐 API: getMerchants called (via Next.js API Route)', { params });
-    console.log('🔗 API Base URL:', this.baseUrl);
-    
     const queryParams = new URLSearchParams();
     if (params?.search) queryParams.append('search', params.search);
     if (params?.page) queryParams.append('page', params.page.toString());
@@ -195,7 +182,6 @@ class ApiClient {
     
     const queryString = queryParams.toString();
     const endpoint = queryString ? `/merchants?${queryString}` : '/merchants';
-    console.log('🔗 Full URL:', `${this.baseUrl}${endpoint}`);
     
     return this.request<unknown>(endpoint, {
       method: 'GET',
@@ -203,28 +189,24 @@ class ApiClient {
   }
 
   async getMerchant(id: string): Promise<unknown> {
-    console.log('🏢 API: getMerchant called (via Next.js API Route)', { id });
     return this.request<unknown>(`/merchants/${id}`, {
       method: 'GET',
     });
   }
 
   async getMyMerchant(): Promise<unknown> {
-    console.log('👤 API: getMyMerchant called (via Next.js API Route)');
     return this.request<unknown>('/merchants/me', {
       method: 'GET',
     });
   }
 
   async getMyShop(): Promise<unknown> {
-    console.log('🏪 API: getMyShop called (via Next.js API Route)');
     return this.request<unknown>('/shops/me', {
       method: 'GET',
     });
   }
 
   async createMerchant(merchantData: unknown): Promise<unknown> {
-    console.log('➕ API: createMerchant called (via Next.js API Route)');
     return this.request<unknown>('/merchants', {
       method: 'POST',
       body: JSON.stringify(merchantData),
@@ -232,7 +214,6 @@ class ApiClient {
   }
 
   async updateMerchant(id: string, merchantData: unknown): Promise<unknown> {
-    console.log('✏️ API: updateMerchant called (via Next.js API Route)', { id });
     return this.request<unknown>(`/merchants/${id}`, {
       method: 'PUT',
       body: JSON.stringify(merchantData),
@@ -240,14 +221,12 @@ class ApiClient {
   }
 
   async deleteMerchant(id: string): Promise<void> {
-    console.log('🗑️ API: deleteMerchant called (via Next.js API Route)', { id });
     return this.request<void>(`/merchants/${id}`, {
       method: 'DELETE',
     });
   }
 
   async updateMerchantStatus(id: string, status: string): Promise<unknown> {
-    console.log('🔄 API: updateMerchantStatus called (via Next.js API Route)', { id, status });
     return this.request<unknown>(`/merchants/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
@@ -255,7 +234,6 @@ class ApiClient {
   }
 
   async resendMerchantRegistration(id: string): Promise<unknown> {
-    console.log('📧 API: resendMerchantRegistration called (via Next.js API Route)', { id });
     return this.request<unknown>(`/merchants/${id}/resend-registration`, {
       method: 'POST',
     });
@@ -263,7 +241,6 @@ class ApiClient {
 
   // ジャンルカテゴリー関連
   async getGenres(): Promise<unknown> {
-    console.log('🏷️ API: getGenres called (via Next.js API Route)');
     return this.request<unknown>('/genres', {
       method: 'GET',
     });
@@ -271,7 +248,6 @@ class ApiClient {
 
   // 利用シーン関連
   async getScenes(): Promise<unknown> {
-    console.log('🎭 API: getScenes called (via Next.js API Route)');
     return this.request<unknown>('/scenes', {
       method: 'GET',
     });
@@ -279,8 +255,6 @@ class ApiClient {
 
   // 店舗関連
   async getShops(queryParams?: string): Promise<unknown> {
-    console.log('🏪 API: getShops called (via Next.js API Route)');
-    
     const endpoint = queryParams ? `/shops?${queryParams}` : '/shops';
     return this.request<unknown>(endpoint, {
       method: 'GET',
@@ -288,14 +262,12 @@ class ApiClient {
   }
 
   async getShop(id: string): Promise<unknown> {
-    console.log('🏪 API: getShop called (via Next.js API Route)', { id });
     return this.request<unknown>(`/shops/${id}`, {
       method: 'GET',
     });
   }
 
   async createShop(shopData: unknown): Promise<unknown> {
-    console.log('➕ API: createShop called (via Next.js API Route)');
     return this.request<unknown>('/shops', {
       method: 'POST',
       body: JSON.stringify(shopData),
@@ -303,7 +275,6 @@ class ApiClient {
   }
 
   async updateShop(id: string, shopData: unknown): Promise<unknown> {
-    console.log('✏️ API: updateShop called (via Next.js API Route)', { id });
     return this.request<unknown>(`/shops/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(shopData),
@@ -311,14 +282,12 @@ class ApiClient {
   }
 
   async deleteShop(id: string): Promise<void> {
-    console.log('🗑️ API: deleteShop called (via Next.js API Route)', { id });
     return this.request<void>(`/shops/${id}`, {
       method: 'DELETE',
     });
   }
 
   async updateShopStatus(id: string, statusData: { status: string }): Promise<unknown> {
-    console.log('🔄 API: updateShopStatus called (via Next.js API Route)', { id, statusData });
     return this.request<unknown>(`/shops/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify(statusData),
@@ -327,7 +296,6 @@ class ApiClient {
 
   // クーポン関連
   async getCoupons(queryParams?: string): Promise<unknown> {
-    console.log('🎟️ API: getCoupons called (via Next.js API Route)');
     const endpoint = queryParams ? `/coupons?${queryParams}` : '/coupons';
     return this.request<unknown>(endpoint, {
       method: 'GET',
@@ -335,14 +303,12 @@ class ApiClient {
   }
 
   async getCoupon(id: string): Promise<unknown> {
-    console.log('🎟️ API: getCoupon called (via Next.js API Route)', { id });
     return this.request<unknown>(`/coupons/${id}`, {
       method: 'GET',
     });
   }
 
   async createCoupon(couponData: unknown): Promise<unknown> {
-    console.log('➕ API: createCoupon called (via Next.js API Route)');
     return this.request<unknown>('/coupons', {
       method: 'POST',
       body: JSON.stringify(couponData),
@@ -350,7 +316,6 @@ class ApiClient {
   }
 
   async updateCoupon(id: string, couponData: unknown): Promise<unknown> {
-    console.log('✏️ API: updateCoupon called (via Next.js API Route)', { id });
     return this.request<unknown>(`/coupons/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(couponData),
@@ -358,14 +323,12 @@ class ApiClient {
   }
 
   async deleteCoupon(id: string): Promise<void> {
-    console.log('🗑️ API: deleteCoupon called (via Next.js API Route)', { id });
     return this.request<void>(`/coupons/${id}`, {
       method: 'DELETE',
     });
   }
 
   async updateCouponStatus(id: string, statusData: { status: string }): Promise<unknown> {
-    console.log('🔄 API: updateCouponStatus called (via Next.js API Route)', { id, statusData });
     return this.request<unknown>(`/coupons/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify(statusData),
@@ -373,7 +336,6 @@ class ApiClient {
   }
 
   async updateCouponPublicStatus(id: string, publicStatusData: { isPublic: boolean }): Promise<unknown> {
-    console.log('🌐 API: updateCouponPublicStatus called (via Next.js API Route)', { id, publicStatusData });
     return this.request<unknown>(`/coupons/${id}/public-status`, {
       method: 'PATCH',
       body: JSON.stringify(publicStatusData),
@@ -381,7 +343,6 @@ class ApiClient {
   }
 
   async updateCouponPublicStatusServerSide(id: string, publicStatusData: { isPublic: boolean }, authToken?: string): Promise<unknown> {
-    console.log('🌐 API: updateCouponPublicStatusServerSide called', { id, publicStatusData, authToken: authToken ? 'present' : 'missing' });
     const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3002/api/v1';
     
     try {
@@ -394,17 +355,13 @@ class ApiClient {
         body: JSON.stringify(publicStatusData),
       });
       
-      console.log('📡 Server-side API Response:', { status: response.status, statusText: response.statusText });
-      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         console.error('❌ Server-side API Error:', errorData);
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
       
-      const result = await response.json();
-      console.log('✅ Server-side API Success:', result);
-      return result;
+      return await response.json();
     } catch (error) {
       console.error('❌ Server-side API Request failed:', error);
       throw error;
@@ -412,7 +369,6 @@ class ApiClient {
   }
 
   async updateCouponStatusServerSide(id: string, statusData: { status: string }, authToken?: string): Promise<unknown> {
-    console.log('🔄 API: updateCouponStatusServerSide called', { id, statusData, authToken: authToken ? 'present' : 'missing' });
     const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3002/api/v1';
     
     try {
@@ -425,17 +381,13 @@ class ApiClient {
         body: JSON.stringify(statusData),
       });
       
-      console.log('📡 Server-side API Response:', { status: response.status, statusText: response.statusText });
-      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         console.error('❌ Server-side API Error:', errorData);
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
       
-      const result = await response.json();
-      console.log('✅ Server-side API Success:', result);
-      return result;
+      return await response.json();
     } catch (error) {
       console.error('❌ Server-side API Request failed:', error);
       throw error;
@@ -443,7 +395,6 @@ class ApiClient {
   }
 
   async issueAccounts(merchantIds: string[]): Promise<{ success: number; failed: number }> {
-    console.log('🎫 API: issueAccounts called', { merchantIds });
     const response = await this.request<{ success: boolean; data: { success: number; failed: number } }>('/merchants/issue-accounts', {
       method: 'POST',
       body: JSON.stringify({ merchantIds }),
@@ -453,9 +404,6 @@ class ApiClient {
 
   // 管理者アカウント関連
   async getAdminAccounts(params?: { name?: string; email?: string; role?: string; page?: number; limit?: number }): Promise<unknown> {
-    console.log('👥 API: getAdminAccounts called (via Next.js API Route)', { params });
-    console.log('🔗 API Base URL:', this.baseUrl);
-    
     const queryParams = new URLSearchParams();
     if (params?.name) queryParams.append('name', params.name); 
     if (params?.email) queryParams.append('email', params.email);
@@ -465,7 +413,6 @@ class ApiClient {
     
     const queryString = queryParams.toString();
     const endpoint = queryString ? `/admin?${queryString}` : '/admin';
-    console.log('🔗 Full URL:', `${this.baseUrl}${endpoint}`);
     
     return this.request<unknown>(endpoint, {
       method: 'GET',
@@ -474,7 +421,6 @@ class ApiClient {
 
   // 管理者アカウント関連
   async createAdminAccount(adminAccountData: AdminAccountInput): Promise<unknown> {
-    console.log('➕ API: createAdminAccount called (via Next.js API Route)');
     return this.request<unknown>('/admin', {
       method: 'POST',
       body: JSON.stringify(adminAccountData),
@@ -482,14 +428,12 @@ class ApiClient {
   }
 
   async getAdminAccount(email: string): Promise<unknown> {
-    console.log('👥 API: getAdminAccount called (via Next.js API Route)', { email });
     return this.request<unknown>(`/admin/${email}`, {
       method: 'GET',
     });
   }
 
   async updateAdminAccount(email: string, adminAccountData: AdminAccountInput): Promise<unknown> {
-    console.log('✏️ API: updateAdminAccount called (via Next.js API Route)', { email });
     return this.request<unknown>(`/admin/${email}`, {
       method: 'PATCH',
       body: JSON.stringify(adminAccountData),
@@ -497,7 +441,6 @@ class ApiClient {
   }
 
   async deleteAdminAccount(email: string): Promise<void> {
-    console.log('🗑️ API: deleteAdminAccount called (via Next.js API Route)', { email });
     return this.request<void>(`/admin/${email}`, {
       method: 'DELETE',
     });

@@ -63,8 +63,6 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    console.log('➕ API Route: Create shop request received', { name: body.name });
-    
     const response = await fetch(`${API_BASE_URL}/shops`, {
       method: 'POST',
       headers: getAuthHeaders(request),
