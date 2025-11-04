@@ -335,11 +335,12 @@ export default function AdminsPage() {
                             title="削除"
                           >
                             <Image 
-                              src="/trash.svg" 
+                              src="/dustbox.png" 
                               alt="削除" 
                               width={24}
                               height={24}
-                              className="w-6 h-6 flex-shrink-0"
+                              className="w-6 h-6 flex-shrink-0 object-contain"
+                              unoptimized
                             />
                           </button>
                         </div>

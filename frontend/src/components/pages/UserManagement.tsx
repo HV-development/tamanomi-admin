@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+import { useAuth } from '@/components/contexts/auth-context';
 
 interface User {
   id: string;
@@ -33,6 +35,11 @@ const prefectures = [
 ];
 
 export default function UserManagement() {
+  const auth = useAuth();
+  
+  // operatorロールかどうかを判定
+  const isOperatorRole = auth?.user?.accountType === 'admin' && auth?.user?.role === 'operator';
+  
   const [searchForm, setSearchForm] = useState({
     nickname: '',
     postalCode: '',
@@ -73,13 +80,18 @@ export default function UserManagement() {
       
       // 検索条件をクエリパラメータに追加
       if (searchParams?.nickname) queryParams.append('nickname', searchParams.nickname);
-      if (searchParams?.postalCode) queryParams.append('postalCode', searchParams.postalCode);
-      if (searchParams?.prefecture) queryParams.append('prefecture', searchParams.prefecture);
-      if (searchParams?.city) queryParams.append('city', searchParams.city);
-      if (searchParams?.address) queryParams.append('address', searchParams.address);
-      if (searchParams?.birthDate) queryParams.append('birthDate', searchParams.birthDate);
-      if (searchParams?.gender) queryParams.append('gender', searchParams.gender);
-      if (searchParams?.saitamaAppId) queryParams.append('saitamaAppId', searchParams.saitamaAppId);
+      
+      // operatorロールでない場合のみ機密情報での検索パラメータを追加
+      if (!isOperatorRole) {
+        if (searchParams?.postalCode) queryParams.append('postalCode', searchParams.postalCode);
+        if (searchParams?.prefecture) queryParams.append('prefecture', searchParams.prefecture);
+        if (searchParams?.city) queryParams.append('city', searchParams.city);
+        if (searchParams?.address) queryParams.append('address', searchParams.address);
+        if (searchParams?.birthDate) queryParams.append('birthDate', searchParams.birthDate);
+        if (searchParams?.gender) queryParams.append('gender', searchParams.gender);
+        if (searchParams?.saitamaAppId) queryParams.append('saitamaAppId', searchParams.saitamaAppId);
+      }
+      
       if (searchParams?.ranks && searchParams.ranks.length > 0) {
         queryParams.append('ranks', JSON.stringify(searchParams.ranks));
       }
@@ -103,31 +115,53 @@ export default function UserManagement() {
       const responseData = data as { users: Array<{
         id: string;
         nickname: string;
-        postalCode: string;
-        prefecture: string;
-        city: string;
-        address: string;
-        birthDate: string;
-        gender: number;
-        saitamaAppId: string;
+        postalCode?: string;
+        prefecture?: string;
+        city?: string;
+        address?: string;
+        birthDate?: string;
+        gender?: string | number;
+        saitamaAppId?: string;
         rank: number;
-        registeredStore: string;
+        registeredStore?: string;
         registeredAt: string;
       }> };
-      const formattedUsers: User[] = responseData.users.map((user) => ({
-        id: user.id,
-        nickname: user.nickname,
-        postalCode: user.postalCode,
-        prefecture: user.prefecture,
-        city: user.city,
-        address: user.address,
-        birthDate: user.birthDate ? user.birthDate.replace(/-/g, '/') : '',
-        gender: typeof user.gender === 'string' ? (user.gender === 'male' ? 1 : user.gender === 'female' ? 2 : 3) : user.gender,
-        saitamaAppId: user.saitamaAppId,
-        rank: user.rank,
-        registeredStore: user.registeredStore,
-        registeredAt: user.registeredAt ? user.registeredAt.replace(/-/g, '/') : '',
-      }));
+      
+      // operatorロールの場合は機密情報を含めない
+      const formattedUsers: User[] = responseData.users.map((user) => {
+        const base: User = {
+          id: user.id,
+          nickname: user.nickname,
+          postalCode: '',
+          prefecture: '',
+          city: '',
+          address: '',
+          birthDate: '',
+          gender: 0,
+          saitamaAppId: '',
+          rank: user.rank,
+          registeredStore: '',
+          registeredAt: user.registeredAt ? user.registeredAt.replace(/-/g, '/') : '',
+        };
+
+        // operatorロールでない場合のみ機密情報を設定
+        if (!isOperatorRole) {
+          return {
+            ...base,
+            postalCode: user.postalCode ?? '',
+            prefecture: user.prefecture ?? '',
+            city: user.city ?? '',
+            address: user.address ?? '',
+            birthDate: user.birthDate ? user.birthDate.replace(/-/g, '/') : '',
+            gender: typeof user.gender === 'string' ? (user.gender === 'male' ? 1 : user.gender === 'female' ? 2 : 3) : (user.gender || 0),
+            saitamaAppId: user.saitamaAppId ?? '',
+            registeredStore: user.registeredStore ?? '',
+          };
+        }
+
+        // operatorロールの場合は機密情報を含めない
+        return base;
+      });
       
       setUsers(formattedUsers);
     } catch (err) {
@@ -137,7 +171,7 @@ export default function UserManagement() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isOperatorRole]);
 
   // データ取得（初回読み込み・検索）
   useEffect(() => {
@@ -321,81 +355,91 @@ export default function UserManagement() {
             </div>
 
             {/* 郵便番号 */}
-            <div>
-              <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
-                郵便番号
-              </label>
-              <input
-                type="text"
-                id="postalCode"
-                placeholder="郵便番号を入力"
-                value={searchForm.postalCode}
-                onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
+            {!isOperatorRole && (
+              <div>
+                <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
+                  郵便番号
+                </label>
+                <input
+                  type="text"
+                  id="postalCode"
+                  placeholder="郵便番号を入力"
+                  value={searchForm.postalCode}
+                  onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+            )}
 
             {/* 都道府県 */}
-            <div>
-              <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
-                都道府県
-              </label>
-              <select
-                id="prefecture"
-                value={searchForm.prefecture}
-                onChange={(e) => handleInputChange('prefecture', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              >
-                <option value="">都道府県を選択してください</option>
-                {prefectures.map((pref) => (
-                  <option key={pref} value={pref}>{pref}</option>
-                ))}
-              </select>
-            </div>
+            {!isOperatorRole && (
+              <div>
+                <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
+                  都道府県
+                </label>
+                <select
+                  id="prefecture"
+                  value={searchForm.prefecture}
+                  onChange={(e) => handleInputChange('prefecture', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="">都道府県を選択してください</option>
+                  {prefectures.map((pref) => (
+                    <option key={pref} value={pref}>{pref}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* 市区町村 */}
-            <div>
-              <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
-                市区町村
-              </label>
-              <input
-                type="text"
-                id="city"
-                placeholder="市区町村を入力"
-                value={searchForm.city}
-                onChange={(e) => handleInputChange('city', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
+            {!isOperatorRole && (
+              <div>
+                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                  市区町村
+                </label>
+                <input
+                  type="text"
+                  id="city"
+                  placeholder="市区町村を入力"
+                  value={searchForm.city}
+                  onChange={(e) => handleInputChange('city', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+            )}
 
             {/* 住所 */}
-            <div>
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                住所
-              </label>
-              <input
-                type="text"
-                id="address"
-                placeholder="住所を入力"
-                value={searchForm.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
+            {!isOperatorRole && (
+              <div>
+                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                  住所
+                </label>
+                <input
+                  type="text"
+                  id="address"
+                  placeholder="住所を入力"
+                  value={searchForm.address}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+            )}
 
             {/* 生年月日 */}
-            <div>
-              <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-2">
-                生年月日
-              </label>
-              <input
-                type="date"
-                id="birthDate"
-                value={searchForm.birthDate}
-                onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
+            {!isOperatorRole && (
+              <div>
+                <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-2">
+                  生年月日
+                </label>
+                <input
+                  type="date"
+                  id="birthDate"
+                  value={searchForm.birthDate}
+                  onChange={(e) => handleInputChange('birthDate', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+            )}
 
             {/* 登録日範囲指定 */}
             <div className="md:col-span-2">
@@ -480,57 +524,59 @@ export default function UserManagement() {
                 </div>
 
                 {/* 性別 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    性別
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="gender"
-                        value=""
-                        checked={searchForm.gender === ''}
-                        onChange={(e) => handleInputChange('gender', e.target.value)}
-                        className="mr-2 text-green-600 focus:ring-green-500"
-                      />
-                      <span className="text-sm text-gray-700">すべて</span>
+                {!isOperatorRole && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      性別
                     </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="gender"
-                        value="1"
-                        checked={searchForm.gender === '1'}
-                        onChange={(e) => handleInputChange('gender', e.target.value)}
-                        className="mr-2 text-green-600 focus:ring-green-500"
-                      />
-                      <span className="text-sm text-gray-700">男性</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="gender"
-                        value="2"
-                        checked={searchForm.gender === '2'}
-                        onChange={(e) => handleInputChange('gender', e.target.value)}
-                        className="mr-2 text-green-600 focus:ring-green-500"
-                      />
-                      <span className="text-sm text-gray-700">女性</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="gender"
-                        value="3"
-                        checked={searchForm.gender === '3'}
-                        onChange={(e) => handleInputChange('gender', e.target.value)}
-                        className="mr-2 text-green-600 focus:ring-green-500"
-                      />
-                      <span className="text-sm text-gray-700">未回答</span>
-                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="gender"
+                          value=""
+                          checked={searchForm.gender === ''}
+                          onChange={(e) => handleInputChange('gender', e.target.value)}
+                          className="mr-2 text-green-600 focus:ring-green-500"
+                        />
+                        <span className="text-sm text-gray-700">すべて</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="gender"
+                          value="1"
+                          checked={searchForm.gender === '1'}
+                          onChange={(e) => handleInputChange('gender', e.target.value)}
+                          className="mr-2 text-green-600 focus:ring-green-500"
+                        />
+                        <span className="text-sm text-gray-700">男性</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="gender"
+                          value="2"
+                          checked={searchForm.gender === '2'}
+                          onChange={(e) => handleInputChange('gender', e.target.value)}
+                          className="mr-2 text-green-600 focus:ring-green-500"
+                        />
+                        <span className="text-sm text-gray-700">女性</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="gender"
+                          value="3"
+                          checked={searchForm.gender === '3'}
+                          onChange={(e) => handleInputChange('gender', e.target.value)}
+                          className="mr-2 text-green-600 focus:ring-green-500"
+                        />
+                        <span className="text-sm text-gray-700">未回答</span>
+                      </label>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -560,75 +606,123 @@ export default function UserManagement() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '140px', minWidth: '140px' }}>
+                    アクション
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ニックネーム
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    郵便番号
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    住所
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    生年月日
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    性別
-                  </th>
+                  {!isOperatorRole && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      郵便番号
+                    </th>
+                  )}
+                  {!isOperatorRole && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      住所
+                    </th>
+                  )}
+                  {!isOperatorRole && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      生年月日
+                    </th>
+                  )}
+                  {!isOperatorRole && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      性別
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ランク
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    登録店舗
-                  </th>
+                  {!isOperatorRole && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      登録店舗
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     登録日
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    アクション
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{user.nickname}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{user.postalCode}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {user.prefecture}{user.city}{user.address}
+                    <td className="px-6 py-4 whitespace-nowrap" style={{ width: '140px', minWidth: '140px' }}>
+                      <div className="flex justify-center gap-2 items-center">
+                        <Link href={`/users/${user.id}`}>
+                          <button 
+                            className="p-1.5 text-blue-600 hover:text-blue-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] flex-shrink-0"
+                            title="詳細"
+                            style={{ width: 'auto', height: 'auto' }}
+                          >
+                            <Image 
+                              src="/info.png" 
+                              alt="詳細" 
+                              width={32}
+                              height={32}
+                              className="object-contain"
+                              style={{ width: '32px', height: '32px', aspectRatio: '1/1', flexShrink: 0, display: 'block' }}
+                              unoptimized
+                            />
+                          </button>
+                        </Link>
+                        {!isOperatorRole && (
+                          <Link href={`/users/${user.id}/edit`}>
+                            <button 
+                              className="p-1.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] flex-shrink-0"
+                              title="編集"
+                              style={{ width: 'auto', height: 'auto' }}
+                            >
+                              <Image 
+                                src="/edit.svg" 
+                                alt="編集" 
+                                width={24}
+                                height={24}
+                                className="object-contain"
+                                style={{ width: '24px', height: '24px', flexShrink: 0, display: 'block' }}
+                                unoptimized
+                              />
+                            </button>
+                          </Link>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{user.birthDate}</div>
+                      <div className="text-sm font-medium text-gray-900">{user.nickname}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{getGenderLabel(user.gender)}</div>
-                    </td>
+                    {!isOperatorRole && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{user.postalCode}</div>
+                      </td>
+                    )}
+                    {!isOperatorRole && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {user.prefecture}{user.city}{user.address}
+                        </div>
+                      </td>
+                    )}
+                    {!isOperatorRole && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{user.birthDate}</div>
+                      </td>
+                    )}
+                    {!isOperatorRole && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{getGenderLabel(user.gender)}</div>
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{getRankLabel(user.rank)}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{user.registeredStore}</div>
-                    </td>
+                    {!isOperatorRole && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{user.registeredStore}</div>
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{user.registeredAt}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <Link href={`/users/${user.id}`}>
-                        <Button variant="outline" size="sm">
-                          詳細
-                        </Button>
-                      </Link>
-                      <Link href={`/users/${user.id}/edit`}>
-                        <Button variant="outline" size="sm" className="text-green-600 border-green-300 hover:bg-green-50">
-                          編集
-                        </Button>
-                      </Link>
                     </td>
                   </tr>
                 ))}
