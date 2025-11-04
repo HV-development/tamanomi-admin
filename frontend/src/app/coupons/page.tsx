@@ -156,24 +156,72 @@ export default function CouponsPage() {
   };
 
   const handleStatusChange = async (couponId: string, status: string) => {
+    // 元の状態を保存
+    const originalCoupon = coupons.find(c => c.id === couponId);
+    if (!originalCoupon) return;
+    const originalStatus = originalCoupon.status;
+
+    // UIを即座に更新（オプティミスティックアップデート）
+    setCoupons(prevCoupons =>
+      prevCoupons.map(coupon =>
+        coupon.id === couponId ? { ...coupon, status: status as CouponStatus } : coupon
+      )
+    );
+
+    // 非同期でAPIを呼び出し
     try {
       await apiClient.updateCouponStatus(couponId, { status: status as CouponStatus });
       showSuccess('ステータスを更新しました');
-      fetchCoupons();
     } catch (error) {
       console.error('ステータスの更新に失敗しました:', error);
-      showError('ステータスの更新に失敗しました');
+      // エラーが発生した場合は元の状態に戻す
+      setCoupons(prevCoupons =>
+        prevCoupons.map(coupon =>
+          coupon.id === couponId ? { ...coupon, status: originalStatus } : coupon
+        )
+      );
+      
+      // エラーメッセージを取得
+      let errorMessage = 'ステータスの更新に失敗しました';
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      }
+      showError(errorMessage);
     }
   };
 
   const handlePublicStatusChange = async (couponId: string, isPublic: boolean) => {
+    // 元の状態を保存
+    const originalCoupon = coupons.find(c => c.id === couponId);
+    if (!originalCoupon) return;
+    const originalIsPublic = originalCoupon.isPublic;
+
+    // UIを即座に更新（オプティミスティックアップデート）
+    setCoupons(prevCoupons =>
+      prevCoupons.map(coupon =>
+        coupon.id === couponId ? { ...coupon, isPublic } : coupon
+      )
+    );
+
+    // 非同期でAPIを呼び出し
     try {
       await apiClient.updateCouponPublicStatus(couponId, { isPublic });
       showSuccess('公開ステータスを更新しました');
-      fetchCoupons();
     } catch (error) {
       console.error('公開ステータスの更新に失敗しました:', error);
-      showError('公開ステータスの更新に失敗しました');
+      // エラーが発生した場合は元の状態に戻す
+      setCoupons(prevCoupons =>
+        prevCoupons.map(coupon =>
+          coupon.id === couponId ? { ...coupon, isPublic: originalIsPublic } : coupon
+        )
+      );
+      
+      // エラーメッセージを取得
+      let errorMessage = '公開ステータスの更新に失敗しました';
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      }
+      showError(errorMessage);
     }
   };
 
