@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
-<<<<<<< HEAD
 import { decodeJwt } from 'jose';
-=======
->>>>>>> origin/feature/admin-role-display-control
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
@@ -14,7 +11,6 @@ function getAuthHeader(request: Request): string | null {
   return token ? `Bearer ${token}` : null;
 }
 
-<<<<<<< HEAD
 function getTokenFromRequest(request: Request): string | null {
   const cookieHeader = request.headers.get('cookie') || '';
   const pairs = cookieHeader.split(';').map(v => v.trim());
@@ -25,8 +21,6 @@ function getTokenFromRequest(request: Request): string | null {
   return token.replace(/^Bearer\s+/, '') || null;
 }
 
-=======
->>>>>>> origin/feature/admin-role-display-control
 export async function GET(request: Request) {
   try {
     const auth = getAuthHeader(request);
@@ -39,10 +33,6 @@ export async function GET(request: Request) {
       const m = data?.data || data;
       const res = NextResponse.json({ accountType: 'merchant', merchantId: m?.id, email: m?.account?.email || m?.accountEmail || null });
       res.headers.set('Cache-Control', 'no-store'); res.headers.set('Pragma', 'no-cache');
-<<<<<<< HEAD
-=======
-      console.log('🔍 API Route: Merchant me response', data);
->>>>>>> origin/feature/admin-role-display-control
       return res;
     }
 
@@ -52,7 +42,6 @@ export async function GET(request: Request) {
       const s = await sr.json().catch(() => ({}));
       const res = NextResponse.json({ accountType: 'shop', shopId: s?.id || s?.data?.id || null, merchantId: s?.merchant?.id || s?.data?.merchant?.id || null, email: s?.account?.email || null });
       res.headers.set('Cache-Control', 'no-store'); res.headers.set('Pragma', 'no-cache');
-<<<<<<< HEAD
       return res;
     }
 
@@ -82,28 +71,6 @@ export async function GET(request: Request) {
       message: 'Internal Server Error',
       error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
-=======
-      console.log('🔍 API Route: Shop me response', s);
-      return res;
-    }
-
-    // admin 最後に判定
-    const ar = await fetch(`${API_BASE_URL}/admin-accounts/me`, { headers: { 'Content-Type': 'application/json', Authorization: auth } });
-    if (ar.ok) {
-      const data = await ar.json().catch(() => ({}));
-      const a = data?.data || data;
-      const res = NextResponse.json({ accountType: 'admin', adminId: a?.id, email: a?.email || null, role: a?.role || null });
-      res.headers.set('Cache-Control', 'no-store'); res.headers.set('Pragma', 'no-cache');
-      console.log('🔍 API Route: Admin me response', a);
-      return res;
-    }
-
-    // どのアカウントタイプにも該当しない場合
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  } catch (error) {
-    console.error('❌ API Route: /api/me error', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
->>>>>>> origin/feature/admin-role-display-control
   }
 }
 

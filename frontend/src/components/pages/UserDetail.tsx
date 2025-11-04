@@ -6,10 +6,7 @@ import Link from 'next/link';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-<<<<<<< HEAD
-=======
 import { useAuth } from '@/components/contexts/auth-context';
->>>>>>> origin/feature/admin-role-display-control
 
 interface User {
   id: string;

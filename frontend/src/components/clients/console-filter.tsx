@@ -43,9 +43,3 @@ export default function ConsoleFilter(): null {
   return null;
 }
 
-
-<<<<<<< HEAD
-
-
-=======
->>>>>>> origin/feature/admin-role-display-control

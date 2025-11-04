@@ -122,8 +122,4 @@ export default function SceneSelector({
     </div>
   );
 }
-<<<<<<< HEAD
 
-
-=======
->>>>>>> origin/feature/admin-role-display-control

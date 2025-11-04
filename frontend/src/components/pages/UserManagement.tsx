@@ -5,10 +5,7 @@ import Link from 'next/link';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-<<<<<<< HEAD
-=======
 import { useAuth } from '@/components/contexts/auth-context';
->>>>>>> origin/feature/admin-role-display-control
 
 interface User {
   id: string;
@@ -64,16 +61,13 @@ export default function UserManagement() {
     registeredDateEnd: '',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
-<<<<<<< HEAD
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-=======
   const user = useAuth();
 
   // 管理者アカウントの管理者権限を判定
   const isAdmin = user?.user?.accountType === 'admin' && user?.user?.role === 'sysadmin';
->>>>>>> origin/feature/admin-role-display-control
 
   // データ取得
   const fetchUsers = useCallback(async (searchParams?: typeof appliedSearchForm) => {

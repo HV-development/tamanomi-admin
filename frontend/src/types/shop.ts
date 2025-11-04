@@ -70,8 +70,3 @@ export type ExtendedShopCreateRequest = ShopCreateRequest & {
   couponUsageEnd?: string | null;
 };
 
-<<<<<<< HEAD
-
-
-=======
->>>>>>> origin/feature/admin-role-display-control

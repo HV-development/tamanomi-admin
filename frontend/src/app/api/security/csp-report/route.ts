@@ -18,9 +18,3 @@ export async function POST(request: Request) {
   }
 }
 
-
-<<<<<<< HEAD
-
-
-=======
->>>>>>> origin/feature/admin-role-display-control
