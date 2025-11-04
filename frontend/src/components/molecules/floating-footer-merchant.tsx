@@ -9,13 +9,15 @@ interface FloatingFooterMerchantProps {
   onConfirmIssue: () => void;
   isIssuingAccount?: boolean;
   alreadyIssuedCount: number;
+  onDownloadCSV?: () => void;
 }
 
 export default function FloatingFooterMerchant({
   selectedCount,
   onConfirmIssue,
   isIssuingAccount = false,
-  alreadyIssuedCount
+  alreadyIssuedCount,
+  onDownloadCSV
 }: FloatingFooterMerchantProps) {
   const [showModal, setShowModal] = useState(false);
 
@@ -44,6 +46,15 @@ export default function FloatingFooterMerchant({
             <span className="text-sm font-medium text-gray-700">
               {selectedCount}件選択中
             </span>
+
+            {onDownloadCSV && (
+              <Button
+                onClick={onDownloadCSV}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm font-medium rounded-lg"
+              >
+                CSVダウンロード
+              </Button>
+            )}
 
             <Button
               onClick={handleOpenModal}

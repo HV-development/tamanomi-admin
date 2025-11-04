@@ -7,6 +7,9 @@ import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { useAuth } from '@/components/contexts/auth-context';
+import ToastContainer from '@/components/molecules/toast-container';
+import { convertUsersToCSV, downloadCSV, generateFilename, type UserForCSV } from '@/utils/csvExport';
+import { useToast } from '@/hooks/use-toast';
 
 interface User {
   id: string;
@@ -70,6 +73,8 @@ export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDownloadingCSV, setIsDownloadingCSV] = useState(false);
+  const { toasts, removeToast, showSuccess, showError } = useToast();
 
   // データ取得
   const fetchUsers = useCallback(async (searchParams?: typeof appliedSearchForm) => {
@@ -298,6 +303,147 @@ export default function UserManagement() {
         return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-orange-100 text-orange-800';
+    }
+  };
+
+  // 全データ取得関数（ページネーション対応、検索条件適用）
+  const fetchAllUsers = async (): Promise<User[]> => {
+    const allUsers: User[] = [];
+    let page = 1;
+    const limit = 100;
+    let hasMore = true;
+
+    while (hasMore) {
+      try {
+        const queryParams = new URLSearchParams();
+        
+        if (appliedSearchForm.nickname) queryParams.append('nickname', appliedSearchForm.nickname);
+        
+        if (!isOperatorRole) {
+          if (appliedSearchForm.postalCode) queryParams.append('postalCode', appliedSearchForm.postalCode);
+          if (appliedSearchForm.prefecture) queryParams.append('prefecture', appliedSearchForm.prefecture);
+          if (appliedSearchForm.city) queryParams.append('city', appliedSearchForm.city);
+          if (appliedSearchForm.address) queryParams.append('address', appliedSearchForm.address);
+          if (appliedSearchForm.birthDate) queryParams.append('birthDate', appliedSearchForm.birthDate);
+          if (appliedSearchForm.gender) queryParams.append('gender', appliedSearchForm.gender);
+          if (appliedSearchForm.saitamaAppId) queryParams.append('saitamaAppId', appliedSearchForm.saitamaAppId);
+        }
+        
+        if (appliedSearchForm.ranks && appliedSearchForm.ranks.length > 0) {
+          queryParams.append('ranks', JSON.stringify(appliedSearchForm.ranks));
+        }
+        if (appliedSearchForm.registeredDateStart) queryParams.append('registeredDateStart', appliedSearchForm.registeredDateStart);
+        if (appliedSearchForm.registeredDateEnd) queryParams.append('registeredDateEnd', appliedSearchForm.registeredDateEnd);
+        
+        queryParams.append('page', page.toString());
+        queryParams.append('limit', limit.toString());
+
+        const response = await fetch(`/api/admin/users?${queryParams.toString()}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          throw new Error('ユーザー一覧の取得に失敗しました');
+        }
+        
+        const data = await response.json();
+        
+        let usersArray: User[] = [];
+        let pagination: { totalPages?: number; total?: number } = {};
+        
+        if (Array.isArray(data)) {
+          usersArray = data;
+          hasMore = false;
+        } else if (data && typeof data === 'object') {
+          if ('users' in data) {
+            usersArray = data.users || [];
+            pagination = data.pagination || {};
+          }
+        }
+
+        allUsers.push(...usersArray);
+
+        const totalPages = pagination.totalPages || 1;
+        hasMore = page < totalPages;
+        page++;
+
+        if (usersArray.length === 0) {
+          hasMore = false;
+        }
+      } catch (error) {
+        console.error('全データ取得中にエラーが発生しました:', error);
+        throw error;
+      }
+    }
+
+    // フロントエンドのフィルタリングを適用
+    return allUsers.filter((user) => {
+      const matchesSearch = 
+        (appliedSearchForm.nickname === '' || user.nickname.toLowerCase().includes(appliedSearchForm.nickname.toLowerCase())) &&
+        (!isOperatorRole || true) &&
+        (isOperatorRole || (
+          (appliedSearchForm.postalCode === '' || user.postalCode.includes(appliedSearchForm.postalCode)) &&
+          (appliedSearchForm.prefecture === '' || user.prefecture.toLowerCase().includes(appliedSearchForm.prefecture.toLowerCase())) &&
+          (appliedSearchForm.city === '' || user.city.toLowerCase().includes(appliedSearchForm.city.toLowerCase())) &&
+          (appliedSearchForm.address === '' || user.address.toLowerCase().includes(appliedSearchForm.address.toLowerCase())) &&
+          (appliedSearchForm.birthDate === '' || user.birthDate === appliedSearchForm.birthDate) &&
+          (appliedSearchForm.gender === '' || user.gender.toString() === appliedSearchForm.gender) &&
+          (appliedSearchForm.saitamaAppId === '' || user.saitamaAppId.includes(appliedSearchForm.saitamaAppId))
+        )) &&
+        (appliedSearchForm.ranks.length === 0 || appliedSearchForm.ranks.includes(user.rank));
+      
+      let matchesDateRange = true;
+      if (appliedSearchForm.registeredDateStart || appliedSearchForm.registeredDateEnd) {
+        const userDate = new Date(user.registeredAt);
+        if (appliedSearchForm.registeredDateStart) {
+          const startDate = new Date(appliedSearchForm.registeredDateStart);
+          if (userDate < startDate) matchesDateRange = false;
+        }
+        if (appliedSearchForm.registeredDateEnd) {
+          const endDate = new Date(appliedSearchForm.registeredDateEnd);
+          if (userDate > endDate) matchesDateRange = false;
+        }
+      }
+      
+      return matchesSearch && matchesDateRange;
+    });
+  };
+
+  // 全データをCSVダウンロード
+  const handleDownloadAllCSV = async () => {
+    try {
+      setIsDownloadingCSV(true);
+      
+      const allUsers = await fetchAllUsers();
+      
+      const usersForCSV: UserForCSV[] = allUsers.map((user) => ({
+        nickname: user.nickname,
+        postalCode: user.postalCode,
+        prefecture: user.prefecture,
+        city: user.city,
+        address: user.address,
+        birthDate: user.birthDate,
+        gender: user.gender,
+        saitamaAppId: user.saitamaAppId,
+        rank: user.rank,
+        registeredAt: user.registeredAt,
+      }));
+
+      const csvContent = convertUsersToCSV(usersForCSV, isOperatorRole);
+      const filename = generateFilename('users');
+      downloadCSV(csvContent, filename);
+      
+      showSuccess(`${allUsers.length}件のユーザーデータをCSVでダウンロードしました`);
+    } catch (error: unknown) {
+      console.error('CSVダウンロードに失敗しました:', error);
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      showError(`CSVダウンロードに失敗しました: ${errorMessage}`);
+    } finally {
+      setIsDownloadingCSV(false);
     }
   };
 
@@ -596,10 +742,18 @@ export default function UserManagement() {
 
         {/* ユーザー一覧 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
               ユーザー一覧 ({filteredUsers.length}件)
             </h3>
+            <Button
+              variant="outline"
+              onClick={handleDownloadAllCSV}
+              disabled={isDownloadingCSV || filteredUsers.length === 0}
+              className="bg-white text-blue-600 border-blue-600 hover:bg-blue-50 cursor-pointer"
+            >
+              {isDownloadingCSV ? 'ダウンロード中...' : 'CSVダウンロード'}
+            </Button>
           </div>
           
           <div className="overflow-x-auto">
@@ -754,6 +908,7 @@ export default function UserManagement() {
           )}
         </div>
       </div>
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
   );
 }

@@ -12,6 +12,7 @@ interface CouponBulkUpdateFooterProps {
   onBulkUpdatePublicStatus?: (isPublic: boolean) => void;
   isUpdating?: boolean;
   unapprovedCount?: number; // 未承認クーポンの件数
+  onDownloadCSV?: () => void;
 }
 
 export default function CouponBulkUpdateFooter({
@@ -21,7 +22,8 @@ export default function CouponBulkUpdateFooter({
   onBulkUpdateStatus,
   onBulkUpdatePublicStatus,
   isUpdating = false,
-  unapprovedCount = 0
+  unapprovedCount = 0,
+  onDownloadCSV
 }: CouponBulkUpdateFooterProps) {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showPublicStatusModal, setShowPublicStatusModal] = useState(false);
@@ -107,6 +109,15 @@ export default function CouponBulkUpdateFooter({
             <span className="text-sm font-medium text-gray-700">
               {selectedCount}件選択中
             </span>
+
+            {onDownloadCSV && (
+              <Button
+                onClick={onDownloadCSV}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm font-medium rounded-lg"
+              >
+                CSVダウンロード
+              </Button>
+            )}
 
             {isAdminAccount && (
               <div className="flex items-center space-x-2">
