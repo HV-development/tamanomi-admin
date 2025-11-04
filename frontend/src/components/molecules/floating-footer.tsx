@@ -7,12 +7,14 @@ interface FloatingFooterProps {
   selectedCount: number;
   onBulkUpdateStatus?: (status: string) => void;
   isUpdating?: boolean;
+  onDownloadCSV?: () => void;
 }
 
 export default function FloatingFooter({
   selectedCount,
   onBulkUpdateStatus,
-  isUpdating = false
+  isUpdating = false,
+  onDownloadCSV
 }: FloatingFooterProps) {
   const [pendingStatus, setPendingStatus] = React.useState('');
 
@@ -57,6 +59,15 @@ export default function FloatingFooter({
           <span className="text-sm font-medium text-gray-700">
             {selectedCount}件選択中
           </span>
+
+          {onDownloadCSV && (
+            <Button
+              onClick={onDownloadCSV}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm font-medium rounded-lg"
+            >
+              CSVダウンロード
+            </Button>
+          )}
 
           <div className="flex items-center space-x-2">
             <select

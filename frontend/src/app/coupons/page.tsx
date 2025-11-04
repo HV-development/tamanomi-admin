@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
 import Checkbox from '@/components/atoms/Checkbox';
 import CouponBulkUpdateFooter from '@/components/molecules/coupon-bulk-update-footer';
+import { convertCouponsToCSV, downloadCSV, generateFilename, type CouponForCSV } from '@/utils/csvExport';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -63,6 +64,7 @@ export default function CouponsPage() {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [isIndeterminate, setIsIndeterminate] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isDownloadingCSV, setIsDownloadingCSV] = useState(false);
 
   // クーポン一覧の取得
   const fetchCoupons = async () => {
@@ -328,6 +330,123 @@ export default function CouponsPage() {
     }
   };
 
+  // 全データ取得関数（ページネーション対応、検索条件適用）
+  const fetchAllCoupons = async (): Promise<CouponWithShop[]> => {
+    const allCoupons: CouponWithShop[] = [];
+    let page = 1;
+    const limit = 100;
+    let hasMore = true;
+
+    while (hasMore) {
+      try {
+        const params = new URLSearchParams();
+        params.append('page', page.toString());
+        params.append('limit', limit.toString());
+        
+        if (shopId) {
+          params.append('shopId', shopId);
+        }
+        
+        if (merchantId) {
+          params.append('merchantId', merchantId);
+        }
+        
+        if (appliedSearchForm.couponName) {
+          params.append('title', appliedSearchForm.couponName);
+        }
+        
+        if (appliedStatusFilter !== 'all') {
+          params.append('status', appliedStatusFilter);
+        }
+
+        const data: { coupons: CouponWithShop[]; pagination: PaginationData } = await apiClient.getCoupons(params.toString()) as { coupons: CouponWithShop[]; pagination: PaginationData };
+        
+        const couponsArray = data.coupons || [];
+        const paginationData = data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 };
+        
+        allCoupons.push(...couponsArray);
+
+        const totalPages = paginationData.totalPages || 1;
+        hasMore = page < totalPages;
+        page++;
+
+        if (couponsArray.length === 0) {
+          hasMore = false;
+        }
+      } catch (error) {
+        console.error('全データ取得中にエラーが発生しました:', error);
+        throw error;
+      }
+    }
+
+    return allCoupons;
+  };
+
+  // 全データをCSVダウンロード
+  const handleDownloadAllCSV = async () => {
+    try {
+      setIsDownloadingCSV(true);
+      
+      const allCoupons = await fetchAllCoupons();
+      
+      const couponsForCSV: CouponForCSV[] = allCoupons.map((coupon) => ({
+        merchantName: coupon.shop?.merchant?.name,
+        shopName: coupon.shop?.name,
+        title: coupon.title,
+        status: coupon.status,
+        isPublic: coupon.isPublic,
+        createdAt: coupon.createdAt,
+        updatedAt: coupon.updatedAt,
+      }));
+
+      const csvContent = convertCouponsToCSV(couponsForCSV, !shopId && !merchantId);
+      const filename = generateFilename('coupons');
+      downloadCSV(csvContent, filename);
+      
+      showSuccess(`${allCoupons.length}件のクーポンデータをCSVでダウンロードしました`);
+    } catch (error: unknown) {
+      console.error('CSVダウンロードに失敗しました:', error);
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      showError(`CSVダウンロードに失敗しました: ${errorMessage}`);
+    } finally {
+      setIsDownloadingCSV(false);
+    }
+  };
+
+  // 選択レコードをCSVダウンロード
+  const handleDownloadSelectedCSV = () => {
+    try {
+      if (selectedCoupons.size === 0) {
+        showError('選択されているクーポンがありません');
+        return;
+      }
+
+      const selectedCouponsData = filteredCoupons.filter((coupon) =>
+        selectedCoupons.has(coupon.id)
+      );
+
+      const couponsForCSV: CouponForCSV[] = selectedCouponsData.map((coupon) => ({
+        merchantName: coupon.shop?.merchant?.name,
+        shopName: coupon.shop?.name,
+        title: coupon.title,
+        status: coupon.status,
+        isPublic: coupon.isPublic,
+        createdAt: coupon.createdAt,
+        updatedAt: coupon.updatedAt,
+      }));
+
+      const csvContent = convertCouponsToCSV(couponsForCSV, !shopId && !merchantId);
+      const filename = generateFilename('coupons_selected');
+      downloadCSV(csvContent, filename);
+      
+      showSuccess(`${selectedCouponsData.length}件のクーポンデータをCSVでダウンロードしました`);
+    } catch (error: unknown) {
+      console.error('CSVダウンロードに失敗しました:', error);
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      showError(`CSVダウンロードに失敗しました: ${errorMessage}`);
+    }
+  };
+
   if (loading) {
     return (
       <AdminLayout>
@@ -471,12 +590,22 @@ export default function CouponsPage() {
             <h3 className="text-lg font-medium text-gray-900">
               クーポン一覧 ({filteredCoupons.length}件)
             </h3>
-            <Link href={shopId ? `/coupons/new?shopId=${shopId}` : '/coupons/new'}>
-              <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
-                <span className="mr-2">+</span>
-                新規作成
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={handleDownloadAllCSV}
+                disabled={isDownloadingCSV || filteredCoupons.length === 0}
+                className="bg-white text-blue-600 border-blue-600 hover:bg-blue-50 cursor-pointer"
+              >
+                {isDownloadingCSV ? 'ダウンロード中...' : 'CSVダウンロード'}
               </Button>
-            </Link>
+              <Link href={shopId ? `/coupons/new?shopId=${shopId}` : '/coupons/new'}>
+                <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50">
+                  <span className="mr-2">+</span>
+                  新規作成
+                </Button>
+              </Link>
+            </div>
           </div>
           
           <div className="overflow-x-auto">
@@ -608,6 +737,7 @@ export default function CouponsPage() {
           const coupon = filteredCoupons.find(c => c.id === couponId);
           return coupon && coupon.status !== 'approved';
         }).length}
+        onDownloadCSV={handleDownloadSelectedCSV}
       />
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>

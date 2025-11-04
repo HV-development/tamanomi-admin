@@ -14,6 +14,7 @@ import type { Shop } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
 import Checkbox from '@/components/atoms/Checkbox';
 import FloatingFooter from '@/components/molecules/floating-footer';
+import { convertShopsToCSV, downloadCSV, generateFilename, type ShopForCSV } from '@/utils/csvExport';
 
 function ShopsPageContent() {
   const auth = useAuth();
@@ -96,6 +97,7 @@ function ShopsPageContent() {
   const [selectedShops, setSelectedShops] = useState<Set<string>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [isIndeterminate, setIsIndeterminate] = useState(false);
+  const [isDownloadingCSV, setIsDownloadingCSV] = useState(false);
 
   // 事業者アカウントの場合、自分の事業者IDを取得
   useEffect(() => {
@@ -491,6 +493,167 @@ function ShopsPageContent() {
 
   // チェックボックス関連の関数を追加
 
+  // 全データ取得関数（ページネーション対応、検索条件適用）
+  const fetchAllShops = async (): Promise<Shop[]> => {
+    const allShops: Shop[] = [];
+    let page = 1;
+    const limit = 100; // 最大値を設定してページ数を減らす
+    let hasMore = true;
+
+    while (hasMore) {
+      try {
+        // 検索パラメータの構築
+        const queryParams = new URLSearchParams();
+        queryParams.append('page', page.toString());
+        queryParams.append('limit', limit.toString());
+        
+        // merchantIdがあれば追加
+        if (merchantId) {
+          queryParams.append('merchantId', merchantId);
+        }
+        
+        // 検索フォームの各項目を追加
+        if (searchForm.keyword) queryParams.append('keyword', searchForm.keyword);
+        if (searchForm.merchantName) queryParams.append('merchantName', searchForm.merchantName);
+        if (searchForm.merchantNameKana) queryParams.append('merchantNameKana', searchForm.merchantNameKana);
+        if (searchForm.name) queryParams.append('name', searchForm.name);
+        if (searchForm.nameKana) queryParams.append('nameKana', searchForm.nameKana);
+        if (searchForm.phone) queryParams.append('phone', searchForm.phone);
+        if (searchForm.accountEmail) queryParams.append('accountEmail', searchForm.accountEmail);
+        if (searchForm.postalCode) queryParams.append('postalCode', searchForm.postalCode);
+        if (searchForm.prefecture) queryParams.append('prefecture', searchForm.prefecture);
+        if (searchForm.address) queryParams.append('address', searchForm.address);
+        if (searchForm.status && searchForm.status !== 'all') {
+          queryParams.append('status', searchForm.status);
+        }
+        if (searchForm.createdAtFrom) queryParams.append('createdAtFrom', searchForm.createdAtFrom);
+        if (searchForm.createdAtTo) queryParams.append('createdAtTo', searchForm.createdAtTo);
+        if (searchForm.updatedAtFrom) queryParams.append('updatedAtFrom', searchForm.updatedAtFrom);
+        if (searchForm.updatedAtTo) queryParams.append('updatedAtTo', searchForm.updatedAtTo);
+
+        const data = await apiClient.getShops(queryParams.toString());
+        
+        // APIレスポンスの処理
+        let shopsArray: Shop[] = [];
+        let pagination: { totalPages?: number; total?: number } = {};
+        
+        if (Array.isArray(data)) {
+          shopsArray = data as Shop[];
+          hasMore = false;
+        } else if (data && typeof data === 'object') {
+          if ('data' in data && data.data && typeof data.data === 'object' && 'shops' in data.data) {
+            shopsArray = ((data.data as { shops: Shop[]; pagination?: unknown }).shops || []) as Shop[];
+            pagination = (data.data as { pagination?: { totalPages?: number; total?: number } }).pagination || {};
+          } else if ('shops' in data) {
+            shopsArray = ((data as { shops: Shop[] }).shops || []) as Shop[];
+            pagination = (data as { pagination?: { totalPages?: number; total?: number } }).pagination || {};
+          }
+        }
+
+        allShops.push(...shopsArray);
+
+        // ページネーション情報を確認
+        const totalPages = pagination.totalPages || 1;
+        hasMore = page < totalPages;
+        page++;
+
+        // 取得したデータが0件の場合は終了
+        if (shopsArray.length === 0) {
+          hasMore = false;
+        }
+      } catch (error) {
+        console.error('全データ取得中にエラーが発生しました:', error);
+        throw error;
+      }
+    }
+
+    return allShops;
+  };
+
+  // 全データをCSVダウンロード
+  const handleDownloadAllCSV = async () => {
+    try {
+      setIsDownloadingCSV(true);
+      
+      // 全データを取得
+      const allShops = await fetchAllShops();
+      
+      // Shop型をShopForCSV型に変換
+      const shopsForCSV: ShopForCSV[] = allShops.map((shop) => ({
+        merchantName: shop.merchant?.name,
+        name: shop.name,
+        nameKana: shop.nameKana || '',
+        postalCode: shop.postalCode || '',
+        address: shop.address || '',
+        accountEmail: shop.accountEmail || '',
+        phone: shop.phone || '',
+        status: shop.status,
+        createdAt: shop.createdAt,
+        updatedAt: shop.updatedAt,
+      }));
+
+      // CSVを生成（事業者名を表示するかどうかはmerchantIdがない場合のみ）
+      const csvContent = convertShopsToCSV(shopsForCSV, !merchantId && !isMerchantAccount);
+      
+      // ファイル名を生成
+      const filename = generateFilename('shops');
+      
+      // CSVをダウンロード
+      downloadCSV(csvContent, filename);
+      
+      showSuccess(`${allShops.length}件の店舗データをCSVでダウンロードしました`);
+    } catch (error: unknown) {
+      console.error('CSVダウンロードに失敗しました:', error);
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      showError(`CSVダウンロードに失敗しました: ${errorMessage}`);
+    } finally {
+      setIsDownloadingCSV(false);
+    }
+  };
+
+  // 選択レコードをCSVダウンロード
+  const handleDownloadSelectedCSV = () => {
+    try {
+      if (selectedShops.size === 0) {
+        showError('選択されている店舗がありません');
+        return;
+      }
+
+      // 選択されたレコードを取得
+      const selectedShopsData = shops.filter((shop) =>
+        selectedShops.has(shop.id)
+      );
+
+      // Shop型をShopForCSV型に変換
+      const shopsForCSV: ShopForCSV[] = selectedShopsData.map((shop) => ({
+        merchantName: shop.merchant?.name,
+        name: shop.name,
+        nameKana: shop.nameKana || '',
+        postalCode: shop.postalCode || '',
+        address: shop.address || '',
+        accountEmail: shop.accountEmail || '',
+        phone: shop.phone || '',
+        status: shop.status,
+        createdAt: shop.createdAt,
+        updatedAt: shop.updatedAt,
+      }));
+
+      // CSVを生成（事業者名を表示するかどうかはmerchantIdがない場合のみ）
+      const csvContent = convertShopsToCSV(shopsForCSV, !merchantId && !isMerchantAccount);
+      
+      // ファイル名を生成
+      const filename = generateFilename('shops_selected');
+      
+      // CSVをダウンロード
+      downloadCSV(csvContent, filename);
+      
+      showSuccess(`${selectedShopsData.length}件の店舗データをCSVでダウンロードしました`);
+    } catch (error: unknown) {
+      console.error('CSVダウンロードに失敗しました:', error);
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      showError(`CSVダウンロードに失敗しました: ${errorMessage}`);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -1021,12 +1184,22 @@ function ShopsPageContent() {
             <h3 className="text-lg font-medium text-gray-900">
               店舗一覧 ({shops.length}件)
             </h3>
-            <Link href={merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new'}>
-              <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
-                <span className="mr-2">+</span>
-                新規登録
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={handleDownloadAllCSV}
+                disabled={isDownloadingCSV || shops.length === 0}
+                className="bg-white text-blue-600 border-blue-600 hover:bg-blue-50 cursor-pointer"
+              >
+                {isDownloadingCSV ? 'ダウンロード中...' : 'CSVダウンロード'}
               </Button>
-            </Link>
+              <Link href={merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new'}>
+                <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
+                  <span className="mr-2">+</span>
+                  新規登録
+                </Button>
+              </Link>
+            </div>
           </div>
           
           <div className="overflow-x-auto">
@@ -1213,6 +1386,7 @@ function ShopsPageContent() {
         <FloatingFooter
           selectedCount={selectedShops.size}
           onBulkUpdateStatus={handleBulkUpdateStatus}
+          onDownloadCSV={handleDownloadSelectedCSV}
         />
       )}
       
