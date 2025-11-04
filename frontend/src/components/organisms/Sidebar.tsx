@@ -61,12 +61,13 @@ export default function Sidebar() {
   // Material Symbols フォントの読み込み完了まで待機してから描画
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    if ((document as any).fonts && (document as any).fonts.check) {
-      const loaded = (document as any).fonts.check('24px "Material Symbols Outlined"');
+    const doc = document as Document & { fonts?: FontFaceSet & { check?: (font: string) => boolean } };
+    if (doc.fonts && doc.fonts.check) {
+      const loaded = doc.fonts.check('24px "Material Symbols Outlined"');
       if (loaded) {
         setIsFontReady(true);
       } else {
-        (document as any).fonts.ready.then(() => setIsFontReady(true));
+        doc.fonts.ready.then(() => setIsFontReady(true));
       }
     } else {
       // フォントAPIが使えない環境では短い遅延の後に表示

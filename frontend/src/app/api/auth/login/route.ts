@@ -31,9 +31,12 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     console.log('🔐 API Route: Admin login request received', { email: body.email });
+    console.log('🔗 API Route: API_BASE_URL:', API_BASE_URL);
+    const loginUrl = `${API_BASE_URL}/admin/login`;
+    console.log('🔗 API Route: Full login URL:', loginUrl);
     
     // 管理者用のログインエンドポイントを使用
-    const response = await fetch(`${API_BASE_URL}/admin/login`, {
+    const response = await fetch(loginUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

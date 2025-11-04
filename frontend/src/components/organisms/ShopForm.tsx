@@ -709,7 +709,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       const schema = isEdit ? shopUpdateRequestSchema : shopCreateRequestSchema;
       
       // アカウント発行が無効な場合はパスワードフィールドを除外
-      let dataForZodValidation: ExtendedShopCreateRequest & { applications?: string[] } = { ...dataToValidate } as any;
+      let dataForZodValidation: ExtendedShopCreateRequest & { applications?: string[] } = { ...dataToValidate } as ExtendedShopCreateRequest & { applications?: string[] };
       // applications はZodチェック前に除去（後で送信データに 'tamanomi' を設定）
       if ('applications' in dataForZodValidation) {
         delete (dataForZodValidation as Record<string, unknown>).applications;

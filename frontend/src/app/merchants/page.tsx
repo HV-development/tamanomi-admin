@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { prefectures } from '@/lib/constants/merchant';
 import { type MerchantWithDetails } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
+import { convertMerchantsToCSV, downloadCSV, generateFilename, type MerchantForCSV } from '@/utils/csvExport';
 
 // APIレスポンス用の型（日付がstringとして返される）
 type Merchant = Omit<MerchantWithDetails, 'createdAt' | 'updatedAt' | 'deletedAt' | 'account' | 'shops'> & {
@@ -50,6 +51,7 @@ export default function MerchantsPage() {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [isIndeterminate, setIsIndeterminate] = useState(false);
   const [isIssuingAccount, setIsIssuingAccount] = useState(false);
+  const [isDownloadingCSV, setIsDownloadingCSV] = useState(false);
   
   const [searchForm, setSearchForm] = useState({
     keyword: '',
@@ -231,11 +233,13 @@ export default function MerchantsPage() {
       merchant.id.toLowerCase().includes(keyword) ||
       merchant.name.toLowerCase().includes(keyword) ||
       merchant.nameKana.toLowerCase().includes(keyword) ||
-      `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(keyword) ||
-      `${merchant.representativeNameLastKana} ${merchant.representativeNameFirstKana}`.toLowerCase().includes(keyword) ||
-      merchant.representativePhone.includes(keyword) ||
-      (merchant.account?.email || merchant.email || '').toLowerCase().includes(keyword) ||
-      `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(keyword) ||
+      (!isOperatorRole && (
+        `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(keyword) ||
+        `${merchant.representativeNameLastKana} ${merchant.representativeNameFirstKana}`.toLowerCase().includes(keyword) ||
+        merchant.representativePhone.includes(keyword) ||
+        (merchant.account?.email || merchant.email || '').toLowerCase().includes(keyword) ||
+        `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(keyword)
+      )) ||
       merchant.postalCode.includes(keyword);
     
     // 各項目のフィルタ
@@ -243,14 +247,16 @@ export default function MerchantsPage() {
       matchesKeyword &&
       (appliedSearchForm.merchantName === '' || merchant.name.toLowerCase().includes(appliedSearchForm.merchantName.toLowerCase())) &&
       (appliedSearchForm.merchantNameKana === '' || merchant.nameKana.toLowerCase().includes(appliedSearchForm.merchantNameKana.toLowerCase())) &&
-      (appliedSearchForm.representativeName === '' || 
-        `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(appliedSearchForm.representativeName.toLowerCase())) &&
-      (appliedSearchForm.representativeNameKana === '' || 
-        `${merchant.representativeNameLastKana} ${merchant.representativeNameFirstKana}`.toLowerCase().includes(appliedSearchForm.representativeNameKana.toLowerCase())) &&
-      (appliedSearchForm.phone === '' || merchant.representativePhone.includes(appliedSearchForm.phone)) &&
-      (appliedSearchForm.email === '' || (merchant.account?.email || merchant.email || '').toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
-      (appliedSearchForm.address === '' || 
-        `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(appliedSearchForm.address.toLowerCase())) &&
+      (isOperatorRole || (
+        (appliedSearchForm.representativeName === '' || 
+          `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(appliedSearchForm.representativeName.toLowerCase())) &&
+        (appliedSearchForm.representativeNameKana === '' || 
+          `${merchant.representativeNameLastKana} ${merchant.representativeNameFirstKana}`.toLowerCase().includes(appliedSearchForm.representativeNameKana.toLowerCase())) &&
+        (appliedSearchForm.phone === '' || merchant.representativePhone.includes(appliedSearchForm.phone)) &&
+        (appliedSearchForm.email === '' || (merchant.account?.email || merchant.email || '').toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
+        (appliedSearchForm.address === '' || 
+          `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(appliedSearchForm.address.toLowerCase()))
+      )) &&
       (appliedSearchForm.postalCode === '' || merchant.postalCode.includes(appliedSearchForm.postalCode)) &&
       (appliedSearchForm.prefecture === '' || merchant.prefecture.toLowerCase().includes(appliedSearchForm.prefecture.toLowerCase())) &&
       (appliedSearchForm.accountStatus === '' || (merchant.account?.status || 'inactive') === appliedSearchForm.accountStatus) &&
@@ -474,6 +480,226 @@ export default function MerchantsPage() {
     }
   };
 
+  // 全データ取得関数（ページネーション対応、検索条件適用）
+  const fetchAllMerchants = async (): Promise<Merchant[]> => {
+    const allMerchants: Merchant[] = [];
+    let page = 1;
+    const limit = 100; // 最大値を設定してページ数を減らす
+    let hasMore = true;
+
+    while (hasMore) {
+      try {
+        // 検索条件をクエリパラメータに追加
+        const params: { page: number; limit: number; search?: string } = {
+          page,
+          limit,
+        };
+
+        // フリーワード検索がある場合は追加
+        if (appliedSearchForm.keyword) {
+          params.search = appliedSearchForm.keyword;
+        }
+
+        const data = await apiClient.getMerchants(params);
+
+        // APIレスポンスから事業者データを抽出
+        let merchantsArray: unknown[] = [];
+        let pagination: { totalPages?: number; total?: number } = {};
+
+        if (Array.isArray(data)) {
+          merchantsArray = data;
+          hasMore = false; // 配列の場合は全データが含まれている
+        } else if (data && typeof data === 'object') {
+          // 新しいAPIレスポンス形式: {success: true, data: {merchants: [...], pagination: {...}}}
+          if ('data' in data && data.data && typeof data.data === 'object' && 'merchants' in data.data) {
+            merchantsArray = (data.data as { merchants: unknown[]; pagination?: unknown }).merchants || [];
+            pagination = (data.data as { pagination?: { totalPages?: number; total?: number } }).pagination || {};
+          }
+          // 古いAPIレスポンス形式: {merchants: [...], pagination: {...}}
+          else if ('merchants' in data) {
+            merchantsArray = (data as { merchants: unknown[] }).merchants || [];
+            pagination = (data as { pagination?: { totalPages?: number; total?: number } }).pagination || {};
+          }
+        }
+
+        allMerchants.push(...(merchantsArray as Merchant[]));
+
+        // ページネーション情報を確認
+        const totalPages = pagination.totalPages || 1;
+        hasMore = page < totalPages;
+        page++;
+
+        // 取得したデータが0件の場合は終了
+        if (merchantsArray.length === 0) {
+          hasMore = false;
+        }
+      } catch (error) {
+        console.error('全データ取得中にエラーが発生しました:', error);
+        throw error;
+      }
+    }
+
+    // フロントエンドのフィルタリングを適用
+    return allMerchants.filter((merchant) => {
+      // フリーワード検索（全フィールドを対象）
+      const keyword = appliedSearchForm.keyword.toLowerCase();
+      const matchesKeyword = keyword === '' || 
+        merchant.id.toLowerCase().includes(keyword) ||
+        merchant.name.toLowerCase().includes(keyword) ||
+        merchant.nameKana.toLowerCase().includes(keyword) ||
+        (!isOperatorRole && (
+          `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(keyword) ||
+          `${merchant.representativeNameLastKana} ${merchant.representativeNameFirstKana}`.toLowerCase().includes(keyword) ||
+          merchant.representativePhone.includes(keyword) ||
+          (merchant.account?.email || merchant.email || '').toLowerCase().includes(keyword) ||
+          `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(keyword)
+        )) ||
+        merchant.postalCode.includes(keyword);
+      
+      // 各項目のフィルタ
+      const matchesSearch = 
+        matchesKeyword &&
+        (appliedSearchForm.merchantName === '' || merchant.name.toLowerCase().includes(appliedSearchForm.merchantName.toLowerCase())) &&
+        (appliedSearchForm.merchantNameKana === '' || merchant.nameKana.toLowerCase().includes(appliedSearchForm.merchantNameKana.toLowerCase())) &&
+        (isOperatorRole || (
+          (appliedSearchForm.representativeName === '' || 
+            `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(appliedSearchForm.representativeName.toLowerCase())) &&
+          (appliedSearchForm.representativeNameKana === '' || 
+            `${merchant.representativeNameLastKana} ${merchant.representativeNameFirstKana}`.toLowerCase().includes(appliedSearchForm.representativeNameKana.toLowerCase())) &&
+          (appliedSearchForm.phone === '' || merchant.representativePhone.includes(appliedSearchForm.phone)) &&
+          (appliedSearchForm.email === '' || (merchant.account?.email || merchant.email || '').toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
+          (appliedSearchForm.address === '' || 
+            `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(appliedSearchForm.address.toLowerCase()))
+        )) &&
+        (appliedSearchForm.postalCode === '' || merchant.postalCode.includes(appliedSearchForm.postalCode)) &&
+        (appliedSearchForm.prefecture === '' || merchant.prefecture.toLowerCase().includes(appliedSearchForm.prefecture.toLowerCase())) &&
+        (appliedSearchForm.accountStatus === '' || (merchant.account?.status || 'inactive') === appliedSearchForm.accountStatus) &&
+        (appliedSearchForm.contractStatus === '' || merchant.status === appliedSearchForm.contractStatus);
+      
+      // 日付範囲のフィルタ
+      let matchesDateRange = true;
+      if (appliedSearchForm.createdAtFrom || appliedSearchForm.createdAtTo) {
+        const merchantDate = new Date(merchant.createdAt);
+        merchantDate.setHours(0, 0, 0, 0);
+        
+        if (appliedSearchForm.createdAtFrom && appliedSearchForm.createdAtTo) {
+          const fromDate = new Date(appliedSearchForm.createdAtFrom);
+          fromDate.setHours(0, 0, 0, 0);
+          const toDate = new Date(appliedSearchForm.createdAtTo);
+          toDate.setHours(23, 59, 59, 999);
+          matchesDateRange = merchantDate >= fromDate && merchantDate <= toDate;
+        } else if (appliedSearchForm.createdAtFrom) {
+          const fromDate = new Date(appliedSearchForm.createdAtFrom);
+          fromDate.setHours(0, 0, 0, 0);
+          matchesDateRange = merchantDate >= fromDate;
+        } else if (appliedSearchForm.createdAtTo) {
+          const toDate = new Date(appliedSearchForm.createdAtTo);
+          toDate.setHours(23, 59, 59, 999);
+          matchesDateRange = merchantDate <= toDate;
+        }
+      }
+      
+      return matchesSearch && matchesDateRange;
+    });
+  };
+
+  // 全データをCSVダウンロード
+  const handleDownloadAllCSV = async () => {
+    try {
+      setIsDownloadingCSV(true);
+      
+      // 全データを取得
+      const allMerchants = await fetchAllMerchants();
+      
+      // Merchant型をMerchantForCSV型に変換
+      const merchantsForCSV: MerchantForCSV[] = allMerchants.map((merchant) => ({
+        name: merchant.name,
+        nameKana: merchant.nameKana,
+        representativeNameLast: merchant.representativeNameLast,
+        representativeNameFirst: merchant.representativeNameFirst,
+        representativeNameLastKana: merchant.representativeNameLastKana,
+        representativeNameFirstKana: merchant.representativeNameFirstKana,
+        representativePhone: merchant.representativePhone,
+        email: merchant.account?.email || merchant.email || merchant.accountEmail,
+        postalCode: merchant.postalCode,
+        prefecture: merchant.prefecture,
+        city: merchant.city,
+        address1: merchant.address1,
+        address2: merchant.address2 || '',
+        accountStatus: merchant.account?.status || 'inactive',
+        contractStatus: merchant.status,
+        createdAt: merchant.createdAt,
+      }));
+
+      // CSVを生成
+      const csvContent = convertMerchantsToCSV(merchantsForCSV, isOperatorRole);
+      
+      // ファイル名を生成
+      const filename = generateFilename('merchants');
+      
+      // CSVをダウンロード
+      downloadCSV(csvContent, filename);
+      
+      showSuccess(`${allMerchants.length}件の事業者データをCSVでダウンロードしました`);
+    } catch (error: unknown) {
+      console.error('CSVダウンロードに失敗しました:', error);
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      showError(`CSVダウンロードに失敗しました: ${errorMessage}`);
+    } finally {
+      setIsDownloadingCSV(false);
+    }
+  };
+
+  // 選択レコードをCSVダウンロード
+  const handleDownloadSelectedCSV = () => {
+    try {
+      if (selectedMerchants.size === 0) {
+        showError('選択されている事業者がありません');
+        return;
+      }
+
+      // 選択されたレコードを取得
+      const selectedMerchantsData = filteredMerchants.filter((merchant) =>
+        selectedMerchants.has(merchant.id)
+      );
+
+      // Merchant型をMerchantForCSV型に変換
+      const merchantsForCSV: MerchantForCSV[] = selectedMerchantsData.map((merchant) => ({
+        name: merchant.name,
+        nameKana: merchant.nameKana,
+        representativeNameLast: merchant.representativeNameLast,
+        representativeNameFirst: merchant.representativeNameFirst,
+        representativeNameLastKana: merchant.representativeNameLastKana,
+        representativeNameFirstKana: merchant.representativeNameFirstKana,
+        representativePhone: merchant.representativePhone,
+        email: merchant.account?.email || merchant.email || merchant.accountEmail,
+        postalCode: merchant.postalCode,
+        prefecture: merchant.prefecture,
+        city: merchant.city,
+        address1: merchant.address1,
+        address2: merchant.address2 || '',
+        accountStatus: merchant.account?.status || 'inactive',
+        contractStatus: merchant.status,
+        createdAt: merchant.createdAt,
+      }));
+
+      // CSVを生成
+      const csvContent = convertMerchantsToCSV(merchantsForCSV, isOperatorRole);
+      
+      // ファイル名を生成
+      const filename = generateFilename('merchants_selected');
+      
+      // CSVをダウンロード
+      downloadCSV(csvContent, filename);
+      
+      showSuccess(`${selectedMerchantsData.length}件の事業者データをCSVでダウンロードしました`);
+    } catch (error: unknown) {
+      console.error('CSVダウンロードに失敗しました:', error);
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      showError(`CSVダウンロードに失敗しました: ${errorMessage}`);
+    }
+  };
+
   if (isLoading) {
     return (
       <AdminLayout>
@@ -535,66 +761,72 @@ export default function MerchantsPage() {
                 </div>
 
                 {/* 代表者情報 */}
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">代表者情報</h2>
-                  <table className="w-full border-collapse border border-gray-300">
-                    <tbody>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">代表者名</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.representativeNameLast} {myMerchant.representativeNameFirst}</td>
-                      </tr>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">代表者名（カナ）</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.representativeNameLastKana} {myMerchant.representativeNameFirstKana}</td>
-                      </tr>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">電話番号</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.representativePhone}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+                {!isOperatorRole && (
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">代表者情報</h2>
+                    <table className="w-full border-collapse border border-gray-300">
+                      <tbody>
+                        <tr className="border-b border-gray-300">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">代表者名</td>
+                          <td className="py-3 px-4 text-gray-900">{myMerchant.representativeNameLast} {myMerchant.representativeNameFirst}</td>
+                        </tr>
+                        <tr className="border-b border-gray-300">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">代表者名（カナ）</td>
+                          <td className="py-3 px-4 text-gray-900">{myMerchant.representativeNameLastKana} {myMerchant.representativeNameFirstKana}</td>
+                        </tr>
+                        <tr className="border-b border-gray-300">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">電話番号</td>
+                          <td className="py-3 px-4 text-gray-900">{myMerchant.representativePhone}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
 
                 {/* 住所情報 */}
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">住所情報</h2>
-                  <table className="w-full border-collapse border border-gray-300">
-                    <tbody>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">郵便番号</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.postalCode}</td>
-                      </tr>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">都道府県</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.prefecture}</td>
-                      </tr>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">市区町村</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.city}</td>
-                      </tr>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">番地</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.address1}</td>
-                      </tr>
-                      {myMerchant.address2 && (
+                {!isOperatorRole && (
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">住所情報</h2>
+                    <table className="w-full border-collapse border border-gray-300">
+                      <tbody>
                         <tr className="border-b border-gray-300">
-                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">建物名・部屋番号</td>
-                          <td className="py-3 px-4 text-gray-900">{myMerchant.address2}</td>
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">郵便番号</td>
+                          <td className="py-3 px-4 text-gray-900">{myMerchant.postalCode}</td>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                        <tr className="border-b border-gray-300">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">都道府県</td>
+                          <td className="py-3 px-4 text-gray-900">{myMerchant.prefecture}</td>
+                        </tr>
+                        <tr className="border-b border-gray-300">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">市区町村</td>
+                          <td className="py-3 px-4 text-gray-900">{myMerchant.city}</td>
+                        </tr>
+                        <tr className="border-b border-gray-300">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">番地</td>
+                          <td className="py-3 px-4 text-gray-900">{myMerchant.address1}</td>
+                        </tr>
+                        {myMerchant.address2 && (
+                          <tr className="border-b border-gray-300">
+                            <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">建物名・部屋番号</td>
+                            <td className="py-3 px-4 text-gray-900">{myMerchant.address2}</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
 
                 {/* アカウント情報 */}
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">アカウント情報</h2>
                   <table className="w-full border-collapse border border-gray-300">
                     <tbody>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">メールアドレス</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.account?.email || myMerchant.accountEmail}</td>
-                      </tr>
+                      {!isOperatorRole && (
+                        <tr className="border-b border-gray-300">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">メールアドレス</td>
+                          <td className="py-3 px-4 text-gray-900">{myMerchant.account?.email || myMerchant.accountEmail}</td>
+                        </tr>
+                      )}
                       <tr className="border-b border-gray-300">
                         <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">アカウントステータス</td>
                         <td className={`py-3 px-4 text-sm font-medium ${getAccountStatusColor(myMerchant.account?.status || 'inactive')}`}>
@@ -731,64 +963,68 @@ export default function MerchantsPage() {
             </div>
 
             {/* 代表者名と代表者名（カナ） */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="representativeName" className="block text-sm font-medium text-gray-700 mb-2">
-                  代表者名
-                </label>
-                <input
-                  type="text"
-                  id="representativeName"
-                  placeholder="代表者名を入力"
-                  value={searchForm.representativeName}
-                  onChange={(e) => handleInputChange('representativeName', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
+            {!isOperatorRole && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="representativeName" className="block text-sm font-medium text-gray-700 mb-2">
+                    代表者名
+                  </label>
+                  <input
+                    type="text"
+                    id="representativeName"
+                    placeholder="代表者名を入力"
+                    value={searchForm.representativeName}
+                    onChange={(e) => handleInputChange('representativeName', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="representativeNameKana" className="block text-sm font-medium text-gray-700 mb-2">
+                    代表者名（カナ）
+                  </label>
+                  <input
+                    type="text"
+                    id="representativeNameKana"
+                    placeholder="代表者名（カナ）を入力"
+                    value={searchForm.representativeNameKana}
+                    onChange={(e) => handleInputChange('representativeNameKana', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
               </div>
-              <div>
-                <label htmlFor="representativeNameKana" className="block text-sm font-medium text-gray-700 mb-2">
-                  代表者名（カナ）
-                </label>
-                <input
-                  type="text"
-                  id="representativeNameKana"
-                  placeholder="代表者名（カナ）を入力"
-                  value={searchForm.representativeNameKana}
-                  onChange={(e) => handleInputChange('representativeNameKana', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            </div>
+            )}
 
             {/* 電話番号とメールアドレス */}
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                  電話番号
-                </label>
-                <input
-                  type="text"
-                  id="phone"
-                  placeholder="電話番号を入力"
-                  value={searchForm.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
+            {!isOperatorRole && (
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                    電話番号
+                  </label>
+                  <input
+                    type="text"
+                    id="phone"
+                    placeholder="電話番号を入力"
+                    value={searchForm.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                    メールアドレス
+                  </label>
+                  <input
+                    type="text"
+                    id="email"
+                    placeholder="メールアドレスを入力"
+                    value={searchForm.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
               </div>
-              <div className="flex-1">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  メールアドレス
-                </label>
-                <input
-                  type="text"
-                  id="email"
-                  placeholder="メールアドレスを入力"
-                  value={searchForm.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            </div>
+            )}
 
             {/* 郵便番号、都道府県、住所 */}
             <div className="flex gap-4">
@@ -821,19 +1057,21 @@ export default function MerchantsPage() {
                   ))}
                 </select>
               </div>
-              <div className="flex-1">
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                  住所
-                </label>
-                <input
-                  type="text"
-                  id="address"
-                  placeholder="住所を入力"
-                  value={searchForm.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
+              {!isOperatorRole && (
+                <div className="flex-1">
+                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                    住所
+                  </label>
+                  <input
+                    type="text"
+                    id="address"
+                    placeholder="住所を入力"
+                    value={searchForm.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
+              )}
             </div>
 
             {/* アカウント発行、契約ステータス、登録日 */}
@@ -922,12 +1160,22 @@ export default function MerchantsPage() {
             <h3 className="text-lg font-medium text-gray-900">
               事業者一覧 ({filteredMerchants.length}件)
             </h3>
-            <Link href="/merchants/new">
-              <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
-                <span className="mr-2">+</span>
-                新規登録
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={handleDownloadAllCSV}
+                disabled={isDownloadingCSV || filteredMerchants.length === 0}
+                className="bg-white text-blue-600 border-blue-600 hover:bg-blue-50 cursor-pointer"
+              >
+                {isDownloadingCSV ? 'ダウンロード中...' : 'CSVダウンロード'}
               </Button>
-            </Link>
+              <Link href="/merchants/new">
+                <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
+                  <span className="mr-2">+</span>
+                  新規登録
+                </Button>
+              </Link>
+            </div>
           </div>
           
           <div className="overflow-x-auto">
@@ -1105,6 +1353,7 @@ export default function MerchantsPage() {
           const merchant = filteredMerchants.find(m => m.id === merchantId);
           return merchant && merchant.account && merchant.account.passwordHash;
         }).length}
+        onDownloadCSV={handleDownloadSelectedCSV}
       />
 
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />

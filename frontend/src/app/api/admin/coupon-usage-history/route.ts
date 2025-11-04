@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      let errorData: any;
+      let errorData: { message?: string; error?: { message?: string } } | null = null;
       const contentType = response.headers.get('content-type');
       try {
         if (contentType && contentType.includes('application/json')) {

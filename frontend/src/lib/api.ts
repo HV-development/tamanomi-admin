@@ -146,7 +146,7 @@ class ApiClient {
     });
   }
 
-  async refreshToken(refreshData?: RefreshRequest): Promise<RefreshResponse | void> {
+  async refreshToken(_refreshData?: RefreshRequest): Promise<RefreshResponse | void> {
     try {
       const response = await this.request<RefreshResponse>('/auth/refresh', {
         method: 'POST',
@@ -155,7 +155,7 @@ class ApiClient {
       });
 
       return response;
-    } catch (error) {
+    } catch (_error) {
       console.warn('🔄 Refresh token invalid (cleared and continuing)');
       return;
     }

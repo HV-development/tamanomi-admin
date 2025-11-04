@@ -282,7 +282,7 @@ function CouponNewPageContent() {
           title: formData.couponName,
           description: formData.couponContent || null,
           conditions: formData.couponConditions || null,
-          drinkType: formData.drinkType || null,
+          drinkType: (formData.drinkType === 'alcohol' || formData.drinkType === 'soft_drink' || formData.drinkType === 'other') ? formData.drinkType : null,
           imageUrl: null,
           status: 'active' as CouponStatus,
           isPublic: false
