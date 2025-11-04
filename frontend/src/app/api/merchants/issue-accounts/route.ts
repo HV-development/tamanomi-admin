@@ -36,7 +36,10 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: authHeaders,
       body: JSON.stringify(body),
+<<<<<<< HEAD
       credentials: 'include',
+=======
+>>>>>>> origin/feature/admin-role-display-control
     });
 
     console.log('📡 API Route: Response status:', response.status);

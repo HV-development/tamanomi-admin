@@ -13,7 +13,11 @@
     "secret:generate": "tsx ../scripts/generate-secret.ts"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@hv-development/schemas": "1.46.0",
+=======
+    "@hv-development/schemas": "1.43.0",
+>>>>>>> origin/feature/admin-role-display-control
     "autoprefixer": "10.4.21",
     "jose": "^6.1.0",
     "next": "^15.5.6",

@@ -5,6 +5,10 @@ import Link from 'next/link';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+<<<<<<< HEAD
+=======
+import { useAuth } from '@/components/contexts/auth-context';
+>>>>>>> origin/feature/admin-role-display-control
 
 interface User {
   id: string;
@@ -60,9 +64,16 @@ export default function UserManagement() {
     registeredDateEnd: '',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+<<<<<<< HEAD
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+=======
+  const user = useAuth();
+
+  // 管理者アカウントの管理者権限を判定
+  const isAdmin = user?.user?.accountType === 'admin' && user?.user?.role === 'sysadmin';
+>>>>>>> origin/feature/admin-role-display-control
 
   // データ取得
   const fetchUsers = useCallback(async (searchParams?: typeof appliedSearchForm) => {
@@ -549,12 +560,16 @@ export default function UserManagement() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ニックネーム
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    郵便番号
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    住所
-                  </th>
+                  {isAdmin && (
+                    <>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        郵便番号
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        住所
+                      </th>
+                    </>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     生年月日
                   </th>
@@ -581,14 +596,18 @@ export default function UserManagement() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{user.nickname}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{user.postalCode}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {user.prefecture}{user.city}{user.address}
-                      </div>
-                    </td>
+                    {isAdmin && (
+                      <>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{user.postalCode}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {user.prefecture}{user.city}{user.address}
+                          </div>
+                        </td>
+                      </>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{user.birthDate}</div>
                     </td>
@@ -610,11 +629,13 @@ export default function UserManagement() {
                           詳細
                         </Button>
                       </Link>
-                      <Link href={`/users/${user.id}/edit`}>
-                        <Button variant="outline" size="sm" className="text-green-600 border-green-300 hover:bg-green-50">
-                          編集
-                        </Button>
-                      </Link>
+                      {isAdmin && (
+                        <Link href={`/users/${user.id}/edit`}>
+                          <Button variant="outline" size="sm" className="text-green-600 border-green-300 hover:bg-green-50">
+                            編集
+                          </Button>
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))}

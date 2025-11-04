@@ -41,6 +41,13 @@ export default function MerchantsPage() {
   // 事業者アカウントかどうかを判定
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
   
+<<<<<<< HEAD
+=======
+  // 管理者アカウントの管理者権限を判定
+  console.log('🔍 MerchantsPage: Auth user', auth?.user);
+  const isAdmin = auth?.user?.accountType === 'admin' && auth?.user?.role === 'sysadmin';
+  
+>>>>>>> origin/feature/admin-role-display-control
   // チェックボックス関連の状態
   const [selectedMerchants, setSelectedMerchants] = useState<Set<string>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
@@ -943,6 +950,7 @@ export default function MerchantsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
                     事業者名
                   </th>
+<<<<<<< HEAD
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                     代表者名
                   </th>
@@ -955,6 +963,24 @@ export default function MerchantsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[250px]">
                     住所
                   </th>
+=======
+                  {isAdmin && (
+                    <>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
+                        代表者名
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                        電話番号
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
+                        メールアドレス
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[250px]">
+                        住所
+                      </th>
+                    </>
+                  )}
+>>>>>>> origin/feature/admin-role-display-control
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[180px]">
                     アカウント発行
                   </th>
@@ -977,6 +1003,7 @@ export default function MerchantsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap w-48">
                       <div className="flex items-center justify-center gap-2">
+<<<<<<< HEAD
                         <Link href={`/merchants/${merchant.id}/edit`}>
                           <button 
                             className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
@@ -991,6 +1018,24 @@ export default function MerchantsPage() {
                             />
                           </button>
                         </Link>
+=======
+                        {isAdmin && (
+                          <Link href={`/merchants/${merchant.id}/edit`}>
+                            <button 
+                              className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                              title="編集"
+                            >
+                              <Image 
+                                src="/edit.svg" 
+                                alt="編集" 
+                                width={24}
+                                height={24}
+                                className="w-6 h-6 flex-shrink-0"
+                              />
+                            </button>
+                          </Link>
+                        )}
+>>>>>>> origin/feature/admin-role-display-control
                         <Link href={`/merchants/${merchant.id}/shops`}>
                           <button 
                             className="p-2.5 text-blue-600 hover:text-blue-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
@@ -1011,6 +1056,7 @@ export default function MerchantsPage() {
                       <div className="text-sm font-medium text-gray-900">{merchant.name}</div>
                       <div className="text-sm text-gray-500">{merchant.nameKana}</div>
                     </td>
+<<<<<<< HEAD
                     <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
                       <div className="text-sm font-medium text-gray-900">{merchant.representativeNameLast} {merchant.representativeNameFirst}</div>
                       <div className="text-sm text-gray-500">{merchant.representativeNameLastKana} {merchant.representativeNameFirstKana}</div>
@@ -1027,6 +1073,28 @@ export default function MerchantsPage() {
                         {merchant.prefecture}{merchant.city}{merchant.address1}{merchant.address2}
                       </div>
                     </td>
+=======
+                    {isAdmin && (
+                      <>
+                        <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
+                          <div className="text-sm font-medium text-gray-900">{merchant.representativeNameLast} {merchant.representativeNameFirst}</div>
+                          <div className="text-sm text-gray-500">{merchant.representativeNameLastKana} {merchant.representativeNameFirstKana}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap min-w-[120px]">
+                          <div className="text-sm text-gray-900">{merchant.representativePhone}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
+                          <div className="text-sm text-gray-900">{merchant.email}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap min-w-[250px]">
+                          <div className="text-sm text-gray-900">
+                            〒{merchant.postalCode}<br />
+                            {merchant.prefecture}{merchant.city}{merchant.address1}{merchant.address2}
+                          </div>
+                        </td>
+                      </>
+                    )}
+>>>>>>> origin/feature/admin-role-display-control
                     <td className="px-6 py-4 whitespace-nowrap min-w-[180px]">
                       <div className="flex items-center gap-2">
                         <div className={`text-sm font-medium ${getAccountStatusColor(merchant.account?.status || 'inactive')}`}>

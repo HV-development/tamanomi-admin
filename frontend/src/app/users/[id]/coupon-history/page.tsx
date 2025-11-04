@@ -6,7 +6,10 @@ import Link from 'next/link';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+<<<<<<< HEAD
 import { useAuth } from '@/components/contexts/auth-context';
+=======
+>>>>>>> origin/feature/admin-role-display-control
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -16,6 +19,7 @@ export const dynamic = 'force-dynamic';
 
 interface CouponUsage {
   id: string;
+<<<<<<< HEAD
   usageId: string;
   couponId: string;
   couponName: string;
@@ -39,12 +43,67 @@ export default function CouponHistoryPage() {
   const router = useRouter();
   const params = useParams();
   const userId = params?.id as string;
+=======
+  couponId: string;
+  couponName: string;
+  userId: string;
+  nickname: string;
+  gender: number;
+  birthDate: string;
+  address: string;
+  usedAt: string;
+}
+
+// サンプルデータ
+const sampleCouponUsages: CouponUsage[] = [
+  { id: 'CU001', couponId: 'CP001', couponName: '新規会員限定10%オフクーポン', userId: '1', nickname: '田中太郎', gender: 1, birthDate: '1990/05/15', address: '埼玉県さいたま市浦和区高砂1-1-1', usedAt: '2024/01/15 14:30' },
+  { id: 'CU002', couponId: 'CP002', couponName: '誕生日特典20%オフクーポン', userId: '2', nickname: '佐藤花子', gender: 2, birthDate: '1985/08/22', address: '埼玉県さいたま市浦和区仲町2-2-2', usedAt: '2024/01/20 18:45' },
+  { id: 'CU003', couponId: 'CP001', couponName: '新規会員限定10%オフクーポン', userId: '3', nickname: '鈴木次郎', gender: 1, birthDate: '1995/12/03', address: '埼玉県さいたま市浦和区大東3-3-3', usedAt: '2024/02/01 12:15' },
+  { id: 'CU004', couponId: 'CP003', couponName: '年末年始限定500円オフクーポン', userId: '4', nickname: '山田美咲', gender: 2, birthDate: '1992/03/18', address: '埼玉県さいたま市浦和区岸町4-4-4', usedAt: '2024/02/10 16:20' },
+  { id: 'CU005', couponId: 'CP002', couponName: '誕生日特典20%オフクーポン', userId: '1', nickname: '田中太郎', gender: 1, birthDate: '1990/05/15', address: '埼玉県さいたま市浦和区高砂1-1-1', usedAt: '2024/02/15 19:30' },
+  { id: 'CU006', couponId: 'CP005', couponName: '平日限定ドリンク半額クーポン', userId: '5', nickname: '高橋健一', gender: 1, birthDate: '1988/07/12', address: '埼玉県さいたま市大宮区仲町5-5-5', usedAt: '2024/02/20 13:45' },
+  { id: 'CU007', couponId: 'CP006', couponName: '学生限定20%オフクーポン', userId: '6', nickname: '伊藤美由紀', gender: 2, birthDate: '1993/11/28', address: '埼玉県さいたま市大宮区土手町6-6-6', usedAt: '2024/02/25 16:10' },
+  { id: 'CU008', couponId: 'CP008', couponName: 'ハッピーアワー限定クーポン', userId: '7', nickname: '渡辺誠', gender: 1, birthDate: '1991/04/05', address: '埼玉県さいたま市大宮区桜木町7-7-7', usedAt: '2024/03/01 17:20' },
+  { id: 'CU009', couponId: 'CP009', couponName: '友達紹介特典クーポン', userId: '8', nickname: '中村麻衣', gender: 2, birthDate: '1987/09/14', address: '埼玉県さいたま市大宮区高鼻町8-8-8', usedAt: '2024/03/05 14:55' },
+  { id: 'CU010', couponId: 'CP011', couponName: 'グループ利用特典クーポン', userId: '9', nickname: '小林大輔', gender: 1, birthDate: '1994/12/21', address: '埼玉県さいたま市大宮区北袋町9-9-9', usedAt: '2024/03/10 19:15' },
+  { id: 'CU011', couponId: 'CP012', couponName: 'デザート無料クーポン', userId: '10', nickname: '加藤優子', gender: 2, birthDate: '1989/06/30', address: '埼玉県さいたま市浦和区岸町10-10-10', usedAt: '2024/03/15 15:30' },
+  { id: 'CU012', couponId: 'CP014', couponName: '初回来店限定クーポン', userId: '11', nickname: '吉田修平', gender: 1, birthDate: '1992/01/17', address: '埼玉県さいたま市浦和区仲町11-11-11', usedAt: '2024/03/20 12:40' },
+  { id: 'CU013', couponId: 'CP015', couponName: 'ランチタイム限定クーポン', userId: '12', nickname: '山口恵美', gender: 2, birthDate: '1986/10/08', address: '埼玉県さいたま市浦和区大東12-12-12', usedAt: '2024/03/25 13:25' },
+  { id: 'CU014', couponId: 'CP017', couponName: 'シニア限定優待クーポン', userId: '13', nickname: '松本和也', gender: 1, birthDate: '1990/03/25', address: '埼玉県さいたま市大宮区土手町13-13-13', usedAt: '2024/03/30 18:50' },
+  { id: 'CU015', couponId: 'CP018', couponName: 'レディースデー特典クーポン', userId: '14', nickname: '井上千春', gender: 2, birthDate: '1995/08/11', address: '埼玉県さいたま市大宮区桜木町14-14-14', usedAt: '2024/04/01 16:35' },
+  { id: 'CU016', couponId: 'CP020', couponName: '雨の日限定クーポン', userId: '15', nickname: '木村拓也', gender: 1, birthDate: '1988/05/02', address: '埼玉県さいたま市浦和区高砂15-15-15', usedAt: '2024/04/05 14:20' },
+  { id: 'CU017', couponId: 'CP021', couponName: 'SNS投稿特典クーポン', userId: '16', nickname: '林美穂', gender: 2, birthDate: '1993/12/19', address: '埼玉県さいたま市大宮区高鼻町16-16-16', usedAt: '2024/04/10 17:45' },
+  { id: 'CU018', couponId: 'CP023', couponName: 'VIP会員限定クーポン', userId: '17', nickname: '斎藤雄一', gender: 1, birthDate: '1991/07/26', address: '埼玉県さいたま市大宮区北袋町17-17-17', usedAt: '2024/04/15 19:10' },
+  { id: 'CU019', couponId: 'CP024', couponName: '早割予約特典クーポン', userId: '18', nickname: '清水香織', gender: 2, birthDate: '1987/02/13', address: '埼玉県さいたま市浦和区岸町18-18-18', usedAt: '2024/04/20 13:55' },
+  { id: 'CU020', couponId: 'CP026', couponName: 'テイクアウト限定クーポン', userId: '19', nickname: '森田慎吾', gender: 1, birthDate: '1994/09/04', address: '埼玉県さいたま市浦和区仲町19-19-19', usedAt: '2024/04/25 15:40' },
+  { id: 'CU021', couponId: 'CP027', couponName: 'デリバリー限定クーポン', userId: '20', nickname: '池田理恵', gender: 2, birthDate: '1989/04/21', address: '埼玉県さいたま市浦和区大東20-20-20', usedAt: '2024/05/01 18:25' },
+  { id: 'CU022', couponId: 'CP029', couponName: '夏季限定冷たいドリンククーポン', userId: '21', nickname: '橋本光男', gender: 1, birthDate: '1992/11/07', address: '埼玉県さいたま市大宮区土手町21-21-21', usedAt: '2024/05/05 16:15' },
+  { id: 'CU023', couponId: 'CP030', couponName: '月末感謝祭クーポン', userId: '22', nickname: '石川奈々', gender: 2, birthDate: '1986/06/18', address: '埼玉県さいたま市大宮区桜木町22-22-22', usedAt: '2024/05/10 14:30' },
+  { id: 'CU024', couponId: 'CP001', couponName: '新規会員限定10%オフクーポン', userId: '23', nickname: '長谷川隆', gender: 1, birthDate: '1990/01/29', address: '埼玉県さいたま市浦和区高砂23-23-23', usedAt: '2024/05/15 17:50' },
+  { id: 'CU025', couponId: 'CP002', couponName: '誕生日特典20%オフクーポン', userId: '24', nickname: '近藤由香', gender: 2, birthDate: '1995/08/15', address: '埼玉県さいたま市大宮区高鼻町24-24-24', usedAt: '2024/05/20 19:35' },
+  { id: 'CU026', couponId: 'CP005', couponName: '平日限定ドリンク半額クーポン', userId: '25', nickname: '後藤正樹', gender: 1, birthDate: '1988/03/06', address: '埼玉県さいたま市大宮区北袋町25-25-25', usedAt: '2024/05/25 13:20' },
+  { id: 'CU027', couponId: 'CP006', couponName: '学生限定20%オフクーポン', userId: '26', nickname: '藤田真理子', gender: 2, birthDate: '1993/10/22', address: '埼玉県さいたま市浦和区岸町26-26-26', usedAt: '2024/05/30 15:45' },
+  { id: 'CU028', couponId: 'CP008', couponName: 'ハッピーアワー限定クーポン', userId: '27', nickname: '岡田浩二', gender: 1, birthDate: '1991/05/09', address: '埼玉県さいたま市浦和区仲町27-27-27', usedAt: '2024/06/01 18:10' },
+  { id: 'CU029', couponId: 'CP009', couponName: '友達紹介特典クーポン', userId: '28', nickname: '前田智美', gender: 2, birthDate: '1987/12/16', address: '埼玉県さいたま市浦和区大東28-28-28', usedAt: '2024/06/05 16:55' },
+  { id: 'CU030', couponId: 'CP011', couponName: 'グループ利用特典クーポン', userId: '29', nickname: '増田健太', gender: 1, birthDate: '1994/07/03', address: '埼玉県さいたま市大宮区土手町29-29-29', usedAt: '2024/06/10 14:40' },
+];
+
+export default function CouponHistoryPage() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const _params = useParams(); // 将来的に使用予定
+>>>>>>> origin/feature/admin-role-display-control
   
   const [searchForm, setSearchForm] = useState({
     usageId: '',
     couponId: '',
     couponName: '',
+<<<<<<< HEAD
     shopName: '',
+=======
+    userId: '',
+    nickname: '',
+>>>>>>> origin/feature/admin-role-display-control
     usedDateStart: '',
     usedDateEnd: '',
   });
@@ -52,11 +111,17 @@ export default function CouponHistoryPage() {
     usageId: '',
     couponId: '',
     couponName: '',
+<<<<<<< HEAD
     shopName: '',
+=======
+    userId: '',
+    nickname: '',
+>>>>>>> origin/feature/admin-role-display-control
     usedDateStart: '',
     usedDateEnd: '',
   });
 
+<<<<<<< HEAD
   const [showBackButton, setShowBackButton] = useState(true);
   const [backUrl, setBackUrl] = useState(`/users/${userId}`);
   const [pageTitle, setPageTitle] = useState('クーポン利用履歴');
@@ -129,10 +194,68 @@ export default function CouponHistoryPage() {
   // 検索条件の変更時にフィルタリング（クライアント側の追加フィルタリング）
   useEffect(() => {
     const filtered = usages.filter((usage) => {
+=======
+  const [showBackButton, setShowBackButton] = useState(false);
+  const [backUrl, setBackUrl] = useState('');
+  const [pageTitle, setPageTitle] = useState('クーポン利用履歴');
+  const [filteredUsages, setFilteredUsages] = useState<CouponUsage[]>([]);
+  const [_isFromCouponDetail, setIsFromCouponDetail] = useState(false);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+
+  useEffect(() => {
+    // 遷移元を判定して戻るボタンの表示を制御
+    if (pathname.includes('/coupons/') && pathname.includes('/history')) {
+      // クーポン詳細からの遷移
+      const couponId = pathname.split('/')[2];
+      setShowBackButton(true);
+      setBackUrl(`/coupons/${couponId}`);
+      setPageTitle('クーポン利用履歴');
+      setIsFromCouponDetail(true);
+      
+      // 該当クーポンの利用履歴のみを表示
+      const couponUsages = sampleCouponUsages.filter(usage => usage.couponId === couponId);
+      setFilteredUsages(couponUsages);
+    } else if (pathname.includes('/users/') && pathname.includes('/coupon-history')) {
+      // ユーザー詳細からの遷移
+      const userId = pathname.split('/')[2];
+      setShowBackButton(true);
+      setBackUrl(`/users/${userId}`);
+      setPageTitle('クーポン利用履歴');
+      setIsFromCouponDetail(false);
+      
+      // 該当ユーザーの利用履歴のみを表示
+      const userUsages = sampleCouponUsages.filter(usage => usage.userId === userId);
+      setFilteredUsages(userUsages);
+    } else if (pathname === '/coupon-history') {
+      // クーポン一覧またはユーザー一覧からの遷移（referrerで判定）
+      setShowBackButton(true);
+      setBackUrl('/coupons'); // デフォルトはクーポン一覧
+      setPageTitle('クーポン利用履歴');
+      setIsFromCouponDetail(false);
+      setFilteredUsages(sampleCouponUsages);
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    // フィルタリング処理
+    let baseUsages = sampleCouponUsages;
+    
+    // 遷移元に応じて基本データを設定
+    if (pathname.includes('/coupons/') && pathname.includes('/history')) {
+      const couponId = pathname.split('/')[2];
+      baseUsages = sampleCouponUsages.filter(usage => usage.couponId === couponId);
+    } else if (pathname.includes('/users/') && pathname.includes('/coupon-history')) {
+      const userId = pathname.split('/')[2];
+      baseUsages = sampleCouponUsages.filter(usage => usage.userId === userId);
+    }
+    
+    const filtered = baseUsages.filter((usage) => {
+>>>>>>> origin/feature/admin-role-display-control
       const matchesSearch = 
         (appliedSearchForm.usageId === '' || usage.id.toLowerCase().includes(appliedSearchForm.usageId.toLowerCase())) &&
         (appliedSearchForm.couponId === '' || usage.couponId.toLowerCase().includes(appliedSearchForm.couponId.toLowerCase())) &&
         (appliedSearchForm.couponName === '' || usage.couponName.toLowerCase().includes(appliedSearchForm.couponName.toLowerCase())) &&
+<<<<<<< HEAD
         (appliedSearchForm.shopName === '' || usage.shopName.toLowerCase().includes(appliedSearchForm.shopName.toLowerCase()));
       
       return matchesSearch;
@@ -141,6 +264,30 @@ export default function CouponHistoryPage() {
     setFilteredUsages(filtered);
   }, [usages, appliedSearchForm]);
 
+=======
+        (appliedSearchForm.userId === '' || usage.userId.toLowerCase().includes(appliedSearchForm.userId.toLowerCase())) &&
+        (appliedSearchForm.nickname === '' || usage.nickname.toLowerCase().includes(appliedSearchForm.nickname.toLowerCase()));
+
+      // 利用日範囲チェック
+      let matchesDateRange = true;
+      if (appliedSearchForm.usedDateStart || appliedSearchForm.usedDateEnd) {
+        const usageDate = new Date(usage.usedAt.split(' ')[0].replace(/\//g, '-'));
+        if (appliedSearchForm.usedDateStart) {
+          const startDate = new Date(appliedSearchForm.usedDateStart);
+          if (usageDate < startDate) matchesDateRange = false;
+        }
+        if (appliedSearchForm.usedDateEnd) {
+          const endDate = new Date(appliedSearchForm.usedDateEnd);
+          if (usageDate > endDate) matchesDateRange = false;
+        }
+      }
+      
+      return matchesSearch && matchesDateRange;
+    });
+    
+    setFilteredUsages(filtered);
+  }, [appliedSearchForm, pathname]);
+>>>>>>> origin/feature/admin-role-display-control
 
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {
     setSearchForm(prev => ({
@@ -160,7 +307,12 @@ export default function CouponHistoryPage() {
       usageId: '',
       couponId: '',
       couponName: '',
+<<<<<<< HEAD
       shopName: '',
+=======
+      userId: '',
+      nickname: '',
+>>>>>>> origin/feature/admin-role-display-control
       usedDateStart: '',
       usedDateEnd: '',
     });
@@ -168,12 +320,18 @@ export default function CouponHistoryPage() {
       usageId: '',
       couponId: '',
       couponName: '',
+<<<<<<< HEAD
       shopName: '',
+=======
+      userId: '',
+      nickname: '',
+>>>>>>> origin/feature/admin-role-display-control
       usedDateStart: '',
       usedDateEnd: '',
     });
   };
 
+<<<<<<< HEAD
   const handleBack = () => {
     router.push(backUrl);
   };
@@ -187,6 +345,20 @@ export default function CouponHistoryPage() {
         return '女性';
       case 'other':
         return 'その他';
+=======
+  const _handleBack = () => {
+    router.push(backUrl);
+  };
+
+  const getGenderLabel = (gender: number) => {
+    switch (gender) {
+      case 1:
+        return '男性';
+      case 2:
+        return '女性';
+      case 3:
+        return '未回答';
+>>>>>>> origin/feature/admin-role-display-control
       default:
         return '未回答';
     }
@@ -217,7 +389,12 @@ export default function CouponHistoryPage() {
           </div>
         </div>
 
+<<<<<<< HEAD
         {/* 検索フォーム */}
+=======
+        {/* 検索フォーム（クーポン詳細からの遷移時は簡略化） */}
+        {!(pathname.includes('/coupons/') && pathname.includes('/history')) && !(pathname.includes('/users/') && pathname.includes('/coupon-history')) && (
+>>>>>>> origin/feature/admin-role-display-control
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="pb-3 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
@@ -279,6 +456,7 @@ export default function CouponHistoryPage() {
               />
             </div>
 
+<<<<<<< HEAD
             {/* 店舗名 */}
             <div>
               <label htmlFor="shopName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -290,6 +468,34 @@ export default function CouponHistoryPage() {
                 placeholder="店舗名を入力"
                 value={searchForm.shopName}
                 onChange={(e) => handleInputChange('shopName', e.target.value)}
+=======
+            {/* ユーザーID */}
+            <div>
+              <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-2">
+                ユーザーID
+              </label>
+              <input
+                type="text"
+                id="userId"
+                placeholder="ユーザーIDを入力"
+                value={searchForm.userId}
+                onChange={(e) => handleInputChange('userId', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+
+            {/* ニックネーム */}
+            <div>
+              <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 mb-2">
+                ニックネーム
+              </label>
+              <input
+                type="text"
+                id="nickname"
+                placeholder="ニックネームを入力"
+                value={searchForm.nickname}
+                onChange={(e) => handleInputChange('nickname', e.target.value)}
+>>>>>>> origin/feature/admin-role-display-control
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
@@ -340,6 +546,10 @@ export default function CouponHistoryPage() {
           </div>
           )}
         </div>
+<<<<<<< HEAD
+=======
+        )}
+>>>>>>> origin/feature/admin-role-display-control
 
         {/* クーポン利用履歴一覧（クーポン詳細からの遷移時は表示項目を調整） */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -357,29 +567,48 @@ export default function CouponHistoryPage() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
+<<<<<<< HEAD
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+=======
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+>>>>>>> origin/feature/admin-role-display-control
                     クーポン利用ID
                   </th>
                   {!(pathname.includes('/coupons/') && pathname.includes('/history')) && !(pathname.includes('/users/') && pathname.includes('/coupon-history')) && (
                     <>
+<<<<<<< HEAD
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                     クーポンID
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+=======
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    クーポンID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+>>>>>>> origin/feature/admin-role-display-control
                     クーポン名
                   </th>
                     </>
                   )}
                   {(pathname.includes('/coupons/') && pathname.includes('/history')) || (pathname.includes('/users/') && pathname.includes('/coupon-history')) ? (
                     <>
+<<<<<<< HEAD
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                     クーポンID
                   </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+=======
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    クーポンID
+                  </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+>>>>>>> origin/feature/admin-role-display-control
                       クーポン名
                     </th>
                     </>
                   ) : null}
+<<<<<<< HEAD
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                     店舗名
                   </th>
@@ -404,6 +633,28 @@ export default function CouponHistoryPage() {
                     </th>
                   )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+=======
+                  {!(pathname.includes('/users/') && pathname.includes('/coupon-history')) && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ユーザーID
+                    </th>
+                  )}
+                  {!(pathname.includes('/users/') && pathname.includes('/coupon-history')) && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ニックネーム
+                    </th>
+                  )}
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    性別
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    生年月日
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    住所
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+>>>>>>> origin/feature/admin-role-display-control
                     利用日時
                   </th>
                 </tr>
@@ -434,6 +685,7 @@ export default function CouponHistoryPage() {
                       </td>
                       </>
                     ) : null}
+<<<<<<< HEAD
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{usage.shopName}</div>
                     </td>
@@ -457,6 +709,32 @@ export default function CouponHistoryPage() {
                       <div className="text-sm text-gray-900">{usage.address || '-'}</div>
                       </td>
                     )}
+=======
+                    {!(pathname.includes('/users/') && pathname.includes('/coupon-history')) && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                      <Link 
+                        href={`/users/${usage.userId}`}
+                        className="text-sm text-green-600 hover:text-green-800 underline"
+                      >
+                        {usage.userId}
+                      </Link>
+                      </td>
+                    )}
+                    {!(pathname.includes('/users/') && pathname.includes('/coupon-history')) && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{usage.nickname}</div>
+                      </td>
+                    )}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{getGenderLabel(usage.gender)}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{usage.birthDate}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{usage.address}</div>
+                    </td>
+>>>>>>> origin/feature/admin-role-display-control
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{usage.usedAt}</div>
                     </td>
@@ -466,6 +744,7 @@ export default function CouponHistoryPage() {
             </table>
           </div>
 
+<<<<<<< HEAD
           {isLoading && (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
@@ -474,6 +753,9 @@ export default function CouponHistoryPage() {
           )}
 
           {!isLoading && filteredUsages.length === 0 && (
+=======
+          {filteredUsages.length === 0 && (
+>>>>>>> origin/feature/admin-role-display-control
             <div className="text-center py-12">
               <Icon name="history" size="lg" className="mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">利用履歴が見つかりません</h3>
@@ -488,7 +770,11 @@ export default function CouponHistoryPage() {
             <Button
               variant="outline"
               size="lg"
+<<<<<<< HEAD
               onClick={handleBack}
+=======
+              onClick={_handleBack}
+>>>>>>> origin/feature/admin-role-display-control
               className="px-8"
             >
               戻る
