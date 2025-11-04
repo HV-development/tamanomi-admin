@@ -14,3 +14,5 @@ export const PREFECTURES = [
 // 定休日
 export const WEEKDAYS = ['月', '火', '水', '木', '金', '土', '日', '祝日'] as const;
 
+
+

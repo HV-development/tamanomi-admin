@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
@@ -21,39 +21,6 @@ interface User {
   registeredAt: string;
 }
 
-// サンプルデータ
-const sampleUsers: User[] = [
-  { id: '1', nickname: '田中太郎', postalCode: '330-0001', prefecture: '埼玉県', city: 'さいたま市浦和区', address: '高砂1-1-1', birthDate: '1990/05/15', gender: 1, saitamaAppId: 'SA001234', rank: 3, registeredStore: 'たまのみ 浦和店', registeredAt: '2024/01/15' },
-  { id: '2', nickname: '佐藤花子', postalCode: '330-0062', prefecture: '埼玉県', city: 'さいたま市浦和区', address: '仲町2-2-2', birthDate: '1985/08/22', gender: 2, saitamaAppId: 'SA005678', rank: 4, registeredStore: 'たまのみ 浦和店', registeredAt: '2024/01/20' },
-  { id: '3', nickname: '鈴木次郎', postalCode: '330-0043', prefecture: '埼玉県', city: 'さいたま市浦和区', address: '大東3-3-3', birthDate: '1995/12/03', gender: 1, saitamaAppId: 'SA009012', rank: 2, registeredStore: 'たまのみ 大宮店', registeredAt: '2024/02/01' },
-  { id: '4', nickname: '山田美咲', postalCode: '330-0064', prefecture: '埼玉県', city: 'さいたま市浦和区', address: '岸町4-4-4', birthDate: '1992/03/18', gender: 2, saitamaAppId: 'SA003456', rank: 1, registeredStore: 'たまのみ 浦和店', registeredAt: '2024/02/10' },
-  { id: '5', nickname: '高橋健一', postalCode: '330-0845', prefecture: '埼玉県', city: 'さいたま市大宮区', address: '仲町5-5-5', birthDate: '1988/07/12', gender: 1, saitamaAppId: 'SA012345', rank: 2, registeredStore: 'たまのみ 大宮店', registeredAt: '2024/02/15' },
-  { id: '6', nickname: '伊藤美由紀', postalCode: '330-0801', prefecture: '埼玉県', city: 'さいたま市大宮区', address: '土手町6-6-6', birthDate: '1993/11/28', gender: 2, saitamaAppId: 'SA067890', rank: 3, registeredStore: 'たまのみ 大宮店', registeredAt: '2024/02/20' },
-  { id: '7', nickname: '渡辺誠', postalCode: '330-0854', prefecture: '埼玉県', city: 'さいたま市大宮区', address: '桜木町7-7-7', birthDate: '1991/04/05', gender: 1, saitamaAppId: 'SA123456', rank: 1, registeredStore: 'たまのみ 大宮店', registeredAt: '2024/02/25' },
-  { id: '8', nickname: '中村麻衣', postalCode: '330-0803', prefecture: '埼玉県', city: 'さいたま市大宮区', address: '高鼻町8-8-8', birthDate: '1987/09/14', gender: 2, saitamaAppId: 'SA234567', rank: 4, registeredStore: 'たまのみ 浦和店', registeredAt: '2024/03/01' },
-  { id: '9', nickname: '小林大輔', postalCode: '330-0835', prefecture: '埼玉県', city: 'さいたま市大宮区', address: '北袋町9-9-9', birthDate: '1994/12/21', gender: 1, saitamaAppId: 'SA345678', rank: 2, registeredStore: 'たまのみ 大宮店', registeredAt: '2024/03/05' },
-  { id: '10', nickname: '加藤優子', postalCode: '330-0064', prefecture: '埼玉県', city: 'さいたま市浦和区', address: '岸町10-10-10', birthDate: '1989/06/30', gender: 2, saitamaAppId: 'SA456789', rank: 3, registeredStore: 'たまのみ 浦和店', registeredAt: '2024/03/10' },
-  { id: '11', nickname: '吉田修平', postalCode: '330-0062', prefecture: '埼玉県', city: 'さいたま市浦和区', address: '仲町11-11-11', birthDate: '1992/01/17', gender: 1, saitamaAppId: 'SA567890', rank: 1, registeredStore: 'たまのみ 浦和店', registeredAt: '2024/03/15' },
-  { id: '12', nickname: '山口恵美', postalCode: '330-0043', prefecture: '埼玉県', city: 'さいたま市浦和区', address: '大東12-12-12', birthDate: '1986/10/08', gender: 2, saitamaAppId: 'SA678901', rank: 4, registeredStore: 'たまのみ 浦和店', registeredAt: '2024/03/20' },
-  { id: '13', nickname: '松本和也', postalCode: '330-0801', prefecture: '埼玉県', city: 'さいたま市大宮区', address: '土手町13-13-13', birthDate: '1990/03/25', gender: 1, saitamaAppId: 'SA789012', rank: 2, registeredStore: 'たまのみ 大宮店', registeredAt: '2024/03/25' },
-  { id: '14', nickname: '井上千春', postalCode: '330-0854', prefecture: '埼玉県', city: 'さいたま市大宮区', address: '桜木町14-14-14', birthDate: '1995/08/11', gender: 2, saitamaAppId: 'SA890123', rank: 3, registeredStore: 'たまのみ 大宮店', registeredAt: '2024/03/30' },
-  { id: '15', nickname: '木村拓也', postalCode: '330-0001', prefecture: '埼玉県', city: 'さいたま市浦和区', address: '高砂15-15-15', birthDate: '1988/05/02', gender: 1, saitamaAppId: 'SA901234', rank: 1, registeredStore: 'たまのみ 浦和店', registeredAt: '2024/04/01' },
-  { id: '16', nickname: '林美穂', postalCode: '330-0803', prefecture: '埼玉県', city: 'さいたま市大宮区', address: '高鼻町16-16-16', birthDate: '1993/12/19', gender: 2, saitamaAppId: 'SA012346', rank: 4, registeredStore: 'たまのみ 大宮店', registeredAt: '2024/04/05' },
-  { id: '17', nickname: '斎藤雄一', postalCode: '330-0835', prefecture: '埼玉県', city: 'さいたま市大宮区', address: '北袋町17-17-17', birthDate: '1991/07/26', gender: 1, saitamaAppId: 'SA123457', rank: 2, registeredStore: 'たまのみ 大宮店', registeredAt: '2024/04/10' },
-  { id: '18', nickname: '清水香織', postalCode: '330-0064', prefecture: '埼玉県', city: 'さいたま市浦和区', address: '岸町18-18-18', birthDate: '1987/02/13', gender: 2, saitamaAppId: 'SA234568', rank: 3, registeredStore: 'たまのみ 浦和店', registeredAt: '2024/04/15' },
-  { id: '19', nickname: '森田慎吾', postalCode: '330-0062', prefecture: '埼玉県', city: 'さいたま市浦和区', address: '仲町19-19-19', birthDate: '1994/09/04', gender: 1, saitamaAppId: 'SA345679', rank: 1, registeredStore: 'たまのみ 浦和店', registeredAt: '2024/04/20' },
-  { id: '20', nickname: '池田理恵', postalCode: '330-0043', prefecture: '埼玉県', city: 'さいたま市浦和区', address: '大東20-20-20', birthDate: '1989/04/21', gender: 2, saitamaAppId: 'SA456780', rank: 4, registeredStore: 'たまのみ 浦和店', registeredAt: '2024/04/25' },
-  { id: '21', nickname: '橋本光男', postalCode: '330-0801', prefecture: '埼玉県', city: 'さいたま市大宮区', address: '土手町21-21-21', birthDate: '1992/11/07', gender: 1, saitamaAppId: 'SA567891', rank: 2, registeredStore: 'たまのみ 大宮店', registeredAt: '2024/05/01' },
-  { id: '22', nickname: '石川奈々', postalCode: '330-0854', prefecture: '埼玉県', city: 'さいたま市大宮区', address: '桜木町22-22-22', birthDate: '1986/06/18', gender: 2, saitamaAppId: 'SA678902', rank: 3, registeredStore: 'たまのみ 大宮店', registeredAt: '2024/05/05' },
-  { id: '23', nickname: '長谷川隆', postalCode: '330-0001', prefecture: '埼玉県', city: 'さいたま市浦和区', address: '高砂23-23-23', birthDate: '1990/01/29', gender: 1, saitamaAppId: 'SA789013', rank: 1, registeredStore: 'たまのみ 浦和店', registeredAt: '2024/05/10' },
-  { id: '24', nickname: '近藤由香', postalCode: '330-0803', prefecture: '埼玉県', city: 'さいたま市大宮区', address: '高鼻町24-24-24', birthDate: '1995/08/15', gender: 2, saitamaAppId: 'SA890124', rank: 4, registeredStore: 'たまのみ 大宮店', registeredAt: '2024/05/15' },
-  { id: '25', nickname: '後藤正樹', postalCode: '330-0835', prefecture: '埼玉県', city: 'さいたま市大宮区', address: '北袋町25-25-25', birthDate: '1988/03/06', gender: 1, saitamaAppId: 'SA901235', rank: 2, registeredStore: 'たまのみ 大宮店', registeredAt: '2024/05/20' },
-  { id: '26', nickname: '藤田真理子', postalCode: '330-0064', prefecture: '埼玉県', city: 'さいたま市浦和区', address: '岸町26-26-26', birthDate: '1993/10/22', gender: 2, saitamaAppId: 'SA012347', rank: 3, registeredStore: 'たまのみ 浦和店', registeredAt: '2024/05/25' },
-  { id: '27', nickname: '岡田浩二', postalCode: '330-0062', prefecture: '埼玉県', city: 'さいたま市浦和区', address: '仲町27-27-27', birthDate: '1991/05/09', gender: 1, saitamaAppId: 'SA123458', rank: 1, registeredStore: 'たまのみ 浦和店', registeredAt: '2024/05/30' },
-  { id: '28', nickname: '前田智美', postalCode: '330-0043', prefecture: '埼玉県', city: 'さいたま市浦和区', address: '大東28-28-28', birthDate: '1987/12/16', gender: 2, saitamaAppId: 'SA234569', rank: 4, registeredStore: 'たまのみ 浦和店', registeredAt: '2024/06/01' },
-  { id: '29', nickname: '増田健太', postalCode: '330-0801', prefecture: '埼玉県', city: 'さいたま市大宮区', address: '土手町29-29-29', birthDate: '1994/07/03', gender: 1, saitamaAppId: 'SA345680', rank: 2, registeredStore: 'たまのみ 大宮店', registeredAt: '2024/06/05' },
-  { id: '30', nickname: '金子亜希子', postalCode: '330-0854', prefecture: '埼玉県', city: 'さいたま市大宮区', address: '桜木町30-30-30', birthDate: '1989/02/20', gender: 2, saitamaAppId: 'SA456781', rank: 3, registeredStore: 'たまのみ 大宮店', registeredAt: '2024/06/10' },
-];
 
 const prefectures = [
   '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
@@ -93,9 +60,78 @@ export default function UserManagement() {
     registeredDateEnd: '',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // フィルタリング処理
-  const filteredUsers = sampleUsers.filter((user) => {
+  // データ取得
+  const fetchUsers = useCallback(async (searchParams?: typeof appliedSearchForm) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // 検索条件をクエリパラメータに追加
+      if (searchParams?.nickname) queryParams.append('nickname', searchParams.nickname);
+      if (searchParams?.postalCode) queryParams.append('postalCode', searchParams.postalCode);
+      if (searchParams?.prefecture) queryParams.append('prefecture', searchParams.prefecture);
+      if (searchParams?.city) queryParams.append('city', searchParams.city);
+      if (searchParams?.address) queryParams.append('address', searchParams.address);
+      if (searchParams?.birthDate) queryParams.append('birthDate', searchParams.birthDate);
+      if (searchParams?.gender) queryParams.append('gender', searchParams.gender);
+      if (searchParams?.saitamaAppId) queryParams.append('saitamaAppId', searchParams.saitamaAppId);
+      if (searchParams?.ranks && searchParams.ranks.length > 0) {
+        queryParams.append('ranks', JSON.stringify(searchParams.ranks));
+      }
+      if (searchParams?.registeredDateStart) queryParams.append('registeredDateStart', searchParams.registeredDateStart);
+      if (searchParams?.registeredDateEnd) queryParams.append('registeredDateEnd', searchParams.registeredDateEnd);
+
+      const response = await fetch(`/api/admin/users?${queryParams.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('ユーザー一覧の取得に失敗しました');
+      }
+      
+      const data = await response.json();
+      
+      // APIレスポンスをフォーマット
+      const formattedUsers: User[] = data.users.map((user: any) => ({
+        id: user.id,
+        nickname: user.nickname,
+        postalCode: user.postalCode,
+        prefecture: user.prefecture,
+        city: user.city,
+        address: user.address,
+        birthDate: user.birthDate ? user.birthDate.replace(/-/g, '/') : '',
+        gender: typeof user.gender === 'string' ? (user.gender === 'male' ? 1 : user.gender === 'female' ? 2 : 3) : user.gender,
+        saitamaAppId: user.saitamaAppId,
+        rank: user.rank,
+        registeredStore: user.registeredStore,
+        registeredAt: user.registeredAt ? user.registeredAt.replace(/-/g, '/') : '',
+      }));
+      
+      setUsers(formattedUsers);
+    } catch (err) {
+      console.error('ユーザー一覧の取得に失敗しました:', err);
+      setError('ユーザー一覧の取得に失敗しました');
+      setUsers([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // データ取得（初回読み込み・検索）
+  useEffect(() => {
+    fetchUsers(appliedSearchForm);
+  }, [appliedSearchForm, fetchUsers]);
+
+  // フィルタリング処理（クライアント側の追加フィルタリング）
+  const filteredUsers = users.filter((user) => {
     const matchesSearch = 
       (appliedSearchForm.nickname === '' || user.nickname.includes(appliedSearchForm.nickname)) &&
       (appliedSearchForm.postalCode === '' || user.postalCode === appliedSearchForm.postalCode) &&
@@ -143,7 +179,6 @@ export default function UserManagement() {
   const handleSearch = () => {
     // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
     setAppliedSearchForm({ ...searchForm });
-    console.log('検索実行:', searchForm);
   };
 
   const handleClear = () => {
@@ -587,7 +622,22 @@ export default function UserManagement() {
             </table>
           </div>
 
-          {filteredUsers.length === 0 && (
+          {isLoading && (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+              <p className="text-gray-500">データを読み込み中...</p>
+            </div>
+          )}
+
+          {!isLoading && error && (
+            <div className="text-center py-12">
+              <Icon name="users" size="lg" className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">エラーが発生しました</h3>
+              <p className="text-gray-500">{error}</p>
+            </div>
+          )}
+
+          {!isLoading && !error && filteredUsers.length === 0 && (
             <div className="text-center py-12">
               <Icon name="users" size="lg" className="mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">ユーザーが見つかりません</h3>

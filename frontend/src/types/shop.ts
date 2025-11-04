@@ -70,3 +70,5 @@ export type ExtendedShopCreateRequest = ShopCreateRequest & {
   couponUsageEnd?: string | null;
 };
 
+
+

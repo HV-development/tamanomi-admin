@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: authHeaders,
       body: JSON.stringify(body),
+      credentials: 'include',
     });
 
     console.log('📡 API Route: Response status:', response.status);

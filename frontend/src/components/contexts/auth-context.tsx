@@ -11,6 +11,7 @@ interface User {
   email: string;
   name: string;
   accountType: 'admin' | 'merchant' | 'user' | 'shop';
+  role?: string; // adminアカウントの場合のロール（sysadmin, operator, viewer）
   shopId?: string; // 店舗アカウントの場合の店舗ID
   merchantId?: string; // 事業者アカウントまたは店舗アカウントの場合の事業者ID
 }
@@ -62,11 +63,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } | null;
         const me = await apiClient.getMe().catch(() => null) as MeResponse;
         if (me && me.accountType) {
+          const role = (me as any).role;
+          console.log('🔍 [AuthContext] Setting user:', { accountType: me.accountType, role, email: me.email });
           setUser({
             id: me.email || 'me',
             email: me.email || '',
             name: me.email || 'Account',
             accountType: me.accountType,
+            role,
             shopId: (me.shopId ?? undefined) || undefined,
             merchantId: (me.merchantId ?? undefined) || undefined,
           });
@@ -93,19 +97,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email: string;
         displayName?: string;
       };
-      setUser({
-        id: accountData.email, // 仮のIDとしてemailを使用
-        email: accountData.email,
-        name: accountData.displayName || accountData.email,
-        accountType: accountData.accountType as 'admin' | 'merchant' | 'user' | 'shop',
-        shopId: accountData.shopId,
-        merchantId: accountData.merchantId
-      });
-      console.log('✅ AuthContext: login successful', { 
-        user: accountData,
-        setShopId: accountData.shopId,
-        setMerchantId: accountData.merchantId
-      });
+      
+      // ログイン後、/api/meを呼び出してroleを含む完全なユーザー情報を取得
+      type MeResponse = {
+        accountType?: 'admin' | 'merchant' | 'user' | 'shop';
+        email?: string | null;
+        shopId?: string | null;
+        merchantId?: string | null;
+        role?: string;
+      } | null;
+      const me = await apiClient.getMe().catch(() => null) as MeResponse;
+      
+      if (me && me.accountType) {
+        setUser({
+          id: me.email || accountData.email || 'me',
+          email: me.email || accountData.email || '',
+          name: accountData.displayName || me.email || accountData.email || 'Account',
+          accountType: me.accountType,
+          role: me.role,
+          shopId: (me.shopId ?? accountData.shopId ?? undefined) || undefined,
+          merchantId: (me.merchantId ?? accountData.merchantId ?? undefined) || undefined,
+        });
+        console.log('✅ AuthContext: login successful', { 
+          user: { ...me, displayName: accountData.displayName },
+          role: me.role,
+        });
+      } else {
+        // /api/meが失敗した場合でも、accountDataからユーザー情報を設定
+        setUser({
+          id: accountData.email, // 仮のIDとしてemailを使用
+          email: accountData.email,
+          name: accountData.displayName || accountData.email,
+          accountType: accountData.accountType as 'admin' | 'merchant' | 'user' | 'shop',
+          shopId: accountData.shopId,
+          merchantId: accountData.merchantId
+        });
+        console.log('✅ AuthContext: login successful (without /api/me)', { 
+          user: accountData,
+        });
+      }
     } catch (error) {
       console.error('❌ AuthContext: login failed', error);
       throw error;
