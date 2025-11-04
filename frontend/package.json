@@ -13,7 +13,7 @@
     "secret:generate": "tsx ../scripts/generate-secret.ts"
   },
   "dependencies": {
-    "@hv-development/schemas": "1.46.0",
+    "@hv-development/schemas": "1.50.0",
     "autoprefixer": "10.4.21",
     "jose": "^6.1.0",
     "next": "^15.5.6",
