@@ -160,24 +160,43 @@ export default function CouponsPage() {
     const originalCoupon = coupons.find(c => c.id === couponId);
     if (!originalCoupon) return;
     const originalStatus = originalCoupon.status;
+    const originalIsPublic = originalCoupon.isPublic;
+
+    // 停止中に変更する場合は公開ステータスも非公開にする
+    const shouldUpdatePublicStatus = status === 'suspended' && originalIsPublic;
+    const newIsPublic = status === 'suspended' ? false : originalIsPublic;
 
     // UIを即座に更新（オプティミスティックアップデート）
     setCoupons(prevCoupons =>
       prevCoupons.map(coupon =>
-        coupon.id === couponId ? { ...coupon, status: status as CouponStatus } : coupon
+        coupon.id === couponId
+          ? { ...coupon, status: status as CouponStatus, isPublic: newIsPublic }
+          : coupon
       )
     );
 
     // 非同期でAPIを呼び出し
     try {
+      // 承認ステータスの更新
       await apiClient.updateCouponStatus(couponId, { status: status as CouponStatus });
-      showSuccess('ステータスを更新しました');
+      
+      // 停止中に変更する場合は公開ステータスも更新
+      if (shouldUpdatePublicStatus) {
+        await apiClient.updateCouponPublicStatus(couponId, { isPublic: false });
+      }
+
+      const message = shouldUpdatePublicStatus
+        ? 'ステータスを更新しました（公開ステータスを非公開に変更しました）'
+        : 'ステータスを更新しました';
+      showSuccess(message);
     } catch (error) {
       console.error('ステータスの更新に失敗しました:', error);
       // エラーが発生した場合は元の状態に戻す
       setCoupons(prevCoupons =>
         prevCoupons.map(coupon =>
-          coupon.id === couponId ? { ...coupon, status: originalStatus } : coupon
+          coupon.id === couponId
+            ? { ...coupon, status: originalStatus, isPublic: originalIsPublic }
+            : coupon
         )
       );
       
@@ -304,10 +323,30 @@ export default function CouponsPage() {
     try {
       let successCount = 0;
       let failCount = 0;
+      let publicStatusUpdatedCount = 0;
+
+      // 停止中に変更する場合は公開ステータスも非公開にする
+      const shouldUpdatePublicStatus = status === 'suspended';
 
       for (const couponId of selectedCoupons) {
         try {
+          // 承認ステータスの更新
           await apiClient.updateCouponStatus(couponId, { status: status as CouponStatus });
+          
+          // 停止中に変更する場合、かつ公開中の場合は公開ステータスも更新
+          if (shouldUpdatePublicStatus) {
+            const coupon = filteredCoupons.find(c => c.id === couponId);
+            if (coupon && coupon.isPublic) {
+              try {
+                await apiClient.updateCouponPublicStatus(couponId, { isPublic: false });
+                publicStatusUpdatedCount++;
+              } catch (publicStatusError) {
+                console.error(`クーポン ${couponId} の公開ステータス更新に失敗:`, publicStatusError);
+                // 公開ステータスの更新に失敗しても、承認ステータスの更新は成功しているので続行
+              }
+            }
+          }
+          
           successCount++;
         } catch (error) {
           console.error(`クーポン ${couponId} の更新に失敗:`, error);
@@ -315,8 +354,13 @@ export default function CouponsPage() {
         }
       }
 
+      // 成功メッセージの構築
       if (successCount > 0) {
-        showSuccess(`${successCount}件のステータスを更新しました`);
+        let message = `${successCount}件のステータスを更新しました`;
+        if (shouldUpdatePublicStatus && publicStatusUpdatedCount > 0) {
+          message += `（${publicStatusUpdatedCount}件の公開ステータスを非公開に変更しました）`;
+        }
+        showSuccess(message);
       }
       if (failCount > 0) {
         showError(`${failCount}件の更新に失敗しました`);
