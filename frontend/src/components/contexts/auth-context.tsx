@@ -13,6 +13,7 @@ interface User {
   accountType: 'admin' | 'merchant' | 'user' | 'shop';
   shopId?: string; // 店舗アカウントの場合の店舗ID
   merchantId?: string; // 事業者アカウントまたは店舗アカウントの場合の事業者ID
+  role?: 'sysadmin' | 'operator'; // 管理者アカウントの場合の権限
 }
 
 interface AuthContextType {
@@ -59,6 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           email?: string | null;
           shopId?: string | null;
           merchantId?: string | null;
+          role?: string | null; // 管理者アカウントの場合の権限
         } | null;
         const me = await apiClient.getMe().catch(() => null) as MeResponse;
         if (me && me.accountType) {
@@ -69,6 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             accountType: me.accountType,
             shopId: (me.shopId ?? undefined) || undefined,
             merchantId: (me.merchantId ?? undefined) || undefined,
+            role: me.role ? (me.role as 'sysadmin' | 'operator') : undefined,
           });
         }
       } catch (error) {
@@ -85,6 +88,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('🔐 AuthContext: login called', { email: credentials.email });
       const response = await apiClient.login(credentials);
+      console.log('🔍 AuthContext: login response', response.account);
 
       const accountData = (response as unknown as { account: unknown }).account as { 
         accountType: string; 
@@ -92,6 +96,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         merchantId?: string;
         email: string;
         displayName?: string;
+        role?: string;
       };
       setUser({
         id: accountData.email, // 仮のIDとしてemailを使用
@@ -99,7 +104,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         name: accountData.displayName || accountData.email,
         accountType: accountData.accountType as 'admin' | 'merchant' | 'user' | 'shop',
         shopId: accountData.shopId,
-        merchantId: accountData.merchantId
+        merchantId: accountData.merchantId,
+        role: accountData.role ? (accountData.role as 'sysadmin' | 'operator') : undefined,
       });
       console.log('✅ AuthContext: login successful', { 
         user: accountData,

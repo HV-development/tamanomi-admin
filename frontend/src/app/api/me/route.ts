@@ -22,6 +22,7 @@ export async function GET(request: Request) {
       const m = data?.data || data;
       const res = NextResponse.json({ accountType: 'merchant', merchantId: m?.id, email: m?.account?.email || m?.accountEmail || null });
       res.headers.set('Cache-Control', 'no-store'); res.headers.set('Pragma', 'no-cache');
+      console.log('🔍 API Route: Merchant me response', data);
       return res;
     }
 
@@ -31,13 +32,25 @@ export async function GET(request: Request) {
       const s = await sr.json().catch(() => ({}));
       const res = NextResponse.json({ accountType: 'shop', shopId: s?.id || s?.data?.id || null, merchantId: s?.merchant?.id || s?.data?.merchant?.id || null, email: s?.account?.email || null });
       res.headers.set('Cache-Control', 'no-store'); res.headers.set('Pragma', 'no-cache');
+      console.log('🔍 API Route: Shop me response', s);
       return res;
     }
 
-    const res = NextResponse.json({ accountType: 'admin' });
-    res.headers.set('Cache-Control', 'no-store'); res.headers.set('Pragma', 'no-cache');
-    return res;
-  } catch {
+    // admin 最後に判定
+    const ar = await fetch(`${API_BASE_URL}/admin-accounts/me`, { headers: { 'Content-Type': 'application/json', Authorization: auth } });
+    if (ar.ok) {
+      const data = await ar.json().catch(() => ({}));
+      const a = data?.data || data;
+      const res = NextResponse.json({ accountType: 'admin', adminId: a?.id, email: a?.email || null, role: a?.role || null });
+      res.headers.set('Cache-Control', 'no-store'); res.headers.set('Pragma', 'no-cache');
+      console.log('🔍 API Route: Admin me response', a);
+      return res;
+    }
+
+    // どのアカウントタイプにも該当しない場合
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  } catch (error) {
+    console.error('❌ API Route: /api/me error', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }

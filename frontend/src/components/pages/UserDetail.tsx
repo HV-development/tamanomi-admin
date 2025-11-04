@@ -6,6 +6,7 @@ import Link from 'next/link';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+import { useAuth } from '@/components/contexts/auth-context';
 
 interface User {
   id: string;
@@ -152,6 +153,10 @@ export default function UserDetail() {
   const userId = params.id as string;
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const currentUser = useAuth();
+
+  // 管理者アカウントの管理者権限を判定
+  const isAdmin = currentUser?.user?.accountType === 'admin' && currentUser?.user?.role === 'sysadmin';
 
   useEffect(() => {
     // 実際はAPIからユーザーデータを取得
@@ -287,23 +292,27 @@ export default function UserDetail() {
               <p className="text-gray-900 bg-gray-50 p-3 rounded">{user.nickname}</p>
             </div>
 
-            {/* 郵便番号 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                郵便番号
-              </label>
-              <p className="text-gray-900 bg-gray-50 p-3 rounded">{user.postalCode}</p>
-            </div>
-
-            {/* 住所 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                住所
-              </label>
-              <p className="text-gray-900 bg-gray-50 p-3 rounded">
-                {user.prefecture}{user.city}{user.address}
-              </p>
-            </div>
+            {/* 管理者権限がある場合は郵便番号と住所を表示 */}
+            {isAdmin && (
+            <>
+              {/* 郵便番号 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  郵便番号
+                </label>
+                <p className="text-gray-900 bg-gray-50 p-3 rounded">{user.postalCode}</p>
+              </div>
+              {/* 住所 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  住所
+                </label>
+                <p className="text-gray-900 bg-gray-50 p-3 rounded">
+                  {user.prefecture}{user.city}{user.address}
+                </p>
+              </div>
+            </>
+            )}
 
             {/* 生年月日 */}
             <div>
