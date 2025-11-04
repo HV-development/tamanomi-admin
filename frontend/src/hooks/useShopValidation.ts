@@ -47,7 +47,7 @@ export function useShopValidation({
     
     // ZodEffectsの内部スキーマ（ZodObject）にアクセス
     // instanceOfチェックがうまく動作しない場合があるため、constructor.nameと_defプロパティでチェック
-    let baseSchema: any = schema;
+    let baseSchema: z.ZodTypeAny = schema;
     let unwrapCount = 0;
     const maxUnwrapAttempts = 10; // 無限ループ防止
     
@@ -84,11 +84,16 @@ export function useShopValidation({
 
     // Zodスキーマでバリデーション実行
     // instanceofチェックがうまく動作しない場合があるため、shapeプロパティの存在で確認
-    if (!baseSchema || !baseSchema.shape) {
+    if (!baseSchema || !('shape' in baseSchema)) {
       return;
     }
 
-    let fieldSchema: any = baseSchema.shape[field as keyof typeof baseSchema.shape];
+    const zodObject = baseSchema as z.ZodObject<Record<string, z.ZodTypeAny>>;
+    if (!zodObject.shape) {
+      return;
+    }
+
+    let fieldSchema: z.ZodTypeAny = zodObject.shape[field as string] as z.ZodTypeAny;
     if (!fieldSchema) {
       return; // スキーマに存在しないフィールドはスキップ
     }
@@ -135,8 +140,11 @@ export function useShopValidation({
             fieldSchema.parse('');
           } catch (err) {
             // instanceofチェックが失敗する場合があるため、errorsプロパティで判定
-            if (err instanceof z.ZodError || ((err as any)?.errors && Array.isArray((err as any).errors))) {
-              errorMessage = ((err as any).errors[0]?.message) || '入力エラーです';
+            if (err instanceof z.ZodError) {
+              errorMessage = err.errors[0]?.message || '入力エラーです';
+            } else if (err && typeof err === 'object' && 'errors' in err && Array.isArray(err.errors)) {
+              const zodLikeError = err as { errors: Array<{ message?: string }> };
+              errorMessage = zodLikeError.errors[0]?.message || '入力エラーです';
             }
           }
         }
@@ -146,8 +154,11 @@ export function useShopValidation({
         try {
           fieldSchema.parse(valueToValidate);
         } catch (err) {
-          if (err instanceof z.ZodError || ((err as any)?.errors && Array.isArray((err as any).errors))) {
-            errorMessage = ((err as any).errors[0]?.message) || '入力エラーです';
+          if (err instanceof z.ZodError) {
+            errorMessage = err.errors[0]?.message || '入力エラーです';
+          } else if (err && typeof err === 'object' && 'errors' in err && Array.isArray(err.errors)) {
+            const zodLikeError = err as { errors: Array<{ message?: string }> };
+            errorMessage = zodLikeError.errors[0]?.message || '入力エラーです';
           }
         }
       } else if (field === 'accountEmail') {
@@ -184,8 +195,11 @@ export function useShopValidation({
             try {
               fieldSchema.parse(value);
             } catch (err) {
-              if (err instanceof z.ZodError || ((err as any)?.errors && Array.isArray((err as any).errors))) {
-                errorMessage = ((err as any).errors[0]?.message) || '入力エラーです';
+              if (err instanceof z.ZodError) {
+                errorMessage = err.errors[0]?.message || '入力エラーです';
+              } else if (err && typeof err === 'object' && 'errors' in err && Array.isArray(err.errors)) {
+                const zodLikeError = err as { errors: Array<{ message?: string }> };
+                errorMessage = zodLikeError.errors[0]?.message || '入力エラーです';
               }
             }
           }
@@ -196,11 +210,18 @@ export function useShopValidation({
         if (valueToValidate !== undefined && valueToValidate !== null && valueToValidate !== '') {
           // 元のフィールドスキーマ（ZodOptionalなど）でバリデーションを実行してエラーメッセージを取得
           try {
-            const originalFieldSchema = baseSchema.shape[field as keyof typeof baseSchema.shape];
+            if (!('shape' in baseSchema)) {
+              return;
+            }
+            const zodObject = baseSchema as z.ZodObject<Record<string, z.ZodTypeAny>>;
+            const originalFieldSchema = zodObject.shape[field as string] as z.ZodTypeAny;
+            if (!originalFieldSchema) {
+              return;
+            }
             originalFieldSchema.parse(valueToValidate);
           } catch (err) {
-            if (err instanceof z.ZodError || ((err as any)?.errors && Array.isArray((err as any).errors))) {
-              const errors = (err as any).errors;
+            if (err instanceof z.ZodError) {
+              const errors = err.errors;
               const firstError = errors?.[0];
               
               // エラーメッセージを取得（カスタムメッセージがあればそれを使用）

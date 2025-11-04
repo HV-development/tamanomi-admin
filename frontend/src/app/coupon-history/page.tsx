@@ -131,12 +131,12 @@ export default function CouponHistoryPage() {
         });
         
         if (!response.ok) {
-          let errorData: any;
+          let errorData: { message?: string; error?: { message?: string } } | null = null;
           const contentType = response.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
             try {
               errorData = await response.json();
-            } catch (e) {
+            } catch (_e) {
               errorData = { message: 'Failed to parse JSON response' };
             }
           } else {
@@ -148,11 +148,24 @@ export default function CouponHistoryPage() {
             statusText: response.statusText,
             error: errorData,
           });
-          throw new Error(errorData.message || errorData.error?.message || `Failed to fetch usage history (${response.status})`);
+          throw new Error(errorData?.message || errorData?.error?.message || `Failed to fetch usage history (${response.status})`);
         }
         
-        const data = await response.json();
-        const formattedHistory = data.history.map((item: any) => ({
+        const data = await response.json() as { history: Array<{
+          id: string;
+          usageId?: string;
+          couponId: string;
+          couponName: string;
+          shopId: string;
+          shopName: string;
+          nickname?: string;
+          email?: string;
+          gender?: string;
+          birthDate?: string;
+          address?: string;
+          usedAt: string;
+        }> };
+        const formattedHistory = data.history.map((item) => ({
           id: item.id,
           usageId: item.usageId || item.id,
           couponId: item.couponId,

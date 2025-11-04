@@ -260,20 +260,20 @@ export default function ShopDetailPage() {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">喫煙タイプ</label>
-              <div className="text-sm text-gray-900">{getSmokingLabel(shop.smokingType as any)}</div>
+              <div className="text-sm text-gray-900">{getSmokingLabel(shop.smokingType as string)}</div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">ホームページURL</label>
               <div className="text-sm text-gray-900">
-                {(shop as any).homepageUrl ? (
-                  <a href={(shop as any).homepageUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{(shop as any).homepageUrl}</a>
+                {('homepageUrl' in shop && shop.homepageUrl) ? (
+                  <a href={shop.homepageUrl as string} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{shop.homepageUrl as string}</a>
                 ) : '-'}
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">クーポン利用時間</label>
               <div className="text-sm text-gray-900">
-                {(shop as any).couponUsageStart && (shop as any).couponUsageEnd ? `${(shop as any).couponUsageStart}〜${(shop as any).couponUsageEnd}` : '-'}
+                {('couponUsageStart' in shop && 'couponUsageEnd' in shop && shop.couponUsageStart && shop.couponUsageEnd) ? `${shop.couponUsageStart as string}〜${shop.couponUsageEnd as string}` : '-'}
               </div>
             </div>
             

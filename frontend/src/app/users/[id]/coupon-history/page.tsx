@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
@@ -57,9 +56,9 @@ export default function CouponHistoryPage() {
     usedDateEnd: '',
   });
 
-  const [showBackButton, setShowBackButton] = useState(true);
-  const [backUrl, setBackUrl] = useState(`/users/${userId}`);
-  const [pageTitle, setPageTitle] = useState('クーポン利用履歴');
+  const [showBackButton, _setShowBackButton] = useState(true);
+  const [backUrl, _setBackUrl] = useState(`/users/${userId}`);
+  const [pageTitle, _setPageTitle] = useState('クーポン利用履歴');
   const [usages, setUsages] = useState<CouponUsage[]>([]);
   const [filteredUsages, setFilteredUsages] = useState<CouponUsage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -95,8 +94,22 @@ export default function CouponHistoryPage() {
           throw new Error('Failed to fetch usage history');
         }
         
-        const data = await response.json();
-        const formattedHistory = data.history.map((item: any) => ({
+        const data = await response.json() as { history: Array<{
+          id: string;
+          usageId?: string;
+          couponId: string;
+          couponName: string;
+          shopId: string;
+          shopName: string;
+          userId?: string;
+          nickname?: string;
+          email?: string;
+          gender?: string;
+          birthDate?: string;
+          address?: string;
+          usedAt: string;
+        }> };
+        const formattedHistory = data.history.map((item) => ({
           id: item.id,
           usageId: item.usageId || item.id,
           couponId: item.couponId,

@@ -942,15 +942,15 @@ function ShopsPageContent() {
                     <tr className="border-b border-gray-300">
                       <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">ホームページURL</td>
                       <td className="py-3 px-4 text-gray-900">
-                        {(shops[0] as any).homepageUrl ? (
-                          <a href={(shops[0] as any).homepageUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{(shops[0] as any).homepageUrl}</a>
+                        {('homepageUrl' in shops[0] && shops[0].homepageUrl) ? (
+                          <a href={shops[0].homepageUrl as string} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{shops[0].homepageUrl as string}</a>
                         ) : '-'}
                       </td>
                     </tr>
                     <tr className="border-b border-gray-300">
                       <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">クーポン利用時間</td>
                       <td className="py-3 px-4 text-gray-900">
-                        {(shops[0] as any).couponUsageStart && (shops[0] as any).couponUsageEnd ? `${(shops[0] as any).couponUsageStart}〜${(shops[0] as any).couponUsageEnd}` : '-'}
+                        {('couponUsageStart' in shops[0] && 'couponUsageEnd' in shops[0] && shops[0].couponUsageStart && shops[0].couponUsageEnd) ? `${shops[0].couponUsageStart as string}〜${shops[0].couponUsageEnd as string}` : '-'}
                       </td>
                     </tr>
                     <tr className="border-b border-gray-300">

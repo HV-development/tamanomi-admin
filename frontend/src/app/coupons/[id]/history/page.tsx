@@ -65,9 +65,9 @@ export default function CouponHistoryPage() {
     usedDateEnd: '',
   });
 
-  const [showBackButton, setShowBackButton] = useState(true);
-  const [backUrl, setBackUrl] = useState(`/coupons/${couponId}`);
-  const [pageTitle, setPageTitle] = useState('クーポン利用履歴');
+  const [showBackButton, _setShowBackButton] = useState(true);
+  const [backUrl, _setBackUrl] = useState(`/coupons/${couponId}`);
+  const [pageTitle, _setPageTitle] = useState('クーポン利用履歴');
   const [usages, setUsages] = useState<CouponUsage[]>([]);
   const [filteredUsages, setFilteredUsages] = useState<CouponUsage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -107,8 +107,22 @@ export default function CouponHistoryPage() {
           throw new Error('Failed to fetch usage history');
         }
         
-        const data = await response.json();
-        const formattedHistory = data.history.map((item: any) => ({
+        const data = await response.json() as { history: Array<{
+          id: string;
+          usageId?: string;
+          couponId: string;
+          couponName: string;
+          shopId: string;
+          shopName: string;
+          userId?: string;
+          nickname?: string;
+          email?: string;
+          gender?: string;
+          birthDate?: string;
+          address?: string;
+          usedAt: string;
+        }> };
+        const formattedHistory = data.history.map((item) => ({
           id: item.id,
           usageId: item.usageId || item.id,
           couponId: item.couponId,

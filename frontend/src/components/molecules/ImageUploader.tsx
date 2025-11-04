@@ -40,7 +40,7 @@ export default function ImageUploader({
                   src={imageUrl}
                   alt={`店舗画像 ${index + 1}`}
                   className="absolute inset-0 w-full h-full object-cover"
-                  onError={(e) => {
+                  onError={(_e) => {
                     console.error('画像の読み込みに失敗しました:', imageUrl);
                   }}
                 />
@@ -68,7 +68,7 @@ export default function ImageUploader({
                   src={preview.url}
                   alt={`プレビュー ${index + 1}`}
                   className="absolute inset-0 w-full h-full object-cover"
-                  onError={(e) => {
+                  onError={(_e) => {
                     console.error('プレビュー画像の読み込みに失敗しました:', preview.url);
                   }}
                 />

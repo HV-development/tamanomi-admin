@@ -100,7 +100,21 @@ export default function UserManagement() {
       const data = await response.json();
       
       // APIレスポンスをフォーマット
-      const formattedUsers: User[] = data.users.map((user: any) => ({
+      const responseData = data as { users: Array<{
+        id: string;
+        nickname: string;
+        postalCode: string;
+        prefecture: string;
+        city: string;
+        address: string;
+        birthDate: string;
+        gender: number;
+        saitamaAppId: string;
+        rank: number;
+        registeredStore: string;
+        registeredAt: string;
+      }> };
+      const formattedUsers: User[] = responseData.users.map((user) => ({
         id: user.id,
         nickname: user.nickname,
         postalCode: user.postalCode,

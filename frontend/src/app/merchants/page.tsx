@@ -41,6 +41,9 @@ export default function MerchantsPage() {
   // 事業者アカウントかどうかを判定
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
   
+  // operatorロールかどうかを判定
+  const isOperatorRole = auth?.user?.accountType === 'admin' && auth?.user?.role === 'operator';
+  
   // チェックボックス関連の状態
   const [selectedMerchants, setSelectedMerchants] = useState<Set<string>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
@@ -227,11 +230,13 @@ export default function MerchantsPage() {
       merchant.id.toLowerCase().includes(keyword) ||
       merchant.name.toLowerCase().includes(keyword) ||
       merchant.nameKana.toLowerCase().includes(keyword) ||
-      `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(keyword) ||
-      `${merchant.representativeNameLastKana} ${merchant.representativeNameFirstKana}`.toLowerCase().includes(keyword) ||
-      merchant.representativePhone.includes(keyword) ||
-      (merchant.account?.email || merchant.email || '').toLowerCase().includes(keyword) ||
-      `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(keyword) ||
+      (!isOperatorRole && (
+        `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(keyword) ||
+        `${merchant.representativeNameLastKana} ${merchant.representativeNameFirstKana}`.toLowerCase().includes(keyword) ||
+        merchant.representativePhone.includes(keyword) ||
+        (merchant.account?.email || merchant.email || '').toLowerCase().includes(keyword) ||
+        `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(keyword)
+      )) ||
       merchant.postalCode.includes(keyword);
     
     // 各項目のフィルタ
@@ -239,14 +244,16 @@ export default function MerchantsPage() {
       matchesKeyword &&
       (appliedSearchForm.merchantName === '' || merchant.name.toLowerCase().includes(appliedSearchForm.merchantName.toLowerCase())) &&
       (appliedSearchForm.merchantNameKana === '' || merchant.nameKana.toLowerCase().includes(appliedSearchForm.merchantNameKana.toLowerCase())) &&
-      (appliedSearchForm.representativeName === '' || 
-        `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(appliedSearchForm.representativeName.toLowerCase())) &&
-      (appliedSearchForm.representativeNameKana === '' || 
-        `${merchant.representativeNameLastKana} ${merchant.representativeNameFirstKana}`.toLowerCase().includes(appliedSearchForm.representativeNameKana.toLowerCase())) &&
-      (appliedSearchForm.phone === '' || merchant.representativePhone.includes(appliedSearchForm.phone)) &&
-      (appliedSearchForm.email === '' || (merchant.account?.email || merchant.email || '').toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
-      (appliedSearchForm.address === '' || 
-        `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(appliedSearchForm.address.toLowerCase())) &&
+      (isOperatorRole || (
+        (appliedSearchForm.representativeName === '' || 
+          `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(appliedSearchForm.representativeName.toLowerCase())) &&
+        (appliedSearchForm.representativeNameKana === '' || 
+          `${merchant.representativeNameLastKana} ${merchant.representativeNameFirstKana}`.toLowerCase().includes(appliedSearchForm.representativeNameKana.toLowerCase())) &&
+        (appliedSearchForm.phone === '' || merchant.representativePhone.includes(appliedSearchForm.phone)) &&
+        (appliedSearchForm.email === '' || (merchant.account?.email || merchant.email || '').toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
+        (appliedSearchForm.address === '' || 
+          `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(appliedSearchForm.address.toLowerCase()))
+      )) &&
       (appliedSearchForm.postalCode === '' || merchant.postalCode.includes(appliedSearchForm.postalCode)) &&
       (appliedSearchForm.prefecture === '' || merchant.prefecture.toLowerCase().includes(appliedSearchForm.prefecture.toLowerCase())) &&
       (appliedSearchForm.accountStatus === '' || (merchant.account?.status || 'inactive') === appliedSearchForm.accountStatus) &&
@@ -531,66 +538,72 @@ export default function MerchantsPage() {
                 </div>
 
                 {/* 代表者情報 */}
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">代表者情報</h2>
-                  <table className="w-full border-collapse border border-gray-300">
-                    <tbody>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">代表者名</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.representativeNameLast} {myMerchant.representativeNameFirst}</td>
-                      </tr>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">代表者名（カナ）</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.representativeNameLastKana} {myMerchant.representativeNameFirstKana}</td>
-                      </tr>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">電話番号</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.representativePhone}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+                {!isOperatorRole && (
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">代表者情報</h2>
+                    <table className="w-full border-collapse border border-gray-300">
+                      <tbody>
+                        <tr className="border-b border-gray-300">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">代表者名</td>
+                          <td className="py-3 px-4 text-gray-900">{myMerchant.representativeNameLast} {myMerchant.representativeNameFirst}</td>
+                        </tr>
+                        <tr className="border-b border-gray-300">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">代表者名（カナ）</td>
+                          <td className="py-3 px-4 text-gray-900">{myMerchant.representativeNameLastKana} {myMerchant.representativeNameFirstKana}</td>
+                        </tr>
+                        <tr className="border-b border-gray-300">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">電話番号</td>
+                          <td className="py-3 px-4 text-gray-900">{myMerchant.representativePhone}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
 
                 {/* 住所情報 */}
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">住所情報</h2>
-                  <table className="w-full border-collapse border border-gray-300">
-                    <tbody>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">郵便番号</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.postalCode}</td>
-                      </tr>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">都道府県</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.prefecture}</td>
-                      </tr>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">市区町村</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.city}</td>
-                      </tr>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">番地</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.address1}</td>
-                      </tr>
-                      {myMerchant.address2 && (
+                {!isOperatorRole && (
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">住所情報</h2>
+                    <table className="w-full border-collapse border border-gray-300">
+                      <tbody>
                         <tr className="border-b border-gray-300">
-                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">建物名・部屋番号</td>
-                          <td className="py-3 px-4 text-gray-900">{myMerchant.address2}</td>
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">郵便番号</td>
+                          <td className="py-3 px-4 text-gray-900">{myMerchant.postalCode}</td>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                        <tr className="border-b border-gray-300">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">都道府県</td>
+                          <td className="py-3 px-4 text-gray-900">{myMerchant.prefecture}</td>
+                        </tr>
+                        <tr className="border-b border-gray-300">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">市区町村</td>
+                          <td className="py-3 px-4 text-gray-900">{myMerchant.city}</td>
+                        </tr>
+                        <tr className="border-b border-gray-300">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">番地</td>
+                          <td className="py-3 px-4 text-gray-900">{myMerchant.address1}</td>
+                        </tr>
+                        {myMerchant.address2 && (
+                          <tr className="border-b border-gray-300">
+                            <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">建物名・部屋番号</td>
+                            <td className="py-3 px-4 text-gray-900">{myMerchant.address2}</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
 
                 {/* アカウント情報 */}
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">アカウント情報</h2>
                   <table className="w-full border-collapse border border-gray-300">
                     <tbody>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">メールアドレス</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.account?.email || myMerchant.accountEmail}</td>
-                      </tr>
+                      {!isOperatorRole && (
+                        <tr className="border-b border-gray-300">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">メールアドレス</td>
+                          <td className="py-3 px-4 text-gray-900">{myMerchant.account?.email || myMerchant.accountEmail}</td>
+                        </tr>
+                      )}
                       <tr className="border-b border-gray-300">
                         <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">アカウントステータス</td>
                         <td className={`py-3 px-4 text-sm font-medium ${getAccountStatusColor(myMerchant.account?.status || 'inactive')}`}>
@@ -727,64 +740,68 @@ export default function MerchantsPage() {
             </div>
 
             {/* 代表者名と代表者名（カナ） */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="representativeName" className="block text-sm font-medium text-gray-700 mb-2">
-                  代表者名
-                </label>
-                <input
-                  type="text"
-                  id="representativeName"
-                  placeholder="代表者名を入力"
-                  value={searchForm.representativeName}
-                  onChange={(e) => handleInputChange('representativeName', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
+            {!isOperatorRole && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="representativeName" className="block text-sm font-medium text-gray-700 mb-2">
+                    代表者名
+                  </label>
+                  <input
+                    type="text"
+                    id="representativeName"
+                    placeholder="代表者名を入力"
+                    value={searchForm.representativeName}
+                    onChange={(e) => handleInputChange('representativeName', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="representativeNameKana" className="block text-sm font-medium text-gray-700 mb-2">
+                    代表者名（カナ）
+                  </label>
+                  <input
+                    type="text"
+                    id="representativeNameKana"
+                    placeholder="代表者名（カナ）を入力"
+                    value={searchForm.representativeNameKana}
+                    onChange={(e) => handleInputChange('representativeNameKana', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
               </div>
-              <div>
-                <label htmlFor="representativeNameKana" className="block text-sm font-medium text-gray-700 mb-2">
-                  代表者名（カナ）
-                </label>
-                <input
-                  type="text"
-                  id="representativeNameKana"
-                  placeholder="代表者名（カナ）を入力"
-                  value={searchForm.representativeNameKana}
-                  onChange={(e) => handleInputChange('representativeNameKana', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            </div>
+            )}
 
             {/* 電話番号とメールアドレス */}
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                  電話番号
-                </label>
-                <input
-                  type="text"
-                  id="phone"
-                  placeholder="電話番号を入力"
-                  value={searchForm.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
+            {!isOperatorRole && (
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                    電話番号
+                  </label>
+                  <input
+                    type="text"
+                    id="phone"
+                    placeholder="電話番号を入力"
+                    value={searchForm.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                    メールアドレス
+                  </label>
+                  <input
+                    type="text"
+                    id="email"
+                    placeholder="メールアドレスを入力"
+                    value={searchForm.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
               </div>
-              <div className="flex-1">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  メールアドレス
-                </label>
-                <input
-                  type="text"
-                  id="email"
-                  placeholder="メールアドレスを入力"
-                  value={searchForm.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            </div>
+            )}
 
             {/* 郵便番号、都道府県、住所 */}
             <div className="flex gap-4">
@@ -817,19 +834,21 @@ export default function MerchantsPage() {
                   ))}
                 </select>
               </div>
-              <div className="flex-1">
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                  住所
-                </label>
-                <input
-                  type="text"
-                  id="address"
-                  placeholder="住所を入力"
-                  value={searchForm.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
+              {!isOperatorRole && (
+                <div className="flex-1">
+                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                    住所
+                  </label>
+                  <input
+                    type="text"
+                    id="address"
+                    placeholder="住所を入力"
+                    value={searchForm.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
+              )}
             </div>
 
             {/* アカウント発行、契約ステータス、登録日 */}
@@ -943,18 +962,26 @@ export default function MerchantsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
                     事業者名
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
-                    代表者名
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
-                    電話番号
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-                    メールアドレス
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[250px]">
-                    住所
-                  </th>
+                  {!isOperatorRole && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
+                      代表者名
+                    </th>
+                  )}
+                  {!isOperatorRole && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                      電話番号
+                    </th>
+                  )}
+                  {!isOperatorRole && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
+                      メールアドレス
+                    </th>
+                  )}
+                  {!isOperatorRole && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[250px]">
+                      住所
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[180px]">
                     アカウント発行
                   </th>
@@ -1011,22 +1038,30 @@ export default function MerchantsPage() {
                       <div className="text-sm font-medium text-gray-900">{merchant.name}</div>
                       <div className="text-sm text-gray-500">{merchant.nameKana}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
-                      <div className="text-sm font-medium text-gray-900">{merchant.representativeNameLast} {merchant.representativeNameFirst}</div>
-                      <div className="text-sm text-gray-500">{merchant.representativeNameLastKana} {merchant.representativeNameFirstKana}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[120px]">
-                      <div className="text-sm text-gray-900">{merchant.representativePhone}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
-                      <div className="text-sm text-gray-900">{merchant.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[250px]">
-                      <div className="text-sm text-gray-900">
-                        〒{merchant.postalCode}<br />
-                        {merchant.prefecture}{merchant.city}{merchant.address1}{merchant.address2}
-                      </div>
-                    </td>
+                    {!isOperatorRole && (
+                      <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
+                        <div className="text-sm font-medium text-gray-900">{merchant.representativeNameLast} {merchant.representativeNameFirst}</div>
+                        <div className="text-sm text-gray-500">{merchant.representativeNameLastKana} {merchant.representativeNameFirstKana}</div>
+                      </td>
+                    )}
+                    {!isOperatorRole && (
+                      <td className="px-6 py-4 whitespace-nowrap min-w-[120px]">
+                        <div className="text-sm text-gray-900">{merchant.representativePhone}</div>
+                      </td>
+                    )}
+                    {!isOperatorRole && (
+                      <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
+                        <div className="text-sm text-gray-900">{merchant.email}</div>
+                      </td>
+                    )}
+                    {!isOperatorRole && (
+                      <td className="px-6 py-4 whitespace-nowrap min-w-[250px]">
+                        <div className="text-sm text-gray-900">
+                          〒{merchant.postalCode}<br />
+                          {merchant.prefecture}{merchant.city}{merchant.address1}{merchant.address2}
+                        </div>
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap min-w-[180px]">
                       <div className="flex items-center gap-2">
                         <div className={`text-sm font-medium ${getAccountStatusColor(merchant.account?.status || 'inactive')}`}>

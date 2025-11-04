@@ -60,10 +60,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           email?: string | null;
           shopId?: string | null;
           merchantId?: string | null;
+          role?: string;
         } | null;
         const me = await apiClient.getMe().catch(() => null) as MeResponse;
         if (me && me.accountType) {
-          const role = (me as any).role;
+          const role = me.role;
           console.log('🔍 [AuthContext] Setting user:', { accountType: me.accountType, role, email: me.email });
           setUser({
             id: me.email || 'me',

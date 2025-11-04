@@ -15,7 +15,6 @@ export default function ConsoleFilter(): null {
     };
 
     const silence = (method: keyof typeof console) => {
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
       // @ts-expect-error allow override
       console[method] = () => {};
     };
