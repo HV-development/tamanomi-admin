@@ -33,7 +33,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   
   // 事業者アカウントかどうかを判定
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
-  
+
+  // 管理者アカウントかどうかを判定
+  const isAdminAccount = auth?.user?.accountType === 'admin';
+
+  // 店舗アカウントかどうかを判定
+  const isShopAccount = auth?.user?.accountType === 'shop';
+
   // shopIdの取得（編集時のみ存在）
   // /merchants/[id]/shops/[shopId]/edit -> params.shopId
   // /shops/[id]/edit -> params.id（merchantId未指定の場合）
@@ -868,11 +874,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   };
 
   const handleCancel = () => {
-    // 管理者の場合は管理者用の店舗一覧にリダイレクト
-    if (auth?.user?.accountType === 'admin') {
+    // 管理者または店舗アカウントの場合は店舗一覧にリダイレクト
+    if (isAdminAccount || isShopAccount) {
       router.push('/shops');
       return;
     }
+
     // 事業者の場合は事業者用の店舗一覧にリダイレクト
     const redirectPath = merchantId ? `/merchants/${merchantId}/shops` : '/shops';
     router.push(redirectPath);
