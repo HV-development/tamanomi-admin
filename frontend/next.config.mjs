@@ -99,20 +99,33 @@ const nextConfig = {
             },
             {
               key: 'Content-Security-Policy',
-              value: [
-                "default-src 'self'",
-                "script-src 'self' 'unsafe-inline'",
-                "style-src 'self' https://fonts.googleapis.com",
-                "font-src 'self' https://fonts.gstatic.com",
-                "img-src 'self' data: blob: https://dev-images.tamanomi.com https://images.tamanomi.com",
-                "connect-src 'self' https://zipcloud.ibsnet.co.jp",
-                "base-uri 'self'",
-                "form-action 'self'",
-                "object-src 'none'",
-                "frame-ancestors 'none'",
-                "report-uri /api/security/csp-report",
-                "report-to csp-endpoint",
-              ].join('; '),
+              value: (() => {
+                const isDev = process.env.NODE_ENV === 'development';
+                const directives = [
+                  "default-src 'self'",
+                  // 開発環境ではReact Refreshのためにunsafe-evalが必要
+                  isDev 
+                    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+                    : "script-src 'self' 'unsafe-inline'",
+                  "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'",
+                  // 開発環境では外部フォントも許可（ブラウザ拡張機能などに対応）
+                  isDev
+                    ? "font-src 'self' https://fonts.gstatic.com https: data:"
+                    : "font-src 'self' https://fonts.gstatic.com",
+                  "img-src 'self' data: blob: https://dev-images.tamanomi.com https://images.tamanomi.com",
+                  // 開発環境ではlocalhostへの接続も許可
+                  isDev
+                    ? "connect-src 'self' https://zipcloud.ibsnet.co.jp http://localhost:* ws://localhost:* wss://localhost:*"
+                    : "connect-src 'self' https://zipcloud.ibsnet.co.jp",
+                  "base-uri 'self'",
+                  "form-action 'self'",
+                  "object-src 'none'",
+                  "frame-ancestors 'none'",
+                  "report-uri /api/security/csp-report",
+                  "report-to csp-endpoint",
+                ];
+                return directives.join('; ');
+              })(),
             },
             {
               key: 'Reporting-Endpoints',
