@@ -123,8 +123,18 @@ export default function CouponsPage() {
 
   // クーポン一覧を取得
   useEffect(() => {
+    // authの初期化を待つ
+    if (auth?.isLoading) {
+      return;
+    }
+    
+    // 認証情報が取得できていない場合はスキップ
+    if (!auth?.user) {
+      return;
+    }
+    
     fetchCoupons();
-  }, [shopId, merchantId, pagination.page, appliedSearchForm, appliedStatusFilter]);
+  }, [auth?.isLoading, auth?.user, shopId, merchantId, pagination.page, appliedSearchForm, appliedStatusFilter]);
 
   const filteredCoupons = coupons;
 
