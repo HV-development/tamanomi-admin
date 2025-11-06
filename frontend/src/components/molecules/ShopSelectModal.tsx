@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { apiClient } from '@/lib/api';
 import type { Shop } from '@hv-development/schemas';
 
@@ -12,7 +12,7 @@ interface ShopSelectModalProps {
   merchantId?: string; // 事業者でフィルタリングする場合に使用
 }
 
-export default function ShopSelectModal({
+function ShopSelectModal({
   isOpen,
   onClose,
   onSelect,
@@ -25,7 +25,7 @@ export default function ShopSelectModal({
   const [isSearching, setIsSearching] = useState(false);
 
   // 検索実行（API経由）
-  const handleSearch = async () => {
+  const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
       setHasSearched(false);
@@ -68,29 +68,29 @@ export default function ShopSelectModal({
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [searchQuery, merchantId]);
 
-  const handleSelect = (shop: Shop) => {
+  const handleSelect = useCallback((shop: Shop) => {
     onSelect(shop);
     setSearchQuery('');
     setSearchResults([]);
     setHasSearched(false);
     onClose();
-  };
+  }, [onSelect, onClose]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setSearchQuery('');
     setSearchResults([]);
     setHasSearched(false);
     onClose();
-  };
+  }, [onClose]);
 
   // Enterキーで検索
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
-  };
+  }, [handleSearch]);
 
   if (!isOpen) return null;
 
@@ -211,4 +211,6 @@ export default function ShopSelectModal({
     </div>
   );
 }
+
+export default React.memo(ShopSelectModal);
 

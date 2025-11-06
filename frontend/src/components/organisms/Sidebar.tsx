@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import SidebarHeader from '@/components/molecules/sidebar-header';
 import MenuItem from '@/components/molecules/menu-item';
@@ -32,9 +32,11 @@ export default function Sidebar() {
 
   // アカウントタイプに基づいてメニューをフィルタリング
   // 認証情報がロード中の場合は空配列を返してちらつきを防ぐ
-  const filteredMenuItems = auth?.isLoading 
-    ? [] 
-    : menuItems.filter((item) => {
+  const filteredMenuItems = useMemo(
+    () => {
+      if (auth?.isLoading) return [];
+      
+      return menuItems.filter((item) => {
         // 店舗アカウントの場合、店舗管理、クーポン管理、クーポン利用履歴のみ表示
         if (auth?.user?.accountType === 'shop') {
           return item.href === '/shops' || item.href === '/coupons' || item.href === '/coupon-history';
@@ -45,6 +47,9 @@ export default function Sidebar() {
         }
         return true;
       });
+    },
+    [auth?.isLoading, auth?.user?.accountType]
+  );
 
   // ローカルストレージからサイドバーの状態を復元
   useEffect(() => {
@@ -83,16 +88,19 @@ export default function Sidebar() {
     }
   }, [isCollapsed, isLoaded]);
 
-  const handleMenuClick = (href: string) => {
-    // メニューが閉じている状態では閉じたままページ遷移
-    console.log('Menu clicked:', href, 'isCollapsed:', isCollapsed);
-    router.push(href);
-  };
+  const handleMenuClick = useCallback(
+    (href: string) => {
+      // メニューが閉じている状態では閉じたままページ遷移
+      console.log('Menu clicked:', href, 'isCollapsed:', isCollapsed);
+      router.push(href);
+    },
+    [router, isCollapsed]
+  );
 
-  const handleToggleCollapse = () => {
+  const handleToggleCollapse = useCallback(() => {
     console.log('Toggle collapse clicked, current state:', isCollapsed);
-    setIsCollapsed(!isCollapsed);
-  };
+    setIsCollapsed(prev => !prev);
+  }, [isCollapsed]);
 
   if (!isLoaded || auth?.isLoading || !isFontReady) {
     // 完全に準備できるまでサイドバーを表示しない

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { apiClient } from '@/lib/api';
 
 interface Merchant {
@@ -18,7 +18,7 @@ interface MerchantSelectModalProps {
   selectedMerchantId?: string;
 }
 
-export default function MerchantSelectModal({
+function MerchantSelectModal({
   isOpen,
   onClose,
   onSelect,
@@ -30,7 +30,7 @@ export default function MerchantSelectModal({
   const [isSearching, setIsSearching] = useState(false);
 
   // 検索実行（API経由）
-  const handleSearch = async () => {
+  const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
       setHasSearched(false);
@@ -68,29 +68,29 @@ export default function MerchantSelectModal({
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [searchQuery]);
 
-  const handleSelect = (merchant: Merchant) => {
+  const handleSelect = useCallback((merchant: Merchant) => {
     onSelect(merchant);
     setSearchQuery('');
     setSearchResults([]);
     setHasSearched(false);
     onClose();
-  };
+  }, [onSelect, onClose]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setSearchQuery('');
     setSearchResults([]);
     setHasSearched(false);
     onClose();
-  };
+  }, [onClose]);
 
   // Enterキーで検索
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
-  };
+  }, [handleSearch]);
 
   if (!isOpen) return null;
 
@@ -210,3 +210,4 @@ export default function MerchantSelectModal({
   );
 }
 
+export default React.memo(MerchantSelectModal);

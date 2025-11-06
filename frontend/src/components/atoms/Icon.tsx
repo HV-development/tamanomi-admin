@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 
 interface IconProps {
@@ -43,7 +43,7 @@ const iconMap: Record<string, { type: 'emoji' | 'material' | 'image'; value: str
   'add-store': { type: 'image', value: '/store-list.svg' },
 };
 
-export default function Icon({ name, size = 'md', className = '' }: IconProps) {
+function Icon({ name, size = 'md', className = '' }: IconProps) {
   const [isFontLoaded, setIsFontLoaded] = useState(false);
 
   useEffect(() => {
@@ -73,19 +73,25 @@ export default function Icon({ name, size = 'md', className = '' }: IconProps) {
     checkFontLoaded();
   }, []);
 
-  const sizeClasses = {
-    sm: 'text-sm leading-none',
-    md: 'text-lg leading-none',
-    lg: 'text-xl leading-none',
-  };
+  const sizeClasses = useMemo(
+    () => ({
+      sm: 'text-sm leading-none',
+      md: 'text-lg leading-none',
+      lg: 'text-xl leading-none',
+    }),
+    []
+  );
 
-  const imageSizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-5 h-5',
-    lg: 'w-6 h-6',
-  };
+  const imageSizeClasses = useMemo(
+    () => ({
+      sm: 'w-4 h-4',
+      md: 'w-5 h-5',
+      lg: 'w-6 h-6',
+    }),
+    []
+  );
 
-  const icon = iconMap[name];
+  const icon = useMemo(() => iconMap[name], [name]);
   
   if (!icon) {
     return (
@@ -126,11 +132,14 @@ export default function Icon({ name, size = 'md', className = '' }: IconProps) {
   }
 
   if (icon.type === 'image') {
-    const imageSizes = {
-      sm: 16,
-      md: 20,
-      lg: 24,
-    };
+    const imageSizes = useMemo(
+      () => ({
+        sm: 16,
+        md: 20,
+        lg: 24,
+      }),
+      []
+    );
     
     return (
       <Image 
@@ -149,3 +158,5 @@ export default function Icon({ name, size = 'md', className = '' }: IconProps) {
     </span>
   );
 }
+
+export default React.memo(Icon);

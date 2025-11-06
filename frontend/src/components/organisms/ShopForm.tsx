@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/toast-container';
@@ -32,23 +32,43 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   const auth = useAuth();
   
   // 事業者アカウントかどうかを判定
-  const isMerchantAccount = auth?.user?.accountType === 'merchant';
+  const isMerchantAccount = useMemo(
+    () => auth?.user?.accountType === 'merchant',
+    [auth?.user?.accountType]
+  );
 
   // 管理者アカウントかどうかを判定
-  const isAdminAccount = auth?.user?.accountType === 'admin';
+  const isAdminAccount = useMemo(
+    () => auth?.user?.accountType === 'admin',
+    [auth?.user?.accountType]
+  );
 
   // 店舗アカウントかどうかを判定
-  const isShopAccount = auth?.user?.accountType === 'shop';
+  const isShopAccount = useMemo(
+    () => auth?.user?.accountType === 'shop',
+    [auth?.user?.accountType]
+  );
 
   // shopIdの取得（編集時のみ存在）
   // /merchants/[id]/shops/[shopId]/edit -> params.shopId
   // /shops/[id]/edit -> params.id（merchantId未指定の場合）
-  const shopId = (params.shopId || (!propMerchantId ? params.id : undefined)) as string | undefined;
-  const merchantIdFromParams = params.id as string;
-  const isEdit = !!shopId;
+  const shopId = useMemo(
+    () => (params.shopId || (!propMerchantId ? params.id : undefined)) as string | undefined,
+    [params.shopId, params.id, propMerchantId]
+  );
+  
+  const merchantIdFromParams = useMemo(
+    () => params.id as string,
+    [params.id]
+  );
+  
+  const isEdit = useMemo(() => !!shopId, [shopId]);
   
   // merchantIdの決定（props > URLパラメータ）
-  const merchantId = propMerchantId || merchantIdFromParams;
+  const merchantId = useMemo(
+    () => propMerchantId || merchantIdFromParams,
+    [propMerchantId, merchantIdFromParams]
+  );
   
   const [formData, setFormData] = useState<ExtendedShopCreateRequest>({
     merchantId: merchantId || '',

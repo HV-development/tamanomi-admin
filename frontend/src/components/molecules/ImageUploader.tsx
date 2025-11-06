@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import Image from 'next/image';
 
 interface ImagePreview {
@@ -17,7 +17,7 @@ interface ImageUploaderProps {
   onRemoveExistingImage: (index: number) => void;
 }
 
-export default function ImageUploader({
+function ImageUploader({
   imagePreviews,
   existingImages,
   maxImages = 3,
@@ -25,7 +25,10 @@ export default function ImageUploader({
   onRemoveImage,
   onRemoveExistingImage,
 }: ImageUploaderProps) {
-  const totalImages = imagePreviews.length + existingImages.length;
+  const totalImages = useMemo(
+    () => imagePreviews.length + existingImages.length,
+    [imagePreviews.length, existingImages.length]
+  );
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -121,3 +124,5 @@ export default function ImageUploader({
     </div>
   );
 }
+
+export default React.memo(ImageUploader);
