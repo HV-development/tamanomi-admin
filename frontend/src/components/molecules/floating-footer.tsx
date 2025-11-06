@@ -77,14 +77,14 @@ export default function FloatingFooter({
               className={`px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 ${getStatusColor(pendingStatus)}`}
             >
               <option value="" className="text-gray-700">ステータスを選択</option>
-              <option value="registering" className="text-gray-700">登録中</option>
-              <option value="collection_requested" className="text-yellow-700">情報収集依頼済み</option>
-              <option value="approval_pending" className="text-orange-700">承認待ち</option>
-              <option value="promotional_materials_preparing" className="text-blue-700">宣材作成中</option>
-              <option value="promotional_materials_shipping" className="text-indigo-700">宣材配送中</option>
-              <option value="operating" className="text-green-700">運営中</option>
-              <option value="suspended" className="text-red-700">停止中</option>
-              <option value="terminated" className="text-gray-500">終了</option>
+              <option value="registering" className="text-blue-600">登録中</option>
+              <option value="collection_requested" className="text-purple-600">情報収集依頼済み</option>
+              <option value="approval_pending" className="text-yellow-600">承認待ち</option>
+              <option value="promotional_materials_preparing" className="text-orange-600">宣材準備中</option>
+              <option value="promotional_materials_shipping" className="text-indigo-600">宣材発送中</option>
+              <option value="operating" className="text-green-600">営業中</option>
+              <option value="suspended" className="text-red-600">停止中</option>
+              <option value="terminated" className="text-gray-600">終了</option>
             </select>
             <Button
               onClick={handleStatusChange}
