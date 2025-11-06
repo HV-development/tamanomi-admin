@@ -2,7 +2,7 @@
 
 たまのみ管理画面 - Next.js 14 + TypeScript
 
-> **統合管理**: セットアップとDocker管理は[tamanomi-root](https://github.com/HV-development/tamanomi-root)で行います
+> **統合管理**: セットアップとDocker管理は[tamanomi-root](https://github.com/HV-development/tamanomi-root)で行います。
 
 ## 🚀 特徴
 
