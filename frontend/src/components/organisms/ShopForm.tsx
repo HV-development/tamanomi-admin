@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import dynamicImport from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import Button from '@/components/atoms/Button';
@@ -281,7 +281,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         setScenes(scenesArray);
         
         // 編集モードの場合は店舗データを取得
-        if (isEdit && isMounted) {
+        if (isEdit && isMounted && shopId) {
           const shopData = await apiClient.getShop(shopId) as ShopDataResponse;
           
           if (isMounted) {
@@ -869,7 +869,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         hasCouponUsageEnd: 'couponUsageEnd' in submitData,
       });
       
-      if (isEdit) {
+      if (isEdit && shopId) {
         // 編集時：merchantIdが設定されていることを確認
         if (!formData.merchantId || formData.merchantId.trim() === '') {
           throw new Error('事業者IDが設定されていません');
