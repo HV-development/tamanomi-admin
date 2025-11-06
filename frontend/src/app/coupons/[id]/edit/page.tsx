@@ -56,6 +56,8 @@ function CouponEditPageContent() {
   //事業者・店舗情報（読み取り専用）
   const [merchantName, setMerchantName] = useState<string>('');
   const [shopName, setShopName] = useState<string>('');
+  const [merchantId, setMerchantId] = useState<string>('');
+  const [shopId, setShopId] = useState<string>('');
 
   useEffect(() => {
     const fetchCoupon = async () => {
@@ -63,22 +65,47 @@ function CouponEditPageContent() {
         setIsLoading(true);
         const data = await apiClient.getCoupon(couponId) as CouponWithShop;
         
+        // 既存の画像URLが/temp/temp/を含んでいる場合は修正
+        let imageUrl = data.imageUrl || '';
+        if (imageUrl && data.shop) {
+          // /temp/temp/を正しいパスに置換
+          // パターン: coupon-image/temp/temp/... または /temp/temp/...
+          const tempPattern = /coupon-image\/temp\/temp\//;
+          if (tempPattern.test(imageUrl)) {
+            imageUrl = imageUrl.replace(
+              tempPattern,
+              `coupon-image/${data.shop.merchantId}/${data.shop.id}/`
+            );
+          } else {
+            // /temp/temp/ のパターンも確認
+            const tempPattern2 = /\/temp\/temp\//;
+            if (tempPattern2.test(imageUrl)) {
+              imageUrl = imageUrl.replace(
+                tempPattern2,
+                `/${data.shop.merchantId}/${data.shop.id}/`
+              );
+            }
+          }
+        }
+        
         setFormData({
           couponName: data.title,
           couponContent: data.description || '',
           couponConditions: data.conditions || '',
           drinkType: data.drinkType || '',
           couponImage: null,
-          imagePreview: data.imageUrl || '',
-          imageUrl: data.imageUrl || '',
+          imagePreview: imageUrl,
+          imageUrl: imageUrl,
           publishStatus: data.status === 'active' ? '1' : '2',
         });
         
         // 事業者・店舗情報を設定
         if (data.shop) {
           setShopName(data.shop.name);
+          setShopId(data.shop.id);
           if (data.shop.merchant) {
             setMerchantName(data.shop.merchant.name);
+            setMerchantId(data.shop.merchantId);
           }
         }
       } catch (error) {
@@ -182,8 +209,9 @@ function CouponEditPageContent() {
         const uploadFormData = new FormData();
         uploadFormData.append('file', file);
         uploadFormData.append('type', 'coupon');
-        uploadFormData.append('shopId', 'temp');
-        uploadFormData.append('merchantId', 'temp');
+        // 既存のクーポン情報から取得したmerchantIdとshopIdを使用
+        uploadFormData.append('shopId', shopId || 'temp');
+        uploadFormData.append('merchantId', merchantId || 'temp');
         uploadFormData.append('couponId', couponId);
         
         const response = await fetch('/api/upload', {

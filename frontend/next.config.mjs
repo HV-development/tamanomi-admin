@@ -110,7 +110,7 @@ const nextConfig = {
                 "script-src 'self' 'unsafe-inline'",
                 "style-src 'self' https://fonts.googleapis.com",
                 "font-src 'self' https://fonts.gstatic.com",
-                "img-src 'self' data: blob:",
+                "img-src 'self' data: blob: https://dev-images.tamanomi.com https://images.tamanomi.com",
                 "connect-src 'self' https://zipcloud.ibsnet.co.jp",
                 "base-uri 'self'",
                 "form-action 'self'",
