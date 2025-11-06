@@ -868,7 +868,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   };
 
   const handleCancel = () => {
-    // リダイレクト先を決定
+    // 管理者の場合は管理者用の店舗一覧にリダイレクト
+    if (auth?.user?.accountType === 'admin') {
+      router.push('/shops');
+      return;
+    }
+    // 事業者の場合は事業者用の店舗一覧にリダイレクト
     const redirectPath = merchantId ? `/merchants/${merchantId}/shops` : '/shops';
     router.push(redirectPath);
   };
