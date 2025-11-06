@@ -35,6 +35,8 @@ function LoginFormWithParams() {
     if (sessionExpired === 'expired') {
       setLoginError('セッションの有効期限が切れました。再度ログインしてください。');
       setIsSessionExpired(true);
+      // ユーザー情報を削除
+      sessionStorage.removeItem('userData');
       // クエリは残しておく（リダイレクト連鎖を防止）
     }
   }, [searchParams]);
@@ -116,7 +118,7 @@ function LoginFormWithParams() {
         // API経由でログイン
         await login({ email: formData.email, password: formData.password });
         console.log('✅ LoginPage: Login successful, preparing redirect...');
-        const userDataStr = sessionStorage.getItem('userData') || localStorage.getItem('userData');
+        const userDataStr = sessionStorage.getItem('userData');
         
         // アカウントタイプに応じてリダイレクト先を決定
         let redirectPath = '/merchants';

@@ -67,10 +67,10 @@ export default function AdminsPage() {
     }
   }, [pagination.page, pagination.limit]);
 
-  // データ取得（初回読み込み・検索・ページ変更）
+  // データ取得（検索条件変更またはページ変更の場合に実行）
   useEffect(() => {
     fetchAdmins(appliedSearchForm);
-  }, [fetchAdmins, appliedSearchForm]);
+  }, [appliedSearchForm, pagination.page]);
 
   // ページ変更ハンドラー
   const handlePageChange = (page: number) => {
@@ -125,6 +125,8 @@ export default function AdminsPage() {
     if (!confirm(`${adminEmail}のアカウントを削除しますか？`)) return;
     try {
       await apiClient.deleteAdminAccount(adminEmail);
+      // 手動で再取得
+      fetchAdmins(appliedSearchForm);
       alert('管理者アカウントを削除しました');
     } catch (error: unknown) {
       console.error('管理者アカウントの削除に失敗しました:', error);

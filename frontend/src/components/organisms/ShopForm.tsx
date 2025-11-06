@@ -33,7 +33,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   
   // 事業者アカウントかどうかを判定
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
-  
+
+  // 管理者アカウントかどうかを判定
+  const isAdminAccount = auth?.user?.accountType === 'admin';
+
+  // 店舗アカウントかどうかを判定
+  const isShopAccount = auth?.user?.accountType === 'shop';
+
   // shopIdの取得（編集時のみ存在）
   // /merchants/[id]/shops/[shopId]/edit -> params.shopId
   // /shops/[id]/edit -> params.id（merchantId未指定の場合）
@@ -619,6 +625,14 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       if (!isMerchantAccount && (!formData.merchantId || formData.merchantId.trim().length === 0)) {
         customErrors.merchantId = '事業者を選択してください';
       }
+
+      // クーポン利用時間
+      if (!formData.couponUsageStart || formData.couponUsageStart.trim().length === 0) {
+        customErrors.couponUsageStart = 'クーポン利用時間は必須です';
+      }
+      if (!formData.couponUsageEnd || formData.couponUsageEnd.trim().length === 0) {
+        customErrors.couponUsageEnd = 'クーポン利用時間は必須です';
+      }
       
       
       // アカウント情報（アカウント発行時のみ）
@@ -860,7 +874,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   };
 
   const handleCancel = () => {
-    // リダイレクト先を決定
+    // 管理者または店舗アカウントの場合は店舗一覧にリダイレクト
+    if (isAdminAccount || isShopAccount) {
+      router.push('/shops');
+      return;
+    }
+
+    // 事業者の場合は事業者用の店舗一覧にリダイレクト
     const redirectPath = merchantId ? `/merchants/${merchantId}/shops` : '/shops';
     router.push(redirectPath);
   };
@@ -1602,7 +1622,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             {/* クーポン利用時間（任意、開始・終了） */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                クーポン利用時間（任意）
+                クーポン利用時間 <span className="text-red-500">*</span>
               </label>
               <div className="flex items-center gap-3">
                 <input

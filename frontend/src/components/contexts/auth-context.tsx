@@ -50,6 +50,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const isAuthenticated = !!user;
 
+  // sessionStorage への保存/削除ヘルパー関数
+  const saveUserToSession = (userData: User | null) => {
+    if (typeof window === 'undefined') return;
+    
+    if (userData) {
+      sessionStorage.setItem('userData', JSON.stringify(userData));
+    } else {
+      sessionStorage.removeItem('userData');
+    }
+  };
+
   // 初期化時にトークンをチェック
   useEffect(() => {
     const initAuth = async () => {
@@ -66,7 +77,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (me && me.accountType) {
           const role = me.role;
           console.log('🔍 [AuthContext] Setting user:', { accountType: me.accountType, role, email: me.email });
-          setUser({
+          const userData = {
             id: me.email || 'me',
             email: me.email || '',
             name: me.email || 'Account',
@@ -74,7 +85,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             role,
             shopId: (me.shopId ?? undefined) || undefined,
             merchantId: (me.merchantId ?? undefined) || undefined,
-          });
+          };
+          setUser(userData);
+          saveUserToSession(userData);
         }
       } catch (error) {
         console.error('Auth initialization failed:', error);
@@ -108,9 +121,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         role?: string;
       } | null;
       const me = await apiClient.getMe().catch(() => null) as MeResponse;
+
+      // ユーザー情報を保存
+      let userData: User;
       
       if (me && me.accountType) {
-        setUser({
+        userData = {
           id: me.email || accountData.email || 'me',
           email: me.email || accountData.email || '',
           name: accountData.displayName || me.email || accountData.email || 'Account',
@@ -118,21 +134,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           role: me.role,
           shopId: (me.shopId ?? accountData.shopId ?? undefined) || undefined,
           merchantId: (me.merchantId ?? accountData.merchantId ?? undefined) || undefined,
-        });
+        };
+        setUser(userData);
+        saveUserToSession(userData);
         console.log('✅ AuthContext: login successful', { 
           user: { ...me, displayName: accountData.displayName },
           role: me.role,
         });
       } else {
         // /api/meが失敗した場合でも、accountDataからユーザー情報を設定
-        setUser({
+        userData = {
           id: accountData.email, // 仮のIDとしてemailを使用
           email: accountData.email,
           name: accountData.displayName || accountData.email,
           accountType: accountData.accountType as 'admin' | 'merchant' | 'user' | 'shop',
           shopId: accountData.shopId,
           merchantId: accountData.merchantId
-        });
+        };
+        setUser(userData);
+        saveUserToSession(userData);
         console.log('✅ AuthContext: login successful (without /api/me)', { 
           user: accountData,
         });
@@ -179,6 +199,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       // 表示用ユーザーデータの保存を廃止
       setUser(null);
+      saveUserToSession(null);
       console.log('✅ AuthContext: logout completed');
     }
   };

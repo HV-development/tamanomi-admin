@@ -1328,11 +1328,13 @@ function ShopsPageContent() {
                           className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[180px] ${getStatusColor(shop.status)}`}
                         >
                           {statusOptions?.map((option) => (
-                            <option key={option.value} value={option.value}>
+                            <option key={option.value} value={option.value} className={getStatusColor(option.value)}>
                               {option.label}
                             </option>
                           )) || (
-                            <option value={shop.status}>{statusLabels[shop.status] || shop.status}</option>
+                            <option value={shop.status} className={getStatusColor(shop.status)}>
+                              {statusLabels[shop.status] || shop.status}
+                            </option>
                           )}
                         </select>
                       )}
