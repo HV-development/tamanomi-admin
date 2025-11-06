@@ -51,14 +51,8 @@ const nextConfig = {
     },
   }),
   
-  // 本番環境での最適化設定
-  ...(process.env.NODE_ENV === 'production' && {
-    // 本番環境でのパフォーマンス最適化
-    compress: true,
-    poweredByHeader: false,
-    
-    // セキュリティヘッダー
-    async headers() {
+  // セキュリティヘッダー（全環境で適用）
+  async headers() {
       return [
         {
           source: '/(.*)',
@@ -132,6 +126,12 @@ const nextConfig = {
         },
       ];
     },
+  
+  // 本番環境での最適化設定
+  ...(process.env.NODE_ENV === 'production' && {
+    // 本番環境でのパフォーマンス最適化
+    compress: true,
+    poweredByHeader: false,
   }),
 };
 

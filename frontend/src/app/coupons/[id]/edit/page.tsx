@@ -67,6 +67,7 @@ function CouponEditPageContent() {
         
         // 既存の画像URLが/temp/temp/を含んでいる場合は修正
         let imageUrl = data.imageUrl || '';
+        console.log('🔍 Original imageUrl:', imageUrl);
         if (imageUrl && data.shop) {
           // /temp/temp/を正しいパスに置換
           // パターン: coupon-image/temp/temp/... または /temp/temp/...
@@ -76,6 +77,7 @@ function CouponEditPageContent() {
               tempPattern,
               `coupon-image/${data.shop.merchantId}/${data.shop.id}/`
             );
+            console.log('✅ Fixed imageUrl (coupon-image pattern):', imageUrl);
           } else {
             // /temp/temp/ のパターンも確認
             const tempPattern2 = /\/temp\/temp\//;
@@ -84,9 +86,11 @@ function CouponEditPageContent() {
                 tempPattern2,
                 `/${data.shop.merchantId}/${data.shop.id}/`
               );
+              console.log('✅ Fixed imageUrl (temp pattern):', imageUrl);
             }
           }
         }
+        console.log('📸 Final imageUrl:', imageUrl);
         
         setFormData({
           couponName: data.title,
@@ -453,6 +457,13 @@ function CouponEditPageContent() {
                       src={formData.imagePreview}
                       alt="クーポン画像プレビュー"
                       className="w-64 h-48 object-cover rounded-lg"
+                      onError={(e) => {
+                        console.error('❌ Image load error:', formData.imagePreview);
+                        console.error('❌ Error event:', e);
+                      }}
+                      onLoad={() => {
+                        console.log('✅ Image loaded successfully:', formData.imagePreview);
+                      }}
                     />
                   </div>
                 )}
