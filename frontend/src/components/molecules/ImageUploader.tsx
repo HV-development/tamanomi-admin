@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 
 interface ImagePreview {
   file: File;
@@ -36,18 +37,20 @@ export default function ImageUploader({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {existingImages.map((imageUrl, index) => (
               <div key={`existing-${index}`} className="relative w-full aspect-[4/3] md:aspect-[16/9] rounded-md overflow-hidden border border-gray-300 bg-gray-100">
-                <img
+                <Image
                   src={imageUrl}
                   alt={`店舗画像 ${index + 1}`}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  onError={(_e) => {
+                  fill
+                  className="object-cover"
+                  onError={() => {
                     console.error('画像の読み込みに失敗しました:', imageUrl);
                   }}
+                  unoptimized={imageUrl.startsWith('blob:') || imageUrl.startsWith('data:')}
                 />
                 <button
                   type="button"
                   onClick={() => onRemoveExistingImage(index)}
-                  className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-colors"
+                  className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-colors z-10"
                   title="画像を削除"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -64,18 +67,20 @@ export default function ImageUploader({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {imagePreviews.map((preview, index) => (
               <div key={`preview-${index}`} className="relative w-full aspect-[4/3] md:aspect-[16/9] rounded-md overflow-hidden border border-gray-300 bg-gray-100">
-                <img
+                <Image
                   src={preview.url}
                   alt={`プレビュー ${index + 1}`}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  onError={(_e) => {
+                  fill
+                  className="object-cover"
+                  onError={() => {
                     console.error('プレビュー画像の読み込みに失敗しました:', preview.url);
                   }}
+                  unoptimized={preview.url.startsWith('blob:') || preview.url.startsWith('data:')}
                 />
                 <button
                   type="button"
                   onClick={() => onRemoveImage(index)}
-                  className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-colors"
+                  className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-colors z-10"
                   title="画像を削除"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

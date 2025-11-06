@@ -884,7 +884,7 @@ export default function MerchantsPage() {
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center">
-              <img 
+              <Image 
                 src="/alert.svg" 
                 alt="警告" 
                 width={16} 
@@ -1336,7 +1336,7 @@ export default function MerchantsPage() {
 
           {filteredMerchants.length === 0 && (
             <div className="text-center py-12">
-              <img 
+              <Image 
                 src="/storefront-icon.svg" 
                 alt="店舗" 
                 width={48} 

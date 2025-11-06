@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
@@ -138,11 +139,15 @@ export default function CouponEditConfirmPage() {
               </label>
               <div className="bg-gray-50 p-2 rounded">
                 {couponData.imagePreview ? (
-                  <img
-                    src={couponData.imagePreview}
-                    alt="クーポン画像プレビュー"
-                    className="w-64 h-48 object-cover rounded-lg"
-                  />
+                  <div className="relative w-64 h-48">
+                    <Image
+                      src={couponData.imagePreview}
+                      alt="クーポン画像プレビュー"
+                      fill
+                      className="object-cover rounded-lg"
+                      unoptimized={couponData.imagePreview.startsWith('blob:') || couponData.imagePreview.startsWith('data:')}
+                    />
+                  </div>
                 ) : (
                   <p className="text-gray-500">画像がアップロードされていません</p>
                 )}

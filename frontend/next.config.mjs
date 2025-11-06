@@ -23,6 +23,24 @@ const nextConfig = {
   // 静的ページ生成を完全に無効化（/_errorページ生成を防ぐ）
   generateEtags: false,
   
+  // 画像最適化の設定
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'dev-images.tamanomi.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.tamanomi.com',
+      },
+    ],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60,
+  },
+  
   // 環境変数による設定
   ...(process.env.NODE_ENV === 'development' && {
     // 開発環境でのキャッシュ無効化

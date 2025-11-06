@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
@@ -485,11 +486,12 @@ function CouponEditPageContent() {
               <div className="space-y-4">
                 {/* 画像プレビュー */}
                 {formData.imagePreview && (
-                  <div>
-                    <img
+                  <div className="relative w-64 h-48">
+                    <Image
                       src={formData.imagePreview}
                       alt="クーポン画像プレビュー"
-                      className="w-64 h-48 object-cover rounded-lg"
+                      fill
+                      className="object-cover rounded-lg"
                       onError={() => {
                         console.error('❌ Image load error:', formData.imagePreview);
                         // 画像が存在しない場合はプレビューを非表示にする
@@ -502,6 +504,7 @@ function CouponEditPageContent() {
                       onLoad={() => {
                         console.log('✅ Image loaded successfully:', formData.imagePreview);
                       }}
+                      unoptimized={formData.imagePreview.startsWith('blob:') || formData.imagePreview.startsWith('data:')}
                     />
                   </div>
                 )}

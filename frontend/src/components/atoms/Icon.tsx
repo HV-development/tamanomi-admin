@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 
 interface IconProps {
   name: string;
@@ -125,10 +126,18 @@ export default function Icon({ name, size = 'md', className = '' }: IconProps) {
   }
 
   if (icon.type === 'image') {
+    const imageSizes = {
+      sm: 16,
+      md: 20,
+      lg: 24,
+    };
+    
     return (
-      <img 
+      <Image 
         src={icon.value} 
         alt={name}
+        width={imageSizes[size]}
+        height={imageSizes[size]}
         className={`inline-block ${imageSizeClasses[size]} ${className}`}
       />
     );
