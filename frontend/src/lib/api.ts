@@ -74,8 +74,14 @@ class ApiClient {
           
           // リフレッシュトークンで自動更新を試行
           try {
+            // ログイン直後の場合、Cookieが設定されるまで少し待機
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
             await this.refreshToken();
             console.log('✅ Token refreshed successfully, retrying request...');
+            
+            // リフレッシュ成功後、Cookieが反映されるまで少し待機
+            await new Promise(resolve => setTimeout(resolve, 100));
             
             // リフレッシュ成功後、元のリクエストを再実行
             const retryResponse = await fetch(url, {
@@ -85,6 +91,24 @@ class ApiClient {
             });
             
             if (!retryResponse.ok) {
+              // リトライが失敗した場合、もう一度待機して再試行
+              if (retryResponse.status === 401 || retryResponse.status === 403) {
+                console.warn('🔒 Retry failed, waiting a bit longer and retrying once more...');
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                const secondRetryResponse = await fetch(url, {
+                  ...fetchOptions,
+                  credentials: 'include',
+                  headers,
+                });
+                
+                if (!secondRetryResponse.ok) {
+                  throw new Error(`Retry failed with status: ${secondRetryResponse.status}`);
+                }
+                
+                return await secondRetryResponse.json();
+              }
+              
               throw new Error(`Retry failed with status: ${retryResponse.status}`);
             }
             
