@@ -58,8 +58,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('❌ API Route: Update coupon failed', { status: response.status, error: errorData });
+      const errorData = await response.json().catch(() => ({ message: 'クーポンの更新に失敗しました' }));
+      console.error('❌ API Route: Update coupon failed', { 
+        status: response.status, 
+        couponId: id,
+        error: errorData 
+      });
       return NextResponse.json(errorData, { status: response.status });
     }
 

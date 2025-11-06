@@ -219,6 +219,12 @@ function CouponEditPageContent() {
     setIsSubmitting(true);
     if (validateAllFields()) {
       try {
+        // couponIdのバリデーション
+        if (!couponId) {
+          throw new Error('クーポンIDが取得できませんでした');
+        }
+        console.log('🔍 Updating coupon:', { couponId, shopId, merchantId });
+        
         let finalImageUrl = formData.imageUrl;
         
         // 新しい画像が選択されている場合はアップロード
@@ -236,6 +242,8 @@ function CouponEditPageContent() {
             // タイムスタンプを生成
             const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '').split('.')[0];
             
+            console.log('📤 Uploading image:', { couponId, shopId, merchantId, timestamp });
+            
             const uploadFormData = new FormData();
             uploadFormData.append('image', formData.couponImage);
             uploadFormData.append('type', 'coupon');
@@ -252,18 +260,20 @@ function CouponEditPageContent() {
             
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({ message: '画像のアップロードに失敗しました' }));
-              throw new Error(errorData.message || '画像のアップロードに失敗しました');
+              console.error('❌ Image upload failed:', { status: response.status, error: errorData });
+              throw new Error(errorData.message || `画像のアップロードに失敗しました (${response.status})`);
             }
             
             const uploadData = await response.json();
             if (!uploadData.url) {
+              console.error('❌ Image URL not found in response:', uploadData);
               throw new Error('画像URLが取得できませんでした');
             }
             
-            console.log('📤 Image upload successful:', uploadData);
+            console.log('✅ Image upload successful:', uploadData);
             finalImageUrl = uploadData.url;
           } catch (error) {
-            console.error('画像アップロードエラー:', error);
+            console.error('❌ Image upload error:', error);
             const errorMessage = error instanceof Error ? error.message : '画像のアップロードに失敗しました';
             alert(errorMessage);
             setIsSubmitting(false);
@@ -282,11 +292,25 @@ function CouponEditPageContent() {
           imageUrl: finalImageUrl || null
         };
         
+        console.log('📤 Updating coupon:', { couponId, updateData });
+        
         await apiClient.updateCoupon(couponId, updateData);
+        console.log('✅ Coupon updated successfully');
         router.push('/coupons');
       } catch (error) {
-        console.error('クーポンの更新に失敗しました:', error);
-        alert('クーポンの更新に失敗しました。もう一度お試しください。');
+        console.error('❌ Coupon update failed:', error);
+        let errorMessage = 'クーポンの更新に失敗しました。もう一度お試しください。';
+        
+        if (error instanceof Error) {
+          errorMessage = error.message || errorMessage;
+        } else if (error && typeof error === 'object' && 'response' in error) {
+          const apiError = error as { response?: { data?: { message?: string } } };
+          if (apiError.response?.data?.message) {
+            errorMessage = apiError.response.data.message;
+          }
+        }
+        
+        alert(errorMessage);
         setIsSubmitting(false);
       }
     } else {
