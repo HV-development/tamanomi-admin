@@ -293,18 +293,24 @@ function CouponNewPageContent() {
         const createdCoupon = await apiClient.createCoupon(couponData) as Coupon;
         
         // 画像がある場合はアップロードして更新
-        if (formData.couponImage && createdCoupon.id) {
+        if (formData.couponImage && createdCoupon.id && selectedShop) {
           try {
             setIsUploading(true);
             
             // タイムスタンプを生成
             const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '').split('.')[0];
             
+            // selectedShopからmerchantIdを取得
+            const merchantId = selectedShop.merchantId || selectedShop.merchant?.id;
+            if (!merchantId) {
+              throw new Error('事業者IDが取得できませんでした');
+            }
+            
             const uploadFormData = new FormData();
             uploadFormData.append('image', formData.couponImage);
             uploadFormData.append('type', 'coupon');
             uploadFormData.append('shopId', formData.shopId);
-            uploadFormData.append('merchantId', 'temp');
+            uploadFormData.append('merchantId', merchantId);
             uploadFormData.append('couponId', createdCoupon.id);
             uploadFormData.append('timestamp', timestamp);
             

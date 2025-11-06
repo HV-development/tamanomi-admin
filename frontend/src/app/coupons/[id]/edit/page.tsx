@@ -65,32 +65,18 @@ function CouponEditPageContent() {
         setIsLoading(true);
         const data = await apiClient.getCoupon(couponId) as CouponWithShop;
         
-        // 既存の画像URLが/temp/temp/を含んでいる場合は修正
-        let imageUrl = data.imageUrl || '';
-        console.log('🔍 Original imageUrl:', imageUrl);
-        if (imageUrl && data.shop) {
-          // /temp/temp/を正しいパスに置換
-          // パターン: coupon-image/temp/temp/... または /temp/temp/...
-          const tempPattern = /coupon-image\/temp\/temp\//;
-          if (tempPattern.test(imageUrl)) {
-            imageUrl = imageUrl.replace(
-              tempPattern,
-              `coupon-image/${data.shop.merchantId}/${data.shop.id}/`
-            );
-            console.log('✅ Fixed imageUrl (coupon-image pattern):', imageUrl);
-          } else {
-            // /temp/temp/ のパターンも確認
-            const tempPattern2 = /\/temp\/temp\//;
-            if (tempPattern2.test(imageUrl)) {
-              imageUrl = imageUrl.replace(
-                tempPattern2,
-                `/${data.shop.merchantId}/${data.shop.id}/`
-              );
-              console.log('✅ Fixed imageUrl (temp pattern):', imageUrl);
-            }
-          }
+        // 画像URLを取得（temp/tempなどのパスは作成されない前提）
+        const imageUrl = data.imageUrl || '';
+        console.log('📸 Image URL:', imageUrl);
+        
+        // 事業者・店舗情報の取得とバリデーション
+        if (!data.shop) {
+          throw new Error('店舗情報が取得できませんでした');
         }
-        console.log('📸 Final imageUrl:', imageUrl);
+        
+        if (!data.shop.merchantId || !data.shop.id) {
+          throw new Error('店舗情報が不完全です（merchantIdまたはshopIdが取得できませんでした）');
+        }
         
         setFormData({
           couponName: data.title,
@@ -104,16 +90,18 @@ function CouponEditPageContent() {
         });
         
         // 事業者・店舗情報を設定
-        if (data.shop) {
-          setShopName(data.shop.name);
-          setShopId(data.shop.id);
-          if (data.shop.merchant) {
-            setMerchantName(data.shop.merchant.name);
-            setMerchantId(data.shop.merchantId);
-          }
+        setShopName(data.shop.name);
+        setShopId(data.shop.id);
+        if (data.shop.merchant) {
+          setMerchantName(data.shop.merchant.name);
         }
+        setMerchantId(data.shop.merchantId);
       } catch (error) {
         console.error('クーポン情報の取得に失敗しました:', error);
+        const errorMessage = error instanceof Error ? error.message : 'クーポン情報の取得に失敗しました';
+        alert(errorMessage);
+        // エラー時は一覧画面に戻る
+        router.push('/coupons');
       } finally {
         setIsLoading(false);
       }
@@ -196,51 +184,17 @@ function CouponEditPageContent() {
         return;
       }
 
-      // プレビュー表示
+      // プレビュー表示のみ（アップロードはクーポン更新時に行う）
       const reader = new FileReader();
       reader.onload = (e) => {
         setFormData(prev => ({
           ...prev,
           couponImage: file,
-          imagePreview: e.target?.result as string
+          imagePreview: e.target?.result as string,
+          imageUrl: '' // クーポン更新時にアップロードするため、一旦空にする
         }));
       };
       reader.readAsDataURL(file);
-
-      // 画像をアップロード
-      try {
-        setIsUploading(true);
-        const uploadFormData = new FormData();
-        uploadFormData.append('file', file);
-        uploadFormData.append('type', 'coupon');
-        // 既存のクーポン情報から取得したmerchantIdとshopIdを使用
-        uploadFormData.append('shopId', shopId || 'temp');
-        uploadFormData.append('merchantId', merchantId || 'temp');
-        uploadFormData.append('couponId', couponId);
-        
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: uploadFormData,
-          // Cookieベース認証によりヘッダー注入は不要
-          credentials: 'include',
-        });
-        
-        if (!response.ok) {
-          throw new Error('画像のアップロードに失敗しました');
-        }
-        
-        const data = await response.json();
-        setFormData(prev => ({
-          ...prev,
-          imageUrl: data.url
-        }));
-      } catch (error) {
-        console.error('画像アップロードエラー:', error);
-        newErrors.couponImage = '画像のアップロードに失敗しました';
-        setErrors(newErrors);
-      } finally {
-        setIsUploading(false);
-      }
 
       delete newErrors.couponImage;
       setErrors(newErrors);
@@ -265,12 +219,67 @@ function CouponEditPageContent() {
     setIsSubmitting(true);
     if (validateAllFields()) {
       try {
+        let finalImageUrl = formData.imageUrl;
+        
+        // 新しい画像が選択されている場合はアップロード
+        if (formData.couponImage) {
+          // 必須パラメータのバリデーション
+          if (!shopId || !merchantId) {
+            alert('店舗情報または事業者情報が取得できませんでした。ページを再読み込みしてください。');
+            setIsSubmitting(false);
+            return;
+          }
+          
+          try {
+            setIsUploading(true);
+            
+            // タイムスタンプを生成
+            const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '').split('.')[0];
+            
+            const uploadFormData = new FormData();
+            uploadFormData.append('image', formData.couponImage);
+            uploadFormData.append('type', 'coupon');
+            uploadFormData.append('shopId', shopId);
+            uploadFormData.append('merchantId', merchantId);
+            uploadFormData.append('couponId', couponId);
+            uploadFormData.append('timestamp', timestamp);
+            
+            const response = await fetch('/api/upload', {
+              method: 'POST',
+              body: uploadFormData,
+              credentials: 'include',
+            });
+            
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({ message: '画像のアップロードに失敗しました' }));
+              throw new Error(errorData.message || '画像のアップロードに失敗しました');
+            }
+            
+            const uploadData = await response.json();
+            if (!uploadData.url) {
+              throw new Error('画像URLが取得できませんでした');
+            }
+            
+            console.log('📤 Image upload successful:', uploadData);
+            finalImageUrl = uploadData.url;
+          } catch (error) {
+            console.error('画像アップロードエラー:', error);
+            const errorMessage = error instanceof Error ? error.message : '画像のアップロードに失敗しました';
+            alert(errorMessage);
+            setIsSubmitting(false);
+            setIsUploading(false);
+            return;
+          } finally {
+            setIsUploading(false);
+          }
+        }
+        
         const updateData: CouponUpdateRequest = {
           title: formData.couponName,
           description: formData.couponContent || null,
           conditions: formData.couponConditions || null,
           drinkType: (formData.drinkType === 'alcohol' || formData.drinkType === 'soft_drink' || formData.drinkType === 'other') ? formData.drinkType : null,
-          imageUrl: formData.imageUrl || null
+          imageUrl: finalImageUrl || null
         };
         
         await apiClient.updateCoupon(couponId, updateData);
@@ -457,14 +466,24 @@ function CouponEditPageContent() {
                       src={formData.imagePreview}
                       alt="クーポン画像プレビュー"
                       className="w-64 h-48 object-cover rounded-lg"
-                      onError={(e) => {
+                      onError={() => {
                         console.error('❌ Image load error:', formData.imagePreview);
-                        console.error('❌ Error event:', e);
+                        // 画像が存在しない場合はプレビューを非表示にする
+                        setFormData(prev => ({
+                          ...prev,
+                          imagePreview: '',
+                          imageUrl: ''
+                        }));
                       }}
                       onLoad={() => {
                         console.log('✅ Image loaded successfully:', formData.imagePreview);
                       }}
                     />
+                  </div>
+                )}
+                {!formData.imagePreview && formData.imageUrl && (
+                  <div className="w-64 h-48 bg-gray-200 flex items-center justify-center border border-gray-300 rounded-lg">
+                    <span className="text-gray-500 text-sm">画像を読み込めませんでした</span>
                   </div>
                 )}
                 
