@@ -1,11 +1,16 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import dynamicImport from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/toast-container';
-import MerchantSelectModal from '@/components/molecules/MerchantSelectModal';
 import ErrorMessage from '@/components/atoms/ErrorMessage';
+
+const MerchantSelectModal = dynamicImport(() => import('@/components/molecules/MerchantSelectModal'), {
+  loading: () => null,
+  ssr: false,
+});
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/contexts/auth-context';
@@ -17,10 +22,26 @@ import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-
 import { useShopValidation } from '@/hooks/useShopValidation';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import type { Merchant, ShopDataResponse, Genre, Scene, ExtendedShopCreateRequest } from '@/types/shop';
-import PaymentMethodSelector from '@/components/molecules/PaymentMethodSelector';
-import SceneSelector from '@/components/molecules/SceneSelector';
-import ImageUploader from '@/components/molecules/ImageUploader';
-import AccountSection from '@/components/molecules/AccountSection';
+
+const PaymentMethodSelector = dynamicImport(() => import('@/components/molecules/PaymentMethodSelector'), {
+  loading: () => null,
+  ssr: false,
+});
+
+const SceneSelector = dynamicImport(() => import('@/components/molecules/SceneSelector'), {
+  loading: () => null,
+  ssr: false,
+});
+
+const ImageUploader = dynamicImport(() => import('@/components/molecules/ImageUploader'), {
+  loading: () => null,
+  ssr: false,
+});
+
+const AccountSection = dynamicImport(() => import('@/components/molecules/AccountSection'), {
+  loading: () => null,
+  ssr: false,
+});
 
 interface ShopFormProps {
   merchantId?: string;

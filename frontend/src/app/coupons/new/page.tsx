@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+import dynamicImport from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -15,9 +16,17 @@ import {
   validateFileSize
 } from '@/utils/validation';
 import { useAuth } from '@/components/contexts/auth-context';
-import MerchantSelectModal from '@/components/molecules/MerchantSelectModal';
-import ShopSelectModal from '@/components/molecules/ShopSelectModal';
 import ErrorMessage from '@/components/atoms/ErrorMessage';
+
+const MerchantSelectModal = dynamicImport(() => import('@/components/molecules/MerchantSelectModal'), {
+  loading: () => null,
+  ssr: false,
+});
+
+const ShopSelectModal = dynamicImport(() => import('@/components/molecules/ShopSelectModal'), {
+  loading: () => null,
+  ssr: false,
+});
 
 export const dynamic = 'force-dynamic';
 export const dynamicParams = true;

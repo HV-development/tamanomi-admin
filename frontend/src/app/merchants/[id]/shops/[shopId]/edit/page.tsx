@@ -1,11 +1,20 @@
+'use client';
+
+import dynamicImport from 'next/dynamic';
+import { useParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
-import ShopForm from '@/components/organisms/ShopForm';
+
+const ShopForm = dynamicImport(() => import('@/components/organisms/ShopForm'), {
+  loading: () => <div className="flex items-center justify-center p-8">読み込み中...</div>,
+  ssr: false,
+});
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
 
-export default async function EditShopPage({ params }: { params: Promise<{ id: string; shopId: string }> }) {
-  const { id } = await params;
+export default function EditShopPage() {
+  const params = useParams();
+  const id = params.id as string;
   return (
     <AdminLayout>
       <ShopForm merchantId={id} />
