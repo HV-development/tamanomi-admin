@@ -34,14 +34,14 @@ export async function POST(request: Request) {
     nextResponse.cookies.set('accessToken', '', {
       httpOnly: true,
       secure: isSecure,
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 0,
       path: '/',
     });
     nextResponse.cookies.set('__Host-accessToken', '', {
       httpOnly: true,
       secure: isSecure,
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 0,
       path: '/',
     });
@@ -50,14 +50,14 @@ export async function POST(request: Request) {
     nextResponse.cookies.set('refreshToken', '', {
       httpOnly: true,
       secure: isSecure,
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 0,
       path: '/',
     });
     nextResponse.cookies.set('__Host-refreshToken', '', {
       httpOnly: true,
       secure: isSecure,
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 0,
       path: '/',
     });
@@ -75,28 +75,28 @@ export async function POST(request: Request) {
     res.cookies.set('accessToken', '', {
       httpOnly: true,
       secure: isSecure2,
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 0,
       path: '/',
     });
     res.cookies.set('__Host-accessToken', '', {
       httpOnly: true,
       secure: isSecure2,
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 0,
       path: '/',
     });
     res.cookies.set('refreshToken', '', {
       httpOnly: true,
       secure: isSecure2,
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 0,
       path: '/',
     });
     res.cookies.set('__Host-refreshToken', '', {
       httpOnly: true,
       secure: isSecure2,
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 0,
       path: '/',
     });

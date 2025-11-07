@@ -65,14 +65,14 @@ export async function POST(request: Request) {
       res.cookies.set('accessToken', data.accessToken, {
         httpOnly: true,
         secure: isSecure,
-        sameSite: 'strict',
+        sameSite: 'lax',
         path: '/',
         maxAge: 60 * 15,
       });
       res.cookies.set('__Host-accessToken', data.accessToken, {
         httpOnly: true,
         secure: isSecure,
-        sameSite: 'strict',
+        sameSite: 'lax',
         path: '/',
         maxAge: 60 * 15,
       });
@@ -81,14 +81,14 @@ export async function POST(request: Request) {
       res.cookies.set('refreshToken', data.refreshToken, {
         httpOnly: true,
         secure: isSecure,
-        sameSite: 'strict',
+        sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 30,
       });
       res.cookies.set('__Host-refreshToken', data.refreshToken, {
         httpOnly: true,
         secure: isSecure,
-        sameSite: 'strict',
+        sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 30,
       });
