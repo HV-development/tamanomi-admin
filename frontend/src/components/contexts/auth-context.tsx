@@ -76,7 +76,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const me = await apiClient.getMe().catch(() => null) as MeResponse;
         if (me && me.accountType) {
           const role = me.role;
-          console.log('🔍 [AuthContext] Setting user:', { accountType: me.accountType, role, email: me.email });
           const userData = {
             id: me.email || 'me',
             email: me.email || '',
@@ -101,7 +100,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (credentials: AdminLoginInput) => {
     try {
-      console.log('🔐 AuthContext: login called', { email: credentials.email });
       const response = await apiClient.login(credentials);
 
       const accountData = (response as unknown as { account: unknown }).account as { 
@@ -137,10 +135,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
         setUser(userData);
         saveUserToSession(userData);
-        console.log('✅ AuthContext: login successful', { 
-          user: { ...me, displayName: accountData.displayName },
-          role: me.role,
-        });
       } else {
         // /api/meが失敗した場合でも、accountDataからユーザー情報を設定
         userData = {
@@ -153,9 +147,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
         setUser(userData);
         saveUserToSession(userData);
-        console.log('✅ AuthContext: login successful (without /api/me)', { 
-          user: accountData,
-        });
       }
     } catch (error) {
       console.error('❌ AuthContext: login failed', error);
@@ -165,7 +156,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (userData: RegisterInput) => {
     try {
-      console.log('📝 AuthContext: register called', { email: userData.email });
       const response = await apiClient.register(userData);
       
       const accountData = response.account as { 
@@ -183,7 +173,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         shopId: accountData.shopId,
         merchantId: accountData.merchantId
       });
-      console.log('✅ AuthContext: register successful', { user: accountData });
     } catch (error) {
       console.error('❌ AuthContext: register failed', error);
       throw error;
@@ -192,7 +181,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      console.log('🚪 AuthContext: logout called');
       await apiClient.logout();
     } catch (error) {
       console.error('❌ AuthContext: logout failed', error);
@@ -200,14 +188,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // 表示用ユーザーデータの保存を廃止
       setUser(null);
       saveUserToSession(null);
-      console.log('✅ AuthContext: logout completed');
     }
   };
 
   const refreshToken = async (): Promise<void> => {
     try {
       await apiClient.refreshToken();
-      console.log('✅ AuthContext: tokens refreshed');
     } catch (error) {
       console.error('❌ AuthContext: token refresh failed', error);
       // リフレッシュに失敗した場合はログアウト

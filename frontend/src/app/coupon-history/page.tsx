@@ -38,15 +38,6 @@ export default function CouponHistoryPage() {
   const isSysAdmin = accountType === 'admin' && role === 'sysadmin';
   const isShopAccount = accountType === 'shop';
   
-  // デバッグログ
-  useEffect(() => {
-    console.log('🔍 [CouponHistoryPage] Auth state:', { 
-      accountType, 
-      role, 
-      isSysAdmin,
-      user: auth?.user 
-    });
-  }, [accountType, role, isSysAdmin, auth?.user]);
   const _shopId = isShopAccount ? auth?.user?.shopId : undefined;
   const pathname = usePathname();
   const router = useRouter();

@@ -33,20 +33,30 @@ function AdminEditForm() {
     setIsSubmitting,
     handleInputChange,
     validateAllFields,
-  } = useAdminForm<AdminFormData>(initialFormData);
+  } = useAdminForm<AdminFormData>(initialFormData, { passwordRequired: false });
 
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchAdminAccount = async () => {
-      try {
-        setIsLoading(true);
-        const adminData = (await apiClient.getAdminAccount(adminEmail)) as AdminFormData;
-        if (adminData) {
-          adminData.password = '';
-          adminData.passwordConfirm = '';
-          setFormData(adminData);
-        }
+    try {
+      setIsLoading(true);
+      const adminData = (await apiClient.getAdminAccount(adminEmail)) as AdminFormData & {
+        firstName?: string;
+        lastName?: string;
+        role?: string;
+      };
+      if (adminData) {
+        setFormData(prev => ({
+          ...prev,
+          role: adminData.role || '',
+          firstName: adminData.firstName || '',
+          lastName: adminData.lastName || '',
+          email: adminData.email || '',
+          password: '',
+          passwordConfirm: '',
+        }));
+      }
 
         // URLパラメータから値を取得してフォームに設定
         if (searchParams) {
@@ -64,8 +74,9 @@ function AdminEditForm() {
         }
 
         setIsLoading(false);
-      } catch (error) {
+    } catch (error) {
         console.error('管理者アカウント情報の取得に失敗しました:', error);
+      setFormData(initialFormData);
       } finally {
         setIsLoading(false);
       }
@@ -132,6 +143,7 @@ function AdminEditForm() {
               formData={formData}
               errors={errors}
               onInputChange={handleInputChange}
+              isPasswordRequired={false}
             />
 
             {/* アクションボタン */}

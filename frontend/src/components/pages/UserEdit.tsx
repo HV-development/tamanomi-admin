@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+import { apiClient } from '@/lib/api';
 import { 
   validateRequired, 
   validateEmail, 
@@ -23,44 +24,14 @@ interface UserFormData {
   saitamaAppId: string;
 }
 
-// サンプルデータ（実際はAPIから取得）
-const sampleUserData: Record<string, UserFormData> = {
-  '1': {
-    nickname: '田中太郎',
-    email: 'tanaka@example.com',
-    postalCode: '3300001',
-    address: '埼玉県さいたま市浦和区高砂1-1-1',
-    birthDate: '1990-05-15',
-    gender: '1',
-    saitamaAppId: 'SA001234',
-  },
-  '2': {
-    nickname: '佐藤花子',
-    email: 'sato@example.com',
-    postalCode: '3300062',
-    address: '埼玉県さいたま市浦和区仲町2-2-2',
-    birthDate: '1985-08-22',
-    gender: '2',
-    saitamaAppId: 'SA005678',
-  },
-  '3': {
-    nickname: '鈴木次郎',
-    email: 'suzuki@example.com',
-    postalCode: '3300043',
-    address: '埼玉県さいたま市浦和区大東3-3-3',
-    birthDate: '1995-12-03',
-    gender: '1',
-    saitamaAppId: 'SA009012',
-  },
-  '4': {
-    nickname: '山田美咲',
-    email: 'yamada@example.com',
-    postalCode: '3300064',
-    address: '埼玉県さいたま市浦和区岸町4-4-4',
-    birthDate: '1992-03-18',
-    gender: '2',
-    saitamaAppId: 'SA003456',
-  },
+const EMPTY_USER_FORM_DATA: UserFormData = {
+  nickname: '',
+  email: '',
+  postalCode: '',
+  address: '',
+  birthDate: '',
+  gender: '',
+  saitamaAppId: '',
 };
 
 export default function UserEdit() {
@@ -68,109 +39,79 @@ export default function UserEdit() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const userId = params.id as string;
-
-  const [formData, setFormData] = useState<UserFormData>({
-    nickname: '',
-    email: '',
-    postalCode: '',
-    address: '',
-    birthDate: '',
-    gender: '',
-    saitamaAppId: '',
-  });
+  const [formData, setFormData] = useState<UserFormData>(EMPTY_USER_FORM_DATA);
 
   const [errors, setErrors] = useState<Partial<UserFormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
-    const abortController = new AbortController();
 
     const fetchUserData = async () => {
       try {
-        // APIからユーザーデータを取得
-        const response = await fetch(`/api/v1/users/${userId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            // 認証トークンが必要な場合は追加
-            // 'Authorization': `Bearer ${token}`
-          },
-          signal: abortController.signal,
-        });
+        setFetchError(null);
+        const data = (await apiClient.getUser(userId)) as {
+          nickname?: string;
+          email?: string;
+          postalCode?: string;
+          address?: string;
+          birthDate?: string | null;
+          gender?: string | number | null;
+          saitamaAppId?: string | null;
+        };
 
-        // コンポーネントがアンマウントされている場合は処理を中断
         if (!isMounted) return;
 
-        if (response.ok) {
-          const userData = await response.json();
-          if (isMounted) {
-            setFormData({
-              nickname: userData.nickname || '',
-              email: userData.email || '',
-              postalCode: userData.postalCode || '',
-              address: userData.address || '',
-              birthDate: userData.birthDate || '',
-              gender: userData.gender || '',
-              saitamaAppId: userData.saitamaAppId || '', // このフィールドはAPIにない場合は空文字
-            });
-          }
-        } else {
-          console.error('ユーザーデータの取得に失敗しました:', response.status);
-          // エラー時はサンプルデータを使用
-          const userData = sampleUserData[userId];
-          if (userData && isMounted) {
-            setFormData(userData);
-          }
+        if (!data || typeof data !== 'object') {
+          throw new Error('ユーザーデータの取得に失敗しました');
         }
+
+        setFormData({
+          nickname: data.nickname || '',
+          email: data.email || '',
+          postalCode: data.postalCode || '',
+          address: data.address || '',
+          birthDate: data.birthDate || '',
+          gender: data.gender ? String(data.gender) : '',
+          saitamaAppId: data.saitamaAppId || '',
+        });
       } catch (error) {
-        // アボート時のエラーは無視
-        if (error instanceof Error && error.name === 'AbortError') {
-          return;
-        }
-        
-        if (isMounted) {
-          console.error('ユーザーデータの取得エラー:', error);
-          // エラー時はサンプルデータを使用
-          const userData = sampleUserData[userId];
-          if (userData) {
-            setFormData(userData);
+        if (!isMounted) return;
+        console.error('ユーザーデータの取得エラー:', error);
+        setFetchError('ユーザーデータの取得に失敗しました');
+        setFormData(EMPTY_USER_FORM_DATA);
+      } finally {
+        if (!isMounted) return;
+
+        if (searchParams) {
+          const urlData = {
+            nickname: searchParams.get('nickname') || '',
+            email: searchParams.get('email') || '',
+            postalCode: searchParams.get('postalCode') || '',
+            address: searchParams.get('address') || '',
+            birthDate: searchParams.get('birthDate') || '',
+            gender: searchParams.get('gender') || '',
+            saitamaAppId: searchParams.get('saitamaAppId') || '',
+          };
+
+          if (Object.values(urlData).some(value => value !== '')) {
+            setFormData(prev => ({
+              ...prev,
+              ...urlData,
+            }));
           }
         }
-      }
-      
-      if (!isMounted) return;
-      
-      // URLパラメータから値を取得してフォームに設定（修正ボタンからの遷移時）
-      if (searchParams) {
-        const urlData = {
-          nickname: searchParams.get('nickname') || '',
-          email: searchParams.get('email') || '',
-          postalCode: searchParams.get('postalCode') || '',
-          address: searchParams.get('address') || '',
-          birthDate: searchParams.get('birthDate') || '',
-          gender: searchParams.get('gender') || '',
-          saitamaAppId: searchParams.get('saitamaAppId') || '',
-        };
-        
-        // いずれかの値が存在する場合のみフォームデータを更新
-        if (Object.values(urlData).some(value => value !== '') && isMounted) {
-          setFormData(urlData);
-        }
-      }
-      
-      if (isMounted) {
+
         setIsLoading(false);
       }
     };
 
     fetchUserData();
 
-    // クリーンアップ: コンポーネントのアンマウント時または再実行時にリクエストをキャンセル
     return () => {
       isMounted = false;
-      abortController.abort();
     };
   }, [userId, searchParams]);
 
@@ -347,6 +288,12 @@ export default function UserEdit() {
           </div>
         </div>
 
+        {fetchError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3">
+            {fetchError}
+          </div>
+        )}
+ 
         {/* 編集フォーム */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="space-y-6">

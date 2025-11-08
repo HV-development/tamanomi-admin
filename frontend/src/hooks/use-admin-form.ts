@@ -18,16 +18,24 @@ interface UseAdminFormReturn<T extends AdminFormDataBase> {
   validateAllFields: () => boolean;
 }
 
+interface UseAdminFormOptions {
+  passwordRequired?: boolean;
+}
+
 export function useAdminForm<T extends AdminFormDataBase>(
-  initialFormData: T
+  initialFormData: T,
+  options: UseAdminFormOptions = {}
 ): UseAdminFormReturn<T> {
   const [formData, setFormData] = useState<T>(initialFormData);
   const [errors, setErrors] = useState<Partial<T>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const passwordRequired = options.passwordRequired ?? true;
 
   const validateField = useCallback(
     (field: AdminFormField, value: string) => {
       const newErrors = { ...errors };
+      const trimmedPassword = (formData.password || '').trim();
+      const trimmedPasswordConfirm = (formData.passwordConfirm || '').trim();
 
       switch (field) {
         case 'role': {
@@ -72,24 +80,57 @@ export function useAdminForm<T extends AdminFormDataBase>(
           break;
         }
         case 'password': {
-          const passwordError =
-            validateRequired(value, 'パスワード') ||
-            validateMaxLength(value, 255, 'パスワード') ||
-            validatePassword(value);
-          if (passwordError) {
-            (newErrors as Partial<T>).password = passwordError as T['password'];
+          const currentValue = value || '';
+          const trimmedValue = currentValue.trim();
+          const shouldValidatePassword =
+            passwordRequired ||
+            trimmedValue.length > 0 ||
+            trimmedPasswordConfirm.length > 0;
+
+          if (shouldValidatePassword) {
+            const passwordError =
+              (passwordRequired || trimmedPasswordConfirm.length > 0
+                ? validateRequired(trimmedValue, 'パスワード')
+                : null) ||
+              (trimmedValue.length > 0 ? validateMaxLength(trimmedValue, 255, 'パスワード') : null) ||
+              (trimmedValue.length > 0 ? validatePassword(trimmedValue) : null);
+
+            if (passwordError) {
+              (newErrors as Partial<T>).password = passwordError as T['password'];
+            } else {
+              delete (newErrors as Partial<T>).password;
+            }
           } else {
             delete (newErrors as Partial<T>).password;
           }
           break;
         }
         case 'passwordConfirm': {
-          const passwordConfirmError =
-            validateRequired(value, 'パスワード確認') ||
-            validateMaxLength(value, 255, 'パスワード確認') ||
-            validatePassword(value);
-          if (passwordConfirmError) {
-            (newErrors as Partial<T>).passwordConfirm = passwordConfirmError as T['passwordConfirm'];
+          const currentValue = value || '';
+          const trimmedValue = currentValue.trim();
+          const shouldValidatePasswordConfirm =
+            passwordRequired ||
+            trimmedPassword.length > 0 ||
+            trimmedValue.length > 0;
+
+          if (shouldValidatePasswordConfirm) {
+            const passwordConfirmError =
+              (passwordRequired || trimmedPassword.length > 0
+                ? validateRequired(trimmedValue, 'パスワード確認')
+                : null) ||
+              (trimmedValue.length > 0 ? validateMaxLength(trimmedValue, 255, 'パスワード確認') : null) ||
+              (trimmedValue.length > 0 ? validatePassword(trimmedValue) : null);
+
+            let finalError = passwordConfirmError;
+            if (!finalError && trimmedPassword !== trimmedValue) {
+              finalError = 'パスワードが一致しません';
+            }
+
+            if (finalError) {
+              (newErrors as Partial<T>).passwordConfirm = finalError as T['passwordConfirm'];
+            } else {
+              delete (newErrors as Partial<T>).passwordConfirm;
+            }
           } else {
             delete (newErrors as Partial<T>).passwordConfirm;
           }
@@ -99,7 +140,7 @@ export function useAdminForm<T extends AdminFormDataBase>(
 
       setErrors(newErrors);
     },
-    [errors]
+    [errors, formData, passwordRequired]
   );
 
   const validateAllFields = useCallback((): boolean => {
@@ -124,27 +165,44 @@ export function useAdminForm<T extends AdminFormDataBase>(
       validateEmail(formData.email);
     if (emailError) (newErrors as Partial<T>).email = emailError as T['email'];
 
-    const passwordError =
-      validateRequired(formData.password, 'パスワード') ||
-      validateMaxLength(formData.password, 255, 'パスワード') ||
-      validatePassword(formData.password);
-    if (passwordError) (newErrors as Partial<T>).password = passwordError as T['password'];
+    const trimmedPassword = (formData.password || '').trim();
+    const trimmedPasswordConfirm = (formData.passwordConfirm || '').trim();
+    const shouldValidatePassword =
+      passwordRequired || trimmedPassword.length > 0 || trimmedPasswordConfirm.length > 0;
 
-    const passwordConfirmError =
-      validateRequired(formData.passwordConfirm, 'パスワード確認') ||
-      validateMaxLength(formData.passwordConfirm, 255, 'パスワード確認') ||
-      validatePassword(formData.passwordConfirm);
-    if (passwordConfirmError)
-      (newErrors as Partial<T>).passwordConfirm = passwordConfirmError as T['passwordConfirm'];
+    if (shouldValidatePassword) {
+      const passwordError =
+        (passwordRequired || trimmedPasswordConfirm.length > 0
+          ? validateRequired(trimmedPassword, 'パスワード')
+          : null) ||
+        (trimmedPassword.length > 0 ? validateMaxLength(trimmedPassword, 255, 'パスワード') : null) ||
+        (trimmedPassword.length > 0 ? validatePassword(trimmedPassword) : null);
+      if (passwordError) (newErrors as Partial<T>).password = passwordError as T['password'];
 
-    const passwordMatchError =
-      formData.password !== formData.passwordConfirm ? 'パスワードが一致しません' : null;
-    if (passwordMatchError)
-      (newErrors as Partial<T>).passwordConfirm = passwordMatchError as T['passwordConfirm'];
+      const passwordConfirmError =
+        (passwordRequired || trimmedPassword.length > 0
+          ? validateRequired(trimmedPasswordConfirm, 'パスワード確認')
+          : null) ||
+        (trimmedPasswordConfirm.length > 0
+          ? validateMaxLength(trimmedPasswordConfirm, 255, 'パスワード確認')
+          : null) ||
+        (trimmedPasswordConfirm.length > 0 ? validatePassword(trimmedPasswordConfirm) : null);
+      if (passwordConfirmError)
+        (newErrors as Partial<T>).passwordConfirm = passwordConfirmError as T['passwordConfirm'];
+
+      const passwordMatchError =
+        trimmedPassword.length > 0 || trimmedPasswordConfirm.length > 0
+          ? trimmedPassword !== trimmedPasswordConfirm
+            ? 'パスワードが一致しません'
+            : null
+          : null;
+      if (passwordMatchError)
+        (newErrors as Partial<T>).passwordConfirm = passwordMatchError as T['passwordConfirm'];
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData]);
+  }, [formData, passwordRequired]);
 
   const handleInputChange = useCallback(
     (field: AdminFormField, value: string) => {

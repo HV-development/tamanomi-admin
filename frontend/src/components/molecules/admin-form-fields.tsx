@@ -1,10 +1,15 @@
 import { type AdminFormDataBase, type AdminFormFieldsProps } from '@hv-development/schemas';
 
+interface AdminFormFieldsOptions {
+  isPasswordRequired?: boolean;
+}
+
 export default function AdminFormFields<T extends AdminFormDataBase>({
   formData,
   errors,
   onInputChange,
-}: AdminFormFieldsProps<T>) {
+  isPasswordRequired = true,
+}: AdminFormFieldsProps<T> & AdminFormFieldsOptions) {
   return (
     <>
       {/* 姓 */}
@@ -73,7 +78,12 @@ export default function AdminFormFields<T extends AdminFormDataBase>({
       {/* パスワード */}
       <div>
         <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-          パスワード <span className="text-red-500">*</span>
+          パスワード{' '}
+          {isPasswordRequired ? (
+            <span className="text-red-500">*</span>
+          ) : (
+            <span className="text-gray-500 text-xs align-middle">(任意)</span>
+          )}
         </label>
         <input
           type="password"
@@ -86,6 +96,9 @@ export default function AdminFormFields<T extends AdminFormDataBase>({
           }`}
           maxLength={255}
         />
+        {!isPasswordRequired && (
+          <p className="mt-1 text-xs text-gray-500">変更しない場合は空欄のままで問題ありません。</p>
+        )}
         {errors.password && (
           <p className="mt-1 text-sm text-red-500">{errors.password as string}</p>
         )}
@@ -94,7 +107,12 @@ export default function AdminFormFields<T extends AdminFormDataBase>({
       {/* パスワード確認 */}
       <div>
         <label htmlFor="passwordConfirm" className="block text-sm font-medium text-gray-700 mb-2">
-          パスワード確認 <span className="text-red-500">*</span>
+          パスワード確認{' '}
+          {isPasswordRequired ? (
+            <span className="text-red-500">*</span>
+          ) : (
+            <span className="text-gray-500 text-xs align-middle">(任意)</span>
+          )}
         </label>
         <input
           type="password"

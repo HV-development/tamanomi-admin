@@ -70,7 +70,6 @@ class ApiClient {
         
         // 401/403エラー（認証エラー）の場合の処理
         if ((response.status === 401 || response.status === 403) && !skipAuthRedirect) {
-          console.warn('🔒 Authentication failed: Attempting token refresh...');
           
           // リフレッシュトークンで自動更新を試行
           try {
@@ -78,7 +77,6 @@ class ApiClient {
             await new Promise(resolve => setTimeout(resolve, 200));
             
             await this.refreshToken();
-            console.log('✅ Token refreshed successfully, retrying request...');
             
             // リフレッシュ成功後、Cookieが反映されるまで少し待機
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -93,7 +91,6 @@ class ApiClient {
             if (!retryResponse.ok) {
               // リトライが失敗した場合、もう一度待機して再試行
               if (retryResponse.status === 401 || retryResponse.status === 403) {
-                console.warn('🔒 Retry failed, waiting a bit longer and retrying once more...');
                 await new Promise(resolve => setTimeout(resolve, 300));
                 
                 const secondRetryResponse = await fetch(url, {
@@ -113,10 +110,7 @@ class ApiClient {
             }
             
             return await retryResponse.json();
-          } catch (refreshError) {
-            console.error('❌ Token refresh failed:', refreshError);
-            console.warn('🔒 Redirecting to login page due to refresh failure');
-            
+          } catch (_refreshError) {
             // リフレッシュに失敗した場合はログイン画面へリダイレクト
             if (typeof window !== 'undefined') {
               window.location.href = '/login?session=expired';
@@ -138,12 +132,7 @@ class ApiClient {
 
       return response.json();
     } catch (error) {
-      // リフレッシュ時の失敗は想定されるため、ログレベルを下げる
-      if (endpoint === '/auth/refresh') {
-        console.warn('🔄 Refresh request failed (suppressed):', error);
-      } else {
-        console.error('❌ API Request failed:', error);
-      }
+      // ログは控え、呼び出し元でハンドリングする
       throw error;
     }
   }
@@ -180,7 +169,6 @@ class ApiClient {
 
       return response;
     } catch (_error) {
-      console.warn('🔄 Refresh token invalid (cleared and continuing)');
       return;
     }
   }
@@ -291,6 +279,12 @@ class ApiClient {
     });
   }
 
+  async getUser(id: string): Promise<unknown> {
+    return this.request<unknown>(`/admin/users/${id}`, {
+      method: 'GET',
+    });
+  }
+
   async createShop(shopData: unknown): Promise<unknown> {
     return this.request<unknown>('/shops', {
       method: 'POST',
@@ -381,13 +375,11 @@ class ApiClient {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        console.error('❌ Server-side API Error:', errorData);
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
       
       return await response.json();
     } catch (error) {
-      console.error('❌ Server-side API Request failed:', error);
       throw error;
     }
   }
@@ -407,13 +399,11 @@ class ApiClient {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        console.error('❌ Server-side API Error:', errorData);
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
       
       return await response.json();
     } catch (error) {
-      console.error('❌ Server-side API Request failed:', error);
       throw error;
     }
   }

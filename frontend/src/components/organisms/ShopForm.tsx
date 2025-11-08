@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import dynamicImport from 'next/dynamic';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/toast-container';
 import ErrorMessage from '@/components/atoms/ErrorMessage';
@@ -50,6 +50,7 @@ interface ShopFormProps {
 export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps = {}) {
   const params = useParams();
   const router = useRouter();
+  const searchParamsHook = useSearchParams();
   const auth = useAuth();
   
   // 事業者アカウントかどうかを判定
@@ -90,6 +91,27 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     () => propMerchantId || merchantIdFromParams,
     [propMerchantId, merchantIdFromParams]
   );
+  
+  const returnToParam = searchParamsHook?.get('returnTo') || null;
+  const decodedReturnTo = useMemo(() => {
+    if (!returnToParam) return null;
+    try {
+      const decoded = decodeURIComponent(returnToParam);
+      return decoded.startsWith('/') ? decoded : `/${decoded}`;
+    } catch {
+      return returnToParam.startsWith('/') ? returnToParam : `/${returnToParam}`;
+    }
+  }, [returnToParam]);
+  
+  const fallbackRedirect = useMemo(() => {
+    if (decodedReturnTo) {
+      return decodedReturnTo;
+    }
+    if (isMerchantAccount && merchantId) {
+      return `/merchants/${merchantId}/shops`;
+    }
+    return '/shops';
+  }, [decodedReturnTo, isMerchantAccount, merchantId]);
   
   const [formData, setFormData] = useState<ExtendedShopCreateRequest>({
     merchantId: merchantId || '',
@@ -142,6 +164,56 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   const [isMerchantModalOpen, setIsMerchantModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
+  const [existingAccountEmails, setExistingAccountEmails] = useState<Array<{ shopId: string; email: string }>>([]);
+  const [originalAccountEmail, setOriginalAccountEmail] = useState<string | null>(null);
+  
+  const collectAccountEmailEntries = (data: unknown): Array<{ shopId: string; email: string }> => {
+    const entries: Array<{ shopId: string; email: string }> = [];
+    const appendFromArray = (shops: Array<{ id?: unknown; accountEmail?: unknown }>) => {
+      shops.forEach((shop) => {
+        if (shop && typeof shop === 'object') {
+          const id = typeof shop.id === 'string' ? shop.id : null;
+          const email = typeof shop.accountEmail === 'string' ? shop.accountEmail : null;
+          if (id && email) {
+            entries.push({ shopId: id, email });
+          }
+        }
+      });
+    };
+
+    if (Array.isArray(data)) {
+      appendFromArray(data as Array<{ id?: string; accountEmail?: string }>);
+      return entries;
+    }
+
+    if (data && typeof data === 'object') {
+      const raw = data as { shops?: unknown; data?: unknown };
+      if (Array.isArray(raw.shops)) {
+        appendFromArray(raw.shops as Array<{ id?: string; accountEmail?: string }>);
+      }
+      if (raw.data && typeof raw.data === 'object') {
+        const inner = raw.data as { shops?: unknown };
+        if (Array.isArray(inner.shops)) {
+          appendFromArray(inner.shops as Array<{ id?: string; accountEmail?: string }>);
+        }
+      }
+    }
+
+    return entries;
+  };
+
+  const isAccountEmailDuplicate = (email: string): boolean => {
+    const normalized = email.trim().toLowerCase();
+    return existingAccountEmails.some((entry) => {
+      if (entry.email.trim().toLowerCase() !== normalized) {
+        return false;
+      }
+      if (isEdit && shopId) {
+        return entry.shopId !== shopId;
+      }
+      return true;
+    });
+  };
   
   // 住所検索フック
   const { isSearching: isSearchingAddress, searchAddress } = useAddressSearch(
@@ -235,8 +307,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               // 自分の事業者情報をmerchants配列に追加（親事業者からコピー機能用）
               setMerchants([merchant]);
             }
-          } catch (error) {
-            console.error('事業者情報の取得に失敗しました:', error);
+          } catch (_error) {
+            showError('事業者情報の取得に失敗しました');
           }
         }
         
@@ -291,6 +363,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             // accountEmailが存在する場合、createAccountをtrueに設定
             const accountEmail = shopData.accountEmail;
             setHasExistingAccount(!!accountEmail); // 既存アカウントの有無を記録
+            setOriginalAccountEmail(accountEmail ?? null);
             setFormData({
               ...shopData,
               merchantId: finalMerchantId,
@@ -383,6 +456,14 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               setCustomSceneText(shopDataWithScenes.customSceneText);
             }
             
+            // 既存店舗のメールアドレスを収集（重複チェック用）
+            try {
+              const shopsResponse = await apiClient.getShops('limit=1000');
+              if (!isMounted) return;
+              setExistingAccountEmails(collectAccountEmailEntries(shopsResponse));
+            } catch (_error) {
+              // 重複チェック用のデータ取得に失敗した場合はスキップ（API側で弾かれるため）
+            }
           }
         } else if (merchantId && merchantsArray.length > 0 && isMounted) {
           // 新規作成モードで加盟店が指定されている場合
@@ -398,7 +479,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         }
         
         if (isMounted) {
-          console.error('Failed to fetch data:', err);
           setError(err instanceof Error ? err.message : 'データの取得に失敗しました');
           showError('データの取得に失敗しました');
         }
@@ -662,26 +742,35 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customErrors.genreId = 'ジャンルを選択してください';
       }
       
+      // 喫煙タイプ
+      if (!formData.smokingType || String(formData.smokingType).trim().length === 0) {
+        customErrors.smokingType = '喫煙タイプを選択してください';
+      }
+      
       // 事業者（管理者アカウントの場合のみ）
       if (!isMerchantAccount && (!formData.merchantId || formData.merchantId.trim().length === 0)) {
         customErrors.merchantId = '事業者を選択してください';
       }
 
-      // クーポン利用時間
-      if (!formData.couponUsageStart || formData.couponUsageStart.trim().length === 0) {
-        customErrors.couponUsageStart = 'クーポン利用時間は必須です';
-      }
-      if (!formData.couponUsageEnd || formData.couponUsageEnd.trim().length === 0) {
-        customErrors.couponUsageEnd = 'クーポン利用時間は必須です';
+      // クーポン利用時間（任意・開始と終了はセットで入力）
+      const hasCouponStart = !!(formData.couponUsageStart && formData.couponUsageStart.trim().length > 0);
+      const hasCouponEnd = !!(formData.couponUsageEnd && formData.couponUsageEnd.trim().length > 0);
+      if (hasCouponStart && !hasCouponEnd) {
+        customErrors.couponUsageEnd = 'クーポン利用時間の終了時刻を入力してください';
+      } else if (!hasCouponStart && hasCouponEnd) {
+        customErrors.couponUsageStart = 'クーポン利用時間の開始時刻を入力してください';
       }
       
       
       // アカウント情報（アカウント発行時のみ）
       if (formData.createAccount) {
-        if (!formData.accountEmail || formData.accountEmail.trim().length === 0) {
+        const trimmedAccountEmail = formData.accountEmail?.trim() ?? '';
+        if (trimmedAccountEmail.length === 0) {
           customErrors.accountEmail = 'メールアドレスは必須です';
-        } else if (!isValidEmail(formData.accountEmail)) {
+        } else if (!isValidEmail(trimmedAccountEmail)) {
           customErrors.accountEmail = '有効なメールアドレスを入力してください';
+        } else if (isAccountEmailDuplicate(trimmedAccountEmail) && trimmedAccountEmail.toLowerCase() !== (originalAccountEmail ?? '').toLowerCase()) {
+          customErrors.accountEmail = 'このメールアドレスは既に使用されています';
         }
         
         // 新規登録時のみパスワード必須
@@ -833,15 +922,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       const normalizedCouponStart = (formData.couponUsageStart && formData.couponUsageStart !== '') ? formData.couponUsageStart : null;
       const normalizedCouponEnd = (formData.couponUsageEnd && formData.couponUsageEnd !== '') ? formData.couponUsageEnd : null;
 
-      console.log('📤 ShopForm: 送信データ準備中', {
-        homepageUrl: formData.homepageUrl,
-        normalizedHomepageUrl,
-        couponUsageStart: formData.couponUsageStart,
-        normalizedCouponStart,
-        couponUsageEnd: formData.couponUsageEnd,
-        normalizedCouponEnd,
-      });
-
       const submitData = {
         ...formData,
         accountEmail,
@@ -860,15 +940,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         couponUsageEnd: normalizedCouponEnd,
       };
 
-      console.log('📦 ShopForm: submitData', {
-        homepageUrl: submitData.homepageUrl,
-        couponUsageStart: submitData.couponUsageStart,
-        couponUsageEnd: submitData.couponUsageEnd,
-        hasHomepageUrl: 'homepageUrl' in submitData,
-        hasCouponUsageStart: 'couponUsageStart' in submitData,
-        hasCouponUsageEnd: 'couponUsageEnd' in submitData,
-      });
-      
       if (isEdit && shopId) {
         // 編集時：merchantIdが設定されていることを確認
         if (!formData.merchantId || formData.merchantId.trim() === '') {
@@ -904,11 +975,35 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       }
       
       // リダイレクト先を決定
-      const redirectPath = merchantId ? `/merchants/${merchantId}/shops` : '/shops';
-      router.push(redirectPath);
+      router.push(fallbackRedirect);
     } catch (err: unknown) {
-      console.error('Failed to save shop:', err);
-      showError(isEdit ? '店舗更新に失敗しました' : '店舗作成に失敗しました');
+      const error = err as Error & {
+        response?: {
+          status?: number;
+          data?: { message?: string } | null;
+        };
+      };
+
+      const isConflict = error?.response?.status === 409;
+      const conflictMessage =
+        error?.response?.data && typeof error.response.data === 'object'
+          ? (error.response.data as { message?: string }).message
+          : undefined;
+
+      if (isConflict) {
+        const message = conflictMessage || error?.message || 'このメールアドレスは既に使用されています';
+        setTouchedFields((prev) => ({
+          ...prev,
+          accountEmail: true,
+        }));
+        setValidationErrors((prev) => ({
+          ...prev,
+          accountEmail: message,
+        }));
+        showError(message);
+      } else {
+        showError(isEdit ? '店舗更新に失敗しました' : '店舗作成に失敗しました');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -917,13 +1012,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   const handleCancel = () => {
     // 管理者または店舗アカウントの場合は店舗一覧にリダイレクト
     if (isAdminAccount || isShopAccount) {
-      router.push('/shops');
+      router.push(fallbackRedirect);
       return;
     }
 
-    // 事業者の場合は事業者用の店舗一覧にリダイレクト
-    const redirectPath = merchantId ? `/merchants/${merchantId}/shops` : '/shops';
-    router.push(redirectPath);
+    router.push(fallbackRedirect);
   };
 
   if (isLoading) {
@@ -1642,7 +1735,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             {/* ホームページURL（任意） */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                ホームページURL（任意）
+                ホームページURL
               </label>
               <input
                 type="url"
@@ -1663,7 +1756,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             {/* クーポン利用時間（任意、開始・終了） */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                クーポン利用時間 <span className="text-red-500">*</span>
+                クーポン利用時間
               </label>
               <div className="flex items-center gap-3">
                 <input
@@ -1704,7 +1797,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             {/* 喫煙タイプ */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                喫煙タイプ
+                喫煙タイプ <span className="text-red-500">*</span>
               </label>
               <div className="flex flex-wrap gap-4">
                 {SMOKING_OPTIONS.map((opt) => (
@@ -1721,6 +1814,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   </label>
                 ))}
               </div>
+              <ErrorMessage message={validationErrors.smokingType} field="smokingType" />
             </div>
           </div>
         </div>

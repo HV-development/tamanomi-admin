@@ -46,9 +46,7 @@ export default function MerchantEditConfirmPage() {
     try {
       // API呼び出しをシミュレート
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      console.log('事業者更新データ:', formData);
-      
+
       // 成功時の処理（実際の実装では適切なページにリダイレクト）
       alert('事業者の更新が完了しました。');
       

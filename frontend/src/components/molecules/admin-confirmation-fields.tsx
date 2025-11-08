@@ -12,6 +12,8 @@ interface AdminConfirmationFieldsProps {
 export default function AdminConfirmationFields({
   adminData,
 }: AdminConfirmationFieldsProps) {
+  const hasPasswordChange = (adminData.password || '').trim().length > 0;
+
   return (
     <div className="space-y-4">
       <div>
@@ -46,7 +48,7 @@ export default function AdminConfirmationFields({
           パスワード
         </label>
         <p className="text-gray-900 bg-gray-50 p-2 rounded">
-          {'*'.repeat(adminData.password.length)}
+          {hasPasswordChange ? '*'.repeat(adminData.password.length) : '変更なし'}
         </p>
       </div>
 
@@ -55,7 +57,7 @@ export default function AdminConfirmationFields({
           パスワード確認
         </label>
         <p className="text-gray-900 bg-gray-50 p-2 rounded">
-          {'*'.repeat(adminData.passwordConfirm.length)}
+          {hasPasswordChange ? '*'.repeat(adminData.passwordConfirm.length) : '変更なし'}
         </p>
       </div>
 
