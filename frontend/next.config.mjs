@@ -35,6 +35,16 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'images.tamanomi.com',
       },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '9000',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3001',
+      },
     ],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
@@ -130,7 +140,7 @@ const nextConfig = {
                   isDev
                     ? "font-src 'self' https://fonts.gstatic.com https: data:"
                     : "font-src 'self' https://fonts.gstatic.com",
-                  "img-src 'self' data: blob: https://dev-images.tamanomi.com https://images.tamanomi.com",
+                  `img-src 'self' data: blob: https://dev-images.tamanomi.com https://images.tamanomi.com${isDev ? ' http://localhost:3001 http://localhost:9000' : ''}`,
                   // 開発環境ではlocalhostへの接続も許可
                   isDev
                     ? "connect-src 'self' https://zipcloud.ibsnet.co.jp http://localhost:* ws://localhost:* wss://localhost:*"

@@ -91,13 +91,6 @@ export default function MerchantEditPage() {
           const merchantData = result.data; // APIレスポンスから data プロパティを取得
           
           if (isMounted) {
-            console.log('✅ 事業者データ取得成功:', merchantData);
-            console.log('🔍 Applications data from API:', {
-              applications: merchantData.applications,
-              type: typeof merchantData.applications,
-              isArray: Array.isArray(merchantData.applications)
-            });
-            
             // アカウント発行済みかどうかを確認（statusが'pending'または'active'の場合は発行済み）
             const accountStatus = merchantData.account?.status;
             setHasAccount(accountStatus === 'pending' || accountStatus === 'active');
@@ -158,12 +151,6 @@ export default function MerchantEditPage() {
       abortController.abort();
     };
   }, [merchantId]);
-
-  // エラー状態の変更を監視
-  useEffect(() => {
-    console.log('🔍 Edit errors state changed:', errors);
-  }, [errors]);
-
 
   const handleInputChange = (field: keyof MerchantEditFormData, value: string) => {
     setFormData((prev: MerchantEditFormData) => ({ ...prev, [field]: value }));
@@ -267,7 +254,6 @@ export default function MerchantEditPage() {
   };
 
   const validateFormData = (): boolean => {
-    console.log('🔍 Validating edit form data:', formData);
     const fieldErrors: Record<string, string> = {};
     let hasErrors = false;
 
@@ -296,25 +282,20 @@ export default function MerchantEditPage() {
           if (!value.trim()) {
             fieldErrors.email = 'メールアドレスは必須です';
             hasErrors = true;
-            console.log('❌ Email validation failed: empty');
           } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
             fieldErrors.email = '有効なメールアドレスを入力してください';
             hasErrors = true;
-            console.log('❌ Email validation failed: invalid format');
           }
         } else if (field === 'phone') {
           if (!value.trim()) {
             fieldErrors.phone = '電話番号は必須です';
             hasErrors = true;
-            console.log('❌ Phone validation failed: empty');
           } else if (!/^\d+$/.test(value)) {
             fieldErrors.phone = '電話番号は数値のみで入力してください（ハイフン無し）';
             hasErrors = true;
-            console.log('❌ Phone validation failed: invalid format');
           } else if (value.length < 10 || value.length > 11) {
             fieldErrors.phone = '電話番号は10-11桁で入力してください';
             hasErrors = true;
-            console.log('❌ Phone validation failed: invalid length');
           }
         }
       } else if (field !== 'applications') {
@@ -324,21 +305,16 @@ export default function MerchantEditPage() {
         if (error) {
           fieldErrors[field] = error;
           hasErrors = true;
-          console.log(`❌ ${field} validation failed:`, error);
         }
       }
     });
 
-    console.log('🔍 Edit validation result:', { hasErrors, fieldErrors });
-
     if (hasErrors) {
-      console.log('🚨 Setting edit errors:', fieldErrors);
       setErrors(fieldErrors);
       return false;
     }
     
     // バリデーション成功
-    console.log('✅ Edit validation successful');
     setErrors({});
     return true;
   };
@@ -369,10 +345,7 @@ export default function MerchantEditPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('📝 Edit form submit started, current errors:', errors);
-    
     if (!validateFormData()) {
-      console.log('❌ Edit validation failed, stopping submit');
       return;
     }
 
@@ -397,8 +370,6 @@ export default function MerchantEditPage() {
         issueAccount, // アカウント発行フラグ
         status, // 契約ステータス
       };
-      
-      console.log('📤 送信データ:', { updateData, status, issueAccount });
 
       const response = await fetch(`/api/merchants/${merchantId}`, {
         method: 'PUT',
@@ -410,7 +381,6 @@ export default function MerchantEditPage() {
       });
 
       if (response.ok) {
-        console.log('事業者更新データ:', formData);
         alert('事業者の更新が完了しました。');
         // 事業者一覧に遷移
         router.push('/merchants');

@@ -90,8 +90,6 @@ export default function Sidebar() {
 
   const handleMenuClick = useCallback(
     (href: string) => {
-      // メニューが閉じている状態では閉じたままページ遷移
-      console.log('Menu clicked:', href, 'isCollapsed:', isCollapsed);
       router.push(href);
     },
     [router, isCollapsed]

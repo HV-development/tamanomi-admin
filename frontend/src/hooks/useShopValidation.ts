@@ -1,6 +1,14 @@
 import { useCallback } from 'react';
-import { z } from 'zod';
-import { shopCreateRequestSchema, shopUpdateRequestSchema, isValidKana } from '@hv-development/schemas';
+import {
+  isValidEmail,
+  isValidPhone,
+  isValidPostalCode,
+  isValidPrefecture,
+  isValidCity,
+  isValidAddressDetail,
+  isValidKana,
+  isValidShopName,
+} from '@hv-development/schemas';
 import type { ExtendedShopCreateRequest } from '@/types/shop';
 
 interface UseShopValidationOptions {
@@ -10,254 +18,275 @@ interface UseShopValidationOptions {
   setValidationErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }
 
+const REQUIRED_FIELD_LABELS: Partial<Record<keyof ExtendedShopCreateRequest, string>> = {
+  merchantId: '事業者',
+  genreId: 'ジャンル',
+  name: '店舗名',
+  phone: '電話番号',
+  postalCode: '郵便番号',
+  prefecture: '都道府県',
+  city: '市区町村',
+  address1: '番地以降',
+  latitude: '緯度',
+  longitude: '経度',
+  smokingType: '喫煙タイプ',
+};
+
+const COUPON_USAGE_PAIR_ERROR = 'クーポン利用時間は開始・終了をセットで入力してください';
+const TIME_PATTERN = /^\d{2}:\d{2}$/;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function useShopValidation({
   formData,
   touchedFields,
   isEdit,
   setValidationErrors,
 }: UseShopValidationOptions) {
-  const validateField = useCallback((field: keyof ExtendedShopCreateRequest, value: string | boolean | number | undefined, currentFormData?: ExtendedShopCreateRequest, currentTouchedFields?: Record<string, boolean>) => {
-    // 最新のformDataを使用（引数で渡された場合はそれを使用、そうでない場合はformDataを使用）
-    const latestFormData = currentFormData || formData;
-    // 最新のtouchedFieldsを使用（引数で渡された場合はそれを使用、そうでない場合はtouchedFieldsを使用）
-    const latestTouchedFields = currentTouchedFields || touchedFields;
-    
-    // クーポン利用時間の特殊なバリデーション（開始・終了をセットで入力）
-    if (field === 'couponUsageStart' || field === 'couponUsageEnd') {
-      const start = (field === 'couponUsageStart' ? (typeof value === 'string' ? value : '') : (latestFormData.couponUsageStart || ''));
-      const end = (field === 'couponUsageEnd' ? (typeof value === 'string' ? value : '') : (latestFormData.couponUsageEnd || ''));
-      const hasStart = !!start;
-      const hasEnd = !!end;
-      if ((hasStart && !hasEnd) || (!hasStart && hasEnd)) {
-        const msg = 'クーポン利用時間は開始・終了をセットで入力してください';
-        setValidationErrors(prev => ({ ...prev, couponUsageStart: msg, couponUsageEnd: msg }));
-      } else {
-        setValidationErrors(prev => {
-          const ne = { ...prev } as Record<string, string>;
-          delete ne.couponUsageStart;
-          delete ne.couponUsageEnd;
-          return ne;
-        });
-      }
-      return; // ここで終了（下の単項目処理は行わない）
-    }
+  const validateField = useCallback(
+    (
+      field: keyof ExtendedShopCreateRequest,
+      value: string | boolean | number | undefined,
+      currentFormData?: ExtendedShopCreateRequest,
+      currentTouchedFields?: Record<string, boolean>,
+    ) => {
+      const latestFormData = currentFormData || formData;
+      const latestTouchedFields = currentTouchedFields || touchedFields;
+      const updatedFormData: ExtendedShopCreateRequest = {
+        ...latestFormData,
+        [field]: value,
+      };
+      const isFieldTouched = latestTouchedFields[field] ?? false;
 
-    // Zodスキーマベースのバリデーション（部分オブジェクトで検証）
-    const schema = isEdit ? shopUpdateRequestSchema : shopCreateRequestSchema;
-    
-    // ZodEffectsの内部スキーマ（ZodObject）にアクセス
-    // instanceOfチェックがうまく動作しない場合があるため、constructor.nameと_defプロパティでチェック
-    let baseSchema: z.ZodTypeAny = schema;
-    let unwrapCount = 0;
-    const maxUnwrapAttempts = 10; // 無限ループ防止
-    
-    while (unwrapCount < maxUnwrapAttempts) {
-      // ZodEffectsかどうかを複数の方法でチェック
-      // _def.typeNameが'ZodEffects'か、または_defにschemaプロパティがあるか
-      const isZodEffects = 
-        baseSchema instanceof z.ZodEffects || 
-        baseSchema?.constructor?.name === 'ZodEffects' ||
-        baseSchema?._def?.typeName === 'ZodEffects' ||
-        (baseSchema?._def && 'schema' in baseSchema._def);
-      
-      if (isZodEffects && baseSchema?._def?.schema) {
-        baseSchema = baseSchema._def.schema;
-        unwrapCount++;
-      } else {
-        break;
-      }
-    }
-    
-    let errorMessage = '';
+      if (field === 'couponUsageStart' || field === 'couponUsageEnd') {
+        const hasTouchedPair =
+          (latestTouchedFields.couponUsageStart ?? false) ||
+          (latestTouchedFields.couponUsageEnd ?? false);
 
-    // 値が空文字列の場合、nullまたはundefinedに変換して検証
-    let valueToValidate: unknown = value;
-    if (typeof value === 'string' && value.trim().length === 0) {
-      // オプショナルフィールドの場合はundefined、nullableの場合はnull
-      if (field === 'homepageUrl' || (field as string) === 'couponUsageStart' || (field as string) === 'couponUsageEnd') {
-        valueToValidate = null;
-      } else if (field !== 'name' && field !== 'phone' && field !== 'postalCode' && field !== 'latitude' && field !== 'longitude' && field !== 'nameKana') {
-        valueToValidate = undefined;
-      }
-      // nameKanaは空文字列の場合もバリデーションをスキップする（オプショナル）
-    }
+        const startError = validateShopFieldInternal(
+          'couponUsageStart',
+          updatedFormData.couponUsageStart ?? '',
+          updatedFormData,
+        );
+        const endError = validateShopFieldInternal(
+          'couponUsageEnd',
+          updatedFormData.couponUsageEnd ?? '',
+          updatedFormData,
+        );
 
-    // Zodスキーマでバリデーション実行
-    // instanceofチェックがうまく動作しない場合があるため、shapeプロパティの存在で確認
-    if (!baseSchema || !('shape' in baseSchema)) {
-      return;
-    }
+        setValidationErrors((prev) => {
+          const newErrors = { ...prev };
 
-    const zodObject = baseSchema as z.ZodObject<Record<string, z.ZodTypeAny>>;
-    if (!zodObject.shape) {
-      return;
-    }
-
-    let fieldSchema: z.ZodTypeAny = zodObject.shape[field as string] as z.ZodTypeAny;
-    if (!fieldSchema) {
-      return; // スキーマに存在しないフィールドはスキップ
-    }
-    
-    // ZodOptional、ZodNullable、ZodEffectsをアンラップして実際のスキーマを取得
-    let unwrappedFieldSchema = fieldSchema;
-    const maxFieldUnwrapAttempts = 10;
-    let fieldUnwrapAttempt = 0;
-    
-    while (unwrappedFieldSchema && fieldUnwrapAttempt < maxFieldUnwrapAttempts) {
-      // 次のスキーマを取得
-      if (unwrappedFieldSchema?._def?.innerType) {
-        unwrappedFieldSchema = unwrappedFieldSchema._def.innerType;
-      } else if (unwrappedFieldSchema?._def?.schema) {
-        unwrappedFieldSchema = unwrappedFieldSchema._def.schema;
-      } else {
-        break;
-      }
-      
-      fieldUnwrapAttempt++;
-      
-      // ZodOptional、ZodNullable、ZodEffects以外になったら終了
-      if (!(unwrappedFieldSchema instanceof z.ZodOptional ||
-            unwrappedFieldSchema instanceof z.ZodNullable ||
-            unwrappedFieldSchema instanceof z.ZodEffects ||
-            unwrappedFieldSchema?.constructor?.name === 'ZodOptional' ||
-            unwrappedFieldSchema?.constructor?.name === 'ZodNullable' ||
-            unwrappedFieldSchema?.constructor?.name === 'ZodEffects')) {
-        break;
-      }
-    }
-    fieldSchema = unwrappedFieldSchema;
-
-    // 必須チェック（latestTouchedFieldsに基づく条件付き）
-    const isRequiredField = field === 'name' || field === 'phone' || field === 'postalCode' || field === 'latitude' || field === 'longitude';
-    const isEmpty = !value || (typeof value === 'string' && value.trim().length === 0);
-    
-    try {
-      // 必須フィールドで空の場合、latestTouchedFieldsをチェック
-      if (isRequiredField && isEmpty) {
-        if (latestTouchedFields[field]) {
-          // 空文字列でZodスキーマを検証してエラーメッセージを取得
-          try {
-            fieldSchema.parse('');
-          } catch (err) {
-            // instanceofチェックが失敗する場合があるため、errorsプロパティで判定
-            if (err instanceof z.ZodError) {
-              errorMessage = err.errors[0]?.message || '入力エラーです';
-            } else if (err && typeof err === 'object' && 'errors' in err && Array.isArray(err.errors)) {
-              const zodLikeError = err as { errors: Array<{ message?: string }> };
-              errorMessage = zodLikeError.errors[0]?.message || '入力エラーです';
-            }
+          if (!hasTouchedPair) {
+            delete newErrors.couponUsageStart;
+            delete newErrors.couponUsageEnd;
+            return newErrors;
           }
-        }
-        // latestTouchedFieldsでない場合はエラーなし（初期表示時はエラーを表示しない）
-      } else if (isRequiredField && !isEmpty) {
-        // 必須フィールドで値がある場合はZodスキーマで検証
-        try {
-          fieldSchema.parse(valueToValidate);
-        } catch (err) {
-          if (err instanceof z.ZodError) {
-            errorMessage = err.errors[0]?.message || '入力エラーです';
-          } else if (err && typeof err === 'object' && 'errors' in err && Array.isArray(err.errors)) {
-            const zodLikeError = err as { errors: Array<{ message?: string }> };
-            errorMessage = zodLikeError.errors[0]?.message || '入力エラーです';
-          }
-        }
-      } else if (field === 'accountEmail') {
-        // アカウント発行時のみ必須
-        if (latestFormData.createAccount && isEmpty) {
-          if (latestTouchedFields[field]) {
-            // 空文字列でZodスキーマを検証してエラーメッセージを取得
-            try {
-              fieldSchema.parse('');
-            } catch (err) {
-              if (err instanceof z.ZodError) {
-                errorMessage = err.errors[0]?.message || '入力エラーです';
-              }
-            }
-          }
-        } else if (!isEmpty && typeof value === 'string' && value.trim().length > 0) {
-          // 値がある場合はZodスキーマで検証
-          try {
-            fieldSchema.parse(valueToValidate);
-          } catch (err) {
-            if (err instanceof z.ZodError) {
-              errorMessage = err.errors[0]?.message || '入力エラーです';
-            }
-          }
-        }
-      } else if (field === 'nameKana') {
-        // 店舗名カナのバリデーション（オプショナル、入力がある場合のみ）
-        if (typeof value === 'string' && value.trim().length > 0) {
-          // カタカナチェック
-          if (!isValidKana(value)) {
-            errorMessage = '店舗名（カナ）は全角カタカナで入力してください';
+
+          if (startError) {
+            newErrors.couponUsageStart = startError;
           } else {
-            // Zodスキーマで検証（最大文字数など）
-            try {
-              fieldSchema.parse(value);
-            } catch (err) {
-              if (err instanceof z.ZodError) {
-                errorMessage = err.errors[0]?.message || '入力エラーです';
-              } else if (err && typeof err === 'object' && 'errors' in err && Array.isArray(err.errors)) {
-                const zodLikeError = err as { errors: Array<{ message?: string }> };
-                errorMessage = zodLikeError.errors[0]?.message || '入力エラーです';
-              }
-            }
+            delete newErrors.couponUsageStart;
           }
-        }
-        // 空文字列の場合はバリデーションをスキップ（オプショナルフィールド）
-      } else {
-        // その他のフィールドは値がある場合のみZodスキーマで検証
-        if (valueToValidate !== undefined && valueToValidate !== null && valueToValidate !== '') {
-          // 元のフィールドスキーマ（ZodOptionalなど）でバリデーションを実行してエラーメッセージを取得
-          try {
-            if (!('shape' in baseSchema)) {
-              return;
-            }
-            const zodObject = baseSchema as z.ZodObject<Record<string, z.ZodTypeAny>>;
-            const originalFieldSchema = zodObject.shape[field as string] as z.ZodTypeAny;
-            if (!originalFieldSchema) {
-              return;
-            }
-            originalFieldSchema.parse(valueToValidate);
-          } catch (err) {
-            if (err instanceof z.ZodError) {
-              const errors = err.errors;
-              const firstError = errors?.[0];
-              
-              // エラーメッセージを取得（カスタムメッセージがあればそれを使用）
-              errorMessage = firstError?.message || '入力エラーです';
-              
-              // もしエラーメッセージが英語のままの場合は、日本語メッセージに置き換える
-              if (errorMessage === 'Invalid url' && field === 'homepageUrl') {
-                errorMessage = '有効なURLを入力してください';
-              }
-            }
-          }
-        }
-      }
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        errorMessage = error.errors[0]?.message || '入力エラーです';
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-    }
 
-    // エラーメッセージの設定またはクリア
-    if (errorMessage) {
-      setValidationErrors((prev) => ({
-        ...prev,
-        [field]: errorMessage,
-      }));
-    } else {
+          if (endError) {
+            newErrors.couponUsageEnd = endError;
+          } else {
+            delete newErrors.couponUsageEnd;
+          }
+
+          const pairError = validateCouponUsagePairInternal(updatedFormData);
+          if (pairError) {
+            newErrors.couponUsageStart = pairError;
+            newErrors.couponUsageEnd = pairError;
+          } else if (
+            newErrors.couponUsageStart === COUPON_USAGE_PAIR_ERROR &&
+            newErrors.couponUsageEnd === COUPON_USAGE_PAIR_ERROR
+          ) {
+            delete newErrors.couponUsageStart;
+            delete newErrors.couponUsageEnd;
+          }
+
+          return newErrors;
+        });
+        return;
+      }
+
+      if (!isFieldTouched) {
+        setValidationErrors((prev) => {
+          if (!(field in prev)) {
+            return prev;
+          }
+          const newErrors = { ...prev };
+          delete newErrors[field as string];
+          return newErrors;
+        });
+        return;
+      }
+
+      const error = validateShopFieldInternal(field, value, updatedFormData);
+
       setValidationErrors((prev) => {
         const newErrors = { ...prev };
-        delete newErrors[field];
+        if (error) {
+          newErrors[field as string] = error;
+        } else {
+          delete newErrors[field as string];
+        }
         return newErrors;
       });
-    }
-  }, [formData, touchedFields, isEdit, setValidationErrors]);
+    },
+    [formData, touchedFields, isEdit, setValidationErrors],
+  );
 
   return { validateField };
+}
+
+function validateCouponUsagePairInternal(form: ExtendedShopCreateRequest): string | null {
+  const hasStart = typeof form.couponUsageStart === 'string' && form.couponUsageStart.trim().length > 0;
+  const hasEnd = typeof form.couponUsageEnd === 'string' && form.couponUsageEnd.trim().length > 0;
+  if ((hasStart && !hasEnd) || (!hasStart && hasEnd)) {
+    return COUPON_USAGE_PAIR_ERROR;
+  }
+  return null;
+}
+
+function validateShopFieldInternal(
+  field: keyof ExtendedShopCreateRequest,
+  value: unknown,
+  formData: ExtendedShopCreateRequest,
+): string | null {
+  const requiredLabel = REQUIRED_FIELD_LABELS[field];
+  const trimmedValue = typeof value === 'string' ? value.trim() : value;
+
+  if (requiredLabel) {
+    const isEmpty =
+      trimmedValue === '' ||
+      trimmedValue === null ||
+      trimmedValue === undefined;
+    if (isEmpty) {
+      return `${requiredLabel}は必須です`;
+    }
+  }
+
+  switch (field) {
+    case 'name':
+      if (typeof value === 'string' && !isValidShopName(value)) {
+        return '店舗名は1文字以上100文字以内で入力してください';
+      }
+      return null;
+    case 'nameKana':
+      if (typeof value === 'string' && value.trim().length > 0) {
+        if (value.length > 100) {
+          return '店舗名（カナ）は100文字以内で入力してください';
+        }
+        if (!isValidKana(value)) {
+          return '店舗名（カナ）は全角カタカナで入力してください';
+        }
+      }
+      return null;
+    case 'phone':
+      if (typeof value === 'string' && value.trim().length > 0 && !isValidPhone(value)) {
+        return '有効な電話番号を入力してください（10-11桁の数字）';
+      }
+      return null;
+    case 'postalCode':
+      if (typeof value === 'string' && value.trim().length > 0 && !isValidPostalCode(value)) {
+        return '郵便番号は7桁の数字で入力してください';
+      }
+      return null;
+    case 'prefecture':
+      if (typeof value === 'string' && value.trim().length > 0 && !isValidPrefecture(value)) {
+        return '都道府県は1文字以上50文字以下で入力してください';
+      }
+      return null;
+    case 'city':
+      if (typeof value === 'string' && value.trim().length > 0 && !isValidCity(value)) {
+        return '市区町村は1文字以上50文字以下で入力してください';
+      }
+      return null;
+    case 'address1':
+      if (typeof value === 'string' && value.trim().length > 0 && !isValidAddressDetail(value)) {
+        return '番地以降は1文字以上100文字以内で入力してください';
+      }
+      return null;
+    case 'accountEmail': {
+      if (formData.createAccount && (typeof value !== 'string' || value.trim().length === 0)) {
+        return 'メールアドレスは必須です';
+      }
+      if (typeof value === 'string' && value.trim().length > 0) {
+        if (!isValidEmail(value)) {
+          return '有効なメールアドレスを入力してください';
+        }
+        if (value.length > 255) {
+          return 'メールアドレスは255文字以内で入力してください';
+        }
+      }
+      return null;
+    }
+    case 'password': {
+      if (formData.createAccount) {
+        if (typeof value !== 'string' || value.length === 0) {
+          return 'パスワードは必須です';
+        }
+        if (value.length < 8) {
+          return 'パスワードは8文字以上で入力してください';
+        }
+      } else if (typeof value === 'string' && value.length > 0 && value.length < 8) {
+        return 'パスワードは8文字以上で入力してください';
+      }
+      return null;
+    }
+    case 'description':
+      if (typeof value === 'string' && value.length > 500) {
+        return '店舗紹介説明は500文字以内で入力してください';
+      }
+      return null;
+    case 'details':
+      if (typeof value === 'string' && value.length > 1000) {
+        return '詳細情報は1000文字以内で入力してください';
+      }
+      return null;
+    case 'customSceneText':
+      if (typeof value === 'string' && value.length > 100) {
+        return '具体的な利用シーンは100文字以内で入力してください';
+      }
+      return null;
+    case 'homepageUrl':
+      if (typeof value === 'string' && value.trim().length > 0) {
+        try {
+          new URL(value);
+        } catch {
+          return '有効なURLを入力してください';
+        }
+      }
+      return null;
+    case 'couponUsageStart':
+    case 'couponUsageEnd': {
+      if (typeof value === 'string' && value.trim().length > 0 && !TIME_PATTERN.test(value)) {
+        return 'クーポン利用時間はHH:MM形式で入力してください';
+      }
+      const start =
+        field === 'couponUsageStart'
+          ? (typeof value === 'string' ? value : formData.couponUsageStart)
+          : formData.couponUsageStart;
+      const end =
+        field === 'couponUsageEnd'
+          ? (typeof value === 'string' ? value : formData.couponUsageEnd)
+          : formData.couponUsageEnd;
+      return validateCouponUsagePairInternal({
+        ...formData,
+        couponUsageStart: typeof start === 'string' ? start : undefined,
+        couponUsageEnd: typeof end === 'string' ? end : undefined,
+      });
+    }
+    case 'merchantId':
+    case 'genreId':
+      if (typeof value === 'string' && value.trim().length > 0 && !UUID_PATTERN.test(value)) {
+        return '有効なIDを指定してください';
+      }
+      return null;
+    default:
+      return null;
+  }
 }
 

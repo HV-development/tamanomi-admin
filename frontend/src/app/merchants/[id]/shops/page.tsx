@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
@@ -11,15 +11,26 @@ import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
+import { useAuth } from '@/components/contexts/auth-context';
+import Checkbox from '@/components/atoms/Checkbox';
+import FloatingFooter from '@/components/molecules/floating-footer';
+import { convertShopsToCSV, downloadCSV, generateFilename, type ShopForCSV } from '@/utils/csvExport';
 
 export default function MerchantShopsPage() {
   const params = useParams();
   const merchantId = params.id as string;
+  const baseReturnTo = useMemo(() => `/merchants/${merchantId}/shops`, [merchantId]);
+  const encodedReturnTo = useMemo(() => encodeURIComponent(baseReturnTo), [baseReturnTo]);
+  const auth = useAuth();
   const [shops, setShops] = useState<Shop[]>([]);
   const [merchantName, setMerchantName] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
+  const [selectedShops, setSelectedShops] = useState<Set<string>>(new Set());
+  const [isAllSelected, setIsAllSelected] = useState(false);
+  const [isIndeterminate, setIsIndeterminate] = useState(false);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   
   // 検索フォームの状態（拡張版）
   const [searchForm, setSearchForm] = useState({
@@ -34,6 +45,11 @@ export default function MerchantShopsPage() {
     status: 'all' as 'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+
+  const canSelectShops = useMemo(() => {
+    if (!auth?.user) return false;
+    return auth.user.accountType === 'admin' && auth.user.role === 'sysadmin';
+  }, [auth?.user]);
 
   // データ取得（検索条件を含む）
   const fetchShops = async () => {
@@ -127,7 +143,6 @@ export default function MerchantShopsPage() {
 
   // 検索実行ハンドラー
   const handleSearch = () => {
-    console.log('検索実行:', searchForm);
     fetchShops();
   };
 
@@ -176,6 +191,112 @@ export default function MerchantShopsPage() {
         )
       );
       showError(`ステータスの更新に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+    }
+  };
+
+  useEffect(() => {
+    const allCount = shops.length;
+    const selectedCount = selectedShops.size;
+    setIsAllSelected(allCount > 0 && selectedCount === allCount);
+    setIsIndeterminate(selectedCount > 0 && selectedCount < allCount);
+  }, [selectedShops, shops]);
+
+  const handleToggleAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedShops(new Set(shops.map(shop => shop.id)));
+    } else {
+      setSelectedShops(new Set());
+    }
+  };
+
+  const handleToggleShop = (shopId: string, checked: boolean) => {
+    setSelectedShops(prev => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(shopId);
+      } else {
+        next.delete(shopId);
+      }
+      return next;
+    });
+  };
+
+  const handleDownloadCSVForShops = async (shopIds: string[]) => {
+    try {
+      if (shopIds.length === 0) {
+        showError('選択されている店舗がありません');
+        return;
+      }
+
+      const selectedShopsData = shops.filter((shop) => shopIds.includes(shop.id));
+
+      if (selectedShopsData.length === 0) {
+        showError('選択された店舗が見つかりません');
+        return;
+      }
+
+      const shopsForCSV: ShopForCSV[] = selectedShopsData.map((shop) => ({
+        merchantName: shop.merchant?.name,
+        name: shop.name,
+        nameKana: shop.nameKana || '',
+        postalCode: shop.postalCode || '',
+        address: shop.address || '',
+        accountEmail: shop.accountEmail || '',
+        phone: shop.phone || '',
+        status: shop.status,
+        createdAt: shop.createdAt,
+        updatedAt: shop.updatedAt,
+      }));
+
+      const csvContent = convertShopsToCSV(shopsForCSV, false);
+      const filename = generateFilename('shops');
+
+      downloadCSV(csvContent, filename);
+      showSuccess(`${selectedShopsData.length}件の店舗データをCSVでダウンロードしました`);
+    } catch (error: unknown) {
+      console.error('CSVダウンロードに失敗しました:', error);
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      showError(`CSVダウンロードに失敗しました: ${errorMessage}`);
+    }
+  };
+
+  const handleBulkUpdateStatus = async (status: string) => {
+    if (!status) {
+      showError('ステータスを選択してください');
+      return;
+    }
+
+    const targetIds = Array.from(selectedShops);
+    if (targetIds.length === 0) {
+      showError('選択されている店舗がありません');
+      return;
+    }
+
+    setIsBulkUpdating(true);
+
+    try {
+      await Promise.all(
+        targetIds.map((shopId) =>
+          apiClient.updateShopStatus(shopId, { status })
+        )
+      );
+
+      setShops((prev) =>
+        prev.map((shop) =>
+          targetIds.includes(shop.id)
+            ? { ...shop, status: status as Shop['status'] }
+            : shop
+        )
+      );
+
+      showSuccess(`${targetIds.length}件の店舗ステータスを更新しました`);
+      setSelectedShops(new Set(targetIds));
+    } catch (error: unknown) {
+      console.error('ステータスの一括更新に失敗しました:', error);
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      showError(`ステータスの一括更新に失敗しました: ${errorMessage}`);
+    } finally {
+      setIsBulkUpdating(false);
     }
   };
 
@@ -431,7 +552,12 @@ export default function MerchantShopsPage() {
             <h3 className="text-lg font-medium text-gray-900">
               店舗一覧 ({shops.length}件)
             </h3>
-            <Link href={merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new'}>
+            <Link
+              href={{
+                pathname: merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new',
+                query: { returnTo: encodedReturnTo },
+              }}
+            >
               <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
                 <span className="mr-2">+</span>
                 新規登録
@@ -443,6 +569,15 @@ export default function MerchantShopsPage() {
             <table className="w-full min-w-[1200px]">
               <thead className="bg-gray-50">
                 <tr>
+                  {canSelectShops && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
+                      <Checkbox
+                        checked={isAllSelected}
+                        indeterminate={isIndeterminate}
+                        onChange={handleToggleAll}
+                      />
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
                     アクション
                   </th>
@@ -471,11 +606,24 @@ export default function MerchantShopsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
               {shops.map((shop) => (
                   <tr key={shop.id} className="hover:bg-gray-50">
+                    {canSelectShops && (
+                      <td className="px-6 py-4 whitespace-nowrap w-32">
+                        <Checkbox
+                          checked={selectedShops.has(shop.id)}
+                          onChange={(checked) => handleToggleShop(shop.id, checked)}
+                        />
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap w-32">
-                      <div className="flex justify-center gap-2">
-                        <Link href={`/merchants/${merchantId || shop.merchantId}/shops/${shop.id}/edit`}>
+                      <div className="flex items-center justify-center gap-2">
+                        <Link
+                          href={{
+                            pathname: `/merchants/${merchantId || shop.merchantId}/shops/${shop.id}/edit`,
+                            query: { returnTo: encodedReturnTo },
+                          }}
+                        >
                           <button 
-                            className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                            className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
                             title="編集"
                           >
                             <Image 
@@ -483,11 +631,20 @@ export default function MerchantShopsPage() {
                               alt="編集" 
                               width={24}
                               height={24}
-                              className="w-6 h-6"
+                              className="w-6 h-6 flex-shrink-0"
                             />
                           </button>
                         </Link>
-                        <Link href={`/shops/${shop.id}/coupons`}>
+                        <Link
+                          href={{
+                            pathname: '/coupons',
+                            query: {
+                              shopId: shop.id,
+                              ...(merchantId ? { merchantId } : {}),
+                              returnTo: encodedReturnTo,
+                            },
+                          }}
+                        >
                           <button 
                             className="p-2 text-orange-600 hover:text-orange-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[48px] min-h-[48px]"
                             title="クーポン管理"
@@ -495,9 +652,9 @@ export default function MerchantShopsPage() {
                             <Image 
                               src="/coupon.svg" 
                               alt="クーポン" 
-                              width={24}
-                              height={24}
-                              className="w-6 h-6"
+                              width={48}
+                              height={48}
+                              className="w-10 h-10"
                             />
                           </button>
                         </Link>
@@ -566,8 +723,16 @@ export default function MerchantShopsPage() {
           )}
         </div>
       </div>
-      
+
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+      {canSelectShops && selectedShops.size > 0 && (
+        <FloatingFooter
+          selectedCount={selectedShops.size}
+          onBulkUpdateStatus={handleBulkUpdateStatus}
+          isUpdating={isBulkUpdating}
+          onDownloadCSV={() => handleDownloadCSVForShops(Array.from(selectedShops))}
+        />
+      )}
     </AdminLayout>
   );
 }

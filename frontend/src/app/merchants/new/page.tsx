@@ -74,11 +74,6 @@ export default function MerchantNewPage() {
   
   const fieldRefs = useRef<{ [key: string]: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null }>({});
 
-  // エラー状態の変更を監視
-  useEffect(() => {
-    console.log('🔍 Errors state changed:', errors);
-  }, [errors]);
-
   const handleInputChange = (field: keyof (MerchantFormData & { email: string }), value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     
@@ -110,10 +105,6 @@ export default function MerchantNewPage() {
       }
     } else {
       const error = validateMerchantField(field, value || '');
-      // デバッグ: validateMerchantFieldが返すエラーメッセージを確認
-      if (field === 'name' && error) {
-        console.log('🔍 Debug handleInputChange: validateMerchantField returned error for name field:', error);
-      }
       if (error) {
         setErrors((prev) => ({ ...prev, [field]: error }));
       } else {
@@ -145,10 +136,6 @@ export default function MerchantNewPage() {
       }
     } else if (field !== 'applications') {
       const error = validateMerchantField(field as keyof MerchantFormData, (value as string) || '');
-      // デバッグ: validateMerchantFieldが返すエラーメッセージを確認
-      if (field === 'name' && error) {
-        console.log('🔍 Debug handleBlur: validateMerchantField returned error for name field:', error);
-      }
       if (error) {
         setErrors((prev) => ({ ...prev, [field]: error }));
       } else {
@@ -166,7 +153,6 @@ export default function MerchantNewPage() {
   };
 
   const validateFormData = (): boolean => {
-    console.log('🔍 Validating form data:', formData);
     const fieldErrors: Record<string, string> = {};
     let hasErrors = false;
 
@@ -191,11 +177,6 @@ export default function MerchantNewPage() {
       if (error) {
         fieldErrors[field] = error;
         hasErrors = true;
-        console.log(`❌ ${field} validation failed:`, error);
-        // デバッグ: validateMerchantFieldが返すエラーメッセージを確認
-        if (field === 'name') {
-          console.log('🔍 Debug: validateMerchantField returned error for name field:', error);
-        }
       }
     });
 
@@ -203,30 +184,23 @@ export default function MerchantNewPage() {
     if (!formData.email.trim()) {
       fieldErrors.email = 'メールアドレスは必須です';
       hasErrors = true;
-      console.log('❌ Email validation failed: empty');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       fieldErrors.email = '有効なメールアドレスを入力してください';
       hasErrors = true;
-      console.log('❌ Email validation failed: invalid format');
     }
 
     // applicationsフィールドのバリデーション
     if (!formData.applications || formData.applications.length === 0) {
       fieldErrors.applications = '少なくとも1つのアプリケーションを選択してください';
       hasErrors = true;
-      console.log('❌ Applications validation failed: empty');
     }
 
-    console.log('🔍 Validation result:', { hasErrors, fieldErrors });
-
     if (hasErrors) {
-      console.log('🚨 Setting errors:', fieldErrors);
       setErrors(fieldErrors);
       return false;
     }
     
     // バリデーション成功
-    console.log('✅ Validation successful');
     setErrors({});
     return true;
   };
@@ -236,10 +210,7 @@ export default function MerchantNewPage() {
     e.preventDefault();
     setServerError('');
     
-    console.log('📝 Form submit started, current errors:', errors);
-    
     if (!validateFormData()) {
-      console.log('❌ Validation failed, stopping submit');
       return;
     }
 
@@ -265,8 +236,6 @@ export default function MerchantNewPage() {
         applications: formData.applications.length > 0 ? formData.applications : ['たまのみ'], // デフォルトで'たまのみ'を設定
         issueAccount, // アカウント発行フラグ
       };
-      
-      console.log('📤 Sending merchant data:', requestData);
 
       const response = await fetch('/api/merchants', {
         method: 'POST',
@@ -282,7 +251,6 @@ export default function MerchantNewPage() {
         
         if (response.status === 400) {
           // パラメータエラーの場合
-          console.log('🔍 Error data structure:', errorData);
           if (errorData.error?.details) {
             // 新しいエラー形式: { error: { details: [...] } }
             const fieldErrors: Record<string, string> = {};
@@ -293,7 +261,6 @@ export default function MerchantNewPage() {
               }
             });
             setErrors(fieldErrors);
-            console.log('🔍 Parsed field errors:', fieldErrors);
             
             // 最初のエラーフィールドにスクロール
             const firstErrorField = Object.keys(fieldErrors)[0];

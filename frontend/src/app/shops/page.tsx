@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -22,6 +22,9 @@ function ShopsPageContent() {
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
   const isShopAccount = auth?.user?.accountType === 'shop';
   const [merchantId, setMerchantId] = useState<string | undefined>(undefined);
+  const searchParamsString = searchParams?.toString() ?? '';
+  const baseReturnTo = useMemo(() => (searchParamsString ? `/shops?${searchParamsString}` : '/shops'), [searchParamsString]);
+  const encodedReturnTo = useMemo(() => encodeURIComponent(baseReturnTo), [baseReturnTo]);
   const [merchantName, setMerchantName] = useState<string>('');
   const [shops, setShops] = useState<Shop[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -129,14 +132,8 @@ function ShopsPageContent() {
     const fetchMyShop = async () => {
       // 認証情報がロード中の場合は待機
       if (auth?.isLoading) {
-        console.log('🔄 ShopsPage: Auth is loading, waiting...');
         return;
       }
-      
-      console.log('🔍 ShopsPage: Checking shop account', { 
-        isShopAccount, 
-        hasUser: !!auth?.user 
-      });
       
       if (isShopAccount) {
         try {
@@ -154,15 +151,6 @@ function ShopsPageContent() {
 
     fetchMyShop();
   }, [isShopAccount, auth?.isLoading]);
-
-  // shops state の変更を監視
-  useEffect(() => {
-    console.log('🔄 ShopsPage: shops state updated:', { 
-      shopsLength: shops.length, 
-      shops,
-      isShopAccount 
-    });
-  }, [shops, isShopAccount]);
 
   // データ取得（検索条件を含む）
   const fetchShops = async () => {
@@ -1167,9 +1155,21 @@ function ShopsPageContent() {
                     クーポン一覧
                   </Button>
                 </Link>
-                <Link href={`/merchants/${shops[0].merchantId}/shops/${shops[0].id}/edit`}>
-                  <Button variant="primary" className="cursor-pointer bg-green-600 hover:bg-green-700 text-white">
-                    編集
+                <Link
+                  href={{
+                    pathname: merchantId ? `/merchants/${merchantId}/shops/${shops[0].id}/edit` : `/shops/${shops[0].id}/edit`,
+                    query: { returnTo: encodedReturnTo },
+                  }}
+                >
+                  <Button variant="primary" className="cursor-pointer bg-green-600 hover:bg-green-700 text-white flex items-center gap-2">
+                    <Image
+                      src="/edit.svg"
+                      alt="編集"
+                      width={24}
+                      height={24}
+                      className="w-6 h-6 flex-shrink-0"
+                    />
+                    <span>編集</span>
                   </Button>
                 </Link>
               </div>
@@ -1193,7 +1193,12 @@ function ShopsPageContent() {
               >
                 {isDownloadingCSV ? 'ダウンロード中...' : 'CSVダウンロード'}
               </Button>
-              <Link href={merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new'}>
+              <Link
+                href={{
+                  pathname: merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new',
+                  query: { returnTo: encodedReturnTo },
+                }}
+              >
                 <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
                   <span className="mr-2">+</span>
                   新規登録
@@ -1258,22 +1263,36 @@ function ShopsPageContent() {
                       </td>
                     )}
                     <td className="px-6 py-4 whitespace-nowrap w-32">
-                      <div className="flex justify-center gap-2">
-                        <Link href={`/merchants/${merchantId || shop.merchantId}/shops/${shop.id}/edit`}>
-                          <button 
-                            className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                      <div className="flex items-center justify-center gap-2">
+                        <Link
+                          href={{
+                            pathname: `/merchants/${merchantId || shop.merchantId}/shops/${shop.id}/edit`,
+                            query: { returnTo: encodedReturnTo },
+                          }}
+                        >
+                           <button
+                            className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
                             title="編集"
                           >
-                            <Image 
-                              src="/edit.svg" 
-                              alt="編集" 
-                              width={32}
-                              height={32}
-                              className="w-8 h-8"
+                            <Image
+                              src="/edit.svg"
+                              alt="編集"
+                              width={24}
+                              height={24}
+                              className="w-6 h-6 flex-shrink-0"
                             />
                           </button>
                         </Link>
-                        <Link href={`/shops/${shop.id}/coupons`}>
+                        <Link
+                          href={{
+                            pathname: '/coupons',
+                            query: {
+                              shopId: shop.id,
+                              ...(merchantId || shop.merchantId ? { merchantId: merchantId || shop.merchantId } : {}),
+                              returnTo: encodedReturnTo,
+                            },
+                          }}
+                        >
                           <button 
                             className="p-2 text-orange-600 hover:text-orange-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[48px] min-h-[48px]"
                             title="クーポン管理"

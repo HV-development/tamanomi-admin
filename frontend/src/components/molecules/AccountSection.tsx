@@ -32,6 +32,8 @@ export default function AccountSection({
   onFieldBlur,
   onDeleteAccountChange,
 }: AccountSectionProps) {
+  const shouldDisableEmailInput = isEdit && hasExistingAccount && !createAccount;
+
   const handleEmailBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     if (createAccount) {
       if (onFieldBlur) {
@@ -99,10 +101,10 @@ export default function AccountSection({
                 onBlur={handleEmailBlur}
                 placeholder="店舗用アカウントのメールアドレスを入力"
                 maxLength={255}
-                disabled={isEdit && hasExistingAccount}
+                disabled={shouldDisableEmailInput}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   validationErrors.accountEmail ? 'border-red-500' : 'border-gray-300'
-                } ${isEdit && hasExistingAccount ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                } ${shouldDisableEmailInput ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               />
               <ErrorMessage message={validationErrors.accountEmail} />
             </div>

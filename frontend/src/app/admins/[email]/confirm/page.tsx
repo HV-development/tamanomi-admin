@@ -49,15 +49,18 @@ function AdminEditConfirmationContent() {
     
     setIsSubmitting(true);
     try {
-      const updateData: AdminAccountInput = {
+      const trimmedPassword = (adminData.password || '').trim();
+      const updateData: Partial<AdminAccountInput> = {
         role: adminData.role,
         firstName: adminData.firstName,
         lastName: adminData.lastName,
         email: adminData.email,
-        password: adminData.password,
       };
+      if (trimmedPassword) {
+        updateData.password = trimmedPassword;
+      }
 
-      await apiClient.updateAdminAccount(adminEmail, updateData);
+      await apiClient.updateAdminAccount(adminEmail, updateData as AdminAccountInput);
       alert('管理者アカウント情報を更新しました');
       router.push('/admins');
     } catch (error: unknown) {

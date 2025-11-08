@@ -45,10 +45,7 @@ function ImageUploader({
                   alt={`店舗画像 ${index + 1}`}
                   fill
                   className="object-cover"
-                  onError={() => {
-                    console.error('画像の読み込みに失敗しました:', imageUrl);
-                  }}
-                  unoptimized={imageUrl.startsWith('blob:') || imageUrl.startsWith('data:')}
+                  unoptimized
                 />
                 <button
                   type="button"
@@ -75,10 +72,7 @@ function ImageUploader({
                   alt={`プレビュー ${index + 1}`}
                   fill
                   className="object-cover"
-                  onError={() => {
-                    console.error('プレビュー画像の読み込みに失敗しました:', preview.url);
-                  }}
-                  unoptimized={preview.url.startsWith('blob:') || preview.url.startsWith('data:')}
+                  unoptimized
                 />
                 <button
                   type="button"

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
@@ -30,13 +30,26 @@ interface Shop {
 
 type PaginationData = CouponListResponse['pagination'];
 
-export default function CouponsPage() {
+function CouponsPageContent() {
   const auth = useAuth();
   const { toasts, removeToast, showSuccess, showError } = useToast();
   const isShopAccount = auth?.user?.accountType === 'shop';
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
-  const shopId = isShopAccount ? auth?.user?.shopId : undefined; // 店舗アカウントの場合は自身のshopIdを使用
-  const merchantId = isMerchantAccount ? auth?.user?.merchantId : undefined; // 事業者アカウントの場合は自身のmerchantIdを使用
+  const searchParams = useSearchParams();
+  const shopIdFromQuery = searchParams?.get('shopId') ?? undefined;
+  const merchantIdFromQuery = searchParams?.get('merchantId') ?? undefined;
+  const returnTo = searchParams?.get('returnTo') ?? undefined;
+  const decodedReturnTo = useMemo(() => {
+    if (!returnTo) return null;
+    try {
+      return decodeURIComponent(returnTo);
+    } catch (error) {
+      console.error('Failed to decode returnTo parameter:', error);
+      return null;
+    }
+  }, [returnTo]);
+  const shopId = shopIdFromQuery ?? (isShopAccount ? auth?.user?.shopId : undefined);
+  const merchantId = merchantIdFromQuery ?? (isMerchantAccount ? auth?.user?.merchantId : undefined);
   const router = useRouter();
   const [shop, setShop] = useState<Shop | null>(null);
   const [coupons, setCoupons] = useState<CouponWithShop[]>([]);
@@ -76,13 +89,11 @@ export default function CouponsPage() {
       
       // 店舗アカウントの場合
       if (shopId) {
-        console.log('🔍 CouponsPage: Fetching coupons for shopId:', shopId);
         params.append('shopId', shopId);
       }
       
       // 事業者アカウントの場合
       if (merchantId) {
-        console.log('🔍 CouponsPage: Fetching coupons for merchantId:', merchantId);
         params.append('merchantId', merchantId);
       }
       
@@ -95,7 +106,6 @@ export default function CouponsPage() {
       }
 
       const data: { coupons: CouponWithShop[]; pagination: PaginationData } = await apiClient.getCoupons(params.toString()) as { coupons: CouponWithShop[]; pagination: PaginationData };
-      console.log('✅ CouponsPage: Coupons fetched:', data.coupons?.length || 0);
       setCoupons(data.coupons || []);
       setPagination(data.pagination || pagination);
     } catch (error) {
@@ -149,7 +159,6 @@ export default function CouponsPage() {
     // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
     setAppliedSearchForm({ ...searchForm });
     setAppliedStatusFilter(statusFilter);
-    console.log('検索実行:', searchForm);
   };
 
   const handleClear = () => {
@@ -569,7 +578,13 @@ export default function CouponsPage() {
               {shopId && shop && (
                 <div className="mb-4">
                   <button
-                    onClick={() => router.back()}
+                    onClick={() => {
+                      if (decodedReturnTo) {
+                        router.push(decodedReturnTo);
+                      } else {
+                        router.back();
+                      }
+                    }}
                     className="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-2"
                   >
                     <Icon name="chevronLeft" size="sm" />
@@ -843,5 +858,21 @@ export default function CouponsPage() {
       />
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
+  );
+}
+
+export default function CouponsPage() {
+  return (
+    <Suspense
+      fallback={
+        <AdminLayout>
+          <div className="text-center py-12">
+            <p className="text-gray-500">読み込み中...</p>
+          </div>
+        </AdminLayout>
+      }
+    >
+      <CouponsPageContent />
+    </Suspense>
   );
 }

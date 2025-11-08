@@ -44,8 +44,6 @@ function ShopSelectModal({
       
       const response = await apiClient.getShops(queryParams.toString());
       
-      console.log('🔍 Shop Search response:', response);
-      
       // レスポンスの形式を確認して適切に処理
       let shops: Shop[] = [];
       if (response && typeof response === 'object') {
@@ -58,7 +56,6 @@ function ShopSelectModal({
         }
       }
       
-      console.log('🔍 Processed shops:', shops.length);
       setSearchResults(shops);
       setHasSearched(true);
     } catch (error) {

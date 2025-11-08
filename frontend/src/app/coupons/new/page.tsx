@@ -202,8 +202,6 @@ function CouponNewPageContent() {
   
   // 店舗選択ハンドラー
   const handleShopSelect = (shop: Shop) => {
-    console.log('🔍 Shop selected:', shop);
-    console.log('🔍 Shop ID:', shop.id);
     setSelectedShop(shop);
     setFormData(prev => ({ ...prev, shopId: shop.id }));
   };
@@ -269,10 +267,8 @@ function CouponNewPageContent() {
       newErrors.shopId = '店舗を選択してください';
     } else {
       // UUID形式チェック（簡易版）
-      console.log('🔍 Validating shopId:', formData.shopId);
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       const isValidUuid = uuidRegex.test(formData.shopId);
-      console.log('🔍 UUID validation result:', isValidUuid);
       if (!isValidUuid) {
         newErrors.shopId = '選択された店舗のIDが無効です。別の店舗を選択してください。';
       }
@@ -297,9 +293,6 @@ function CouponNewPageContent() {
           status: 'active' as CouponStatus,
           isPublic: false
         };
-        
-        console.log('📤 Creating coupon with data:', couponData);
-        
         const createdCoupon = await apiClient.createCoupon(couponData) as Coupon;
         
         // 画像がある場合はアップロードして更新
@@ -333,7 +326,6 @@ function CouponNewPageContent() {
             
             if (response.ok) {
               const uploadData = await response.json();
-              console.log('📤 Image upload successful:', uploadData);
               
               // 画像URLを更新
               await apiClient.updateCoupon(createdCoupon.id, {

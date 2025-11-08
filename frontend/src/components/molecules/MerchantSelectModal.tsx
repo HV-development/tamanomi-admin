@@ -43,9 +43,7 @@ function MerchantSelectModal({
         search: searchQuery,
         limit: 100 // 検索結果の上限
       });
-      
-      console.log('🔍 Search response:', response);
-      
+
       // レスポンスの形式を確認して適切に処理
       let merchants: Merchant[] = [];
       if (response && typeof response === 'object') {
@@ -57,8 +55,7 @@ function MerchantSelectModal({
           merchants = response as Merchant[];
         }
       }
-      
-      console.log('🔍 Processed merchants:', merchants.length);
+
       setSearchResults(merchants);
       setHasSearched(true);
     } catch (error) {

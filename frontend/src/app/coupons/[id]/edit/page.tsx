@@ -68,7 +68,6 @@ function CouponEditPageContent() {
         
         // 画像URLを取得（temp/tempなどのパスは作成されない前提）
         const imageUrl = data.imageUrl || '';
-        console.log('📸 Image URL:', imageUrl);
         
         // 事業者・店舗情報の取得とバリデーション
         if (!data.shop) {
@@ -224,7 +223,6 @@ function CouponEditPageContent() {
         if (!couponId) {
           throw new Error('クーポンIDが取得できませんでした');
         }
-        console.log('🔍 Updating coupon:', { couponId, shopId, merchantId });
         
         let finalImageUrl = formData.imageUrl;
         
@@ -242,8 +240,6 @@ function CouponEditPageContent() {
             
             // タイムスタンプを生成
             const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '').split('.')[0];
-            
-            console.log('📤 Uploading image:', { couponId, shopId, merchantId, timestamp });
             
             const uploadFormData = new FormData();
             uploadFormData.append('image', formData.couponImage);
@@ -271,7 +267,6 @@ function CouponEditPageContent() {
               throw new Error('画像URLが取得できませんでした');
             }
             
-            console.log('✅ Image upload successful:', uploadData);
             finalImageUrl = uploadData.url;
           } catch (error) {
             console.error('❌ Image upload error:', error);
@@ -293,10 +288,7 @@ function CouponEditPageContent() {
           imageUrl: finalImageUrl || null
         };
         
-        console.log('📤 Updating coupon:', { couponId, updateData });
-        
         await apiClient.updateCoupon(couponId, updateData);
-        console.log('✅ Coupon updated successfully');
         router.push('/coupons');
       } catch (error) {
         console.error('❌ Coupon update failed:', error);
@@ -501,10 +493,7 @@ function CouponEditPageContent() {
                           imageUrl: ''
                         }));
                       }}
-                      onLoad={() => {
-                        console.log('✅ Image loaded successfully:', formData.imagePreview);
-                      }}
-                      unoptimized={formData.imagePreview.startsWith('blob:') || formData.imagePreview.startsWith('data:')}
+                      unoptimized
                     />
                   </div>
                 )}

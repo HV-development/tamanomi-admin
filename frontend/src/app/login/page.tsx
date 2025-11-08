@@ -108,8 +108,6 @@ function LoginFormWithParams() {
     
     if (validateAllFields()) {
       try {
-        console.log('🔑 LoginPage: Starting login process', formData.email);
-        
         // login関数が利用可能かチェック
         if (!login) {
           throw new Error('認証システムが利用できません。ページを再読み込みしてください。');
@@ -117,7 +115,6 @@ function LoginFormWithParams() {
         
         // API経由でログイン
         await login({ email: formData.email, password: formData.password });
-        console.log('✅ LoginPage: Login successful, preparing redirect...');
         
         // Cookieが設定されるまで少し待機（ログイン直後のリダイレクト問題を回避）
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -131,9 +128,6 @@ function LoginFormWithParams() {
             const userData = JSON.parse(userDataStr);
             if (userData.accountType === 'shop') {
               redirectPath = '/shops';
-              console.log('🚀 LoginPage: Redirecting shop account to /shops');
-            } else {
-              console.log('🚀 LoginPage: Redirecting to /merchants');
             }
           } catch (error) {
             console.error('Failed to parse user data:', error);

@@ -121,17 +121,6 @@ export default function MerchantsPage() {
         // コンポーネントがアンマウントされている場合は処理を中断
         if (!isMounted) return;
         
-        console.log('🔍 MerchantsPage: API Response received', { 
-          data, 
-          dataType: typeof data, 
-          isArray: Array.isArray(data),
-          hasMerchants: data && typeof data === 'object' && 'merchants' in data,
-          hasDataMerchants: data && typeof data === 'object' && 'data' in data && data.data && typeof data.data === 'object' && 'merchants' in data.data,
-          dataKeys: data && typeof data === 'object' ? Object.keys(data) : 'not object',
-          dataDataKeys: data && typeof data === 'object' && 'data' in data && data.data && typeof data.data === 'object' ? Object.keys(data.data) : 'no data.data',
-          dataStructure: JSON.stringify(data, null, 2)
-        });
-        
         // APIレスポンスが {success: true, data: {merchants: [], pagination: {}}} の形式の場合
         let merchantsArray: unknown[] = [];
         if (Array.isArray(data)) {
@@ -146,11 +135,6 @@ export default function MerchantsPage() {
             merchantsArray = (data as { merchants: unknown[] }).merchants || [];
           }
         }
-        console.log('🔍 MerchantsPage: Processed merchants array', { 
-          merchantsArray, 
-          length: merchantsArray.length,
-          firstMerchant: merchantsArray[0] || 'no merchants'
-        });
         
         if (isMounted) {
           setMerchants(merchantsArray as Merchant[]);
@@ -346,7 +330,6 @@ export default function MerchantsPage() {
     }
     // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
     setAppliedSearchForm({ ...searchForm });
-    console.log('検索実行:', searchForm);
   };
 
   const handleClear = () => {
@@ -1238,7 +1221,7 @@ export default function MerchantsPage() {
                       <div className="flex items-center justify-center gap-2">
                         <Link href={`/merchants/${merchant.id}/edit`}>
                           <button 
-                            className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                            className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
                             title="編集"
                           >
                             <Image 
@@ -1252,7 +1235,7 @@ export default function MerchantsPage() {
                         </Link>
                         <Link href={`/merchants/${merchant.id}/shops`}>
                           <button 
-                            className="p-2.5 text-blue-600 hover:text-blue-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                            className="p-2 text-blue-600 hover:text-blue-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
                             title="店舗一覧"
                           >
                             <Image 
