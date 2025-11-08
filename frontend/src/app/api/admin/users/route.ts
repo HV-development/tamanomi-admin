@@ -110,14 +110,14 @@ export async function GET(request: NextRequest) {
       nextResponse.cookies.set('accessToken', token, {
         httpOnly: true,
         secure: isSecure,
-        sameSite: 'strict',
+        sameSite: 'lax',
         path: '/',
         maxAge: 60 * 15,
       });
       nextResponse.cookies.set('__Host-accessToken', token, {
         httpOnly: true,
         secure: isSecure,
-        sameSite: 'strict',
+        sameSite: 'lax',
         path: '/',
         maxAge: 60 * 15,
       });
@@ -126,14 +126,14 @@ export async function GET(request: NextRequest) {
         nextResponse.cookies.set('refreshToken', refreshResult.refreshToken, {
           httpOnly: true,
           secure: isSecure,
-          sameSite: 'strict',
+          sameSite: 'lax',
           path: '/',
           maxAge: 60 * 60 * 24 * 30,
         });
         nextResponse.cookies.set('__Host-refreshToken', refreshResult.refreshToken, {
           httpOnly: true,
           secure: isSecure,
-          sameSite: 'strict',
+          sameSite: 'lax',
           path: '/',
           maxAge: 60 * 60 * 24 * 30,
         });
