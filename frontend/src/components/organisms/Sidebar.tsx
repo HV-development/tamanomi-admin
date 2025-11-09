@@ -158,8 +158,21 @@ export default function Sidebar() {
               if (!auth) return;
               
               if (confirm('ログアウトしますか？')) {
-                await auth.logout();
-                router.push('/login');
+                try {
+                  await auth.logout();
+                } catch (error) {
+                  console.error('Logout failed', error);
+                } finally {
+                  try {
+                    router.replace('/login?session=expired');
+                    router.refresh();
+                  } catch (error) {
+                    console.error('Router navigation failed, falling back to hard redirect', error);
+                    if (typeof window !== 'undefined') {
+                      window.location.href = '/login?session=expired';
+                    }
+                  }
+                }
               }
             }}
             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900`}
