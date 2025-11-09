@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect, useMemo } from 'react';
+import { Suspense, useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -78,6 +78,8 @@ function CouponsPageContent() {
   const [isIndeterminate, setIsIndeterminate] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDownloadingCSV, setIsDownloadingCSV] = useState(false);
+  const lastCouponsFetchKeyRef = useRef<string | null>(null);
+  const lastShopFetchIdRef = useRef<string | null>(null);
 
   // クーポン一覧の取得
   const fetchCoupons = async () => {
@@ -118,17 +120,26 @@ function CouponsPageContent() {
 
   // 店舗情報の取得
   useEffect(() => {
-    if (shopId) {
-      const fetchShop = async () => {
-        try {
-          const data = await apiClient.getShop(shopId);
-          setShop(data as Shop);
-        } catch (error) {
-          console.error('店舗情報の取得に失敗しました:', error);
-        }
-      };
-      fetchShop();
+    if (!shopId) {
+      return;
     }
+
+    if (lastShopFetchIdRef.current === shopId) {
+      return;
+    }
+
+    lastShopFetchIdRef.current = shopId;
+
+    const fetchShop = async () => {
+      try {
+        const data = await apiClient.getShop(shopId);
+        setShop(data as Shop);
+      } catch (error) {
+        console.error('店舗情報の取得に失敗しました:', error);
+      }
+    };
+
+    fetchShop();
   }, [shopId]);
 
   // クーポン一覧を取得
@@ -143,8 +154,33 @@ function CouponsPageContent() {
       return;
     }
     
+    const key = JSON.stringify({
+      user: auth?.user?.id ?? auth?.user?.email ?? 'anonymous',
+      shopId: shopId ?? null,
+      merchantId: merchantId ?? null,
+      page: pagination.page,
+      limit: pagination.limit,
+      search: appliedSearchForm,
+      status: appliedStatusFilter,
+    });
+
+    if (lastCouponsFetchKeyRef.current === key) {
+      return;
+    }
+
+    lastCouponsFetchKeyRef.current = key;
+
     fetchCoupons();
-  }, [auth?.isLoading, auth?.user, shopId, merchantId, pagination.page, appliedSearchForm, appliedStatusFilter]);
+  }, [
+    auth?.isLoading,
+    auth?.user,
+    shopId,
+    merchantId,
+    pagination.page,
+    pagination.limit,
+    appliedSearchForm,
+    appliedStatusFilter,
+  ]);
 
   const filteredCoupons = coupons;
 
