@@ -106,10 +106,9 @@ export default function MerchantsPage() {
     if (lastFetchKeyRef.current === key) {
       return;
     }
- 
-    let isMounted = true;
-    const abortController = new AbortController();
- 
+
+    lastFetchKeyRef.current = key;
+
     const fetchMerchants = async () => {
       try {
         setIsLoading(true);
@@ -119,8 +118,6 @@ export default function MerchantsPage() {
         if (isMerchantAccount) {
           const data = await apiClient.getMyMerchant();
           
-          if (!isMounted) return;
-          
           // APIレスポンス形式: {success: true, data: {...}}
           let merchantData: Merchant | null = null;
           if (data && typeof data === 'object') {
@@ -129,16 +126,13 @@ export default function MerchantsPage() {
             }
           }
           
-          if (isMounted && merchantData) {
+          if (merchantData) {
             setMyMerchant(merchantData);
           }
           return;
         }
         
         const data = await apiClient.getMerchants();
-        
-        // コンポーネントがアンマウントされている場合は処理を中断
-        if (!isMounted) return;
         
         // APIレスポンスが {success: true, data: {merchants: [], pagination: {}}} の形式の場合
         let merchantsArray: unknown[] = [];
@@ -155,35 +149,17 @@ export default function MerchantsPage() {
           }
         }
         
-        if (isMounted) {
-          setMerchants(merchantsArray as Merchant[]);
-        }
+        setMerchants(merchantsArray as Merchant[]);
       } catch (err: unknown) {
-        // アボート時のエラーは無視
-        if (err instanceof Error && err.name === 'AbortError') {
-          return;
-        }
-        
-        if (isMounted) {
-          console.error('事業者データの取得に失敗しました:', err);
-          setError('事業者データの取得に失敗しました');
-          setMerchants([]);
-        }
+        console.error('事業者データの取得に失敗しました:', err);
+        setError('事業者データの取得に失敗しました');
+        setMerchants([]);
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
- 
-    lastFetchKeyRef.current = key;
-    fetchMerchants();
 
-    // クリーンアップ: コンポーネントのアンマウント時または再実行時にリクエストをキャンセル
-    return () => {
-      isMounted = false;
-      abortController.abort();
-    };
+    void fetchMerchants();
   }, [
     isMerchantAccount,
     auth?.isLoading,
