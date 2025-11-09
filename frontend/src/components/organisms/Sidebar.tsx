@@ -27,6 +27,7 @@ export default function Sidebar() {
   const auth = useAuth();
   const [isLoaded, setIsLoaded] = useState(false);
   const [isFontReady, setIsFontReady] = useState(false);
+  const [isLogoReady, setIsLogoReady] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -62,6 +63,12 @@ export default function Sidebar() {
       setIsLoaded(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (isCollapsed) {
+      setIsLogoReady(true);
+    }
+  }, [isCollapsed]);
 
   // Material Symbols フォントの読み込み完了まで待機してから描画
   useEffect(() => {
@@ -100,16 +107,29 @@ export default function Sidebar() {
     setIsCollapsed(prev => !prev);
   }, [isCollapsed]);
 
-  if (!isLoaded || auth?.isLoading || !isFontReady) {
-    // 完全に準備できるまでサイドバーを表示しない
-    return <div className={`bg-white shadow-lg transition-all duration-300 relative flex-shrink-0 ${isCollapsed ? 'w-16' : 'w-64'}`} />;
-  }
+  const handleLogoLoad = useCallback(() => {
+    setIsLogoReady(true);
+  }, []);
+
+  const handleLogoError = useCallback(() => {
+    setIsLogoReady(true);
+  }, []);
+
+  const isReady = isLoaded && !auth?.isLoading && isFontReady && (isCollapsed || isLogoReady);
 
   return (
-    <div className={`bg-white shadow-lg transition-all duration-300 relative flex-shrink-0 ${
-      isCollapsed ? 'w-16' : 'w-64'
-    }`}>
-      <SidebarHeader isCollapsed={isCollapsed} onToggleCollapse={handleToggleCollapse} />
+    <div
+      className={`bg-white shadow-lg transition-all duration-300 relative flex-shrink-0 ${
+        isCollapsed ? 'w-16' : 'w-64'
+      } ${isReady ? 'opacity-100' : 'opacity-0 pointer-events-none select-none'} transition-opacity duration-200`}
+      aria-hidden={!isReady}
+    >
+      <SidebarHeader
+        isCollapsed={isCollapsed}
+        onToggleCollapse={handleToggleCollapse}
+        onLogoLoad={handleLogoLoad}
+        onLogoError={handleLogoError}
+      />
 
       {/* メニュー */}
       <nav className={`p-4 ${isCollapsed ? 'pt-6' : ''}`}>
