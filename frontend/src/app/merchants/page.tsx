@@ -89,6 +89,14 @@ export default function MerchantsPage() {
 
   // データ取得
   useEffect(() => {
+    if (auth?.isLoading) {
+      return;
+    }
+
+    if (!auth?.user) {
+      return;
+    }
+
     const key = JSON.stringify({
       accountType: auth?.user?.accountType ?? 'unknown',
       merchantId: auth?.user?.merchantId ?? null,
@@ -98,12 +106,10 @@ export default function MerchantsPage() {
     if (lastFetchKeyRef.current === key) {
       return;
     }
-
-    lastFetchKeyRef.current = key;
-
+ 
     let isMounted = true;
     const abortController = new AbortController();
-
+ 
     const fetchMerchants = async () => {
       try {
         setIsLoading(true);
@@ -169,7 +175,8 @@ export default function MerchantsPage() {
         }
       }
     };
-
+ 
+    lastFetchKeyRef.current = key;
     fetchMerchants();
 
     // クリーンアップ: コンポーネントのアンマウント時または再実行時にリクエストをキャンセル
@@ -179,6 +186,7 @@ export default function MerchantsPage() {
     };
   }, [
     isMerchantAccount,
+    auth?.isLoading,
     auth?.user?.accountType,
     auth?.user?.merchantId,
     auth?.user?.id,
