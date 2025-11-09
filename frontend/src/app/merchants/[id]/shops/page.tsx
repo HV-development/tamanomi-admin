@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
@@ -19,6 +19,7 @@ import { convertShopsToCSV, downloadCSV, generateFilename, type ShopForCSV } fro
 export default function MerchantShopsPage() {
   const params = useParams();
   const merchantId = params.id as string;
+  const lastFetchKeyRef = useRef<string | null>(null);
   const baseReturnTo = useMemo(() => `/merchants/${merchantId}/shops`, [merchantId]);
   const encodedReturnTo = useMemo(() => encodeURIComponent(baseReturnTo), [baseReturnTo]);
   const auth = useAuth();
@@ -130,6 +131,13 @@ export default function MerchantShopsPage() {
 
   // 初回マウント時とmerchantId変更時にデータ取得
   useEffect(() => {
+    const key = merchantId ?? 'all';
+
+    if (lastFetchKeyRef.current === key) {
+      return;
+    }
+
+    lastFetchKeyRef.current = key;
     fetchShops();
   }, [merchantId]);
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -18,6 +18,7 @@ import { convertShopsToCSV, downloadCSV, generateFilename, type ShopForCSV } fro
 
 function ShopsPageContent() {
   const auth = useAuth();
+  const lastFetchKeyRef = useRef<string | null>(null);
   const searchParams = useSearchParams();
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
   const isShopAccount = auth?.user?.accountType === 'shop';
@@ -252,9 +253,22 @@ function ShopsPageContent() {
     if (isMerchantAccount && !merchantId) {
       return;
     }
+
+    const key = [
+      merchantId ?? 'none',
+      isMerchantAccount ? 'merchant' : 'other',
+      isShopAccount ? 'shop' : 'non-shop',
+      auth?.user?.id ?? auth?.user?.email ?? 'anonymous',
+    ].join('|');
+
+    if (lastFetchKeyRef.current === key) {
+      return;
+    }
+
+    lastFetchKeyRef.current = key;
     
     fetchShops();
-  }, [merchantId, auth?.isLoading, isMerchantAccount, isShopAccount]);
+  }, [merchantId, auth?.isLoading, isMerchantAccount, isShopAccount, auth?.user?.id, auth?.user?.email]);
 
   // 検索フォームの入力ハンドラー
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {

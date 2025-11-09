@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Button from '@/components/atoms/Button';
@@ -15,6 +15,7 @@ type ShopManagementProps = {
 };
 
 export default function ShopManagement({ merchantId }: ShopManagementProps) {
+  const lastFetchKeyRef = useRef<string | null>(null);
   const [shops, setShops] = useState<Shop[]>([]);
   const [merchantName, setMerchantName] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -128,6 +129,13 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
 
   // 初回マウント時とmerchantId変更時にデータ取得
   useEffect(() => {
+    const key = merchantId ?? 'all';
+
+    if (lastFetchKeyRef.current === key) {
+      return;
+    }
+
+    lastFetchKeyRef.current = key;
     fetchShops();
   }, [merchantId]);
 
