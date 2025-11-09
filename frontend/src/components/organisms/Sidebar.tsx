@@ -115,20 +115,29 @@ export default function Sidebar() {
     setIsLogoReady(true);
   }, []);
 
-  const isReady = isLoaded && !auth?.isLoading && isFontReady && (isCollapsed || isLogoReady);
+  const hasMenuContent = filteredMenuItems.length > 0;
+  const sidebarWidthClass = isCollapsed ? 'w-16' : 'w-64';
+  const isReady =
+    isLoaded &&
+    !auth?.isLoading &&
+    isFontReady &&
+    (isCollapsed || isLogoReady) &&
+    hasMenuContent;
 
   return (
     <div
-      className={`bg-white shadow-lg transition-all duration-300 relative flex-shrink-0 ${
-        isCollapsed ? 'w-16' : 'w-64'
-      } ${isReady ? 'opacity-100' : 'opacity-0 pointer-events-none select-none'} transition-opacity duration-200`}
+      className={`bg-white shadow-lg transition-all duration-300 relative flex-shrink-0 ${sidebarWidthClass} ${
+        isReady ? 'opacity-100' : 'opacity-0 pointer-events-none select-none'
+      } transition-opacity duration-200`}
       aria-hidden={!isReady}
+      style={{ visibility: isReady ? 'visible' : 'hidden' }}
     >
       <SidebarHeader
         isCollapsed={isCollapsed}
         onToggleCollapse={handleToggleCollapse}
         onLogoLoad={handleLogoLoad}
         onLogoError={handleLogoError}
+        isReady={isReady}
       />
 
       {/* メニュー */}
