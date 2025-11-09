@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter, useParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
@@ -39,6 +39,7 @@ export default function CouponHistoryPage() {
   const isShopAccount = accountType === 'shop';
   
   const _shopId = isShopAccount ? auth?.user?.shopId : undefined;
+  const lastFetchKeyRef = useRef<string | null>(null);
   const pathname = usePathname();
   const router = useRouter();
   const _params = useParams(); // 将来的に使用予定
@@ -83,10 +84,23 @@ export default function CouponHistoryPage() {
 
   // APIからデータを取得
   useEffect(() => {
-    // authがロードされるまで待機
-    if (auth?.isLoading) {
+     // authがロードされるまで待機
+     if (auth?.isLoading) {
+       return;
+     }
+ 
+    const key = JSON.stringify({
+      pathname,
+      search: appliedSearchForm,
+      isSysAdmin,
+      user: auth?.user?.id ?? auth?.user?.email ?? 'anonymous',
+    });
+
+    if (lastFetchKeyRef.current === key) {
       return;
     }
+
+    lastFetchKeyRef.current = key;
 
     const fetchUsageHistory = async () => {
       setIsLoading(true);
@@ -188,7 +202,7 @@ export default function CouponHistoryPage() {
     };
 
     fetchUsageHistory();
-  }, [pathname, appliedSearchForm, isSysAdmin, auth?.isLoading]);
+  }, [pathname, appliedSearchForm, isSysAdmin, auth?.isLoading, auth?.user?.id, auth?.user?.email]);
 
   useEffect(() => {
     // 遷移元を判定して戻るボタンの表示を制御

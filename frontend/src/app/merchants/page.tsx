@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import AdminLayout from '@/components/templates/admin-layout';
@@ -33,6 +33,7 @@ type Merchant = Omit<MerchantWithDetails, 'createdAt' | 'updatedAt' | 'deletedAt
 
 export default function MerchantsPage() {
   const auth = useAuth();
+  const lastFetchKeyRef = useRef<string | null>(null);
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [myMerchant, setMyMerchant] = useState<Merchant | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -88,6 +89,18 @@ export default function MerchantsPage() {
 
   // データ取得
   useEffect(() => {
+    const key = JSON.stringify({
+      accountType: auth?.user?.accountType ?? 'unknown',
+      merchantId: auth?.user?.merchantId ?? null,
+      isMerchantAccount,
+    });
+
+    if (lastFetchKeyRef.current === key) {
+      return;
+    }
+
+    lastFetchKeyRef.current = key;
+
     let isMounted = true;
     const abortController = new AbortController();
 
@@ -164,7 +177,12 @@ export default function MerchantsPage() {
       isMounted = false;
       abortController.abort();
     };
-  }, [isMerchantAccount]);
+  }, [
+    isMerchantAccount,
+    auth?.user?.accountType,
+    auth?.user?.merchantId,
+    auth?.user?.id,
+  ]);
 
   // チェックボックス関連の関数
 

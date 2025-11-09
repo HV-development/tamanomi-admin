@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import AdminLayout from '@/components/templates/admin-layout';
@@ -41,6 +41,7 @@ const prefectures = [
 
 export default function UsersPage() {
   const auth = useAuth();
+  const lastFetchKeyRef = useRef<string | null>(null);
   
   // operatorロールかどうかを判定
   const isOperatorRole = auth?.user?.accountType === 'admin' && auth?.user?.role === 'operator';
@@ -182,18 +183,30 @@ export default function UsersPage() {
 
   // データ取得（初回読み込み・検索）
   useEffect(() => {
-    // authの初期化を待つ
-    if (auth?.isLoading) {
+     // authの初期化を待つ
+     if (auth?.isLoading) {
+       return;
+     }
+     
+     // 認証情報が取得できていない場合はスキップ
+     if (!auth?.user) {
+       return;
+     }
+     
+    const key = JSON.stringify({
+      user: auth?.user?.id ?? auth?.user?.email ?? 'anonymous',
+      search: appliedSearchForm,
+      isOperatorRole,
+    });
+
+    if (lastFetchKeyRef.current === key) {
       return;
     }
-    
-    // 認証情報が取得できていない場合はスキップ
-    if (!auth?.user) {
-      return;
-    }
-    
+
+    lastFetchKeyRef.current = key;
+
     fetchUsers(appliedSearchForm);
-  }, [auth?.isLoading, auth?.user, appliedSearchForm, fetchUsers]);
+  }, [auth?.isLoading, auth?.user, appliedSearchForm, fetchUsers, isOperatorRole]);
 
   // フィルタリング処理（クライアント側の追加フィルタリング）
   const filteredUsers = users.filter((user) => {

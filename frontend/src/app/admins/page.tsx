@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import AdminLayout from '@/components/templates/admin-layout';
@@ -20,6 +20,7 @@ export default function AdminsPage() {
     email: '',
     role: '',
   });
+  const lastFetchKeyRef = useRef<string | null>(null);
   const [appliedSearchForm, setAppliedSearchForm] = useState<AdminSearchForm>({
     accountId: '',
     name: '',
@@ -69,8 +70,20 @@ export default function AdminsPage() {
 
   // データ取得（検索条件変更またはページ変更の場合に実行）
   useEffect(() => {
+    const key = JSON.stringify({
+      search: appliedSearchForm,
+      page: pagination.page,
+      limit: pagination.limit,
+    });
+
+    if (lastFetchKeyRef.current === key) {
+      return;
+    }
+
+    lastFetchKeyRef.current = key;
+
     fetchAdmins(appliedSearchForm);
-  }, [appliedSearchForm, pagination.page]);
+  }, [appliedSearchForm, pagination.page, pagination.limit, fetchAdmins]);
 
   // ページ変更ハンドラー
   const handlePageChange = (page: number) => {
