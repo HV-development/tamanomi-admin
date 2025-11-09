@@ -5,9 +5,11 @@ import Image from 'next/image';
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  onLoad?: () => void;
+  onError?: () => void;
 }
 
-function Logo({ size = 'md', className = '' }: LogoProps) {
+function Logo({ size = 'md', className = '', onLoad, onError }: LogoProps) {
   const sizeClasses = useMemo(
     () => ({
       sm: 'h-8',
@@ -31,6 +33,12 @@ function Logo({ size = 'md', className = '' }: LogoProps) {
         height={imageSize}
         className={`w-full ${sizeClasses[size]} object-contain cursor-pointer hover:opacity-80 transition-opacity`}
         priority
+        onLoadingComplete={() => {
+          onLoad?.();
+        }}
+        onError={() => {
+          onError?.();
+        }}
       />
     </Link>
   );

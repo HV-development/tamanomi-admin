@@ -4,9 +4,11 @@ import Icon from '@/components/atoms/Icon';
 interface SidebarHeaderProps {
   isCollapsed: boolean;
   onToggleCollapse?: () => void;
+  onLogoLoad?: () => void;
+  onLogoError?: () => void;
 }
 
-export default function SidebarHeader({ isCollapsed, onToggleCollapse }: SidebarHeaderProps) {
+export default function SidebarHeader({ isCollapsed, onToggleCollapse, onLogoLoad, onLogoError }: SidebarHeaderProps) {
   return (
     <div className="flex items-center justify-between p-4 border-b border-gray-200">
       {isCollapsed ? (
@@ -20,7 +22,7 @@ export default function SidebarHeader({ isCollapsed, onToggleCollapse }: Sidebar
         )
       ) : (
         <>
-          <Logo size="sm" />
+          <Logo size="sm" onLoad={onLogoLoad} onError={onLogoError} />
           {onToggleCollapse && (
             <button
               onClick={onToggleCollapse}
