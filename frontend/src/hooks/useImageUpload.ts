@@ -95,17 +95,26 @@ export function useImageUpload(options: UseImageUploadOptions = {}) {
             credentials: 'include',
           });
           
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error(`❌ Upload failed for image ${index}:`, response.status, errorData);
-            throw new Error('画像のアップロードに失敗しました');
-          }
-          
           const result = await response.json();
+
+          if (!response.ok) {
+            const message = result?.error || result?.message || '画像のアップロードに失敗しました';
+            console.error(`❌ Upload failed for image ${index}:`, response.status, result);
+            throw new Error(message);
+          }
+
           uploadedImageUrls.push(result.url);
         } catch (uploadErr) {
+          const message = (() => {
+            if (uploadErr instanceof Error && uploadErr.message) return uploadErr.message;
+            if (typeof uploadErr === 'object' && uploadErr !== null && 'message' in uploadErr) {
+              const value = (uploadErr as { message?: string }).message;
+              if (typeof value === 'string' && value.trim()) return value;
+            }
+            return '画像のアップロードに失敗しました';
+          })();
           console.error(`❌ Image upload failed for ${index}:`, uploadErr);
-          showError('画像のアップロードに失敗しました');
+          showError(message);
           throw uploadErr;
         }
       }
