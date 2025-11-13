@@ -8,7 +8,8 @@ const API_BASE_URL = process.env.API_BASE_URL
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    // 入力検証: 画像のみ、サイズ上限（5MB/ファイル）、最大ファイル数（5）
+    // 入力検証: 画像のみ、サイズ上限（10MB/ファイル）、最大ファイル数（5）
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     const allowedTypes = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
     let fileCount = 0;
     for (const [, value] of formData.entries()) {
@@ -20,8 +21,8 @@ export async function POST(request: NextRequest) {
         if (!allowedTypes.has(value.type)) {
           return NextResponse.json({ error: '許可されていないファイル形式です' }, { status: 400 });
         }
-        if (value.size > 5 * 1024 * 1024) {
-          return NextResponse.json({ error: 'ファイルサイズが大きすぎます（最大5MB）' }, { status: 400 });
+        if (value.size > MAX_FILE_SIZE) {
+          return NextResponse.json({ error: 'ファイルサイズが大きすぎます（最大10MB）' }, { status: 400 });
         }
       }
     }
