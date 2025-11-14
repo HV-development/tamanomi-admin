@@ -652,6 +652,7 @@ export default function MerchantShopsPage() {
                               returnTo: encodedReturnTo,
                             },
                           }}
+                          prefetch={false}
                         >
                           <button 
                             className="p-2 text-orange-600 hover:text-orange-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[48px] min-h-[48px]"
