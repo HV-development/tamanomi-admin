@@ -5,7 +5,11 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 function getAuthHeaders(request: Request): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   const headerToken = request.headers.get('authorization');
+  const isProd = process.env.NODE_ENV === 'production';
   if (headerToken) {
+    if (isProd) {
+      console.info('[api/coupons] authorization header detected');
+    }
     headers['Authorization'] = headerToken;
     return headers;
   }
@@ -15,6 +19,16 @@ function getAuthHeaders(request: Request): Record<string, string> {
   const accessToken = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
   if (accessToken) {
     headers['Authorization'] = `Bearer ${accessToken}`;
+    if (isProd) {
+      console.info('[api/coupons] using cookie-based access token', {
+        hasAccessCookie: pairs.some(v => v.startsWith('accessToken=')),
+        hasHostAccessCookie: pairs.some(v => v.startsWith('__Host-accessToken=')),
+      });
+    }
+  } else if (isProd) {
+    console.warn('[api/coupons] no auth token resolved from header or cookie', {
+      hasCookieHeader: cookieHeader.length > 0,
+    });
   }
   return headers;
 }
