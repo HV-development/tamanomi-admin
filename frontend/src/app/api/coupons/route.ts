@@ -35,11 +35,6 @@ function getAuthHeaders(request: Request): Record<string, string> {
 
 export async function GET(request: Request) {
   try {
-    console.log('🎟️ API Route: Get coupons request received', {
-      host: request.headers.get('host'),
-      origin: request.headers.get('origin'),
-      referer: request.headers.get('referer'),
-    });
     
     const url = new URL(request.url);
     
@@ -54,7 +49,6 @@ export async function GET(request: Request) {
     if (!queryParams.has('limit')) queryParams.append('limit', '10');
     
     const fullUrl = `${API_BASE_URL}/coupons?${queryParams.toString()}`;
-    console.log('🔗 API Route: Fetching from', fullUrl);
     
     const response = await fetch(fullUrl, {
       method: 'GET',
@@ -68,7 +62,6 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Get coupons successful', { count: data.coupons?.length || 0 });
     return NextResponse.json(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Get coupons error', error);
@@ -80,7 +73,6 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    console.log('➕ API Route: Create coupon request received', { title: body.title });
     
     const response = await fetch(`${API_BASE_URL}/coupons`, {
       method: 'POST',
@@ -95,7 +87,6 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    console.log('✅ API Route: Create coupon successful', { couponId: data.id });
     return NextResponse.json(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Create coupon error', error);

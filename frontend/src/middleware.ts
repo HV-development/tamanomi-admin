@@ -72,32 +72,7 @@ export async function middleware(request: NextRequest) {
   if (protectedPaths.some(p => pathname === p || pathname.startsWith(`${p}/`))) {
     const token = request.cookies.get('accessToken')?.value || request.cookies.get('__Host-accessToken')?.value;
     const isCouponsPath = pathname === '/coupons' || pathname.startsWith('/coupons/');
-    if (isCouponsPath) {
-      console.info('[middleware] coupons access check', {
-        hasToken: Boolean(token),
-        method: request.method,
-        url: request.nextUrl.toString(),
-        host,
-        hostname: request.nextUrl.hostname,
-        purpose: request.headers.get('purpose'),
-        secFetchMode: request.headers.get('sec-fetch-mode'),
-        secFetchDest: request.headers.get('sec-fetch-dest'),
-      });
-    }
     if (!token) {
-      if (isCouponsPath) {
-        console.warn('[middleware] coupons redirect due to missing token', {
-          method: request.method,
-          url: request.nextUrl.toString(),
-          host,
-          hostname: request.nextUrl.hostname,
-          purpose: request.headers.get('purpose'),
-          secFetchMode: request.headers.get('sec-fetch-mode'),
-          secFetchDest: request.headers.get('sec-fetch-dest'),
-          hasAccessCookie: Boolean(request.cookies.get('accessToken')),
-          hasHostAccessCookie: Boolean(request.cookies.get('__Host-accessToken')),
-        });
-      }
       const url = request.nextUrl.clone();
       url.pathname = '/login';
       url.searchParams.set('session', 'expired');

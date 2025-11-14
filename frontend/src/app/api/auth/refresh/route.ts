@@ -29,17 +29,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Too Many Requests' }, { status: 429 });
   }
   try {
-    console.log('🔄 API Route: Refresh token request received');
-    console.log('🔄 API Route: Host header', {
-      host: request.headers.get('host'),
-      origin: request.headers.get('origin'),
-      referer: request.headers.get('referer'),
-    });
     const cookieHeader = request.headers.get('cookie') || '';
     const refreshPair = cookieHeader.split(';').map(v => v.trim()).find(v => v.startsWith('refreshToken='));
     const refreshToken = refreshPair ? decodeURIComponent(refreshPair.split('=')[1] || '') : '';
     if (!refreshToken) {
-      console.warn('🔄 No refresh token cookie');
       return NextResponse.json({ message: 'No refresh token' }, { status: 401 });
     }
     
@@ -61,7 +54,6 @@ export async function POST(request: Request) {
     const isSecure = (() => {
       try { return new URL(request.url).protocol === 'https:'; } catch { return process.env.NODE_ENV === 'production'; }
     })();
-    console.log('✅ API Route: Refresh token successful');
 
     const res = NextResponse.json({ ok: true });
     res.headers.set('Cache-Control', 'no-store');
