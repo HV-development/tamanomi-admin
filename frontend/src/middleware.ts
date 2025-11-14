@@ -79,6 +79,9 @@ export async function middleware(request: NextRequest) {
         url: request.nextUrl.toString(),
         host,
         hostname: request.nextUrl.hostname,
+        purpose: request.headers.get('purpose'),
+        secFetchMode: request.headers.get('sec-fetch-mode'),
+        secFetchDest: request.headers.get('sec-fetch-dest'),
       });
     }
     if (!token) {
@@ -88,6 +91,9 @@ export async function middleware(request: NextRequest) {
           url: request.nextUrl.toString(),
           host,
           hostname: request.nextUrl.hostname,
+          purpose: request.headers.get('purpose'),
+          secFetchMode: request.headers.get('sec-fetch-mode'),
+          secFetchDest: request.headers.get('sec-fetch-dest'),
           hasAccessCookie: Boolean(request.cookies.get('accessToken')),
           hasHostAccessCookie: Boolean(request.cookies.get('__Host-accessToken')),
         });
