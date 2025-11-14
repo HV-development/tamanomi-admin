@@ -35,7 +35,11 @@ function getAuthHeaders(request: Request): Record<string, string> {
 
 export async function GET(request: Request) {
   try {
-    console.log('🎟️ API Route: Get coupons request received');
+    console.log('🎟️ API Route: Get coupons request received', {
+      host: request.headers.get('host'),
+      origin: request.headers.get('origin'),
+      referer: request.headers.get('referer'),
+    });
     
     const url = new URL(request.url);
     

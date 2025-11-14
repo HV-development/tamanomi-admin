@@ -77,6 +77,8 @@ export async function middleware(request: NextRequest) {
         hasToken: Boolean(token),
         method: request.method,
         url: request.nextUrl.toString(),
+        host,
+        hostname: request.nextUrl.hostname,
       });
     }
     if (!token) {
@@ -84,6 +86,8 @@ export async function middleware(request: NextRequest) {
         console.warn('[middleware] coupons redirect due to missing token', {
           method: request.method,
           url: request.nextUrl.toString(),
+          host,
+          hostname: request.nextUrl.hostname,
           hasAccessCookie: Boolean(request.cookies.get('accessToken')),
           hasHostAccessCookie: Boolean(request.cookies.get('__Host-accessToken')),
         });

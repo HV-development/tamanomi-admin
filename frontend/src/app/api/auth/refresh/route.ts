@@ -30,6 +30,11 @@ export async function POST(request: Request) {
   }
   try {
     console.log('🔄 API Route: Refresh token request received');
+    console.log('🔄 API Route: Host header', {
+      host: request.headers.get('host'),
+      origin: request.headers.get('origin'),
+      referer: request.headers.get('referer'),
+    });
     const cookieHeader = request.headers.get('cookie') || '';
     const refreshPair = cookieHeader.split(';').map(v => v.trim()).find(v => v.startsWith('refreshToken='));
     const refreshToken = refreshPair ? decodeURIComponent(refreshPair.split('=')[1] || '') : '';

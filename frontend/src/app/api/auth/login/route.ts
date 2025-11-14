@@ -34,6 +34,11 @@ export async function POST(request: Request) {
     console.log('🔗 API Route: API_BASE_URL:', API_BASE_URL);
     const loginUrl = `${API_BASE_URL}/admin/login`;
     console.log('🔗 API Route: Full login URL:', loginUrl);
+    console.log('🔐 API Route: Host header', {
+      host: request.headers.get('host'),
+      origin: request.headers.get('origin'),
+      referer: request.headers.get('referer'),
+    });
     
     // 管理者用のログインエンドポイントを使用
     const response = await fetch(loginUrl, {
@@ -76,6 +81,10 @@ export async function POST(request: Request) {
         path: '/',
         maxAge: 60 * 15,
       });
+      console.info('🔐 API Route: Set access token cookies', {
+        isSecure,
+        sameSite: 'lax',
+      });
     }
     if (data.refreshToken) {
       res.cookies.set('refreshToken', data.refreshToken, {
@@ -91,6 +100,11 @@ export async function POST(request: Request) {
         sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 30,
+      });
+      console.info('🔐 API Route: Set refresh token cookies', {
+        isSecure,
+        sameSite: 'lax',
+        maxAgeDays: 30,
       });
     }
     return res;
