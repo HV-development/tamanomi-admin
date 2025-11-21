@@ -43,6 +43,11 @@ const AccountSection = dynamicImport(() => import('@/components/molecules/Accoun
   ssr: false,
 });
 
+const QRCodeGenerator = dynamicImport(() => import('@/components/molecules/QRCodeGenerator'), {
+  loading: () => null,
+  ssr: false,
+});
+
 interface ShopFormProps {
   merchantId?: string;
 }
@@ -52,7 +57,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   const router = useRouter();
   const searchParamsHook = useSearchParams();
   const auth = useAuth();
-  
+
   // 事業者アカウントかどうかを判定
   const isMerchantAccount = useMemo(
     () => auth?.user?.accountType === 'merchant',
@@ -85,7 +90,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   );
   
   const isEdit = useMemo(() => !!shopId, [shopId]);
-  
+
   // merchantIdの決定（props > URLパラメータ）
   const merchantId = useMemo(
     () => propMerchantId || merchantIdFromParams,
@@ -102,7 +107,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       return returnToParam.startsWith('/') ? returnToParam : `/${returnToParam}`;
     }
   }, [returnToParam]);
-  
+
   const fallbackRedirect = useMemo(() => {
     if (decodedReturnTo) {
       return decodedReturnTo;
@@ -112,7 +117,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     }
     return '/shops';
   }, [decodedReturnTo, isMerchantAccount, merchantId]);
-  
+
   const [formData, setFormData] = useState<ExtendedShopCreateRequest>({
     merchantId: merchantId || '',
     genreId: '',
@@ -144,17 +149,17 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     createAccount: false,
     password: '',
   });
-  
+
   // 利用シーンの複数選択用
   const [selectedScenes, setSelectedScenes] = useState<string[]>([]);
   const [customSceneText, setCustomSceneText] = useState<string>('');
-  
+
   // 決済方法の複数選択用
   const [selectedCreditBrands, setSelectedCreditBrands] = useState<string[]>([]);
   const [customCreditText, setCustomCreditText] = useState<string>('');
   const [selectedQrBrands, setSelectedQrBrands] = useState<string[]>([]);
   const [customQrText, setCustomQrText] = useState<string>('');
-  
+
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
   const [scenes, setScenes] = useState<Scene[]>([]);
@@ -166,7 +171,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   const { toasts, removeToast, showSuccess, showError } = useToast();
   const [existingAccountEmails, setExistingAccountEmails] = useState<Array<{ shopId: string; email: string }>>([]);
   const [originalAccountEmail, setOriginalAccountEmail] = useState<string | null>(null);
-  
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [qrCodeLoading, setQrCodeLoading] = useState(false);
+
   const collectAccountEmailEntries = (data: unknown): Array<{ shopId: string; email: string }> => {
     const entries: Array<{ shopId: string; email: string }> = [];
     const appendFromArray = (shops: Array<{ id?: unknown; accountEmail?: unknown }>) => {
@@ -214,7 +221,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       return true;
     });
   };
-  
+
   // 住所検索フック
   const { isSearching: isSearchingAddress, searchAddress } = useAddressSearch(
     (result) => {
@@ -239,21 +246,21 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       showError(error);
     }
   );
-  
+
   // バリデーションエラー用のステート
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  
+
   // フィールドが触られたかを追跡（初期表示時は必須エラーを表示しない）
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
-  
+
   // validationErrorsの変更を監視（必要に応じてデバッグ用）
   useEffect(() => {
     // デバッグログは削除済み
   }, [validationErrors]);
-  
+
   // 既存のアカウントがあるかどうか（API取得時の初期データで判定）
   const [hasExistingAccount, setHasExistingAccount] = useState(false);
-  
+
   // 画像アップロードフック
   const {
     imagePreviews,
@@ -264,10 +271,10 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     handleRemoveExistingImage,
     uploadImages,
   } = useImageUpload({ maxImages: 3 });
-  
+
   // 定休日チェックボックス用
   const [selectedHolidays, setSelectedHolidays] = useState<string[]>([]);
-  
+
   // バリデーションフック
   const { validateField } = useShopValidation({
     formData,
@@ -284,26 +291,26 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       try {
         setIsLoading(true);
         setError(null);
-        
+
         // 事業者アカウントの場合、自分の事業者情報を取得してmerchantIdと事業者名を設定
         if (isMerchantAccount) {
           try {
             const myMerchantData = await apiClient.getMyMerchant();
             if (!isMounted) return;
-            
+
             if (myMerchantData && typeof myMerchantData === 'object' && 'data' in myMerchantData && myMerchantData.data) {
               const merchant = myMerchantData.data as Merchant;
-              
+
               // merchantIdがまだ設定されていない場合のみ設定
               if (!merchantId) {
-                setFormData(prev => ({
+                setFormData((prev) => ({
                   ...prev,
                   merchantId: merchant.id,
                 }));
               }
               // 事業者名は常に設定
               setMerchantName(merchant.name);
-              
+
               // 自分の事業者情報をmerchants配列に追加（親事業者からコピー機能用）
               setMerchants([merchant]);
             }
@@ -311,16 +318,15 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             showError('事業者情報の取得に失敗しました');
           }
         }
-        
+
         // 加盟店一覧を取得（管理者アカウントの場合のみ）
         let merchantsArray: Merchant[] = [];
         if (!isMerchantAccount) {
           const merchantsData = await apiClient.getMerchants();
-        
+
           // コンポーネントがアンマウントされている場合は処理を中断
           if (!isMounted) return;
-          
-          
+
           if (Array.isArray(merchantsData)) {
             merchantsArray = merchantsData as Merchant[];
           } else if (merchantsData && typeof merchantsData === 'object') {
@@ -333,33 +339,49 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               merchantsArray = ((merchantsData as { merchants: Merchant[] }).merchants || []) as Merchant[];
             }
           }
-          
-          
+
           setMerchants(merchantsArray);
         }
-        
+
         // ジャンル一覧を取得
         const genresData = await apiClient.getGenres();
         if (!isMounted) return;
-        
+
         const genresArray = Array.isArray(genresData) ? genresData : (genresData as { genres: unknown[] }).genres || [];
         setGenres(genresArray);
-        
+
         // 利用シーン一覧を取得
         const scenesData = await apiClient.getScenes();
         if (!isMounted) return;
-        
+
         const scenesArray = Array.isArray(scenesData) ? scenesData : (scenesData as { scenes: unknown[] }).scenes || [];
         setScenes(scenesArray);
-        
+
         // 編集モードの場合は店舗データを取得
         if (isEdit && isMounted && shopId) {
           const shopData = await apiClient.getShop(shopId) as ShopDataResponse;
-          
+
+          // QRコードURLを取得
+          try {
+            setQrCodeLoading(true);
+            console.log('🔗 QRコードURL: 取得開始');
+            const qrCodeData = await apiClient.getShopQrCodeUrl(shopId);
+            if (isMounted && qrCodeData && typeof qrCodeData === 'object' && 'qr_code_url' in qrCodeData) {
+              setQrCodeUrl((qrCodeData as { qr_code_url: string }).qr_code_url);
+            }
+          } catch (error) {
+            console.error('QRコードURL取得エラー:', error);
+            // QRコード取得エラーは無視（店舗データ取得は続行）
+          } finally {
+            if (isMounted) {
+              setQrCodeLoading(false);
+            }
+          }
+
           if (isMounted) {
             // merchantIdがpropsで渡されている場合は上書きしない
             const finalMerchantId = merchantId || shopData.merchantId;
-            
+
             // accountEmailが存在する場合、createAccountをtrueに設定
             const accountEmail = shopData.accountEmail;
             setHasExistingAccount(!!accountEmail); // 既存アカウントの有無を記録
@@ -372,7 +394,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               latitude: shopData.latitude ? String(shopData.latitude) : '',
               longitude: shopData.longitude ? String(shopData.longitude) : '',
             });
-            
+
             // 編集モード時は必須フィールドを最初から touched として設定
             // これにより、初期値を削除した際にエラーメッセージが表示される
             setTouchedFields({
@@ -381,27 +403,27 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               phone: true,
               postalCode: true,
             });
-            
+
             // 加盟店名を設定（APIレスポンスから直接取得）
             const merchantFromShop = shopData.merchant;
-            
+
             if (merchantFromShop?.name) {
               // APIレスポンスにmerchant情報が含まれている場合はそれを使用
               setMerchantName(merchantFromShop.name);
             } else {
               // fallback: merchants配列から検索
-              const merchant = merchantsArray.find(m => m.id === finalMerchantId);
+              const merchant = merchantsArray.find((m) => m.id === finalMerchantId);
               if (merchant) {
                 setMerchantName(merchant.name);
               }
             }
-            
+
             // 既存画像の設定
             if (shopData.images && Array.isArray(shopData.images)) {
-              const validImages = shopData.images.filter(img => img && typeof img === 'string' && img.length > 0);
+              const validImages = shopData.images.filter((img) => img && typeof img === 'string' && img.length > 0);
               setExistingImages(validImages);
             }
-            
+
             // クレジットカードブランドの設定（JSON形式から読み込み）
             const shopDataWithPayment = shopData as ShopCreateRequest & { paymentCredit?: { brands: string[]; other?: string }; paymentCode?: string };
             const creditValue = shopDataWithPayment.paymentCredit;
@@ -420,7 +442,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 setSelectedCreditBrands(brands);
               }
             }
-            
+
             // QRコード決済の設定（JSON形式から読み込み）
             const qrValue = shopDataWithPayment.paymentCode;
             if (qrValue) {
@@ -438,24 +460,24 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 setSelectedQrBrands(services);
               }
             }
-            
+
             // 定休日の設定
             const holidaysValue = (shopData as ShopCreateRequest).holidays;
             if (holidaysValue && holidaysValue.trim()) {
               setSelectedHolidays(holidaysValue.split(',').map(h => h.trim()));
             }
-            
+
             // 利用シーンの設定
             const shopDataWithScenes = shopData as ShopCreateRequest & { sceneIds?: string[]; customSceneText?: string };
             if (shopDataWithScenes.sceneIds && Array.isArray(shopDataWithScenes.sceneIds)) {
               setSelectedScenes(shopDataWithScenes.sceneIds);
             }
-            
+
             // カスタム利用シーンテキストの設定
             if (shopDataWithScenes.customSceneText) {
               setCustomSceneText(shopDataWithScenes.customSceneText);
             }
-            
+
             // 既存店舗のメールアドレスを収集（重複チェック用）
             try {
               const shopsResponse = await apiClient.getShops('limit=1000');
@@ -477,7 +499,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         if (err instanceof Error && err.name === 'AbortError') {
           return;
         }
-        
+
         if (isMounted) {
           setError(err instanceof Error ? err.message : 'データの取得に失敗しました');
           showError('データの取得に失敗しました');
@@ -515,20 +537,20 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       merchantId: merchant.id,
     }));
     setMerchantName(merchant.name);
-    
+
     // 事業者を選択したことを記録
     setTouchedFields(prev => ({
       ...prev,
       merchantId: true,
     }));
-    
+
     // 事業者選択時のバリデーションエラーをクリア
     setValidationErrors((prev) => {
       const newErrors = { ...prev };
       delete newErrors.merchantId;
       return newErrors;
     });
-    
+
     setIsMerchantModalOpen(false);
   };
 
@@ -538,16 +560,16 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       ...formData,
       [field]: value,
     };
-    
+
     // フィールドが触られたことを記録（常に更新）
     const updatedTouchedFields = {
       ...touchedFields,
       [field]: true,
     };
-    
+
     setFormData(updatedFormData);
     setTouchedFields(updatedTouchedFields);
-    
+
     // 更新されたformDataとtouchedFieldsを使ってバリデーションを実行
     validateField(field, value, updatedFormData, updatedTouchedFields);
   };
@@ -559,9 +581,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       ...touchedFields,
       [field]: true,
     };
-    
+
     setTouchedFields(updatedTouchedFields);
-    
+
     // バリデーション実行（最新のformDataとtouchedFieldsを使用）
     validateField(field, value, formData, updatedTouchedFields);
   };
@@ -574,7 +596,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   // 緯度経度の貼り付けハンドラー（カンマ区切り対応）
   const handleCoordinatesPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     const pastedText = e.clipboardData.getData('text');
-    
+
     // カンマが含まれている場合は緯度経度として処理
     if (pastedText.includes(',')) {
       e.preventDefault(); // デフォルトの貼り付け動作を防ぐ
@@ -587,7 +609,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           latitude: lat,
           longitude: lng
         });
-        
+
         // 自動入力されたフィールドのバリデーションエラーをクリア
         setValidationErrors((prev) => {
           const newErrors = { ...prev };
@@ -595,7 +617,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           delete newErrors.longitude;
           return newErrors;
         });
-        
+
         showSuccess('緯度経度を設定しました');
       }
     }
@@ -606,7 +628,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   const openGoogleMapsForAddress = () => {
     const latitude = formData.latitude ? String(formData.latitude).trim() : '';
     const longitude = formData.longitude ? String(formData.longitude).trim() : '';
-    
+
     // 緯度経度が両方入力されている場合は座標でピンを表示（最大ズーム）
     if (latitude && longitude) {
       // 複数の方法を試して最大ズームレベルで表示
@@ -615,19 +637,19 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       showSuccess('Google Mapで座標のピンを最大ズームで表示しました。');
       return;
     }
-    
+
     // 緯度経度がない場合は住所で検索（最大ズーム）
     const _postalCode = formData.postalCode?.trim();
     const prefecture = formData.prefecture?.trim();
     const city = formData.city?.trim();
     const address1 = formData.address1?.trim();
     const address2 = formData.address2?.trim();
-    
+
     if (!prefecture && !city && !address1) {
       showError('住所または緯度経度を入力してください');
       return;
     }
-    
+
     // 住所を構築（郵便番号も含める）
     const addressParts = [
       _postalCode ? `〒${_postalCode}` : '',
@@ -638,26 +660,26 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     ].filter(Boolean);
     
     const address = addressParts.join(' ');
-    
+
     // Google Mapsで住所検索を開く（検索ボックスに入力された状態、最大ズーム）
     // 住所検索専用のURL形式を使用
     const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}&zoom=21`;
     window.open(url, '_blank', 'noopener,noreferrer');
-    
+
     showSuccess('Google Mapを最大ズームで開きました。住所が自動的に検索されます。');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setIsSubmitting(true);
-      
+
       // 送信前の総合バリデーション
       // クレジットカードとQRコードをJSON形式に変換
       const isCreditOtherSelected = selectedCreditBrands.includes('その他');
       const isQrOtherSelected = selectedQrBrands.includes('その他');
-      
+
       // 「その他」シーンの選択状態を確認
       const otherScene = scenes.find(s => s.name === 'その他');
       const isOtherSceneSelected = otherScene && selectedScenes.includes(otherScene.id);
@@ -680,53 +702,53 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         paymentCredit: paymentCreditJson,
         paymentCode: paymentCodeJson,
       };
-      
+
       // Submit時は全フィールドのカスタムバリデーションを実行
       const customErrors: Record<string, string> = {};
-      
+
       // 店舗名
       if (!formData.name || formData.name.trim().length === 0) {
         customErrors.name = '店舗名は必須です';
       } else if (formData.name.length > 100) {
         customErrors.name = '店舗名は100文字以内で入力してください';
       }
-      
+
       // 店舗名（カナ）
       if (formData.nameKana && formData.nameKana.length > 100) {
         customErrors.nameKana = '店舗名（カナ）は100文字以内で入力してください';
       } else if (formData.nameKana && formData.nameKana.trim().length > 0 && !isValidKana(formData.nameKana)) {
         customErrors.nameKana = '店舗名（カナ）は全角カタカナで入力してください';
       }
-      
+
       // 電話番号
       if (!formData.phone || formData.phone.trim().length === 0) {
         customErrors.phone = '電話番号は必須です';
       } else if (!isValidPhone(formData.phone)) {
         customErrors.phone = '有効な電話番号を入力してください（10-11桁の数字）';
       }
-      
+
       // 郵便番号
       if (!formData.postalCode || formData.postalCode.trim().length === 0) {
         customErrors.postalCode = '郵便番号は必須です';
       } else if (!isValidPostalCode(formData.postalCode)) {
         customErrors.postalCode = '郵便番号は7桁の数字で入力してください';
       }
-      
+
       // 都道府県
       if (!formData.prefecture || formData.prefecture.trim().length === 0) {
         customErrors.prefecture = '都道府県を選択してください';
       }
-      
+
       // 市区町村
       if (!formData.city || formData.city.trim().length === 0) {
         customErrors.city = '市区町村は必須です';
       }
-      
+
       // 番地以降
       if (!formData.address1 || formData.address1.trim().length === 0) {
         customErrors.address1 = '番地以降は必須です';
       }
-      
+
       // 緯度
       if (!formData.latitude || String(formData.latitude).trim().length === 0) {
         customErrors.latitude = '緯度は必須です';
@@ -736,17 +758,17 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       if (!formData.longitude || String(formData.longitude).trim().length === 0) {
         customErrors.longitude = '経度は必須です';
       }
-      
+
       // ジャンル
       if (!formData.genreId || formData.genreId.trim().length === 0) {
         customErrors.genreId = 'ジャンルを選択してください';
       }
-      
+
       // 喫煙タイプ
       if (!formData.smokingType || String(formData.smokingType).trim().length === 0) {
         customErrors.smokingType = '喫煙タイプを選択してください';
       }
-      
+
       // 事業者（管理者アカウントの場合のみ）
       if (!isMerchantAccount && (!formData.merchantId || formData.merchantId.trim().length === 0)) {
         customErrors.merchantId = '事業者を選択してください';
@@ -760,8 +782,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       } else if (!hasCouponStart && hasCouponEnd) {
         customErrors.couponUsageStart = 'クーポン利用時間の開始時刻を入力してください';
       }
-      
-      
+
       // アカウント情報（アカウント発行時のみ）
       if (formData.createAccount) {
         const trimmedAccountEmail = formData.accountEmail?.trim() ?? '';
@@ -772,7 +793,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         } else if (isAccountEmailDuplicate(trimmedAccountEmail) && trimmedAccountEmail.toLowerCase() !== (originalAccountEmail ?? '').toLowerCase()) {
           customErrors.accountEmail = 'このメールアドレスは既に使用されています';
         }
-        
+
         // 新規登録時のみパスワード必須
         if (!isEdit && (!formData.password || formData.password.trim().length === 0)) {
           customErrors.password = 'パスワードは必須です';
@@ -780,45 +801,45 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           customErrors.password = 'パスワードは8文字以上で入力してください';
         }
       }
-      
+
       // 説明文
       if (formData.description && formData.description.length > 500) {
         customErrors.description = '店舗紹介説明は500文字以内で入力してください';
       }
-      
+
       // 詳細情報
       if (formData.details && formData.details.length > 1000) {
         customErrors.details = '詳細情報は1000文字以内で入力してください';
       }
-      
+
       // クレジットカード「その他」のテキストボックス必須チェック
       if (isCreditOtherSelected && (!customCreditText || customCreditText.trim().length === 0)) {
         customErrors.customCreditText = 'その他のクレジットカードブランド名を入力してください';
       } else if (isCreditOtherSelected && customCreditText && customCreditText.length > 100) {
         customErrors.customCreditText = 'その他のクレジットカードブランド名は100文字以内で入力してください';
       }
-      
+
       // QRコード「その他」のテキストボックス必須チェック
       if (isQrOtherSelected && (!customQrText || customQrText.trim().length === 0)) {
         customErrors.customQrText = 'その他のQRコード決済サービス名を入力してください';
       } else if (isQrOtherSelected && customQrText && customQrText.length > 100) {
         customErrors.customQrText = 'その他のQRコード決済サービス名は100文字以内で入力してください';
       }
-      
+
       // 利用シーン「その他」のテキストボックス必須チェック
       if (isOtherSceneSelected && (!customSceneText || customSceneText.trim().length === 0)) {
         customErrors.customSceneText = '具体的な利用シーンを入力してください';
       } else if (isOtherSceneSelected && customSceneText && customSceneText.length > 100) {
         customErrors.customSceneText = '具体的な利用シーンは100文字以内で入力してください';
       }
-      
+
       // カスタムエラーがある場合は表示して終了
       if (Object.keys(customErrors).length > 0) {
         // エラーをstateに設定
         setValidationErrors(customErrors);
         showError('入力内容に誤りがあります。各項目を確認してください。');
         setIsSubmitting(false);
-        
+
         // エラー設定後、次のレンダリングサイクルでスクロール
         setTimeout(() => {
           // 最初のエラー項目にスクロール
@@ -845,13 +866,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             }
           }
         }, 100);
-        
+
         return;
       }
-      
+
       // Zodバリデーションも実行（追加チェック用）
       const schema = isEdit ? shopUpdateRequestSchema : shopCreateRequestSchema;
-      
+
       // アカウント発行が無効な場合はパスワードフィールドを除外
       let dataForZodValidation: ExtendedShopCreateRequest & { applications?: string[] } = { ...dataToValidate } as ExtendedShopCreateRequest & { applications?: string[] };
       // applications はZodチェック前に除去（後で送信データに 'tamanomi' を設定）
@@ -862,9 +883,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         const { password: _password, ...rest } = dataForZodValidation;
         dataForZodValidation = { ...rest, accountEmail: null };
       }
-      
+
       const validationResult = schema.safeParse(dataForZodValidation);
-      
+
       if (!validationResult.success) {
         const zodErrors: Record<string, string> = {};
         validationResult.error.errors.forEach((err) => {
@@ -873,16 +894,16 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             zodErrors[path] = err.message;
           }
         });
-        
+
         setValidationErrors(zodErrors);
         showError('入力内容に誤りがあります。各項目を確認してください。');
         setIsSubmitting(false);
-        
+
         return;
       }
-      
+
       let uploadedImageUrls: string[] = [];
-      
+
       // 編集時のみ画像を先にアップロード
       if (isEdit && shopId) {
         // merchantIdが設定されていることを確認
@@ -891,7 +912,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         }
         uploadedImageUrls = await uploadImages(shopId, formData.merchantId);
       }
-      
+
       // 住所フィールドを結合
       const fullAddress = [
         formData.prefecture,
@@ -915,7 +936,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         // アカウント発行チェックがOFFの場合はnullに設定（アカウント無効化）
         accountEmail = null;
       }
-      
+
       // クレジットカードとQRコードをJSON形式で送信データに追加
       // 空文字はnullに正規化（未入力と区別し、明示的にDBをクリアできるようにする）
       const normalizedHomepageUrl = (formData.homepageUrl && formData.homepageUrl.trim() !== '') ? formData.homepageUrl.trim() : null;
@@ -945,7 +966,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         if (!formData.merchantId || formData.merchantId.trim() === '') {
           throw new Error('事業者IDが設定されていません');
         }
-        
+
         await apiClient.updateShop(shopId, submitData);
         showSuccess('店舗を更新しました');
       } else {
@@ -955,14 +976,14 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         // 作成された店舗のIDを使って画像をアップロード
         // merchantIdはcreatedShopから取得（formData.merchantIdが空の場合でも対応）
         const targetMerchantId = createdShop?.merchantId || formData.merchantId;
-        
+
         if (imagePreviews.length > 0 && createdShop?.id) {
           if (!targetMerchantId || targetMerchantId.trim() === '') {
             throw new Error('事業者IDが設定されていません。画像をアップロードできません。');
           }
-          
+
           const newUploadedImageUrls = await uploadImages(createdShop.id, targetMerchantId);
-          
+
           // 画像をアップロードした場合は店舗を更新
           if (newUploadedImageUrls.length > 0) {
             await apiClient.updateShop(createdShop.id, {
@@ -970,10 +991,10 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             });
           }
         }
-        
+
         showSuccess('店舗を作成しました');
       }
-      
+
       // リダイレクト先を決定
       router.push(fallbackRedirect);
     } catch (err: unknown) {
@@ -1044,7 +1065,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
   return (
     <div className="space-y-6">
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
-      
+
       {/* 加盟店選択モーダル */}
       <MerchantSelectModal
         isOpen={isMerchantModalOpen}
@@ -1052,7 +1073,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         onSelect={handleMerchantSelect}
         selectedMerchantId={formData.merchantId}
       />
-      
+
       {/* ヘッダー */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">
@@ -1087,7 +1108,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                       // 親事業者の情報を取得
                       const merchant = merchants.find(m => m.id === formData.merchantId);
                       if (merchant) {
-                        
                         // 親事業者の情報をフォームに反映
                         setFormData(prev => {
                           const newFormData = {
@@ -1109,8 +1129,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                             // 建物名
                             address2: merchant.address2 || ''
                           };
-                          
-                          
+
                           return newFormData;
                         });
                       }
@@ -1143,7 +1162,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                         // 親事業者の情報を取得
                         const merchant = merchants.find(m => m.id === formData.merchantId);
                         if (merchant) {
-                          
                           // 親事業者の情報をフォームに反映
                           setFormData(prev => {
                             const newFormData = {
@@ -1165,8 +1183,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                               // 建物名
                               address2: merchant.address2 || ''
                             };
-                            
-                            
+
                             return newFormData;
                           });
                         }
@@ -1202,7 +1219,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                             // 親事業者の情報を取得
                             const merchant = merchants.find(m => m.id === formData.merchantId);
                             if (merchant) {
-                              
                               // 親事業者の情報をフォームに反映
                               setFormData(prev => {
                                 const newFormData = {
@@ -1224,8 +1240,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                                   // 建物名
                                   address2: merchant.address2 || ''
                                 };
-                                
-                                
+
                                 return newFormData;
                               });
                             }
@@ -1262,7 +1277,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                           // 親事業者の情報を取得
                           const merchant = merchants.find(m => m.id === formData.merchantId);
                           if (merchant) {
-                            
                             // 親事業者の情報をフォームに反映
                             setFormData(prev => {
                               const newFormData = {
@@ -1284,8 +1298,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                                 // 建物名
                                 address2: merchant.address2 || ''
                               };
-                              
-                              
+
                               return newFormData;
                             });
                           }
@@ -1303,7 +1316,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 </div>
               )}
             </div>
-            
+
             <div className="w-1/2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 店舗名 <span className="text-red-500">*</span>
@@ -1327,7 +1340,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 {formData.name.length} / 100文字
               </p>
             </div>
-            
+
             <div className="w-1/2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 店舗名（カナ）
@@ -1351,7 +1364,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 {(formData.nameKana || '').length} / 100文字
               </p>
             </div>
-            
+
             <div className="w-1/4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 電話番号 <span className="text-red-500">*</span>
@@ -1377,7 +1390,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               />
               <ErrorMessage message={validationErrors.phone} />
             </div>
-            
+
             {/* 郵便番号と住所検索 */}
             <div className="flex gap-4">
               <div className="w-32">
@@ -1504,7 +1517,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 placeholder="建物名 / 部屋番号を入力してください（任意）"
               />
             </div>
-            
+
             {/* 緯度・経度 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1581,7 +1594,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 </div>
               )}
             </div>
-            
+
             {/* ステータス（編集時のみ表示） */}
             {isEdit && (
               <div className="w-64">
@@ -1606,7 +1619,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             )}
           </div>
         </div>
-
 
         {/* ジャンル */}
         <div className="bg-white rounded-lg shadow p-6" data-field="genreId">
@@ -1681,7 +1693,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 {formData.description?.length || 0} / 500文字
               </p>
             </div>
-            
+
             {/* 詳細情報 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1705,7 +1717,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 {formData.details?.length || 0} / 1000文字
               </p>
             </div>
-            
+
             {/* 定休日 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1731,7 +1743,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 ))}
               </div>
             </div>
-            
+
             {/* ホームページURL（任意） */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1856,6 +1868,16 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           onRemoveImage={handleRemoveImage}
           onRemoveExistingImage={handleRemoveExistingImage}
         />
+
+        {/* QRコード表示（編集モードのみ） */}
+        {isEdit && shopId && (
+          <QRCodeGenerator
+            qrCodeLoading={qrCodeLoading}
+            qrCodeUrl={qrCodeUrl || ''}
+            shopId={shopId}
+            showSuccess={showSuccess}
+          />
+        )}
 
         {/* アカウント発行 / 店舗用アカウント情報 */}
         <AccountSection
