@@ -68,6 +68,7 @@ export type ExtendedShopCreateRequest = ShopCreateRequest & {
   homepageUrl?: string | null;
   couponUsageStart?: string | null;
   couponUsageEnd?: string | null;
+  couponUsageDays?: string | null;
 };
 
 

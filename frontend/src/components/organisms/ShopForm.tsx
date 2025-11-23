@@ -140,6 +140,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     homepageUrl: '',
     couponUsageStart: '',
     couponUsageEnd: '',
+    couponUsageDays: '',
     paymentSaicoin: false,
     paymentTamapon: false,
     paymentCash: true,
@@ -942,6 +943,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       const normalizedHomepageUrl = (formData.homepageUrl && formData.homepageUrl.trim() !== '') ? formData.homepageUrl.trim() : null;
       const normalizedCouponStart = (formData.couponUsageStart && formData.couponUsageStart !== '') ? formData.couponUsageStart : null;
       const normalizedCouponEnd = (formData.couponUsageEnd && formData.couponUsageEnd !== '') ? formData.couponUsageEnd : null;
+      const normalizedCouponDays = (formData.couponUsageDays && formData.couponUsageDays.trim() !== '') ? formData.couponUsageDays.trim() : null;
 
       const submitData = {
         ...formData,
@@ -959,6 +961,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         homepageUrl: normalizedHomepageUrl,
         couponUsageStart: normalizedCouponStart,
         couponUsageEnd: normalizedCouponEnd,
+        couponUsageDays: normalizedCouponDays,
       };
 
       if (isEdit && shopId) {
@@ -1804,6 +1807,33 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 />
               )}
               <p className="mt-1 text-xs text-gray-500">両方入力するか、両方未入力にしてください</p>
+            </div>
+
+            {/* クーポン利用可能曜日 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                クーポン利用可能曜日
+              </label>
+              <div className="flex flex-wrap gap-3">
+                {WEEKDAYS.filter(d => d !== '祝日').map((day) => (
+                  <label key={day} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.couponUsageDays?.includes(day) || false}
+                      onChange={(e) => {
+                        const current = formData.couponUsageDays?.split(',').filter(Boolean) || [];
+                        const updated = e.target.checked
+                          ? [...current, day]
+                          : current.filter(d => d !== day);
+                        handleInputChange('couponUsageDays', updated.join(','));
+                      }}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{day}曜日</span>
+                  </label>
+                ))}
+              </div>
+              <p className="mt-1 text-xs text-gray-500">クーポンを利用できる曜日を選択してください（任意）</p>
             </div>
 
             {/* 喫煙タイプ */}
