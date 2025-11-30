@@ -452,8 +452,21 @@ class ApiClient {
     });
   }
 
+  async getAdminAccountById(id: string): Promise<unknown> {
+    return this.request<unknown>(`/admin/id/${id}`, {
+      method: 'GET',
+    });
+  }
+
   async updateAdminAccount(email: string, adminAccountData: AdminAccountInput): Promise<unknown> {
     return this.request<unknown>(`/admin/${email}`, {
+      method: 'PATCH',
+      body: JSON.stringify(adminAccountData),
+    });
+  }
+
+  async updateAdminAccountById(id: string, adminAccountData: AdminAccountInput): Promise<unknown> {
+    return this.request<unknown>(`/admin/id/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(adminAccountData),
     });

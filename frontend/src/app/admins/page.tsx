@@ -327,10 +327,10 @@ export default function AdminsPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {admins.map((admin, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
+                    <tr key={admin.id || index} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap w-48">
                         <div className="flex items-center gap-2">
-                          <Link href={`/admins/${admin.email}/edit`}>
+                          <Link href={`/admins/${admin.id}/edit`}>
                             <button 
                               className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
                               title="編集"
