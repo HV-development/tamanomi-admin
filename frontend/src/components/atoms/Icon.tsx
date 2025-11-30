@@ -41,6 +41,9 @@ const iconMap: Record<string, { type: 'emoji' | 'material' | 'image'; value: str
   check: { type: 'material', value: 'check' },
   remove: { type: 'material', value: 'remove' },
   'add-store': { type: 'image', value: '/store-list.svg' },
+  link: { type: 'material', value: 'link' },
+  'content-copy': { type: 'material', value: 'content_copy' },
+  download: { type: 'material', value: 'download' },
 };
 
 function Icon({ name, size = 'md', className = '' }: IconProps) {

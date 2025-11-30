@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, Suspense } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
@@ -16,15 +16,19 @@ import { type AdminFormData, type AdminAccountInput } from '@hv-development/sche
 
 export const dynamic = 'force-dynamic';
 
-function AdminRegistrationForm() {
+function AdminEditForm() {
+  const params = useParams();
   const router = useRouter();
   const { toasts, removeToast, showSuccess, showError } = useToast();
+  const adminId = params.id as string;
+  
   const [step, setStep] = useState<'input' | 'confirm'>('input');
+  const [isLoading, setIsLoading] = useState(true);
 
   const initialFormData: AdminFormData = {
     role: '',
-    firstName: '',
     lastName: '',
+    firstName: '',
     email: '',
     password: '',
     passwordConfirm: '',
@@ -32,12 +36,44 @@ function AdminRegistrationForm() {
 
   const {
     formData,
+    setFormData,
     errors,
     isSubmitting,
     setIsSubmitting,
     handleInputChange,
     validateAllFields,
-  } = useAdminForm<AdminFormData>(initialFormData);
+  } = useAdminForm<AdminFormData>(initialFormData, { passwordRequired: false });
+
+  // 管理者データを取得
+  useEffect(() => {
+    const fetchAdminAccount = async () => {
+      try {
+        setIsLoading(true);
+        const adminData = (await apiClient.getAdminAccountById(adminId)) as AdminFormData & {
+          firstName?: string;
+          lastName?: string;
+          role?: string;
+        };
+        if (adminData) {
+          setFormData(prev => ({
+            ...prev,
+            role: adminData.role || '',
+            firstName: adminData.firstName || '',
+            lastName: adminData.lastName || '',
+            email: adminData.email || '',
+            password: '',
+            passwordConfirm: '',
+          }));
+        }
+      } catch (error) {
+        console.error('管理者アカウント情報の取得に失敗しました:', error);
+        showError('管理者アカウント情報の取得に失敗しました');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAdminAccount();
+  }, [adminId, setFormData, showError]);
 
   // 入力画面から確認画面へ遷移
   const handleProceedToConfirm = () => {
@@ -58,24 +94,23 @@ function AdminRegistrationForm() {
     router.push('/admins');
   };
 
-  // 登録処理
-  const handleRegister = async () => {
+  // 更新処理
+  const handleUpdate = async () => {
     setIsSubmitting(true);
     try {
-      const adminAccountData: AdminAccountInput = {
-        email: formData.email,
-        password: formData.password,
+      const trimmedPassword = (formData.password || '').trim();
+      const updateData: Partial<AdminAccountInput> = {
         role: formData.role,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        status: "active",
-        sendInvite: true,
-        inviteTemplate: "default",
-        metadata: { "note": "新規入社" },
+        email: formData.email,
       };
+      if (trimmedPassword) {
+        updateData.password = trimmedPassword;
+      }
 
-      await apiClient.createAdminAccount(adminAccountData);
-      showSuccess('管理者アカウントを登録しました');
+      await apiClient.updateAdminAccountById(adminId, updateData as AdminAccountInput);
+      showSuccess('管理者アカウント情報を更新しました');
       
       // 少し待ってからリダイレクト（トーストを表示するため）
       setTimeout(() => {
@@ -93,11 +128,21 @@ function AdminRegistrationForm() {
         return;
       }
       
-      console.error('管理者アカウントの作成に失敗しました:', error);
-      showError('管理者アカウントの作成に失敗しました。もう一度お試しください。');
+      console.error('管理者アカウント情報の更新に失敗しました:', error);
+      showError('管理者アカウント情報の更新に失敗しました。もう一度お試しください。');
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="text-center py-12">
+          <p className="text-gray-500">データを読み込んでいます...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -110,8 +155,8 @@ function AdminRegistrationForm() {
             <div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <h1 className="text-2xl font-bold text-gray-900">管理者アカウント新規登録</h1>
-                  <p className="text-gray-600">新しい管理者アカウントを登録します</p>
+                  <h1 className="text-2xl font-bold text-gray-900">管理者アカウント編集</h1>
+                  <p className="text-gray-600">管理者アカウント情報を編集します</p>
                 </div>
                 <div className="text-sm text-gray-600">
                   <div className="flex items-center space-x-2">
@@ -122,13 +167,14 @@ function AdminRegistrationForm() {
               </div>
             </div>
 
-            {/* 登録フォーム */}
+            {/* 編集フォーム */}
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <div className="space-y-6">
                 <AdminFormFields
                   formData={formData}
                   errors={errors}
                   onInputChange={handleInputChange}
+                  isPasswordRequired={false}
                 />
 
                 {/* アクションボタン */}
@@ -148,7 +194,7 @@ function AdminRegistrationForm() {
                     disabled={isSubmitting}
                     className="px-8"
                   >
-                    {isSubmitting ? '処理中...' : '登録内容を確認する'}
+                    {isSubmitting ? '処理中...' : '変更内容を確認する'}
                   </Button>
                 </div>
               </div>
@@ -163,8 +209,8 @@ function AdminRegistrationForm() {
             <div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <h1 className="text-2xl font-bold text-gray-900">管理者アカウント登録内容確認</h1>
-                  <p className="text-gray-600">入力内容を確認してください</p>
+                  <h1 className="text-2xl font-bold text-gray-900">管理者アカウント変更内容確認</h1>
+                  <p className="text-gray-600">変更内容を確認してください</p>
                 </div>
                 <div className="text-sm text-gray-600">
                   <div className="flex items-center space-x-2">
@@ -187,16 +233,16 @@ function AdminRegistrationForm() {
                   onClick={handleBackToInput}
                   className="px-8"
                 >
-                  登録内容を修正する
+                  変更内容を修正する
                 </Button>
                 <Button
                   variant="primary"
                   size="lg"
-                  onClick={handleRegister}
+                  onClick={handleUpdate}
                   className="px-8"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? '登録中...' : '登録する'}
+                  {isSubmitting ? '更新中...' : '更新する'}
                 </Button>
               </div>
             </div>
@@ -207,7 +253,7 @@ function AdminRegistrationForm() {
   );
 }
 
-export default function AdminNewPage() {
+export default function AdminEditPage() {
   return (
     <Suspense fallback={
       <AdminLayout>
@@ -216,7 +262,8 @@ export default function AdminNewPage() {
         </div>
       </AdminLayout>
     }>
-      <AdminRegistrationForm />
+      <AdminEditForm />
     </Suspense>
   );
 }
+

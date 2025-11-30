@@ -67,17 +67,16 @@ class ApiClient {
           message: 'Unknown error',
           error: { message: 'Failed to parse error response' }
         }));
-        
+
         // 401/403エラー（認証エラー）の場合の処理
         if ((response.status === 401 || response.status === 403) && !skipAuthRedirect) {
-          
           // リフレッシュトークンで自動更新を試行
           try {
             // ログイン直後の場合、Cookieが設定されるまで少し待機
             await new Promise(resolve => setTimeout(resolve, 200));
             
             await this.refreshToken();
-            
+
             // リフレッシュ成功後、Cookieが反映されるまで少し待機
             await new Promise(resolve => setTimeout(resolve, 100));
             
@@ -87,7 +86,7 @@ class ApiClient {
               credentials: 'include',
               headers,
             });
-            
+
             if (!retryResponse.ok) {
               // リトライが失敗した場合、もう一度待機して再試行
               if (retryResponse.status === 401 || retryResponse.status === 403) {
@@ -98,28 +97,28 @@ class ApiClient {
                   credentials: 'include',
                   headers,
                 });
-                
+
                 if (!secondRetryResponse.ok) {
                   throw new Error(`Retry failed with status: ${secondRetryResponse.status}`);
                 }
-                
+
                 return await secondRetryResponse.json();
               }
-              
+
               throw new Error(`Retry failed with status: ${retryResponse.status}`);
             }
-            
+
             return await retryResponse.json();
           } catch (_refreshError) {
             // リフレッシュに失敗した場合はログイン画面へリダイレクト
             if (typeof window !== 'undefined') {
               window.location.href = '/login?session=expired';
             }
-            
+
             return new Promise(() => {}) as Promise<T>;
           }
         }
-        
+
         // エラーオブジェクトを作成して投げる
         const errorMessage = errorData?.message || errorData?.error?.message || `HTTP error! status: ${response.status}`;
         const error = new Error(errorMessage);
@@ -191,10 +190,10 @@ class ApiClient {
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.status) queryParams.append('status', params.status);
-    
+
     const queryString = queryParams.toString();
     const endpoint = queryString ? `/merchants?${queryString}` : '/merchants';
-    
+
     return this.request<unknown>(endpoint, {
       method: 'GET',
     });
@@ -275,6 +274,12 @@ class ApiClient {
 
   async getShop(id: string): Promise<unknown> {
     return this.request<unknown>(`/shops/${id}`, {
+      method: 'GET',
+    });
+  }
+
+  async getShopQrCodeUrl(id: string): Promise<unknown> {
+    return this.request<unknown>(`/shops/${id}/qr-code-url`, {
       method: 'GET',
     });
   }
@@ -362,7 +367,7 @@ class ApiClient {
 
   async updateCouponPublicStatusServerSide(id: string, publicStatusData: { isPublic: boolean }, authToken?: string): Promise<unknown> {
     const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3002/api/v1';
-    
+
     try {
       const response = await fetch(`${backendUrl}/coupons/${id}/public-status`, {
         method: 'PATCH',
@@ -372,12 +377,12 @@ class ApiClient {
         },
         body: JSON.stringify(publicStatusData),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       throw error;
@@ -386,7 +391,7 @@ class ApiClient {
 
   async updateCouponStatusServerSide(id: string, statusData: { status: string }, authToken?: string): Promise<unknown> {
     const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3002/api/v1';
-    
+
     try {
       const response = await fetch(`${backendUrl}/coupons/${id}/status`, {
         method: 'PATCH',
@@ -396,12 +401,12 @@ class ApiClient {
         },
         body: JSON.stringify(statusData),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       throw error;
@@ -419,15 +424,15 @@ class ApiClient {
   // 管理者アカウント関連
   async getAdminAccounts(params?: { name?: string; email?: string; role?: string; page?: number; limit?: number }): Promise<unknown> {
     const queryParams = new URLSearchParams();
-    if (params?.name) queryParams.append('name', params.name); 
+    if (params?.name) queryParams.append('name', params.name);
     if (params?.email) queryParams.append('email', params.email);
     if (params?.role) queryParams.append('role', params.role);
-    if (params?.page) queryParams.append('page', params.page.toString());    
+    if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
-    
+
     const queryString = queryParams.toString();
     const endpoint = queryString ? `/admin?${queryString}` : '/admin';
-    
+
     return this.request<unknown>(endpoint, {
       method: 'GET',
     });
@@ -447,8 +452,21 @@ class ApiClient {
     });
   }
 
+  async getAdminAccountById(id: string): Promise<unknown> {
+    return this.request<unknown>(`/admin/id/${id}`, {
+      method: 'GET',
+    });
+  }
+
   async updateAdminAccount(email: string, adminAccountData: AdminAccountInput): Promise<unknown> {
     return this.request<unknown>(`/admin/${email}`, {
+      method: 'PATCH',
+      body: JSON.stringify(adminAccountData),
+    });
+  }
+
+  async updateAdminAccountById(id: string, adminAccountData: AdminAccountInput): Promise<unknown> {
+    return this.request<unknown>(`/admin/id/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(adminAccountData),
     });
