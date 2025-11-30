@@ -472,8 +472,8 @@ class ApiClient {
     });
   }
 
-  async deleteAdminAccount(email: string): Promise<void> {
-    return this.request<void>(`/admin/${email}`, {
+  async deleteAdminAccount(id: string): Promise<void> {
+    return this.request<void>(`/admin/id/${id}`, {
       method: 'DELETE',
     });
   }

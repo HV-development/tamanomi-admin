@@ -133,11 +133,11 @@ export default function AdminsPage() {
     }
   };
 
-  const handleDelete = async (adminEmail: string) => {
-    if (!adminEmail) return;
+  const handleDelete = async (adminId: string, adminEmail: string) => {
+    if (!adminId) return;
     if (!confirm(`${adminEmail}のアカウントを削除しますか？`)) return;
     try {
-      await apiClient.deleteAdminAccount(adminEmail);
+      await apiClient.deleteAdminAccount(adminId);
       // 手動で再取得
       fetchAdmins(appliedSearchForm);
       alert('管理者アカウントを削除しました');
@@ -345,7 +345,7 @@ export default function AdminsPage() {
                             </button>
                           </Link>
                           <button 
-                            onClick={() => handleDelete(admin.email)}
+                            onClick={() => handleDelete(admin.id, admin.email)}
                             className="p-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] group"
                             title="削除"
                           >
