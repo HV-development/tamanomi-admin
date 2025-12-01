@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// 認証必須ページへのアクセスをサーバー側でガード
 export async function middleware(request: NextRequest) {
   const { pathname, host } = request.nextUrl;
 
@@ -17,7 +16,9 @@ export async function middleware(request: NextRequest) {
       pathname === '/api/auth/refresh'
     );
     if (csrfSkip) {
-      return NextResponse.next();
+      const response = NextResponse.next();
+      response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+      return response;
     }
 
     const origin = request.headers.get('origin');
@@ -26,8 +27,11 @@ export async function middleware(request: NextRequest) {
 
     // ブラウザが same-origin / same-site と自己申告している場合は許可
     if (secFetchSite === 'same-origin' || secFetchSite === 'same-site' || secFetchSite === 'none') {
-      return NextResponse.next();
+      const response = NextResponse.next();
+      response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+      return response;
     }
+    
     const sameOrigin = (() => {
       try {
         const allowed = new Set<string>();
@@ -68,7 +72,10 @@ export async function middleware(request: NextRequest) {
     '/coupons',
     '/admins',
     '/applications',
+    '/users',
+    '/coupon-history',
   ];
+  
   if (protectedPaths.some(p => pathname === p || pathname.startsWith(`${p}/`))) {
     const token = request.cookies.get('accessToken')?.value || request.cookies.get('__Host-accessToken')?.value;
     const isCouponsPath = pathname === '/coupons' || pathname.startsWith('/coupons/');
@@ -106,19 +113,25 @@ export async function middleware(request: NextRequest) {
     // 署名検証はAPI層で実施。ここではCookieの存在のみでガード。
   }
 
-  return NextResponse.next();
+  // セキュリティヘッダーを設定
+  const response = NextResponse.next();
+  
+  // HSTS: HTTPSの接続を強制（1年間）
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  
+  // キャッシュ制御: APIルートはキャッシュを無効化して機密情報の漏洩を防止
+  if (pathname.startsWith('/api/')) {
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+  }
+  
+  return response;
 }
 
-// 対象ルート（保護対象）
+// 静的ファイル以外のすべてのルートに適用
 export const config = {
   matcher: [
-    '/api/:path*',
-    '/merchants/:path*',
-    '/shops/:path*',
-    '/coupons/:path*',
-    '/admins/:path*',
-    '/applications',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 };
-
-
