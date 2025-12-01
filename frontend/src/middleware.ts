@@ -106,7 +106,15 @@ export async function middleware(request: NextRequest) {
     // 署名検証はAPI層で実施。ここではCookieの存在のみでガード。
   }
 
-  return NextResponse.next();
+  // キャッシュ制御ヘッダーを設定（セキュリティ対応）
+  // APIルートの場合はキャッシュを無効化して機密情報の漏洩を防止
+  const response = NextResponse.next();
+  if (pathname.startsWith('/api/')) {
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+  }
+  return response;
 }
 
 // 対象ルート（保護対象）
