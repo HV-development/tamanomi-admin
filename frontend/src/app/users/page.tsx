@@ -6,6 +6,7 @@ import Image from 'next/image';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+import Pagination from '@/components/molecules/Pagination';
 import { useAuth } from '@/components/contexts/auth-context';
 import ToastContainer from '@/components/molecules/toast-container';
 import { convertUsersToCSV, downloadCSV, generateFilename, type UserForCSV } from '@/utils/csvExport';
@@ -78,6 +79,12 @@ export default function UsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDownloadingCSV, setIsDownloadingCSV] = useState(false);
   const { toasts, removeToast, showSuccess, showError } = useToast();
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+  });
 
   // データ取得
   const fetchUsers = useCallback(async (searchParams?: typeof appliedSearchForm) => {
@@ -105,6 +112,10 @@ export default function UsersPage() {
       }
       if (searchParams?.registeredDateStart) queryParams.append('registeredDateStart', searchParams.registeredDateStart);
       if (searchParams?.registeredDateEnd) queryParams.append('registeredDateEnd', searchParams.registeredDateEnd);
+      
+      // ページネーションパラメータを追加
+      queryParams.append('page', pagination.page.toString());
+      queryParams.append('limit', pagination.limit.toString());
 
       const response = await fetch(`/api/admin/users?${queryParams.toString()}`, {
         method: 'GET',
@@ -120,20 +131,38 @@ export default function UsersPage() {
       const data = await response.json();
       
       // APIレスポンスをフォーマット
-      const responseData = data as { users: Array<{
-        id: string;
-        nickname: string;
-        postalCode?: string;
-        prefecture?: string;
-        city?: string;
-        address?: string;
-        birthDate?: string;
-        gender?: string | number;
-        saitamaAppId?: string;
-        rank: number;
-        registeredStore?: string;
-        registeredAt: string;
-      }> };
+      const responseData = data as { 
+        users: Array<{
+          id: string;
+          nickname: string;
+          postalCode?: string;
+          prefecture?: string;
+          city?: string;
+          address?: string;
+          birthDate?: string;
+          gender?: string | number;
+          saitamaAppId?: string;
+          rank: number;
+          registeredStore?: string;
+          registeredAt: string;
+        }>;
+        pagination?: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      };
+      
+      // ページネーション情報を更新
+      if (responseData.pagination) {
+        setPagination({
+          page: responseData.pagination.page,
+          limit: responseData.pagination.limit,
+          total: responseData.pagination.total,
+          pages: responseData.pagination.totalPages,
+        });
+      }
       
       // operatorロールの場合は機密情報を含めない
       const formattedUsers: User[] = responseData.users.map((user) => {
@@ -179,7 +208,7 @@ export default function UsersPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [isOperatorRole]);
+  }, [isOperatorRole, pagination.page, pagination.limit]);
 
   // データ取得（初回読み込み・検索）
   useEffect(() => {
@@ -197,6 +226,8 @@ export default function UsersPage() {
       user: auth?.user?.id ?? auth?.user?.email ?? 'anonymous',
       search: appliedSearchForm,
       isOperatorRole,
+      page: pagination.page,
+      limit: pagination.limit,
     });
 
     if (lastFetchKeyRef.current === key) {
@@ -206,37 +237,10 @@ export default function UsersPage() {
     lastFetchKeyRef.current = key;
 
     fetchUsers(appliedSearchForm);
-  }, [auth?.isLoading, auth?.user, appliedSearchForm, fetchUsers, isOperatorRole]);
+  }, [auth?.isLoading, auth?.user, appliedSearchForm, fetchUsers, isOperatorRole, pagination.page, pagination.limit]);
 
-  // フィルタリング処理（クライアント側の追加フィルタリング）
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch = 
-      (appliedSearchForm.nickname === '' || user.nickname.includes(appliedSearchForm.nickname)) &&
-      (appliedSearchForm.postalCode === '' || user.postalCode === appliedSearchForm.postalCode) &&
-      (appliedSearchForm.prefecture === '' || user.prefecture === appliedSearchForm.prefecture) &&
-      (appliedSearchForm.city === '' || user.city.includes(appliedSearchForm.city)) &&
-      (appliedSearchForm.address === '' || user.address.includes(appliedSearchForm.address)) &&
-      (appliedSearchForm.birthDate === '' || user.birthDate === appliedSearchForm.birthDate) &&
-      (appliedSearchForm.gender === '' || user.gender.toString() === appliedSearchForm.gender) &&
-      (appliedSearchForm.saitamaAppId === '' || user.saitamaAppId.includes(appliedSearchForm.saitamaAppId)) &&
-      (appliedSearchForm.ranks.length === 0 || appliedSearchForm.ranks.includes(user.rank));
-
-    // 登録日範囲チェック
-    let matchesDateRange = true;
-    if (appliedSearchForm.registeredDateStart || appliedSearchForm.registeredDateEnd) {
-      const userDate = new Date(user.registeredAt.replace(/\//g, '-'));
-      if (appliedSearchForm.registeredDateStart) {
-        const startDate = new Date(appliedSearchForm.registeredDateStart);
-        if (userDate < startDate) matchesDateRange = false;
-      }
-      if (appliedSearchForm.registeredDateEnd) {
-        const endDate = new Date(appliedSearchForm.registeredDateEnd);
-        if (userDate > endDate) matchesDateRange = false;
-      }
-    }
-    
-    return matchesSearch && matchesDateRange;
-  });
+  // バックエンドでフィルタリングされるため、フロントエンドでのフィルタリングは不要
+  const filteredUsers = users;
 
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {
     setSearchForm(prev => ({
@@ -257,6 +261,8 @@ export default function UsersPage() {
   const handleSearch = () => {
     // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
     setAppliedSearchForm({ ...searchForm });
+    // ページを1にリセット
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const handleClear = () => {
@@ -286,6 +292,13 @@ export default function UsersPage() {
       registeredDateStart: '',
       registeredDateEnd: '',
     });
+    // ページを1にリセット
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  // ページ変更ハンドラー
+  const handlePageChange = (page: number) => {
+    setPagination(prev => ({ ...prev, page }));
   };
 
   const getGenderLabel = (gender: number) => {
@@ -765,11 +778,20 @@ export default function UsersPage() {
           )}
         </div>
 
+        {/* ページネーション */}
+        {pagination.pages > 1 && (
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.pages}
+            onPageChange={handlePageChange}
+          />
+        )}
+
         {/* ユーザー一覧 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
-              ユーザー一覧 ({filteredUsers.length}件)
+              ユーザー一覧 ({pagination.total}件)
             </h3>
             <Button
               variant="outline"

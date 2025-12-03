@@ -8,6 +8,7 @@ import Button from '@/components/atoms/Button';
 import Checkbox from '@/components/atoms/Checkbox';
 import ToastContainer from '@/components/molecules/toast-container';
 import FloatingFooterMerchant from '@/components/molecules/floating-footer-merchant';
+import Pagination from '@/components/molecules/Pagination';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { prefectures } from '@/lib/constants/merchant';
@@ -39,6 +40,12 @@ export default function MerchantsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+  });
   
   // 事業者アカウントかどうかを判定
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
@@ -87,6 +94,94 @@ export default function MerchantsPage() {
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
+  // データ取得関数
+  const fetchMerchants = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // 事業者アカウントの場合は自分の事業者情報のみを取得
+      if (isMerchantAccount) {
+        const data = await apiClient.getMyMerchant();
+        
+        // APIレスポンス形式: {success: true, data: {...}}
+        let merchantData: Merchant | null = null;
+        if (data && typeof data === 'object') {
+          if ('data' in data && data.data && typeof data.data === 'object') {
+            merchantData = data.data as Merchant;
+          }
+        }
+        
+        if (merchantData) {
+          setMyMerchant(merchantData);
+        }
+        return;
+      }
+      
+      // 検索条件をAPIパラメータに変換
+      const params: { page: number; limit: number; search?: string; status?: string } = {
+        page: pagination.page,
+        limit: pagination.limit,
+      };
+
+      // フリーワード検索がある場合は追加
+      if (appliedSearchForm.keyword) {
+        params.search = appliedSearchForm.keyword;
+      }
+
+      // 契約ステータスをstatusパラメータに設定（バックエンドAPIのstatusは契約ステータスを指す）
+      if (appliedSearchForm.contractStatus) {
+        params.status = appliedSearchForm.contractStatus;
+      }
+      
+      const data = await apiClient.getMerchants(params);
+      
+      // APIレスポンスが {success: true, data: {merchants: [], pagination: {}}} の形式の場合
+      let merchantsArray: unknown[] = [];
+      let paginationData = { page: 1, limit: 10, total: 0, pages: 0 };
+      
+      if (Array.isArray(data)) {
+        merchantsArray = data;
+      } else if (data && typeof data === 'object') {
+        // 新しいAPIレスポンス形式: {success: true, data: {merchants: [...], pagination: {...}}}
+        if ('data' in data && data.data && typeof data.data === 'object' && 'merchants' in data.data) {
+          merchantsArray = (data.data as { merchants: unknown[] }).merchants || [];
+          const pagination = (data.data as { pagination?: { page: number; limit: number; total: number; totalPages: number } }).pagination;
+          if (pagination) {
+            paginationData = {
+              page: pagination.page,
+              limit: pagination.limit,
+              total: pagination.total,
+              pages: pagination.totalPages,
+            };
+          }
+        }
+        // 古いAPIレスポンス形式: {merchants: [...], pagination: {...}}
+        else if ('merchants' in data) {
+          merchantsArray = (data as { merchants: unknown[] }).merchants || [];
+          const pagination = (data as { pagination?: { page: number; limit: number; total: number; totalPages: number } }).pagination;
+          if (pagination) {
+            paginationData = {
+              page: pagination.page,
+              limit: pagination.limit,
+              total: pagination.total,
+              pages: pagination.totalPages,
+            };
+          }
+        }
+      }
+      
+      setMerchants(merchantsArray as Merchant[]);
+      setPagination(paginationData);
+    } catch (err: unknown) {
+      console.error('事業者データの取得に失敗しました:', err);
+      setError('事業者データの取得に失敗しました');
+      setMerchants([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // データ取得
   useEffect(() => {
     if (auth?.isLoading) {
@@ -101,6 +196,9 @@ export default function MerchantsPage() {
       accountType: auth?.user?.accountType ?? 'unknown',
       merchantId: auth?.user?.merchantId ?? null,
       isMerchantAccount,
+      page: pagination.page,
+      limit: pagination.limit,
+      search: appliedSearchForm,
     });
 
     if (lastFetchKeyRef.current === key) {
@@ -109,56 +207,6 @@ export default function MerchantsPage() {
 
     lastFetchKeyRef.current = key;
 
-    const fetchMerchants = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        // 事業者アカウントの場合は自分の事業者情報のみを取得
-        if (isMerchantAccount) {
-          const data = await apiClient.getMyMerchant();
-          
-          // APIレスポンス形式: {success: true, data: {...}}
-          let merchantData: Merchant | null = null;
-          if (data && typeof data === 'object') {
-            if ('data' in data && data.data && typeof data.data === 'object') {
-              merchantData = data.data as Merchant;
-            }
-          }
-          
-          if (merchantData) {
-            setMyMerchant(merchantData);
-          }
-          return;
-        }
-        
-        const data = await apiClient.getMerchants();
-        
-        // APIレスポンスが {success: true, data: {merchants: [], pagination: {}}} の形式の場合
-        let merchantsArray: unknown[] = [];
-        if (Array.isArray(data)) {
-          merchantsArray = data;
-        } else if (data && typeof data === 'object') {
-          // 新しいAPIレスポンス形式: {success: true, data: {merchants: [...], pagination: {...}}}
-          if ('data' in data && data.data && typeof data.data === 'object' && 'merchants' in data.data) {
-            merchantsArray = (data.data as { merchants: unknown[] }).merchants || [];
-          }
-          // 古いAPIレスポンス形式: {merchants: [...], pagination: {...}}
-          else if ('merchants' in data) {
-            merchantsArray = (data as { merchants: unknown[] }).merchants || [];
-          }
-        }
-        
-        setMerchants(merchantsArray as Merchant[]);
-      } catch (err: unknown) {
-        console.error('事業者データの取得に失敗しました:', err);
-        setError('事業者データの取得に失敗しました');
-        setMerchants([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     void fetchMerchants();
   }, [
     isMerchantAccount,
@@ -166,6 +214,9 @@ export default function MerchantsPage() {
     auth?.user?.accountType,
     auth?.user?.merchantId,
     auth?.user?.id,
+    pagination.page,
+    pagination.limit,
+    appliedSearchForm,
   ]);
 
   // チェックボックス関連の関数
@@ -210,68 +261,8 @@ export default function MerchantsPage() {
     }
   };
 
-  // フィルタリング処理
-  const filteredMerchants = Array.isArray(merchants) ? merchants.filter((merchant) => {
-    // フリーワード検索（全フィールドを対象）
-    const keyword = appliedSearchForm.keyword.toLowerCase();
-    const matchesKeyword = keyword === '' || 
-      merchant.id.toLowerCase().includes(keyword) ||
-      merchant.name.toLowerCase().includes(keyword) ||
-      merchant.nameKana.toLowerCase().includes(keyword) ||
-      (!isOperatorRole && (
-        `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(keyword) ||
-        `${merchant.representativeNameLastKana} ${merchant.representativeNameFirstKana}`.toLowerCase().includes(keyword) ||
-        merchant.representativePhone.includes(keyword) ||
-        (merchant.account?.email || merchant.email || '').toLowerCase().includes(keyword) ||
-        `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(keyword)
-      )) ||
-      merchant.postalCode.includes(keyword);
-    
-    // 各項目のフィルタ
-    const matchesSearch = 
-      matchesKeyword &&
-      (appliedSearchForm.merchantName === '' || merchant.name.toLowerCase().includes(appliedSearchForm.merchantName.toLowerCase())) &&
-      (appliedSearchForm.merchantNameKana === '' || merchant.nameKana.toLowerCase().includes(appliedSearchForm.merchantNameKana.toLowerCase())) &&
-      (isOperatorRole || (
-        (appliedSearchForm.representativeName === '' || 
-          `${merchant.representativeNameLast} ${merchant.representativeNameFirst}`.toLowerCase().includes(appliedSearchForm.representativeName.toLowerCase())) &&
-        (appliedSearchForm.representativeNameKana === '' || 
-          `${merchant.representativeNameLastKana} ${merchant.representativeNameFirstKana}`.toLowerCase().includes(appliedSearchForm.representativeNameKana.toLowerCase())) &&
-        (appliedSearchForm.phone === '' || merchant.representativePhone.includes(appliedSearchForm.phone)) &&
-        (appliedSearchForm.email === '' || (merchant.account?.email || merchant.email || '').toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
-        (appliedSearchForm.address === '' || 
-          `${merchant.prefecture}${merchant.city}${merchant.address1}${merchant.address2}`.toLowerCase().includes(appliedSearchForm.address.toLowerCase()))
-      )) &&
-      (appliedSearchForm.postalCode === '' || merchant.postalCode.includes(appliedSearchForm.postalCode)) &&
-      (appliedSearchForm.prefecture === '' || merchant.prefecture.toLowerCase().includes(appliedSearchForm.prefecture.toLowerCase())) &&
-      (appliedSearchForm.accountStatus === '' || (merchant.account?.status || 'inactive') === appliedSearchForm.accountStatus) &&
-      (appliedSearchForm.contractStatus === '' || merchant.status === appliedSearchForm.contractStatus);
-    
-    // 日付範囲のフィルタ
-    let matchesDateRange = true;
-    if (appliedSearchForm.createdAtFrom || appliedSearchForm.createdAtTo) {
-      const merchantDate = new Date(merchant.createdAt);
-      merchantDate.setHours(0, 0, 0, 0);
-      
-      if (appliedSearchForm.createdAtFrom && appliedSearchForm.createdAtTo) {
-        const fromDate = new Date(appliedSearchForm.createdAtFrom);
-        fromDate.setHours(0, 0, 0, 0);
-        const toDate = new Date(appliedSearchForm.createdAtTo);
-        toDate.setHours(23, 59, 59, 999);
-        matchesDateRange = merchantDate >= fromDate && merchantDate <= toDate;
-      } else if (appliedSearchForm.createdAtFrom) {
-        const fromDate = new Date(appliedSearchForm.createdAtFrom);
-        fromDate.setHours(0, 0, 0, 0);
-        matchesDateRange = merchantDate >= fromDate;
-      } else if (appliedSearchForm.createdAtTo) {
-        const toDate = new Date(appliedSearchForm.createdAtTo);
-        toDate.setHours(23, 59, 59, 999);
-        matchesDateRange = merchantDate <= toDate;
-      }
-    }
-    
-    return matchesSearch && matchesDateRange;
-  }) : [];
+  // バックエンドでフィルタリングされるため、フロントエンドでのフィルタリングは不要
+  const filteredMerchants = merchants;
 
   const [searchErrors, setSearchErrors] = useState<{createdAtFrom?: string; createdAtTo?: string}>({});
 
@@ -332,6 +323,8 @@ export default function MerchantsPage() {
     }
     // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
     setAppliedSearchForm({ ...searchForm });
+    // ページを1にリセット
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const handleClear = () => {
@@ -367,6 +360,13 @@ export default function MerchantsPage() {
       createdAtFrom: '',
       createdAtTo: '',
     });
+    // ページを1にリセット
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  // ページ変更ハンドラー
+  const handlePageChange = (page: number) => {
+    setPagination(prev => ({ ...prev, page }));
   };
 
   // チェックボックス関連の関数
@@ -1138,11 +1138,20 @@ export default function MerchantsPage() {
           )}
         </div>
 
+        {/* ページネーション */}
+        {!isMerchantAccount && pagination.pages > 1 && (
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.pages}
+            onPageChange={handlePageChange}
+          />
+        )}
+
         {/* 事業者一覧 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
-              事業者一覧 ({filteredMerchants.length}件)
+              事業者一覧 ({!isMerchantAccount ? pagination.total : filteredMerchants.length}件)
             </h3>
             <div className="flex items-center gap-2">
               <Button

@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+import Pagination from '@/components/molecules/Pagination';
 import { apiClient } from '@/lib/api';
 import type { CouponWithShop, CouponStatus, CouponListResponse } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
@@ -195,6 +196,8 @@ function CouponsPageContent() {
     // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
     setAppliedSearchForm({ ...searchForm });
     setAppliedStatusFilter(statusFilter);
+    // ページを1にリセット
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const handleClear = () => {
@@ -208,6 +211,13 @@ function CouponsPageContent() {
       couponName: '',
     });
     setAppliedStatusFilter('all');
+    // ページを1にリセット
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  // ページ変更ハンドラー
+  const handlePageChange = (page: number) => {
+    setPagination(prev => ({ ...prev, page }));
   };
 
   const handleStatusChange = async (couponId: string, status: string) => {
@@ -737,11 +747,20 @@ function CouponsPageContent() {
         </div>
         )}
 
+        {/* ページネーション */}
+        {pagination.totalPages > 1 && (
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={handlePageChange}
+          />
+        )}
+
         {/* クーポン一覧 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
-              クーポン一覧 ({filteredCoupons.length}件)
+              クーポン一覧 ({pagination.total}件)
             </h3>
             <div className="flex items-center gap-2">
               <Button

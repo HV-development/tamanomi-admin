@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef, Suspense } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/toast-container';
+import Pagination from '@/components/molecules/Pagination';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { statusLabels, statusOptions } from '@/lib/constants/shop';
@@ -31,6 +32,12 @@ function ShopsPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toasts, removeToast, showSuccess, showError } = useToast();
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+  });
   
   // URLパラメータからmerchantIdを取得
   useEffect(() => {
@@ -154,13 +161,17 @@ function ShopsPageContent() {
   }, [isShopAccount, auth?.isLoading]);
 
   // データ取得（検索条件を含む）
-  const fetchShops = async () => {
+  const fetchShops = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
       
       // 検索パラメータの構築
       const queryParams = new URLSearchParams();
+      
+      // ページネーションパラメータを追加
+      queryParams.append('page', pagination.page.toString());
+      queryParams.append('limit', pagination.limit.toString());
       
       // merchantIdがあれば追加
       if (merchantId) {
@@ -191,19 +202,41 @@ function ShopsPageContent() {
       // APIレスポンスの処理
       let shopsArray: Shop[] = [];
       let merchantInfo = null;
+      let paginationData = { page: 1, limit: 10, total: 0, pages: 0 };
       
       if (Array.isArray(data)) {
         shopsArray = data as Shop[];
       } else if (data && typeof data === 'object') {
         // 新しいAPIレスポンス形式: {success: true, data: {shops: [...], pagination: {...}}}
         if ('data' in data && data.data && typeof data.data === 'object' && 'shops' in data.data) {
-          shopsArray = ((data.data as { shops: Shop[] }).shops || []) as Shop[];
+          shopsArray = ((data.data as { shops: Shop[]; pagination?: unknown }).shops || []) as Shop[];
+          const pagination = (data.data as { pagination?: { page: number; limit: number; total: number; totalPages: number } }).pagination;
+          if (pagination) {
+            paginationData = {
+              page: pagination.page,
+              limit: pagination.limit,
+              total: pagination.total,
+              pages: pagination.totalPages,
+            };
+          }
         }
         // 古いAPIレスポンス形式: {shops: [...], pagination: {...}}
         else if ('shops' in data) {
           shopsArray = ((data as { shops: Shop[] }).shops || []) as Shop[];
+          const pagination = (data as { pagination?: { page: number; limit: number; total: number; totalPages: number } }).pagination;
+          if (pagination) {
+            paginationData = {
+              page: pagination.page,
+              limit: pagination.limit,
+              total: pagination.total,
+              pages: pagination.totalPages,
+            };
+          }
         }
       }
+      
+      // ページネーション情報を更新
+      setPagination(paginationData);
       
       // 最初の店舗からmerchant情報を取得
       if (shopsArray.length > 0 && shopsArray[0].merchant) {
@@ -234,7 +267,7 @@ function ShopsPageContent() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [merchantId, searchForm, pagination.page, pagination.limit]);
 
   // 初回マウント時とmerchantId変更時にデータ取得
   // 事業者アカウントの場合はmerchantIdが設定されるまで待機
@@ -259,6 +292,9 @@ function ShopsPageContent() {
       isMerchantAccount ? 'merchant' : 'other',
       isShopAccount ? 'shop' : 'non-shop',
       auth?.user?.id ?? auth?.user?.email ?? 'anonymous',
+      pagination.page,
+      pagination.limit,
+      JSON.stringify(searchForm),
     ].join('|');
 
     if (lastFetchKeyRef.current === key) {
@@ -268,7 +304,7 @@ function ShopsPageContent() {
     lastFetchKeyRef.current = key;
     
     fetchShops();
-  }, [merchantId, auth?.isLoading, isMerchantAccount, isShopAccount, auth?.user?.id, auth?.user?.email]);
+  }, [merchantId, auth?.isLoading, isMerchantAccount, isShopAccount, auth?.user?.id, auth?.user?.email, fetchShops]);
 
   // 検索フォームの入力ハンドラー
   const handleInputChange = (field: keyof typeof searchForm, value: string) => {
@@ -283,6 +319,8 @@ function ShopsPageContent() {
     if (!validateSearchForm()) {
       return;
     }
+    // ページを1にリセット
+    setPagination(prev => ({ ...prev, page: 1 }));
     // URLパラメータを更新（ブラウザの戻る/進むボタンで検索条件を維持）
     const params = new URLSearchParams();
     Object.entries(searchForm).forEach(([key, value]) => {
@@ -399,8 +437,17 @@ function ShopsPageContent() {
       updatedAtFrom: '',
       updatedAtTo: '',
     });
+    // ページを1にリセット
+    setPagination(prev => ({ ...prev, page: 1 }));
+    // URLパラメータをクリア
+    window.history.pushState({}, '', window.location.pathname);
     // クリア後にデータを再取得
     setTimeout(() => fetchShops(), 100);
+  };
+
+  // ページ変更ハンドラー
+  const handlePageChange = (page: number) => {
+    setPagination(prev => ({ ...prev, page }));
   };
 
   // チェックボックス関連の関数
@@ -1036,6 +1083,15 @@ function ShopsPageContent() {
         </div>
         )}
 
+        {/* ページネーション */}
+        {!isShopAccount && pagination.pages > 1 && (
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.pages}
+            onPageChange={handlePageChange}
+          />
+        )}
+
         {/* 店舗アカウント用の詳細ビュー */}
         {isShopAccount && shops.length > 0 && shops[0] ? (
           <div className="bg-white rounded-lg shadow">
@@ -1196,7 +1252,7 @@ function ShopsPageContent() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
-              店舗一覧 ({shops.length}件)
+              店舗一覧 ({pagination.total}件)
             </h3>
             <div className="flex items-center gap-2">
               <Button
