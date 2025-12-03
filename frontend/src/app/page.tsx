@@ -1,6 +1,8 @@
-import { redirect } from 'next/navigation';
-
+/**
+ * ルートページ（フォールバック用）
+ * 通常はミドルウェアで /merchants にリダイレクトされるため、
+ * このコンポーネントは呼び出されません。
+ */
 export default function Home() {
-  // ルートページにアクセスしたら加盟店一覧にリダイレクト
-  redirect('/merchants');
+  return null;
 }
