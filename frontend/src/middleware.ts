@@ -136,6 +136,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // ルートパスは加盟店一覧にリダイレクト（HTMLレンダリングなし）
+  if (pathname === '/') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/merchants';
+    return NextResponse.redirect(url, 302);
+  }
+
   // アプリの保護ページはCookieが無ければログインへ
   const protectedPaths = [
     '/merchants',
