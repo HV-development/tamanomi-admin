@@ -21,10 +21,7 @@ function SetPasswordContent() {
     password?: string;
     confirmPassword?: string;
   }>({});
-  const [accountInfo, setAccountInfo] = useState<{
-    email?: string;
-    displayName?: string;
-  }>({});
+  const [isTokenValid, setIsTokenValid] = useState(false);
 
   // トークン検証
   useEffect(() => {
@@ -50,10 +47,11 @@ function SetPasswordContent() {
         }
 
         const data = await response.json();
-        setAccountInfo({
-          email: data.data.email,
-          displayName: data.data.displayName,
-        });
+        if (data.data?.valid) {
+          setIsTokenValid(true);
+        } else {
+          setError('トークンが無効または期限切れです');
+        }
         setIsLoading(false);
       } catch (err) {
         console.error('トークン検証エラー:', err);
@@ -187,7 +185,7 @@ function SetPasswordContent() {
     );
   }
 
-  if (error && !accountInfo.email) {
+  if (error && !isTokenValid) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
@@ -214,10 +212,9 @@ function SetPasswordContent() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               パスワード設定
             </h1>
-            <p className="text-gray-600">
-              {accountInfo.displayName && `${accountInfo.displayName} 様`}
+            <p className="text-gray-600 text-sm">
+              新しいパスワードを設定してください
             </p>
-            <p className="text-sm text-gray-500">{accountInfo.email}</p>
           </div>
 
           {error && (

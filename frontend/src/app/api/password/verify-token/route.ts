@@ -40,7 +40,7 @@ export async function GET(request: Request) {
       dataType: typeof data,
       dataKeys: Object.keys(data),
       hasData: 'data' in data,
-      email: data.data?.email || 'unknown'
+      isValid: data.data?.valid
     });
     return NextResponse.json(data);
   } catch (error: unknown) {
