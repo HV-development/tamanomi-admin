@@ -71,15 +71,17 @@ export async function GET(request: Request) {
   } catch (error: unknown) {
     console.error('❌ API Route: 事業者一覧取得エラー', {
       error,
-      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      errorMessage: error instanceof Error ? error.message : '不明なエラーが発生しました',
       errorStack: error instanceof Error ? error.stack : undefined,
       API_BASE_URL
     });
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = error instanceof Error ? error.message : '不明なエラーが発生しました';
     return NextResponse.json({ 
-      message: '内部サーバーエラー', 
-      error: errorMessage,
-      details: error instanceof Error ? error.stack : undefined
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: '事業者一覧の取得に失敗しました',
+        details: errorMessage
+      }
     }, { status: 500 });
   }
 }
@@ -110,7 +112,13 @@ export async function POST(request: Request) {
     return NextResponse.json(data);
   } catch (error: unknown) {
     console.error('❌ API Route: 事業者作成エラー', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : '不明なエラーが発生しました';
+    return NextResponse.json({ 
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: '事業者の作成に失敗しました',
+        details: errorMessage
+      }
+    }, { status: 500 });
   }
 }

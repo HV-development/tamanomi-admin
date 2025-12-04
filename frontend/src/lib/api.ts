@@ -64,8 +64,10 @@ class ApiClient {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ 
-          message: 'Unknown error',
-          error: { message: 'Failed to parse error response' }
+          error: { 
+            code: 'PARSE_ERROR',
+            message: 'エラーレスポンスの解析に失敗しました'
+          }
         }));
 
         // 401/403エラー（認証エラー）の場合の処理
@@ -120,7 +122,8 @@ class ApiClient {
         }
 
         // エラーオブジェクトを作成して投げる
-        const errorMessage = errorData?.message || errorData?.error?.message || `HTTP error! status: ${response.status}`;
+        // 標準形式 { error: { code, message } } を優先的に処理
+        const errorMessage = errorData?.error?.message || errorData?.message || `リクエストに失敗しました (ステータス: ${response.status})`;
         const error = new Error(errorMessage);
         (error as Error & { response?: { status: number; data: unknown } }).response = {
           status: response.status,
@@ -379,8 +382,14 @@ class ApiClient {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({ 
+          error: { 
+            code: 'PARSE_ERROR',
+            message: 'エラーレスポンスの解析に失敗しました'
+          }
+        }));
+        const errorMessage = errorData?.error?.message || errorData?.message || `リクエストに失敗しました (ステータス: ${response.status})`;
+        throw new Error(errorMessage);
       }
 
       return await response.json();
@@ -403,8 +412,14 @@ class ApiClient {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({ 
+          error: { 
+            code: 'PARSE_ERROR',
+            message: 'エラーレスポンスの解析に失敗しました'
+          }
+        }));
+        const errorMessage = errorData?.error?.message || errorData?.message || `リクエストに失敗しました (ステータス: ${response.status})`;
+        throw new Error(errorMessage);
       }
 
       return await response.json();

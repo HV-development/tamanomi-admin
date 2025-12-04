@@ -72,8 +72,14 @@ export async function GET(request: Request) {
     return NextResponse.json(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Get coupons error', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : '不明なエラーが発生しました';
+    return NextResponse.json({ 
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'クーポン一覧の取得に失敗しました',
+        details: errorMessage
+      }
+    }, { status: 500 });
   }
 }
 
@@ -99,8 +105,14 @@ export async function POST(request: Request) {
     return NextResponse.json(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Create coupon error', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : '不明なエラーが発生しました';
+    return NextResponse.json({ 
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'クーポンの作成に失敗しました',
+        details: errorMessage
+      }
+    }, { status: 500 });
   }
 }
 

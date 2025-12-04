@@ -41,10 +41,14 @@ export async function GET(request: Request) {
     return res;
   } catch (error) {
     console.error('Error in /api/me:', error);
+    const errorMessage = error instanceof Error ? error.message : '不明なエラーが発生しました';
     return NextResponse.json(
       { 
-        message: 'Internal Server Error',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'アカウント情報の取得に失敗しました',
+          details: errorMessage
+        }
       },
       { status: 500 }
     );

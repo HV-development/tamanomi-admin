@@ -86,7 +86,12 @@ export async function GET(request: Request) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      const errorData = await response.json().catch(() => ({ 
+        error: { 
+          code: 'PARSE_ERROR',
+          message: 'エラーレスポンスの解析に失敗しました'
+        }
+      }));
       return NextResponse.json(errorData, { status: response.status });
     }
 
@@ -139,8 +144,14 @@ export async function GET(request: Request) {
 
     return nextResponse;
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : '不明なエラーが発生しました';
+    return NextResponse.json({ 
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'ユーザー情報の取得に失敗しました',
+        details: errorMessage
+      }
+    }, { status: 500 });
   }
 }
 

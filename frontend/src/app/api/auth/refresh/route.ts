@@ -101,7 +101,13 @@ export async function POST(request: Request) {
     return res;
   } catch (error: unknown) {
     console.error('❌ API Route: Refresh token error', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : '不明なエラーが発生しました';
+    return NextResponse.json({ 
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'トークンのリフレッシュに失敗しました',
+        details: errorMessage
+      }
+    }, { status: 500 });
   }
 }

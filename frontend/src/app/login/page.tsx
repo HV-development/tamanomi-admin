@@ -139,15 +139,28 @@ function LoginFormWithParams() {
       } catch (error: unknown) {
         console.error('❌ LoginPage: Login error', error);
         
-        // エラーメッセージを設定
+        // エラーメッセージを設定（バックエンドから返されるメッセージを優先）
+        // デフォルトメッセージはバックエンドのCommonErrors.invalidCredentials()と同じ内容
         let errorMessage = 'メールアドレスまたはパスワードが正しくありません';
         
         if (error && typeof error === 'object' && 'response' in error) {
-          const errorWithResponse = error as { response?: { data?: { error?: { message?: string } } } };
+          const errorWithResponse = error as { 
+            response?: { 
+              data?: { 
+                error?: { message?: string };
+                message?: string;
+              } 
+            } 
+          };
+          // バックエンドから返されるエラーメッセージを優先的に使用
+          // バックエンドのCommonErrors.invalidCredentials()から返されるメッセージを使用
           if (errorWithResponse.response?.data?.error?.message) {
             errorMessage = errorWithResponse.response.data.error.message;
+          } else if (errorWithResponse.response?.data?.message) {
+            errorMessage = errorWithResponse.response.data.message;
           }
         } else if (error instanceof Error) {
+          // Errorオブジェクトのメッセージを使用（バックエンドから返されたメッセージ）
           errorMessage = error.message;
         }
         
