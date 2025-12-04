@@ -702,6 +702,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         holidays: selectedHolidays.join(','),
         paymentCredit: paymentCreditJson,
         paymentCode: paymentCodeJson,
+        // クーポン利用時間の空文字列をnullに変換
+        couponUsageStart: formData.couponUsageStart && formData.couponUsageStart.trim() !== '' ? formData.couponUsageStart : null,
+        couponUsageEnd: formData.couponUsageEnd && formData.couponUsageEnd.trim() !== '' ? formData.couponUsageEnd : null,
       };
 
       // Submit時は全フィールドのカスタムバリデーションを実行
