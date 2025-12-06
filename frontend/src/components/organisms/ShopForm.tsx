@@ -362,23 +362,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         if (isEdit && isMounted && shopId) {
           const shopData = await apiClient.getShop(shopId) as ShopDataResponse;
 
-          // QRコードURLを取得
-          try {
-            setQrCodeLoading(true);
-            console.log('🔗 QRコードURL: 取得開始');
-            const qrCodeData = await apiClient.getShopQrCodeUrl(shopId);
-            if (isMounted && qrCodeData && typeof qrCodeData === 'object' && 'qr_code_url' in qrCodeData) {
-              setQrCodeUrl((qrCodeData as { qr_code_url: string }).qr_code_url);
-            }
-          } catch (error) {
-            console.error('QRコードURL取得エラー:', error);
-            // QRコード取得エラーは無視（店舗データ取得は続行）
-          } finally {
-            if (isMounted) {
-              setQrCodeLoading(false);
-            }
-          }
-
           if (isMounted) {
             // merchantIdがpropsで渡されている場合は上書きしない
             const finalMerchantId = merchantId || shopData.merchantId;
@@ -479,20 +462,56 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               setCustomSceneText(shopDataWithScenes.customSceneText);
             }
 
-            // 既存店舗のメールアドレスを収集（重複チェック用）
-            try {
-              const shopsResponse = await apiClient.getShops('limit=1000');
-              if (!isMounted) return;
-              setExistingAccountEmails(collectAccountEmailEntries(shopsResponse));
-            } catch (_error) {
-              // 重複チェック用のデータ取得に失敗した場合はスキップ（API側で弾かれるため）
+            // フォームの基本データが取得できたので、すぐにフォームを表示
+            if (isMounted) {
+              setIsLoading(false);
             }
+
+            // QRコードURLを取得（非同期、フォーム表示をブロックしない）
+            (async () => {
+              try {
+                setQrCodeLoading(true);
+                console.log('🔗 QRコードURL: 取得開始');
+                const qrCodeData = await apiClient.getShopQrCodeUrl(shopId);
+                if (isMounted && qrCodeData && typeof qrCodeData === 'object' && 'qr_code_url' in qrCodeData) {
+                  setQrCodeUrl((qrCodeData as { qr_code_url: string }).qr_code_url);
+                }
+              } catch (error) {
+                console.error('QRコードURL取得エラー:', error);
+                // QRコード取得エラーは無視（店舗データ取得は続行）
+              } finally {
+                if (isMounted) {
+                  setQrCodeLoading(false);
+                }
+              }
+            })();
+
+            // 既存店舗のメールアドレスを収集（重複チェック用、非同期、フォーム表示をブロックしない）
+            (async () => {
+              try {
+                const shopsResponse = await apiClient.getShops('limit=1000');
+                if (isMounted) {
+                  setExistingAccountEmails(collectAccountEmailEntries(shopsResponse));
+                }
+              } catch (_error) {
+                // 重複チェック用のデータ取得に失敗した場合はスキップ（API側で弾かれるため）
+              }
+            })();
           }
         } else if (merchantId && merchantsArray.length > 0 && isMounted) {
           // 新規作成モードで加盟店が指定されている場合
           const merchant = merchantsArray.find(m => m.id === merchantId);
           if (merchant) {
             setMerchantName(merchant.name);
+          }
+          // 新規作成モードでもフォームを表示
+          if (isMounted) {
+            setIsLoading(false);
+          }
+        } else {
+          // 新規作成モード（merchantId未指定）でもフォームを表示
+          if (isMounted) {
+            setIsLoading(false);
           }
         }
       } catch (err: unknown) {
@@ -504,9 +523,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         if (isMounted) {
           setError(err instanceof Error ? err.message : 'データの取得に失敗しました');
           showError('データの取得に失敗しました');
-        }
-      } finally {
-        if (isMounted) {
           setIsLoading(false);
         }
       }
