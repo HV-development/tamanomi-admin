@@ -336,7 +336,7 @@ export default function AdminsPage() {
                               title="編集"
                             >
                               <Image 
-                                src="/edit.svg" 
+                                src="/api/static-files/2" 
                                 alt="編集" 
                                 width={24}
                                 height={24}
@@ -350,7 +350,7 @@ export default function AdminsPage() {
                             title="削除"
                           >
                             <Image 
-                              src="/dustbox.png" 
+                              src="/api/static-files/10" 
                               alt="削除" 
                               width={24}
                               height={24}

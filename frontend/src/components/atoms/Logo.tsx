@@ -27,7 +27,7 @@ function Logo({ size = 'md', className = '', onLoad, onError }: LogoProps) {
   return (
     <Link href="/coupons" prefetch={false} className={`flex items-center w-full ${className}`}>
       <Image 
-        src="/tamanomi_logo.svg" 
+        src="/api/static-files/3" 
         alt="たまのみロゴ" 
         width={imageSize}
         height={imageSize}

@@ -870,7 +870,7 @@ export default function MerchantsPage() {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center">
               <Image 
-                src="/alert.svg" 
+                src="/api/static-files/4" 
                 alt="警告" 
                 width={16} 
                 height={16}
@@ -1236,7 +1236,7 @@ export default function MerchantsPage() {
                             title="編集"
                           >
                             <Image 
-                              src="/edit.svg" 
+                              src="/api/static-files/2" 
                               alt="編集" 
                               width={24}
                               height={24}
@@ -1250,7 +1250,7 @@ export default function MerchantsPage() {
                             title="店舗一覧"
                           >
                             <Image 
-                              src="/store-list.svg" 
+                              src="/api/static-files/7" 
                               alt="店舗一覧" 
                               width={24}
                               height={24}
@@ -1331,7 +1331,7 @@ export default function MerchantsPage() {
           {filteredMerchants.length === 0 && (
             <div className="text-center py-12">
               <Image 
-                src="/storefront-icon.svg" 
+                src="/api/static-files/8" 
                 alt="店舗" 
                 width={48} 
                 height={48}

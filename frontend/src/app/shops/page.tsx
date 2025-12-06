@@ -805,7 +805,7 @@ function ShopsPageContent() {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center">
               <Image 
-                src="/alert.svg" 
+                src="/api/static-files/4" 
                 alt="警告" 
                 width={16} 
                 height={16}
@@ -1233,7 +1233,7 @@ function ShopsPageContent() {
                 >
                   <Button variant="primary" className="cursor-pointer bg-green-600 hover:bg-green-700 text-white flex items-center gap-2">
                     <Image
-                      src="/edit.svg"
+                      src="/api/static-files/2"
                       alt="編集"
                       width={24}
                       height={24}
@@ -1345,7 +1345,7 @@ function ShopsPageContent() {
                             title="編集"
                           >
                             <Image
-                              src="/edit.svg"
+                              src="/api/static-files/2"
                               alt="編集"
                               width={24}
                               height={24}
@@ -1369,7 +1369,7 @@ function ShopsPageContent() {
                             title="クーポン管理"
                           >
                             <Image 
-                              src="/coupon.svg" 
+                              src="/api/static-files/5" 
                               alt="クーポン" 
                               width={48}
                               height={48}
@@ -1460,7 +1460,7 @@ function ShopsPageContent() {
           {shops.length === 0 && (
             <div className="text-center py-12">
               <Image 
-                src="/storefront-icon.svg" 
+                src="/api/static-files/8" 
                 alt="店舗" 
                 width={48} 
                 height={48}

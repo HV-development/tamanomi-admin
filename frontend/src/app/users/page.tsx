@@ -858,7 +858,7 @@ export default function UsersPage() {
                             style={{ width: 'auto', height: 'auto' }}
                           >
                             <Image 
-                              src="/info.png" 
+                              src="/api/static-files/6" 
                               alt="詳細" 
                               width={32}
                               height={32}
@@ -876,7 +876,7 @@ export default function UsersPage() {
                               style={{ width: 'auto', height: 'auto' }}
                             >
                               <Image 
-                                src="/edit.svg" 
+                                src="/api/static-files/2" 
                                 alt="編集" 
                                 width={24}
                                 height={24}
