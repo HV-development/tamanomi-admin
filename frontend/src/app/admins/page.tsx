@@ -336,7 +336,7 @@ export default function AdminsPage() {
                               title="編集"
                             >
                               <Image 
-                                src="/api/static-files/2" 
+                                src="/edit.svg" 
                                 alt="編集" 
                                 width={24}
                                 height={24}
@@ -350,12 +350,11 @@ export default function AdminsPage() {
                             title="削除"
                           >
                             <Image 
-                              src="/api/static-files/10" 
+                              src="/dustbox.png" 
                               alt="削除" 
                               width={24}
                               height={24}
                               className="w-6 h-6 flex-shrink-0 object-contain"
-                              unoptimized
                             />
                           </button>
                         </div>

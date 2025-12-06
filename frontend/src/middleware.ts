@@ -58,69 +58,9 @@ function validateImageUrl(url: string | null): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname, host } = request.nextUrl;
 
-  // 静的ファイルへの直接アクセスをブロック（IDベースのAPI経由のみ許可）
-  const staticFileExtensions = ['.png', '.svg', '.jpg', '.jpeg', '.webp', '.gif', '.ico'];
-  const isStaticFile = staticFileExtensions.some(ext => pathname.endsWith(ext));
-  
-  // /api/static-files/ は許可（IDベースのAPI）
-  // /_next/static/ は許可（Next.jsの静的アセット）
-  // /favicon.ico は許可（ブラウザの自動リクエスト）
-  if (isStaticFile && 
-      !pathname.startsWith('/api/static-files/') && 
-      !pathname.startsWith('/_next/static/') &&
-      pathname !== '/favicon.ico') {
-    console.warn('[middleware] Direct static file access blocked', {
-      pathname,
-      method: request.method,
-      fullUrl: request.nextUrl.toString(),
-    });
-    return NextResponse.json(
-      { error: '直接アクセスは許可されていません。IDベースのAPIを使用してください。' },
-      { status: 403 }
-    );
-  }
-
   // /_next/image エンドポイントのURLパラメータを検証（ディレクトリトラバーサル対策）
   if (pathname === '/_next/image') {
     const imageUrl = request.nextUrl.searchParams.get('url');
-    
-    // IDベースのAPI経由のみ許可
-    if (imageUrl && imageUrl.startsWith('/api/static-files/')) {
-      // IDベースのAPI経由の場合は許可
-      const response = NextResponse.next();
-      response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-      return response;
-    }
-    
-    // リモートURL（R2など）の場合は既存の検証を適用
-    if (imageUrl && imageUrl.startsWith('http')) {
-      if (!validateImageUrl(imageUrl)) {
-        console.warn('[middleware] Invalid image URL blocked', {
-          url: imageUrl,
-          method: request.method,
-          fullUrl: request.nextUrl.toString(),
-        });
-        return NextResponse.json({ message: 'Invalid image URL' }, { status: 403 });
-      }
-      const response = NextResponse.next();
-      response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-      return response;
-    }
-    
-    // ローカルパス（/で始まる）の場合はブロック（IDベースのAPI経由のみ許可）
-    if (imageUrl && imageUrl.startsWith('/')) {
-      console.warn('[middleware] Local path access blocked, use ID-based API', {
-        url: imageUrl,
-        method: request.method,
-        fullUrl: request.nextUrl.toString(),
-      });
-      return NextResponse.json(
-        { error: 'IDベースのAPIを使用してください' },
-        { status: 403 }
-      );
-    }
-    
-    // URLが無い場合はエラー
     if (!validateImageUrl(imageUrl)) {
       console.warn('[middleware] Invalid image URL blocked', {
         url: imageUrl,
@@ -129,7 +69,6 @@ export async function middleware(request: NextRequest) {
       });
       return NextResponse.json({ message: 'Invalid image URL' }, { status: 403 });
     }
-    
     // 検証通過後は通常の処理へ
     const response = NextResponse.next();
     response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
@@ -268,10 +207,10 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
-// すべてのルートに適用（静的ファイルへの直接アクセスをブロックするため）
-// 注意: _next/image と静的ファイルは検証のためマッチャーに含める（ディレクトリトラバーサル対策）
+// 静的ファイル以外のすべてのルートに適用
+// 注意: _next/image は検証のためマッチャーに含める（ディレクトリトラバーサル対策）
 export const config = {
   matcher: [
-    '/((?!_next/static).*)', // _next/static以外のすべてのルートに適用
+    '/((?!_next/static|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 };

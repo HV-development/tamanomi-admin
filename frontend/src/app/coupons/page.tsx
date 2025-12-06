@@ -830,12 +830,12 @@ function CouponsPageContent() {
                       <div className="flex items-center justify-center gap-2">
                         <Link href={`/coupons/${coupon.id}/edit`}>
                           <button className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]">
-                            <Image src="/api/static-files/2" alt="編集" width={24} height={24} className="w-6 h-6 flex-shrink-0" />
+                            <Image src="/edit.svg" alt="編集" width={24} height={24} className="w-6 h-6 flex-shrink-0" />
                           </button>
                         </Link>
                         <Link href={`/coupons/${coupon.id}/history`}>
                           <button className="p-2.5 text-orange-600 hover:text-orange-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]">
-                            <Image src="/api/static-files/1" alt="利用履歴" width={24} height={24} className="w-6 h-6 flex-shrink-0" />
+                            <Image src="/history.png" alt="利用履歴" width={24} height={24} className="w-6 h-6 flex-shrink-0" />
                           </button>
                         </Link>
                       </div>

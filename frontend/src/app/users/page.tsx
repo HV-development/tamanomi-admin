@@ -858,13 +858,12 @@ export default function UsersPage() {
                             style={{ width: 'auto', height: 'auto' }}
                           >
                             <Image 
-                              src="/api/static-files/6" 
+                              src="/info.png" 
                               alt="詳細" 
                               width={32}
                               height={32}
                               className="object-contain"
                               style={{ width: '32px', height: '32px', aspectRatio: '1/1', flexShrink: 0, display: 'block' }}
-                              unoptimized
                             />
                           </button>
                         </Link>
@@ -876,13 +875,12 @@ export default function UsersPage() {
                               style={{ width: 'auto', height: 'auto' }}
                             >
                               <Image 
-                                src="/api/static-files/2" 
+                                src="/edit.svg" 
                                 alt="編集" 
                                 width={24}
                                 height={24}
                                 className="object-contain"
                                 style={{ width: '24px', height: '24px', flexShrink: 0, display: 'block' }}
-                                unoptimized
                               />
                             </button>
                           </Link>

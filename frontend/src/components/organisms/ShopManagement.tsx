@@ -261,7 +261,7 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center">
               <Image 
-                src="/api/static-files/4" 
+                src="/alert.svg" 
                 alt="警告" 
                 width={16} 
                 height={16}
@@ -499,7 +499,7 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
                             title="編集"
                           >
                             <Image 
-                              src="/api/static-files/2" 
+                              src="/edit.svg" 
                               alt="編集" 
                               width={32}
                               height={32}
@@ -513,7 +513,7 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
                             title="クーポン管理"
                           >
                             <Image 
-                              src="/api/static-files/5" 
+                              src="/coupon.svg" 
                               alt="クーポン" 
                               width={48}
                               height={48}
@@ -572,7 +572,7 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
           {shops.length === 0 && (
             <div className="text-center py-12">
               <Image 
-                src="/api/static-files/8" 
+                src="/storefront-icon.svg" 
                 alt="店舗" 
                 width={48} 
                 height={48}
