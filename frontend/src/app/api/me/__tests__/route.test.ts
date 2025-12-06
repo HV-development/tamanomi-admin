@@ -58,7 +58,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
       
       // バックエンドAPIが正しく呼ばれたことを確認
       expect(mockFetch).toHaveBeenCalledWith(
-        `${API_BASE_URL}/auth/me`,
+        `${API_BASE_URL}/me`,
         expect.objectContaining({
           headers: expect.objectContaining({
             'Authorization': 'Bearer valid-jwt-token',
@@ -209,7 +209,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
       
       // フロントエンドはトークンをそのまま転送
       expect(mockFetch).toHaveBeenCalledWith(
-        `${API_BASE_URL}/auth/me`,
+        `${API_BASE_URL}/me`,
         expect.objectContaining({
           headers: expect.objectContaining({
             'Authorization': `Bearer ${forgedToken}`,
@@ -272,7 +272,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
       await GET(request);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        `${API_BASE_URL}/auth/me`,
+        `${API_BASE_URL}/me`,
         expect.objectContaining({
           headers: expect.objectContaining({
             'Authorization': 'Bearer my-token-value',
@@ -298,7 +298,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
       await GET(request);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        `${API_BASE_URL}/auth/me`,
+        `${API_BASE_URL}/me`,
         expect.objectContaining({
           headers: expect.objectContaining({
             'Authorization': 'Bearer token1',

@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     }
 
     // バックエンドの統合エンドポイントにプロキシ
-    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+    const response = await fetch(`${API_BASE_URL}/me`, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': auth
