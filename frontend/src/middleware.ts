@@ -140,7 +140,8 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/') {
     const url = request.nextUrl.clone();
     url.pathname = '/merchants';
-    return NextResponse.redirect(url, 302);
+    // 307リダイレクトを実行（リダイレクト実行直後にスクリプトを終了）
+    return NextResponse.redirect(url, 307);
   }
 
   // アプリの保護ページはCookieが無ければログインへ
@@ -186,7 +187,8 @@ export async function middleware(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = '/login';
       url.searchParams.set('session', 'expired');
-      return NextResponse.redirect(url);
+      // 307リダイレクトを実行（リダイレクト実行直後にスクリプトを終了）
+      return NextResponse.redirect(url, 307);
     }
     // 署名検証はAPI層で実施。ここではCookieの存在のみでガード。
   }
