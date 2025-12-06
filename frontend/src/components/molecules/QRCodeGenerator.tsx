@@ -10,9 +10,10 @@ interface QRCodeGeneratorProps {
   qrCodeUrl: string;
   shopId: string;
   showSuccess: (message: string) => void;
+  onLoadRequest?: () => void;
 }
 
-export default function QRCodeGenerator({ qrCodeLoading, qrCodeUrl, shopId, showSuccess }: QRCodeGeneratorProps) {
+export default function QRCodeGenerator({ qrCodeLoading, qrCodeUrl, shopId, showSuccess, onLoadRequest }: QRCodeGeneratorProps) {
   const qrCodeRef = useRef<HTMLDivElement>(null);
 
   const handleDownload = () => {
@@ -122,7 +123,17 @@ export default function QRCodeGenerator({ qrCodeLoading, qrCodeUrl, shopId, show
           </div>
         </div>
       ) : (
-        <div className="text-center text-gray-500 py-4">QRコードの取得に失敗しました</div>
+        <div className="text-center py-4">
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() => onLoadRequest?.()}
+            className="mb-4"
+          >
+            QRコードを表示
+          </Button>
+          <p className="text-sm text-gray-500">ボタンをクリックしてQRコードを表示します</p>
+        </div>
       )}
     </div>
   );

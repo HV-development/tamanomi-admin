@@ -467,25 +467,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               setIsLoading(false);
             }
 
-            // QRコードURLを取得（非同期、フォーム表示をブロックしない）
-            (async () => {
-              try {
-                setQrCodeLoading(true);
-                console.log('🔗 QRコードURL: 取得開始');
-                const qrCodeData = await apiClient.getShopQrCodeUrl(shopId);
-                if (isMounted && qrCodeData && typeof qrCodeData === 'object' && 'qr_code_url' in qrCodeData) {
-                  setQrCodeUrl((qrCodeData as { qr_code_url: string }).qr_code_url);
-                }
-              } catch (error) {
-                console.error('QRコードURL取得エラー:', error);
-                // QRコード取得エラーは無視（店舗データ取得は続行）
-              } finally {
-                if (isMounted) {
-                  setQrCodeLoading(false);
-                }
-              }
-            })();
-
             // 既存店舗のメールアドレスを収集（重複チェック用、非同期、フォーム表示をブロックしない）
             (async () => {
               try {
@@ -1060,6 +1041,25 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     }
 
     router.push(fallbackRedirect);
+  };
+
+  // QRコードを取得する関数（ボタン押下時のみ実行）
+  const handleLoadQrCode = async () => {
+    if (!shopId) return;
+
+    try {
+      setQrCodeLoading(true);
+      console.log('🔗 QRコードURL: 取得開始');
+      const qrCodeData = await apiClient.getShopQrCodeUrl(shopId);
+      if (qrCodeData && typeof qrCodeData === 'object' && 'qr_code_url' in qrCodeData) {
+        setQrCodeUrl((qrCodeData as { qr_code_url: string }).qr_code_url);
+      }
+    } catch (error) {
+      console.error('QRコードURL取得エラー:', error);
+      showError('QRコードの取得に失敗しました');
+    } finally {
+      setQrCodeLoading(false);
+    }
   };
 
   if (isLoading) {
@@ -1925,6 +1925,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             qrCodeUrl={qrCodeUrl || ''}
             shopId={shopId}
             showSuccess={showSuccess}
+            onLoadRequest={handleLoadQrCode}
           />
         )}
 
