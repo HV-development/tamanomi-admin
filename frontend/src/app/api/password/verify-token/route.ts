@@ -2,6 +2,85 @@ import { NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
+/**
+ * 成功レスポンスをフィルタリング
+ * セキュリティのため、許可されたフィールドのみを抽出
+ */
+function filterSuccessResponse(data: unknown): { data: { valid: boolean; accountType?: string } } {
+  if (typeof data !== 'object' || data === null) {
+    throw new Error('Invalid response format: expected object');
+  }
+
+  const response = data as Record<string, unknown>;
+  
+  if (!response.data || typeof response.data !== 'object' || response.data === null) {
+    throw new Error('Invalid response format: missing or invalid data field');
+  }
+
+  const dataField = response.data as Record<string, unknown>;
+  
+  // 許可されたフィールドのみを抽出
+  const filtered: { valid: boolean; accountType?: string } = {
+    valid: dataField.valid === true,
+  };
+
+  // accountTypeが存在し、文字列の場合のみ追加
+  if (typeof dataField.accountType === 'string') {
+    filtered.accountType = dataField.accountType;
+  }
+
+  return { data: filtered };
+}
+
+/**
+ * エラーレスポンスをフィルタリング
+ * セキュリティのため、許可されたフィールドのみを抽出
+ */
+function filterErrorResponse(data: unknown, statusCode: number): { error: { code: string; message: string; details?: unknown } } {
+  if (typeof data !== 'object' || data === null) {
+    return {
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'トークンの検証に失敗しました',
+      },
+    };
+  }
+
+  const response = data as Record<string, unknown>;
+  
+  if (!response.error || typeof response.error !== 'object' || response.error === null) {
+    return {
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'トークンの検証に失敗しました',
+      },
+    };
+  }
+
+  const errorField = response.error as Record<string, unknown>;
+  
+  // 許可されたフィールドのみを抽出
+  const filtered: { code: string; message: string; details?: unknown } = {
+    code: typeof errorField.code === 'string' ? errorField.code : 'INTERNAL_ERROR',
+    message: typeof errorField.message === 'string' ? errorField.message : 'トークンの検証に失敗しました',
+  };
+
+  // detailsはバリデーションエラー時のみ許可（個人情報が含まれていないことを確認）
+  // VALIDATION_ERRORの場合のみdetailsを含める
+  if (
+    statusCode === 400 &&
+    filtered.code === 'VALIDATION_ERROR' &&
+    errorField.details !== undefined
+  ) {
+    // detailsが配列またはオブジェクトの場合のみ許可
+    if (Array.isArray(errorField.details) || (typeof errorField.details === 'object' && errorField.details !== null)) {
+      filtered.details = errorField.details;
+    }
+  }
+
+  return { error: filtered };
+}
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
@@ -32,7 +111,10 @@ export async function GET(request: Request) {
         statusText: response.statusText,
         error: errorData 
       });
-      return NextResponse.json(errorData, { status: response.status });
+      
+      // エラーレスポンスをフィルタリング
+      const filteredError = filterErrorResponse(errorData, response.status);
+      return NextResponse.json(filteredError, { status: response.status });
     }
 
     const data = await response.json();
@@ -42,7 +124,24 @@ export async function GET(request: Request) {
       hasData: 'data' in data,
       isValid: data.data?.valid
     });
-    return NextResponse.json(data);
+    
+    // 成功レスポンスをフィルタリング
+    try {
+      const filteredData = filterSuccessResponse(data);
+      return NextResponse.json(filteredData);
+    } catch (filterError) {
+      // 予期しないレスポンス形式の場合
+      console.error('❌ API Route: Unexpected response format', {
+        error: filterError,
+        receivedData: data,
+      });
+      return NextResponse.json({
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'トークンの検証に失敗しました',
+        },
+      }, { status: 500 });
+    }
   } catch (error: unknown) {
     console.error('❌ API Route: Password token verification error', {
       error,
@@ -50,12 +149,10 @@ export async function GET(request: Request) {
       errorStack: error instanceof Error ? error.stack : undefined,
       API_BASE_URL
     });
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ 
       error: {
         code: 'INTERNAL_ERROR',
         message: 'トークンの検証に失敗しました', 
-        details: errorMessage
       }
     }, { status: 500 });
   }
