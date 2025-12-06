@@ -147,18 +147,6 @@ export default function AdminsPage() {
     }
   };
 
-  // ローディング状態 - 初回読み込み時のみ全体表示
-  if (isLoading && admins.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">管理者データを読み込み中...</p>
-        </div>
-      </div>
-    );
-  }
-
   // エラー状態
   if (error) {
     return (
@@ -374,9 +362,15 @@ export default function AdminsPage() {
               </table>
             )}
           </div>
-          
 
-          {admins.length === 0 && !isLoading && (
+          {isLoading && admins.length === 0 && (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+              <p className="text-gray-500">データを読み込み中...</p>
+            </div>
+          )}
+
+          {!isLoading && admins.length === 0 && (
             <div className="text-center py-12">
               <Icon name="admin" size="lg" className="mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">管理者アカウントが見つかりません</h3>

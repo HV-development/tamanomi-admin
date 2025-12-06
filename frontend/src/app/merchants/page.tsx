@@ -684,19 +684,6 @@ export default function MerchantsPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <AdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">事業者データを読み込み中...</p>
-          </div>
-        </div>
-      </AdminLayout>
-    );
-  }
-
   // 事業者アカウントの場合は自分の事業者情報のみを表示
   if (isMerchantAccount) {
     return (
@@ -1328,7 +1315,14 @@ export default function MerchantsPage() {
             </table>
           </div>
 
-          {filteredMerchants.length === 0 && (
+          {isLoading && (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+              <p className="text-gray-500">データを読み込み中...</p>
+            </div>
+          )}
+
+          {!isLoading && filteredMerchants.length === 0 && (
             <div className="text-center py-12">
               <Image 
                 src="/storefront-icon.svg" 
