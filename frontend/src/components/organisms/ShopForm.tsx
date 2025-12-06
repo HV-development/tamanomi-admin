@@ -293,74 +293,116 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         setIsLoading(true);
         setError(null);
 
-        // 事業者アカウントの場合、自分の事業者情報を取得してmerchantIdと事業者名を設定
-        if (isMerchantAccount) {
-          try {
-            const myMerchantData = await apiClient.getMyMerchant();
-            if (!isMounted) return;
+        // 並列実行可能なAPIリクエストを準備
+        const promises: Promise<unknown>[] = [];
 
+        // 事業者アカウントの場合、自分の事業者情報を取得
+        let myMerchantPromise: Promise<unknown> | null = null;
+        if (isMerchantAccount) {
+          myMerchantPromise = apiClient.getMyMerchant();
+          promises.push(myMerchantPromise);
+        }
+
+        // 加盟店一覧を取得（管理者アカウントの場合のみ）
+        let merchantsPromise: Promise<unknown> | null = null;
+        if (!isMerchantAccount) {
+          merchantsPromise = apiClient.getMerchants();
+          promises.push(merchantsPromise);
+        }
+
+        // ジャンル一覧と利用シーン一覧を並列取得
+        const genresPromise = apiClient.getGenres();
+        const scenesPromise = apiClient.getScenes();
+        promises.push(genresPromise, scenesPromise);
+
+        // 編集モードの場合は店舗データも並列取得
+        let shopPromise: Promise<unknown> | null = null;
+        if (isEdit && shopId) {
+          shopPromise = apiClient.getShop(shopId);
+          promises.push(shopPromise);
+        }
+
+        // すべてのAPIリクエストを並列実行
+        // Promise.allSettledを使用して、一部のリクエストが失敗しても他のリクエストは続行
+        const results = await Promise.allSettled(promises);
+        if (!isMounted) return;
+
+        // 結果を処理
+        let resultIndex = 0;
+        let merchantsArray: Merchant[] = [];
+
+        // 事業者アカウントの場合
+        if (isMerchantAccount && myMerchantPromise) {
+          const result = results[resultIndex++];
+          if (result.status === 'fulfilled') {
+            const myMerchantData = result.value;
             if (myMerchantData && typeof myMerchantData === 'object' && 'data' in myMerchantData && myMerchantData.data) {
               const merchant = myMerchantData.data as Merchant;
-
-              // merchantIdがまだ設定されていない場合のみ設定
               if (!merchantId) {
                 setFormData((prev) => ({
                   ...prev,
                   merchantId: merchant.id,
                 }));
               }
-              // 事業者名は常に設定
               setMerchantName(merchant.name);
-
-              // 自分の事業者情報をmerchants配列に追加（親事業者からコピー機能用）
               setMerchants([merchant]);
             }
-          } catch (_error) {
+          } else {
+            console.error('事業者情報の取得に失敗しました:', result.reason);
             showError('事業者情報の取得に失敗しました');
           }
         }
 
-        // 加盟店一覧を取得（管理者アカウントの場合のみ）
-        let merchantsArray: Merchant[] = [];
-        if (!isMerchantAccount) {
-          const merchantsData = await apiClient.getMerchants();
-
-          // コンポーネントがアンマウントされている場合は処理を中断
-          if (!isMounted) return;
-
-          if (Array.isArray(merchantsData)) {
-            merchantsArray = merchantsData as Merchant[];
-          } else if (merchantsData && typeof merchantsData === 'object') {
-            // 新しいAPIレスポンス形式: {success: true, data: {merchants: [...], pagination: {...}}}
-            if ('data' in merchantsData && merchantsData.data && typeof merchantsData.data === 'object' && 'merchants' in merchantsData.data) {
-              merchantsArray = ((merchantsData.data as { merchants: Merchant[] }).merchants || []) as Merchant[];
+        // 管理者アカウントの場合
+        if (!isMerchantAccount && merchantsPromise) {
+          const result = results[resultIndex++];
+          if (result.status === 'fulfilled') {
+            const merchantsData = result.value;
+            if (Array.isArray(merchantsData)) {
+              merchantsArray = merchantsData as Merchant[];
+            } else if (merchantsData && typeof merchantsData === 'object') {
+              if ('data' in merchantsData && merchantsData.data && typeof merchantsData.data === 'object' && 'merchants' in merchantsData.data) {
+                merchantsArray = ((merchantsData.data as { merchants: Merchant[] }).merchants || []) as Merchant[];
+              } else if ('merchants' in merchantsData) {
+                merchantsArray = ((merchantsData as { merchants: Merchant[] }).merchants || []) as Merchant[];
+              }
             }
-            // 古いAPIレスポンス形式: {merchants: [...], pagination: {...}}
-            else if ('merchants' in merchantsData) {
-              merchantsArray = ((merchantsData as { merchants: Merchant[] }).merchants || []) as Merchant[];
-            }
+            setMerchants(merchantsArray);
+          } else {
+            console.error('加盟店一覧の取得に失敗しました:', result.reason);
+            showError('加盟店一覧の取得に失敗しました');
           }
-
-          setMerchants(merchantsArray);
         }
 
-        // ジャンル一覧を取得
-        const genresData = await apiClient.getGenres();
-        if (!isMounted) return;
+        // ジャンル一覧を処理
+        const genresResult = results[resultIndex++];
+        if (genresResult.status === 'fulfilled') {
+          const genresData = genresResult.value;
+          const genresArray = Array.isArray(genresData) ? genresData : (genresData as { genres: unknown[] }).genres || [];
+          setGenres(genresArray);
+        } else {
+          console.error('ジャンル一覧の取得に失敗しました:', genresResult.reason);
+          showError('ジャンル一覧の取得に失敗しました');
+        }
 
-        const genresArray = Array.isArray(genresData) ? genresData : (genresData as { genres: unknown[] }).genres || [];
-        setGenres(genresArray);
+        // 利用シーン一覧を処理
+        const scenesResult = results[resultIndex++];
+        if (scenesResult.status === 'fulfilled') {
+          const scenesData = scenesResult.value;
+          const scenesArray = Array.isArray(scenesData) ? scenesData : (scenesData as { scenes: unknown[] }).scenes || [];
+          setScenes(scenesArray);
+        } else {
+          console.error('利用シーン一覧の取得に失敗しました:', scenesResult.reason);
+          showError('利用シーン一覧の取得に失敗しました');
+        }
 
-        // 利用シーン一覧を取得
-        const scenesData = await apiClient.getScenes();
-        if (!isMounted) return;
-
-        const scenesArray = Array.isArray(scenesData) ? scenesData : (scenesData as { scenes: unknown[] }).scenes || [];
-        setScenes(scenesArray);
-
-        // 編集モードの場合は店舗データを取得
-        if (isEdit && isMounted && shopId) {
-          const shopData = await apiClient.getShop(shopId) as ShopDataResponse;
+        // 編集モードの場合は店舗データを処理
+        if (isEdit && isMounted && shopId && shopPromise) {
+          const shopResult = results[resultIndex++];
+          if (shopResult.status !== 'fulfilled') {
+            throw new Error('店舗データの取得に失敗しました');
+          }
+          const shopData = shopResult.value as ShopDataResponse;
 
           if (isMounted) {
             // merchantIdがpropsで渡されている場合は上書きしない
@@ -466,18 +508,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             if (isMounted) {
               setIsLoading(false);
             }
-
-            // 既存店舗のメールアドレスを収集（重複チェック用、非同期、フォーム表示をブロックしない）
-            (async () => {
-              try {
-                const shopsResponse = await apiClient.getShops('limit=1000');
-                if (isMounted) {
-                  setExistingAccountEmails(collectAccountEmailEntries(shopsResponse));
-                }
-              } catch (_error) {
-                // 重複チェック用のデータ取得に失敗した場合はスキップ（API側で弾かれるため）
-              }
-            })();
           }
         } else if (merchantId && merchantsArray.length > 0 && isMounted) {
           // 新規作成モードで加盟店が指定されている場合
@@ -495,6 +525,20 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             setIsLoading(false);
           }
         }
+
+        // 既存店舗のメールアドレスを収集（重複チェック用、非同期、フォーム表示をブロックしない）
+        // 注: フォーム送信時にAPI側でチェックされるため、初回表示時には不要だが、
+        // リアルタイムバリデーションのために非同期で取得
+        (async () => {
+          try {
+            const shopsResponse = await apiClient.getShops('limit=1000');
+            if (isMounted) {
+              setExistingAccountEmails(collectAccountEmailEntries(shopsResponse));
+            }
+          } catch (_error) {
+            // 重複チェック用のデータ取得に失敗した場合はスキップ（API側で弾かれるため）
+          }
+        })();
       } catch (err: unknown) {
         // アボート時のエラーは無視
         if (err instanceof Error && err.name === 'AbortError') {
