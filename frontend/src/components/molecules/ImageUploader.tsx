@@ -46,6 +46,7 @@ function ImageUploader({
                   fill
                   className="object-cover"
                   unoptimized
+                  loading="lazy"
                 />
                 <button
                   type="button"
@@ -73,6 +74,7 @@ function ImageUploader({
                   fill
                   className="object-cover"
                   unoptimized
+                  loading="lazy"
                 />
                 <button
                   type="button"

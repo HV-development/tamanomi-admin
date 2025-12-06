@@ -494,6 +494,7 @@ function CouponEditPageContent() {
                         }));
                       }}
                       unoptimized
+                      loading="lazy"
                     />
                   </div>
                 )}
