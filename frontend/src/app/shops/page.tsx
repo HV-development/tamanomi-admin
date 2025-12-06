@@ -718,20 +718,6 @@ function ShopsPageContent() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <AdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">店舗データを読み込み中...</p>
-          </div>
-        </div>
-      </AdminLayout>
-    );
-  }
-
-
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -1457,7 +1443,14 @@ function ShopsPageContent() {
             </table>
           </div>
 
-          {shops.length === 0 && (
+          {isLoading && (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+              <p className="text-gray-500">データを読み込み中...</p>
+            </div>
+          )}
+
+          {!isLoading && shops.length === 0 && (
             <div className="text-center py-12">
               <Image 
                 src="/storefront-icon.svg" 
@@ -1491,10 +1484,12 @@ export default function ShopsPage() {
   return (
     <Suspense fallback={
       <AdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">読み込み中...</p>
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+              <p className="text-gray-500">読み込み中...</p>
+            </div>
           </div>
         </div>
       </AdminLayout>

@@ -604,19 +604,6 @@ function CouponsPageContent() {
     }
   };
 
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">データを読み込み中...</p>
-          </div>
-        </div>
-      </AdminLayout>
-    );
-  }
-
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -892,7 +879,14 @@ function CouponsPageContent() {
             </table>
           </div>
 
-          {filteredCoupons.length === 0 && (
+          {loading && (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+              <p className="text-gray-500">データを読み込み中...</p>
+            </div>
+          )}
+
+          {!loading && filteredCoupons.length === 0 && (
             <div className="text-center py-12">
               <Icon name="coupon" size="lg" className="mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">クーポンが見つかりません</h3>
@@ -924,10 +918,12 @@ export default function CouponsPage() {
     <Suspense
       fallback={
         <AdminLayout>
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-              <p className="text-gray-600">読み込み中...</p>
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+                <p className="text-gray-500">読み込み中...</p>
+              </div>
             </div>
           </div>
         </AdminLayout>
