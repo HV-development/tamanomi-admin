@@ -51,7 +51,8 @@ async function refreshAccessToken(request: Request): Promise<{ token: string; re
   }
 }
 
-export async function GET(request: NextRequest) {
+// セキュリティ改善：個人情報をクエリパラメータで送信しないため、POSTメソッドに変更
+export async function POST(request: NextRequest) {
   try {
     let auth = getAuthHeader(request);
     let refreshResult: { token: string; refreshToken?: string } | null = null;
@@ -70,23 +71,19 @@ export async function GET(request: NextRequest) {
       auth = refreshResult.token;
     }
 
-    const url = new URL(request.url);
-    const queryParams = new URLSearchParams();
+    // セキュリティ改善：個人情報をクエリパラメータで送信しないため、POSTメソッドでボディに含めて送信
+    const body = await request.json().catch(() => ({}));
     
-    // 全てのクエリパラメータをそのまま転送
-    url.searchParams.forEach((value, key) => {
-      queryParams.append(key, value);
-    });
-
-    const fullUrl = `${API_BASE_URL}/admin/users?${queryParams.toString()}`;
-    console.log('🔗 API Route: Fetching from', fullUrl);
+    const fullUrl = `${API_BASE_URL}/admin/users`;
+    console.log('🔗 API Route: Posting to', fullUrl);
 
     const response = await fetch(fullUrl, {
-      method: 'GET',
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': auth,
       },
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {

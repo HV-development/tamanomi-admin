@@ -7,7 +7,7 @@ import type { NextRequest } from 'next/server';
  */
 function validateImageUrl(url: string | null): boolean {
   if (!url) return false;
-  
+
   // URLデコードして正規化（複数回デコードを試みてエンコードされた攻撃を検出）
   let decodedUrl = url;
   try {
@@ -21,22 +21,22 @@ function validateImageUrl(url: string | null): boolean {
     // デコード失敗は不正なURLとして拒否
     return false;
   }
-  
+
   // パストラバーサルパターンを禁止
   if (decodedUrl.includes('..') || decodedUrl.includes('./')) {
     return false;
   }
-  
+
   // バックスラッシュによるトラバーサルも禁止
   if (decodedUrl.includes('..\\') || decodedUrl.includes('.\\')) {
     return false;
   }
-  
+
   // ローカルパスは / で始まる必要がある
   if (!decodedUrl.startsWith('/') && !decodedUrl.startsWith('http')) {
     return false;
   }
-  
+
   // リモートURLの場合は許可されたドメインのみ
   if (decodedUrl.startsWith('http')) {
     const allowedHosts = [
@@ -51,7 +51,7 @@ function validateImageUrl(url: string | null): boolean {
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -102,7 +102,7 @@ export async function middleware(request: NextRequest) {
       response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
       return response;
     }
-    
+
     const sameOrigin = (() => {
       try {
         const allowed = new Set<string>();
@@ -154,7 +154,7 @@ export async function middleware(request: NextRequest) {
     '/users',
     '/coupon-history',
   ];
-  
+
   if (protectedPaths.some(p => pathname === p || pathname.startsWith(`${p}/`))) {
     const token = request.cookies.get('accessToken')?.value || request.cookies.get('__Host-accessToken')?.value;
     const isCouponsPath = pathname === '/coupons' || pathname.startsWith('/coupons/');
@@ -195,17 +195,25 @@ export async function middleware(request: NextRequest) {
 
   // セキュリティヘッダーを設定
   const response = NextResponse.next();
-  
+
   // HSTS: HTTPSの接続を強制（1年間）
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  
+
   // キャッシュ制御: APIルートはキャッシュを無効化して機密情報の漏洩を防止
   if (pathname.startsWith('/api/')) {
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');
+  } else {
+    // 保護されたページ（認証が必要なページ）はキャッシュ無効化
+    // 機密情報を含む可能性があるため、キャッシュから情報が漏洩することを防止
+    if (protectedPaths.some(p => pathname === p || pathname.startsWith(`${p}/`))) {
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+    }
   }
-  
+
   return response;
 }
 
