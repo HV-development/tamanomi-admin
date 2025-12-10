@@ -105,39 +105,45 @@ export default function CouponHistoryPage() {
     const fetchUsageHistory = async () => {
       setIsLoading(true);
       try {
-        const queryParams = new URLSearchParams();
+        // セキュリティ改善：個人情報をクエリパラメータで送信しないため、POSTメソッドでボディに含めて送信
+        const searchBody: Record<string, string> = {};
         
-        // 遷移元に応じてクエリパラメータを設定
+        // 遷移元に応じてパラメータを設定
         if (pathname.includes('/coupons/') && pathname.includes('/history')) {
           const couponId = pathname.split('/')[2];
-          queryParams.append('couponId', couponId);
+          searchBody.couponId = couponId;
         } else if (pathname.includes('/users/') && pathname.includes('/coupon-history')) {
           const userId = pathname.split('/')[2];
-          queryParams.append('userId', userId);
+          searchBody.userId = userId;
         }
 
         // 検索条件を追加
-        if (appliedSearchForm.usageId) queryParams.append('usageId', appliedSearchForm.usageId);
-        if (appliedSearchForm.couponId) queryParams.append('couponId', appliedSearchForm.couponId);
-        if (appliedSearchForm.couponName) queryParams.append('couponName', appliedSearchForm.couponName);
-        if (appliedSearchForm.shopName) queryParams.append('shopName', appliedSearchForm.shopName);
-        if (appliedSearchForm.nickname && isSysAdmin) queryParams.append('nickname', appliedSearchForm.nickname);
-        if (appliedSearchForm.email && isSysAdmin) queryParams.append('email', appliedSearchForm.email);
-        if (appliedSearchForm.gender && isSysAdmin) queryParams.append('gender', appliedSearchForm.gender);
-        if (appliedSearchForm.birthDate && isSysAdmin) queryParams.append('birthDate', appliedSearchForm.birthDate);
-        if (appliedSearchForm.address && isSysAdmin) queryParams.append('address', appliedSearchForm.address);
+        if (appliedSearchForm.usageId) searchBody.usageId = appliedSearchForm.usageId;
+        if (appliedSearchForm.couponId) searchBody.couponId = appliedSearchForm.couponId;
+        if (appliedSearchForm.couponName) searchBody.couponName = appliedSearchForm.couponName;
+        if (appliedSearchForm.shopName) searchBody.shopName = appliedSearchForm.shopName;
+        if (appliedSearchForm.nickname && isSysAdmin) searchBody.nickname = appliedSearchForm.nickname;
+        if (appliedSearchForm.email && isSysAdmin) searchBody.email = appliedSearchForm.email;
+        if (appliedSearchForm.gender && isSysAdmin) searchBody.gender = appliedSearchForm.gender;
+        if (appliedSearchForm.birthDate && isSysAdmin) searchBody.birthDate = appliedSearchForm.birthDate;
+        if (appliedSearchForm.address && isSysAdmin) searchBody.address = appliedSearchForm.address;
         if (appliedSearchForm.usedDateStart) {
           const startDate = new Date(appliedSearchForm.usedDateStart);
-          queryParams.append('usedAtStart', startDate.toISOString());
+          searchBody.usedAtStart = startDate.toISOString();
         }
         if (appliedSearchForm.usedDateEnd) {
           const endDate = new Date(appliedSearchForm.usedDateEnd);
           endDate.setHours(23, 59, 59, 999);
-          queryParams.append('usedAtEnd', endDate.toISOString());
+          searchBody.usedAtEnd = endDate.toISOString();
         }
 
-        const response = await fetch(`/api/admin/coupon-usage-history?${queryParams.toString()}`, {
+        const response = await fetch(`/api/admin/coupon-usage-history`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
           credentials: 'include',
+          body: JSON.stringify(searchBody),
         });
         
         if (!response.ok) {

@@ -91,38 +91,40 @@ export default function UsersPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const queryParams = new URLSearchParams();
+      // セキュリティ改善：個人情報をクエリパラメータで送信しないため、POSTメソッドでボディに含めて送信
+      const searchBody: Record<string, string | number> = {};
       
-      // 検索条件をクエリパラメータに追加
-      if (searchParams?.nickname) queryParams.append('nickname', searchParams.nickname);
+      // 検索条件をボディに追加
+      if (searchParams?.nickname) searchBody.nickname = searchParams.nickname;
       
       // operatorロールでない場合のみ機密情報での検索パラメータを追加
       if (!isOperatorRole) {
-        if (searchParams?.postalCode) queryParams.append('postalCode', searchParams.postalCode);
-        if (searchParams?.prefecture) queryParams.append('prefecture', searchParams.prefecture);
-        if (searchParams?.city) queryParams.append('city', searchParams.city);
-        if (searchParams?.address) queryParams.append('address', searchParams.address);
-        if (searchParams?.birthDate) queryParams.append('birthDate', searchParams.birthDate);
-        if (searchParams?.gender) queryParams.append('gender', searchParams.gender);
-        if (searchParams?.saitamaAppId) queryParams.append('saitamaAppId', searchParams.saitamaAppId);
+        if (searchParams?.postalCode) searchBody.postalCode = searchParams.postalCode;
+        if (searchParams?.prefecture) searchBody.prefecture = searchParams.prefecture;
+        if (searchParams?.city) searchBody.city = searchParams.city;
+        if (searchParams?.address) searchBody.address = searchParams.address;
+        if (searchParams?.birthDate) searchBody.birthDate = searchParams.birthDate;
+        if (searchParams?.gender) searchBody.gender = searchParams.gender;
+        if (searchParams?.saitamaAppId) searchBody.saitamaAppId = searchParams.saitamaAppId;
       }
       
       if (searchParams?.ranks && searchParams.ranks.length > 0) {
-        queryParams.append('ranks', JSON.stringify(searchParams.ranks));
+        searchBody.ranks = JSON.stringify(searchParams.ranks);
       }
-      if (searchParams?.registeredDateStart) queryParams.append('registeredDateStart', searchParams.registeredDateStart);
-      if (searchParams?.registeredDateEnd) queryParams.append('registeredDateEnd', searchParams.registeredDateEnd);
+      if (searchParams?.registeredDateStart) searchBody.registeredDateStart = searchParams.registeredDateStart;
+      if (searchParams?.registeredDateEnd) searchBody.registeredDateEnd = searchParams.registeredDateEnd;
       
       // ページネーションパラメータを追加
-      queryParams.append('page', pagination.page.toString());
-      queryParams.append('limit', pagination.limit.toString());
+      searchBody.page = pagination.page;
+      searchBody.limit = pagination.limit;
 
-      const response = await fetch(`/api/admin/users?${queryParams.toString()}`, {
-        method: 'GET',
+      const response = await fetch(`/api/admin/users`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
+        body: JSON.stringify(searchBody),
       });
       if (!response.ok) {
         throw new Error('ユーザー一覧の取得に失敗しました');

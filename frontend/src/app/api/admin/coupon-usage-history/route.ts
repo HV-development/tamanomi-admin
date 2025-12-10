@@ -14,31 +14,28 @@ function getAuthHeader(request: Request): string | null {
   return token ? `Bearer ${token}` : null;
 }
 
-export async function GET(request: NextRequest) {
+// セキュリティ改善：個人情報をクエリパラメータで送信しないため、POSTメソッドに変更
+export async function POST(request: NextRequest) {
   try {
     const auth = getAuthHeader(request);
     if (!auth) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const url = new URL(request.url);
-    const queryParams = new URLSearchParams();
+    // セキュリティ改善：個人情報をクエリパラメータで送信しないため、POSTメソッドでボディに含めて送信
+    const body = await request.json().catch(() => ({}));
     
-    // 全てのクエリパラメータをそのまま転送
-    url.searchParams.forEach((value, key) => {
-      queryParams.append(key, value);
-    });
-
-    const fullUrl = `${API_BASE_URL}/admin/coupon-usage-history?${queryParams.toString()}`;
-    console.log('🔗 API Route: Fetching from', fullUrl);
+    const fullUrl = `${API_BASE_URL}/admin/coupon-usage-history`;
+    console.log('🔗 API Route: Posting to', fullUrl);
 
     const response = await fetch(fullUrl, {
-      method: 'GET',
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': auth,
       },
       credentials: 'include',
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
