@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { secureFetchWithAuth } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
@@ -24,24 +26,30 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
     console.log('🔗 API Route: Get shop QR code URL request received', { shopId: id });
     
-    const response = await fetch(`${API_BASE_URL}/shops/${id}/qr-code-url`, {
-      method: 'GET',
-      headers: getAuthHeaders(request),
-    });
+    const authHeaders = getAuthHeaders(request);
+    const authHeader = authHeaders.Authorization;
+    if (!authHeader) {
+      return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const response = await secureFetchWithAuth(
+      `${API_BASE_URL}/shops/${id}/qr-code-url`,
+      authHeader,
+      { method: 'GET' }
+    );
 
     if (!response.ok) {
       const errorData = await response.json();
       console.error('❌ API Route: Get shop QR code URL failed', { status: response.status, error: errorData });
-      return NextResponse.json(errorData, { status: response.status });
+      return createNoCacheResponse(errorData, { status: response.status });
     }
 
     const data = await response.json();
     console.log('✅ API Route: Get shop QR code URL successful', { shopId: id });
-    return NextResponse.json(data);
+    return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error(`❌ API Route: Get shop QR code URL error`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+    return createNoCacheResponse({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }
-

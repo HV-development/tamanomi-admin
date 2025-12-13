@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { secureFetchWithAuth } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
@@ -30,12 +32,21 @@ export async function POST(
       merchantId: id,
     });
 
+    const authHeaders = getAuthHeaders(request);
+    const authHeader = authHeaders.Authorization;
+    if (!authHeader) {
+      return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
+    }
+
     // バックエンドAPIを呼び出し
-    const response = await fetch(`${API_BASE_URL}/admin/merchants/${id}/send-password-reset`, {
-      method: 'POST',
-      headers: getAuthHeaders(request),
-      body: JSON.stringify({}), // 空のJSONボディを送信（Fastifyの要件）
-    });
+    const response = await secureFetchWithAuth(
+      `${API_BASE_URL}/admin/merchants/${id}/send-password-reset`,
+      authHeader,
+      {
+        method: 'POST',
+        body: JSON.stringify({}), // 空のJSONボディを送信（Fastifyの要件）
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response' }));
@@ -44,7 +55,7 @@ export async function POST(
         error: errorData,
       });
       
-      return NextResponse.json(
+      return createNoCacheResponse(
         errorData,
         { status: response.status }
       );
@@ -53,10 +64,10 @@ export async function POST(
     const data = await response.json();
     console.log('✅ API Route: パスワード再設定メール送信成功', data);
 
-    return NextResponse.json(data);
+    return createNoCacheResponse(data);
   } catch (error) {
     console.error('❌ API Route: パスワード再設定メール送信エラー', error);
-    return NextResponse.json(
+    return createNoCacheResponse(
       { error: { code: 'INTERNAL_ERROR', message: 'パスワード再設定メールの送信に失敗しました' } },
       { status: 500 }
     );

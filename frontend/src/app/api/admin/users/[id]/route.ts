@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { secureFetch, secureFetchWithAuth } from '@/lib/fetch-utils';
+import { createNoCacheResponse, addNoCacheHeaders } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://api:3002/api/v1';
 
@@ -28,7 +30,7 @@ async function refreshAccessToken(request: Request): Promise<{ token: string; re
       return null;
     }
 
-    const refreshResponse = await fetch(`${API_BASE_URL}/refresh`, {
+    const refreshResponse = await secureFetch(`${API_BASE_URL}/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -60,7 +62,7 @@ export async function GET(request: Request) {
   const id = segments[segments.length - 1];
 
   if (!id) {
-    return NextResponse.json({ message: 'ユーザーIDが指定されていません' }, { status: 400 });
+    return createNoCacheResponse({ message: 'ユーザーIDが指定されていません' }, { status: 400 });
   }
 
   try {
@@ -70,28 +72,22 @@ export async function GET(request: Request) {
     if (!auth) {
       refreshResult = await refreshAccessToken(request);
       if (!refreshResult) {
-        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+        return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
       }
       auth = refreshResult.token;
     }
 
     const fullUrl = `${API_BASE_URL}/users/${encodeURIComponent(id)}`;
 
-    const response = await fetch(fullUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: auth,
-      },
-    });
+    const response = await secureFetchWithAuth(fullUrl, auth, { method: 'GET' });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-      return NextResponse.json(errorData, { status: response.status });
+      return createNoCacheResponse(errorData, { status: response.status });
     }
 
     const data = await response.json().catch(() => null);
-    const nextResponse = NextResponse.json(data);
+    const nextResponse = createNoCacheResponse(data);
 
     if (refreshResult) {
       const token = refreshResult.token.replace('Bearer ', '');
@@ -140,7 +136,6 @@ export async function GET(request: Request) {
     return nextResponse;
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+    return createNoCacheResponse({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }
-

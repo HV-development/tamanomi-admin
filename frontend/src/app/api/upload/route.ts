@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { secureFetch } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 // サーバーサイドではDocker内部URLを使用
 const API_BASE_URL = process.env.API_BASE_URL 
@@ -16,13 +18,13 @@ export async function POST(request: NextRequest) {
       if (value instanceof File) {
         fileCount += 1;
         if (fileCount > 5) {
-          return NextResponse.json({ error: 'ファイル数が多すぎます（最大5件）' }, { status: 400 });
+          return createNoCacheResponse({ error: 'ファイル数が多すぎます（最大5件）' }, { status: 400 });
         }
         if (!allowedTypes.has(value.type)) {
-          return NextResponse.json({ error: '許可されていないファイル形式です' }, { status: 400 });
+          return createNoCacheResponse({ error: '許可されていないファイル形式です' }, { status: 400 });
         }
         if (value.size > MAX_FILE_SIZE) {
-          return NextResponse.json({ error: 'ファイルサイズが大きすぎます（最大10MB）' }, { status: 400 });
+          return createNoCacheResponse({ error: 'ファイルサイズが大きすぎます（最大10MB）' }, { status: 400 });
         }
       }
     }
@@ -41,8 +43,8 @@ export async function POST(request: NextRequest) {
     
     console.log('📤 Upload: Forwarding to', `${API_BASE_URL}/api/upload`);
     
-    // バックエンドAPIに転送
-    const response = await fetch(`${API_BASE_URL}/api/upload`, {
+    // バックエンドAPIに転送（FormDataの場合はsecureFetchを使用）
+    const response = await secureFetch(`${API_BASE_URL}/api/upload`, {
       method: 'POST',
       body: formData,
       headers: {
@@ -55,20 +57,19 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: '画像のアップロードに失敗しました' }));
-      return NextResponse.json(
+      return createNoCacheResponse(
         { error: errorData.message || '画像のアップロードに失敗しました' },
         { status: response.status }
       );
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    return createNoCacheResponse(data);
   } catch (error) {
     console.error('Upload API error:', error);
-    return NextResponse.json(
+    return createNoCacheResponse(
       { error: '画像のアップロードに失敗しました' },
       { status: 500 }
     );
   }
 }
-

@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { secureFetch } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 // 簡易レート制限（同一IPあたり1分間に10回まで）
 const ipCounters = new Map<string, { count: number; resetAt: number }>();
@@ -26,7 +28,7 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
 export async function POST(request: Request) {
   if (!rateLimit(request)) {
-    return NextResponse.json({ message: 'Too Many Requests' }, { status: 429 });
+    return createNoCacheResponse({ message: 'Too Many Requests' }, { status: 429 });
   }
   try {
     const body = await request.json();
@@ -41,7 +43,7 @@ export async function POST(request: Request) {
     });
     
     // 管理者用のログインエンドポイントを使用
-    const response = await fetch(loginUrl, {
+    const response = await secureFetch(loginUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -52,7 +54,7 @@ export async function POST(request: Request) {
     if (!response.ok) {
       const errorData = await response.json();
       console.error('❌ API Route: Admin login failed', { status: response.status, error: errorData });
-      return NextResponse.json(errorData, { status: response.status });
+      return createNoCacheResponse(errorData, { status: response.status });
     }
 
     const data = await response.json();
@@ -62,9 +64,7 @@ export async function POST(request: Request) {
     console.log('✅ API Route: Admin login successful', { accountType: data.account?.accountType });
 
     // トークンはhttpOnly Cookieに保存し、ボディでは返却しない
-    const res = NextResponse.json({ account: data.account });
-    res.headers.set('Cache-Control', 'no-store');
-    res.headers.set('Pragma', 'no-cache');
+    const res = createNoCacheResponse({ account: data.account });
     if (data.accessToken) {
       res.cookies.set('accessToken', data.accessToken, {
         httpOnly: true,
@@ -111,6 +111,6 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     console.error('❌ API Route: Admin login error', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+    return createNoCacheResponse({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { secureFetchWithAuth } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://api:3002/api/v1';
 
@@ -19,7 +21,7 @@ export async function POST(request: NextRequest) {
   try {
     const auth = getAuthHeader(request);
     if (!auth) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
     }
 
     // セキュリティ改善：個人情報をクエリパラメータで送信しないため、POSTメソッドでボディに含めて送信
@@ -28,13 +30,8 @@ export async function POST(request: NextRequest) {
     const fullUrl = `${API_BASE_URL}/admin/coupon-usage-history`;
     console.log('🔗 API Route: Posting to', fullUrl);
 
-    const response = await fetch(fullUrl, {
+    const response = await secureFetchWithAuth(fullUrl, auth, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': auth,
-      },
-      credentials: 'include',
       body: JSON.stringify(body),
     });
 
@@ -58,16 +55,15 @@ export async function POST(request: NextRequest) {
         error: errorData,
         url: fullUrl,
       });
-      return NextResponse.json(errorData, { status: response.status });
+      return createNoCacheResponse(errorData, { status: response.status });
     }
 
     const data = await response.json();
     console.log('✅ API Route: Get coupon usage history successful', { count: data.history?.length || 0 });
-    return NextResponse.json(data);
+    return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Get coupon usage history error', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+    return createNoCacheResponse({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }
-

@@ -91,7 +91,9 @@ describe('Password Verify Token Filter Functions', () => {
           valid: true,
           accountType: 'merchant',
         },
-      });
+      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('メールアドレスを含むレスポンスからメールアドレスを除外する', () => {
@@ -111,9 +113,11 @@ describe('Password Verify Token Filter Functions', () => {
           valid: true,
           accountType: 'merchant',
         },
-      });
+      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });
       expect(result.data).not.toHaveProperty('email');
       expect(result.data).not.toHaveProperty('displayName');
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('accountTypeがない場合でもvalidのみを返す', () => {
@@ -129,8 +133,10 @@ describe('Password Verify Token Filter Functions', () => {
         data: {
           valid: true,
         },
-      });
+      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });
       expect(result.data).not.toHaveProperty('accountType');
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('validがfalseの場合も正しく処理する', () => {
@@ -148,15 +154,19 @@ describe('Password Verify Token Filter Functions', () => {
           valid: false,
           accountType: 'admin',
         },
-      });
+      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('不正な形式のレスポンスでエラーをスローする（null）', () => {
       expect(() => filterSuccessResponse(null)).toThrow('Invalid response format: expected object');
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('不正な形式のレスポンスでエラーをスローする（文字列）', () => {
       expect(() => filterSuccessResponse('invalid')).toThrow('Invalid response format: expected object');
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('dataフィールドがない場合にエラーをスローする', () => {
@@ -165,6 +175,7 @@ describe('Password Verify Token Filter Functions', () => {
       };
 
       expect(() => filterSuccessResponse(input)).toThrow('Invalid response format: missing or invalid data field');
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('dataフィールドがnullの場合にエラーをスローする', () => {
@@ -173,8 +184,10 @@ describe('Password Verify Token Filter Functions', () => {
       };
 
       expect(() => filterSuccessResponse(input)).toThrow('Invalid response format: missing or invalid data field');
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-  });
+  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });
 
   describe('filterErrorResponse', () => {
     it('正常なエラーレスポンスを正しくフィルタリングする', () => {
@@ -192,7 +205,9 @@ describe('Password Verify Token Filter Functions', () => {
           code: 'INVALID_TOKEN',
           message: 'トークンが無効または期限切れです',
         },
-      });
+      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('メールアドレスを含むエラーレスポンスからメールアドレスを除外する', () => {
@@ -212,9 +227,11 @@ describe('Password Verify Token Filter Functions', () => {
           code: 'INVALID_TOKEN',
           message: 'トークンが無効または期限切れです',
         },
-      });
+      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });
       expect(result.error).not.toHaveProperty('email');
       expect(result.error).not.toHaveProperty('userId');
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('バリデーションエラーの場合、detailsを含める', () => {
@@ -238,7 +255,9 @@ describe('Password Verify Token Filter Functions', () => {
             { field: 'token', message: 'トークンは必須です' },
           ],
         },
-      });
+      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('バリデーションエラーでない場合はdetailsを含めない', () => {
@@ -257,8 +276,10 @@ describe('Password Verify Token Filter Functions', () => {
           code: 'INVALID_TOKEN',
           message: 'トークンが無効または期限切れです',
         },
-      });
+      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });
       expect(result.error).not.toHaveProperty('details');
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('ステータスコードが400でない場合はdetailsを含めない', () => {
@@ -277,8 +298,10 @@ describe('Password Verify Token Filter Functions', () => {
           code: 'VALIDATION_ERROR',
           message: 'トークンが正しくありません',
         },
-      });
+      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });
       expect(result.error).not.toHaveProperty('details');
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('nullの場合はデフォルトエラーを返す', () => {
@@ -289,7 +312,9 @@ describe('Password Verify Token Filter Functions', () => {
           code: 'INTERNAL_ERROR',
           message: 'トークンの検証に失敗しました',
         },
-      });
+      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('errorフィールドがない場合はデフォルトエラーを返す', () => {
@@ -304,7 +329,9 @@ describe('Password Verify Token Filter Functions', () => {
           code: 'INTERNAL_ERROR',
           message: 'トークンの検証に失敗しました',
         },
-      });
+      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('codeやmessageが欠落している場合も安全に処理する', () => {
@@ -321,9 +348,12 @@ describe('Password Verify Token Filter Functions', () => {
           code: 'INTERNAL_ERROR',
           message: 'トークンの検証に失敗しました',
         },
-      });
+      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-  });
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });
+  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });
 
   describe('セキュリティシナリオ', () => {
     it('バックエンドが誤ってメールアドレスを含む成功レスポンスを返した場合、フィルタリングで除外される', () => {
@@ -348,7 +378,9 @@ describe('Password Verify Token Filter Functions', () => {
           valid: true,
           accountType: 'merchant',
         },
-      });
+      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('バックエンドが誤ってメールアドレスを含むエラーレスポンスを返した場合、フィルタリングで除外される', () => {
@@ -370,7 +402,11 @@ describe('Password Verify Token Filter Functions', () => {
           code: 'INVALID_TOKEN',
           message: 'トークンが無効または期限切れです',
         },
-      });
+      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-  });
-});
+    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });
+  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });
+cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+    });

@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { secureFetch } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
@@ -87,7 +89,7 @@ export async function GET(request: Request) {
     const token = url.searchParams.get('token');
     
     if (!token) {
-      return NextResponse.json(
+      return createNoCacheResponse(
         { error: { code: 'VALIDATION_ERROR', message: 'トークンが正しくありません' } },
         { status: 400 }
       );
@@ -95,7 +97,7 @@ export async function GET(request: Request) {
 
     console.log('🔐 API Route: Password token verification request received', { token: token.substring(0, 8) + '...' });
 
-    const response = await fetch(`${API_BASE_URL}/password/verify-token?token=${token}`, {
+    const response = await secureFetch(`${API_BASE_URL}/password/verify-token?token=${token}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -114,7 +116,7 @@ export async function GET(request: Request) {
       
       // エラーレスポンスをフィルタリング
       const filteredError = filterErrorResponse(errorData, response.status);
-      return NextResponse.json(filteredError, { status: response.status });
+      return createNoCacheResponse(filteredError, { status: response.status });
     }
 
     const data = await response.json();
@@ -128,14 +130,14 @@ export async function GET(request: Request) {
     // 成功レスポンスをフィルタリング
     try {
       const filteredData = filterSuccessResponse(data);
-      return NextResponse.json(filteredData);
+      return createNoCacheResponse(filteredData);
     } catch (filterError) {
       // 予期しないレスポンス形式の場合
       console.error('❌ API Route: Unexpected response format', {
         error: filterError,
         receivedData: data,
       });
-      return NextResponse.json({
+      return createNoCacheResponse({
         error: {
           code: 'INTERNAL_ERROR',
           message: 'トークンの検証に失敗しました',
@@ -149,7 +151,7 @@ export async function GET(request: Request) {
       errorStack: error instanceof Error ? error.stack : undefined,
       API_BASE_URL
     });
-    return NextResponse.json({ 
+    return createNoCacheResponse({ 
       error: {
         code: 'INTERNAL_ERROR',
         message: 'トークンの検証に失敗しました', 
