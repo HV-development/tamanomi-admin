@@ -10,8 +10,8 @@ overrides:
 
 dependencies:
   '@hv-development/schemas':
-    specifier: 1.75.0
-    version: 1.75.0
+    specifier: 1.76.0
+    version: 1.76.0
   autoprefixer:
     specifier: 10.4.21
     version: 10.4.21(postcss@8.5.6)
@@ -54,7 +54,7 @@ devDependencies:
     specifier: 1.12.0
     version: 1.12.0
   '@tailwindcss/postcss':
-    specifier: ^4.1.18
+    specifier: ^4
     version: 4.1.18
   '@testing-library/jest-dom':
     specifier: ^6.9.1
@@ -951,8 +951,8 @@ packages:
     engines: {node: '>=18.18'}
     dev: true
 
-  /@hv-development/schemas@1.75.0:
-    resolution: {integrity: sha512-rEsFhTJl0+fycSC1GIMpvez2An0mO6nMLcwCQO86GqggOik1zZ3/AEQ7+J3QpFvUVAcImwcoKpHbibmHXnoWdg==, tarball: https://npm.pkg.github.com/download/@hv-development/schemas/1.75.0/76cf2bd0176b524a5c89fa57d2e7ca30f69a486e}
+  /@hv-development/schemas@1.76.0:
+    resolution: {integrity: sha512-Mgirg2C6FCrD2aPNubUNaVCGivraPmHt/yo/SGvrY24v2mLBAPEDg6vnAR0rAQy2IfPpT1up1EXBY7NM5byfCw==, tarball: https://npm.pkg.github.com/download/@hv-development/schemas/1.76.0/956814da0faaf49d6d6b2a83e342122d4d6b1880}
     engines: {node: 22.x}
     dependencies:
       zod: 3.25.76
