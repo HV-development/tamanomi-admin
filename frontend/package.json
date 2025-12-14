@@ -21,7 +21,7 @@
     "test:e2e:debug": "playwright test --debug"
   },
   "dependencies": {
-    "@hv-development/schemas": "1.74.0",
+    "@hv-development/schemas": "1.75.0",
     "autoprefixer": "10.4.21",
     "jose": "^6.1.0",
     "lucide-react": "^0.555.0",

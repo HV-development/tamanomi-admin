@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import { secureFetchWithAuth } from '@/lib/fetch-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
 

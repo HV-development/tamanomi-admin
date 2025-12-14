@@ -25,13 +25,15 @@ export default defineConfig({
   /* 共有設定 */
   use: {
     /* ベースURL（開発サーバーのURL） */
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3001',
     /* アクションのタイムアウト */
     actionTimeout: 10 * 1000,
     /* ナビゲーションのタイムアウト */
     navigationTimeout: 30 * 1000,
     /* スクリーンショットを失敗時のみ取得 */
     screenshot: 'only-on-failure',
+    /* 動画を常に録画 */
+    video: 'on',
     /* トレースを失敗時のみ取得 */
     trace: 'on-first-retry',
   },
@@ -42,20 +44,12 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
   ],
 
   /* 開発サーバーの設定 */
   webServer: {
-    command: 'pnpm dev',
-    url: 'http://localhost:3000',
+    command: 'pnpm dev --port 3001',
+    url: 'http://localhost:3001',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
     // サーバーが完全に起動するまで待機

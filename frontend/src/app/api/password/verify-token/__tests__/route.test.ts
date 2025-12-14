@@ -19,13 +19,11 @@ describe('/api/password/verify-token endpoint', () => {
     vi.clearAllMocks();
     process.env = { ...ORIGINAL_ENV };
     process.env.API_BASE_URL = API_BASE_URL;
-  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
-    });
+  });
 
   afterEach(() => {
     process.env = ORIGINAL_ENV;
-  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
-    });
+  });
 
   function createRequest(token: string | null): Request {
     const url = token 
@@ -47,7 +45,6 @@ describe('/api/password/verify-token endpoint', () => {
         ok: true,
         status: 200,
         json: async () => mockResponse,
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const request = createRequest('valid-token-123');
@@ -60,7 +57,6 @@ describe('/api/password/verify-token endpoint', () => {
           valid: true,
           accountType: 'merchant',
         },
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       expect(mockFetch).toHaveBeenCalledWith(
@@ -72,7 +68,6 @@ describe('/api/password/verify-token endpoint', () => {
           }),
         })
       );
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('バックエンドがメールアドレスを含むレスポンスを返しても、フィルタリングで除外される', async () => {
@@ -90,7 +85,6 @@ describe('/api/password/verify-token endpoint', () => {
         ok: true,
         status: 200,
         json: async () => mockResponseWithEmail,
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const request = createRequest('valid-token-123');
@@ -104,11 +98,9 @@ describe('/api/password/verify-token endpoint', () => {
           valid: true,
           accountType: 'merchant',
         },
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
       expect(data.data).not.toHaveProperty('email');
       expect(data.data).not.toHaveProperty('displayName');
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('accountTypeがない場合でもvalidのみを返す', async () => {
@@ -122,7 +114,6 @@ describe('/api/password/verify-token endpoint', () => {
         ok: true,
         status: 200,
         json: async () => mockResponse,
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const request = createRequest('valid-token-123');
@@ -134,12 +125,9 @@ describe('/api/password/verify-token endpoint', () => {
         data: {
           valid: true,
         },
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
       expect(data.data).not.toHaveProperty('accountType');
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
   describe('異常系: トークン検証失敗', () => {
@@ -155,7 +143,6 @@ describe('/api/password/verify-token endpoint', () => {
         ok: false,
         status: 400,
         json: async () => mockErrorResponse,
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const request = createRequest('invalid-token');
@@ -168,9 +155,7 @@ describe('/api/password/verify-token endpoint', () => {
           code: 'INVALID_TOKEN',
           message: 'トークンが無効または期限切れです',
         },
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('バックエンドがメールアドレスを含むエラーレスポンスを返しても、フィルタリングで除外される', async () => {
@@ -187,7 +172,6 @@ describe('/api/password/verify-token endpoint', () => {
         ok: false,
         status: 400,
         json: async () => mockErrorResponseWithEmail,
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const request = createRequest('invalid-token');
@@ -201,11 +185,9 @@ describe('/api/password/verify-token endpoint', () => {
           code: 'INVALID_TOKEN',
           message: 'トークンが無効または期限切れです',
         },
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
       expect(data.error).not.toHaveProperty('email');
       expect(data.error).not.toHaveProperty('accountId');
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('バリデーションエラーの場合、detailsを含める', async () => {
@@ -223,7 +205,6 @@ describe('/api/password/verify-token endpoint', () => {
         ok: false,
         status: 400,
         json: async () => mockValidationError,
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const request = createRequest('invalid-token');
@@ -239,11 +220,8 @@ describe('/api/password/verify-token endpoint', () => {
             { field: 'token', message: 'トークンは必須です' },
           ],
         },
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
   describe('バリデーション: リクエストパラメータ', () => {
@@ -258,14 +236,11 @@ describe('/api/password/verify-token endpoint', () => {
           code: 'VALIDATION_ERROR',
           message: 'トークンが正しくありません',
         },
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       // バックエンドへのリクエストは送信されない
       expect(mockFetch).not.toHaveBeenCalled();
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
   describe('エラーハンドリング', () => {
@@ -275,7 +250,6 @@ describe('/api/password/verify-token endpoint', () => {
         ok: true,
         status: 200,
         json: async () => ({ invalidFormat: true }), // dataフィールドがない
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const request = createRequest('valid-token');
@@ -288,9 +262,7 @@ describe('/api/password/verify-token endpoint', () => {
           code: 'INTERNAL_ERROR',
           message: 'トークンの検証に失敗しました',
         },
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('ネットワークエラーの場合、500エラーを返す', async () => {
@@ -306,9 +278,7 @@ describe('/api/password/verify-token endpoint', () => {
           code: 'INTERNAL_ERROR',
           message: 'トークンの検証に失敗しました',
         },
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('JSON解析エラーの場合、適切に処理する', async () => {
@@ -318,7 +288,6 @@ describe('/api/password/verify-token endpoint', () => {
         json: async () => {
           throw new Error('Invalid JSON');
         },
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const request = createRequest('invalid-token');
@@ -330,9 +299,7 @@ describe('/api/password/verify-token endpoint', () => {
       expect(data.error).toBeDefined();
       expect(data.error.code).toBeDefined();
       expect(data.error.message).toBeDefined();
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
   describe('セキュリティ検証', () => {
@@ -353,7 +320,6 @@ describe('/api/password/verify-token endpoint', () => {
         ok: true,
         status: 200,
         json: async () => personalInfoResponse,
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const request = createRequest('valid-token');
@@ -368,7 +334,6 @@ describe('/api/password/verify-token endpoint', () => {
       expect(data.data).not.toHaveProperty('accountId');
       expect(data.data).not.toHaveProperty('phone');
       expect(data.data).not.toHaveProperty('address');
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('全てのエラーレスポンスから個人情報が除外される', async () => {
@@ -386,7 +351,6 @@ describe('/api/password/verify-token endpoint', () => {
         ok: false,
         status: 400,
         json: async () => personalInfoError,
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const request = createRequest('invalid-token');
@@ -399,9 +363,6 @@ describe('/api/password/verify-token endpoint', () => {
       expect(data.error).not.toHaveProperty('email');
       expect(data.error).not.toHaveProperty('userId');
       expect(data.error).not.toHaveProperty('phone');
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });

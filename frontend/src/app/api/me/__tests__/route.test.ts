@@ -13,12 +13,10 @@ describe('/api/me endpoint - プロキシパターン', () => {
     vi.clearAllMocks();
     process.env = { ...ORIGINAL_ENV };
     process.env.API_BASE_URL = API_BASE_URL;
-  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
   afterEach(() => {
     process.env = ORIGINAL_ENV;
-  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
   /**
@@ -32,7 +30,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
     return new Request('http://localhost:3000/api/me', {
       method: 'GET',
       headers,
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
   };
 
@@ -48,7 +45,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
         ok: true,
         status: 200,
         json: async () => backendResponse,
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const request = createRequest('valid-jwt-token');
@@ -69,7 +65,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
           }),
         })
       );
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('merchant アカウント情報を正しく取得できる', async () => {
@@ -83,7 +78,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
         ok: true,
         status: 200,
         json: async () => backendResponse,
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const request = createRequest('valid-jwt-token');
@@ -93,7 +87,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
       expect(response.status).toBe(200);
       expect(data.accountType).toBe('merchant');
       expect(data.merchantId).toBe('merchant-123');
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('shop アカウント情報を正しく取得できる', async () => {
@@ -108,7 +101,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
         ok: true,
         status: 200,
         json: async () => backendResponse,
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const request = createRequest('valid-jwt-token');
@@ -119,9 +111,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
       expect(data.accountType).toBe('shop');
       expect(data.shopId).toBe('shop-456');
       expect(data.merchantId).toBe('merchant-123');
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
   describe('🚨 異常系: バックエンドエラーのハンドリング', () => {
@@ -135,7 +125,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
       
       // バックエンドAPIは呼ばれない
       expect(mockFetch).not.toHaveBeenCalled();
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('バックエンドが403を返した場合（無効なトークン）', async () => {
@@ -145,7 +134,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
         json: async () => ({
           error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' }
         }),
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const request = createRequest('invalid-token');
@@ -154,7 +142,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
 
       expect(response.status).toBe(403);
       expect(data.message).toContain('Invalid or expired token');
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('バックエンドが404を返した場合', async () => {
@@ -164,7 +151,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
         json: async () => ({
           error: { code: 'NOT_FOUND', message: 'Account not found' }
         }),
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const request = createRequest('valid-token');
@@ -173,7 +159,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
 
       expect(response.status).toBe(404);
       expect(data.message).toContain('Account not found');
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('バックエンドが500エラーを返した場合', async () => {
@@ -183,14 +168,12 @@ describe('/api/me endpoint - プロキシパターン', () => {
         json: async () => ({
           error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
         }),
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const request = createRequest('valid-token');
       const response = await GET(request);
 
       expect(response.status).toBe(500);
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('ネットワークエラーが発生した場合', async () => {
@@ -203,9 +186,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
       expect(response.status).toBe(500);
       expect(data.message).toBe('Internal Server Error');
       expect(data.error).toBe('Network error');
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
   describe('🔐 セキュリティ: JWT検証はバックエンドで実施', () => {
@@ -218,7 +199,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
         json: async () => ({
           error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' }
         }),
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const forgedToken = 'eyJhbGciOiJIUzI1NiJ9.fake.payload';
@@ -236,7 +216,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
           }),
         })
       );
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('改竄されたペイロードはバックエンドで拒否される', async () => {
@@ -246,7 +225,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
         json: async () => ({
           error: { message: 'Invalid or expired token' }
         }),
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const tamperedToken = 'header.tamperedPayload.signature';
@@ -254,9 +232,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
       const response = await GET(request);
 
       expect(response.status).toBe(403);
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
   describe('📦 レスポンスヘッダー', () => {
@@ -268,7 +244,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
           accountType: 'admin',
           email: 'admin@example.com',
         }),
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const request = createRequest('valid-token');
@@ -276,9 +251,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
 
       expect(response.headers.get('Cache-Control')).toBe('no-store');
       expect(response.headers.get('Pragma')).toBe('no-cache');
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
   describe('🍪 Cookie処理', () => {
@@ -287,7 +260,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
         ok: true,
         status: 200,
         json: async () => ({ accountType: 'admin' }),
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const headers = new Headers();
@@ -295,7 +267,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
       const request = new Request('http://localhost:3000/api/me', {
         method: 'GET',
         headers,
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       await GET(request);
@@ -308,7 +279,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
           }),
         })
       );
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
     it('accessToken が優先される', async () => {
@@ -316,7 +286,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
         ok: true,
         status: 200,
         json: async () => ({ accountType: 'admin' }),
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       const headers = new Headers();
@@ -324,7 +293,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
       const request = new Request('http://localhost:3000/api/me', {
         method: 'GET',
         headers,
-      cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
 
       await GET(request);
@@ -337,9 +305,6 @@ describe('/api/me endpoint - プロキシパターン', () => {
           }),
         })
       );
-    cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });
-cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
     });

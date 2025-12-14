@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server';
 import { secureFetch, secureFetchWithAuth } from '@/lib/fetch-utils';
-import { createNoCacheResponse, addNoCacheHeaders } from '@/lib/response-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://api:3002/api/v1';
 

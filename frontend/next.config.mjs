@@ -187,9 +187,9 @@ const nextConfig = {
       },
       {
         // 静的ファイル（画像、フォント、CSS、JS）はキャッシュを有効化
-        source: '/:path*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot|css|js)$',
+        source: '/:path*\\.(svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot|css|js)$',
         headers: [
-          ...securityHeaders.filter(h => 
+          ...securityHeaders.filter(h =>
             h.key !== 'Cache-Control' && h.key !== 'Pragma'
           ),
           {
@@ -202,7 +202,7 @@ const nextConfig = {
         // Next.jsの静的ファイル（_next/static）はキャッシュを有効化
         source: '/_next/static/:path*',
         headers: [
-          ...securityHeaders.filter(h => 
+          ...securityHeaders.filter(h =>
             h.key !== 'Cache-Control' && h.key !== 'Pragma'
           ),
           {
@@ -215,7 +215,7 @@ const nextConfig = {
         // Next.jsの画像最適化エンドポイント（/_next/image）はキャッシュを有効化
         source: '/_next/image',
         headers: [
-          ...securityHeaders.filter(h => 
+          ...securityHeaders.filter(h =>
             h.key !== 'Cache-Control' && h.key !== 'Pragma'
           ),
           {
