@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { secureFetchWithAuth } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
@@ -31,10 +32,16 @@ export async function GET(request: Request) {
       authHeader: authHeaders.Authorization ? 'Bearer ***' : 'none'
     });
     
-    const response = await fetch(`${API_BASE_URL}/admin/merchants/me`, {
-      method: 'GET',
-      headers: authHeaders,
-    });
+    const authHeader = authHeaders.Authorization;
+    if (!authHeader) {
+      return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const response = await secureFetchWithAuth(
+      `${API_BASE_URL}/admin/merchants/me`,
+      authHeader,
+      { method: 'GET' }
+    );
 
     console.log('📡 API Route: Response status:', response.status);
 
@@ -45,7 +52,7 @@ export async function GET(request: Request) {
         statusText: response.statusText,
         error: errorData 
       });
-      return NextResponse.json(errorData, { status: response.status });
+      return createNoCacheResponse(errorData, { status: response.status });
     }
 
     const data = await response.json();
@@ -55,7 +62,7 @@ export async function GET(request: Request) {
       merchantId: data.data?.id || data.id || 'unknown',
       merchantName: data.data?.name || data.name || 'unknown'
     });
-    return NextResponse.json(data);
+    return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: 自分の事業者情報取得エラー', {
       error,
@@ -64,7 +71,7 @@ export async function GET(request: Request) {
       API_BASE_URL
     });
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ 
+    return createNoCacheResponse({ 
       message: '内部サーバーエラー', 
       error: errorMessage,
       details: error instanceof Error ? error.stack : undefined

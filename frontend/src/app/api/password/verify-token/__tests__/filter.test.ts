@@ -91,7 +91,7 @@ describe('Password Verify Token Filter Functions', () => {
           valid: true,
           accountType: 'merchant',
         },
-      });
+    });
     });
 
     it('メールアドレスを含むレスポンスからメールアドレスを除外する', () => {
@@ -111,7 +111,7 @@ describe('Password Verify Token Filter Functions', () => {
           valid: true,
           accountType: 'merchant',
         },
-      });
+    });
       expect(result.data).not.toHaveProperty('email');
       expect(result.data).not.toHaveProperty('displayName');
     });
@@ -129,7 +129,7 @@ describe('Password Verify Token Filter Functions', () => {
         data: {
           valid: true,
         },
-      });
+    });
       expect(result.data).not.toHaveProperty('accountType');
     });
 
@@ -148,7 +148,7 @@ describe('Password Verify Token Filter Functions', () => {
           valid: false,
           accountType: 'admin',
         },
-      });
+    });
     });
 
     it('不正な形式のレスポンスでエラーをスローする（null）', () => {
@@ -174,7 +174,7 @@ describe('Password Verify Token Filter Functions', () => {
 
       expect(() => filterSuccessResponse(input)).toThrow('Invalid response format: missing or invalid data field');
     });
-  });
+    });
 
   describe('filterErrorResponse', () => {
     it('正常なエラーレスポンスを正しくフィルタリングする', () => {
@@ -192,7 +192,7 @@ describe('Password Verify Token Filter Functions', () => {
           code: 'INVALID_TOKEN',
           message: 'トークンが無効または期限切れです',
         },
-      });
+    });
     });
 
     it('メールアドレスを含むエラーレスポンスからメールアドレスを除外する', () => {
@@ -212,7 +212,7 @@ describe('Password Verify Token Filter Functions', () => {
           code: 'INVALID_TOKEN',
           message: 'トークンが無効または期限切れです',
         },
-      });
+    });
       expect(result.error).not.toHaveProperty('email');
       expect(result.error).not.toHaveProperty('userId');
     });
@@ -238,7 +238,7 @@ describe('Password Verify Token Filter Functions', () => {
             { field: 'token', message: 'トークンは必須です' },
           ],
         },
-      });
+    });
     });
 
     it('バリデーションエラーでない場合はdetailsを含めない', () => {
@@ -257,7 +257,7 @@ describe('Password Verify Token Filter Functions', () => {
           code: 'INVALID_TOKEN',
           message: 'トークンが無効または期限切れです',
         },
-      });
+    });
       expect(result.error).not.toHaveProperty('details');
     });
 
@@ -277,7 +277,7 @@ describe('Password Verify Token Filter Functions', () => {
           code: 'VALIDATION_ERROR',
           message: 'トークンが正しくありません',
         },
-      });
+    });
       expect(result.error).not.toHaveProperty('details');
     });
 
@@ -289,7 +289,7 @@ describe('Password Verify Token Filter Functions', () => {
           code: 'INTERNAL_ERROR',
           message: 'トークンの検証に失敗しました',
         },
-      });
+    });
     });
 
     it('errorフィールドがない場合はデフォルトエラーを返す', () => {
@@ -304,7 +304,7 @@ describe('Password Verify Token Filter Functions', () => {
           code: 'INTERNAL_ERROR',
           message: 'トークンの検証に失敗しました',
         },
-      });
+    });
     });
 
     it('codeやmessageが欠落している場合も安全に処理する', () => {
@@ -321,9 +321,9 @@ describe('Password Verify Token Filter Functions', () => {
           code: 'INTERNAL_ERROR',
           message: 'トークンの検証に失敗しました',
         },
-      });
     });
-  });
+    });
+    });
 
   describe('セキュリティシナリオ', () => {
     it('バックエンドが誤ってメールアドレスを含む成功レスポンスを返した場合、フィルタリングで除外される', () => {
@@ -348,7 +348,7 @@ describe('Password Verify Token Filter Functions', () => {
           valid: true,
           accountType: 'merchant',
         },
-      });
+    });
     });
 
     it('バックエンドが誤ってメールアドレスを含むエラーレスポンスを返した場合、フィルタリングで除外される', () => {
@@ -370,7 +370,7 @@ describe('Password Verify Token Filter Functions', () => {
           code: 'INVALID_TOKEN',
           message: 'トークンが無効または期限切れです',
         },
-      });
     });
-  });
-});
+    });
+    });
+    });

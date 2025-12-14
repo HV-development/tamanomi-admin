@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { secureFetch, secureFetchWithAuth } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://api:3002/api/v1';
 
@@ -25,7 +27,7 @@ async function refreshAccessToken(request: Request): Promise<{ token: string; re
       return null;
     }
 
-    const refreshResponse = await fetch(`${API_BASE_URL}/refresh`, {
+    const refreshResponse = await secureFetch(`${API_BASE_URL}/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -66,7 +68,7 @@ export async function POST(request: NextRequest) {
           hasCookies: !!cookies,
           cookies: cookies ? cookies.substring(0, 100) : 'none'
         });
-        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+        return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
       }
       auth = refreshResult.token;
     }
@@ -77,25 +79,21 @@ export async function POST(request: NextRequest) {
     const fullUrl = `${API_BASE_URL}/admin/users`;
     console.log('🔗 API Route: Posting to', fullUrl);
 
-    const response = await fetch(fullUrl, {
+    const response = await secureFetchWithAuth(fullUrl, auth, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': auth,
-      },
       body: JSON.stringify(body),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
       console.error('❌ API Route: Get users failed', { status: response.status, error: errorData });
-      return NextResponse.json(errorData, { status: response.status });
+      return createNoCacheResponse(errorData, { status: response.status });
     }
 
     const data = await response.json();
     console.log('✅ API Route: Get users successful', { count: data.users?.length || 0 });
     
-    const nextResponse = NextResponse.json(data);
+    const nextResponse = createNoCacheResponse(data);
     
     // リフレッシュした場合はCookieを設定
     if (refreshResult) {
@@ -141,7 +139,6 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     console.error('❌ API Route: Get users error', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+    return createNoCacheResponse({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }
-

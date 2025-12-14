@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { secureFetch } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
@@ -12,7 +13,7 @@ export async function GET() {
     const url = `${API_BASE_URL}/genres`;
     console.log('📤 Forwarding to:', url);
 
-    const response = await fetch(url, {
+    const response = await secureFetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -24,7 +25,7 @@ export async function GET() {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('❌ Backend error:', errorText);
-      return NextResponse.json(
+      return createNoCacheResponse(
         { error: 'ジャンルカテゴリーの取得に失敗しました' },
         { status: response.status }
       );
@@ -32,13 +33,12 @@ export async function GET() {
 
     const data = await response.json();
     console.log('✅ Successfully fetched genres');
-    return NextResponse.json(data);
+    return createNoCacheResponse(data);
   } catch (error) {
     console.error('❌ Error fetching genres:', error);
-    return NextResponse.json(
+    return createNoCacheResponse(
       { error: 'ジャンルカテゴリーの取得に失敗しました' },
       { status: 500 }
     );
   }
 }
-

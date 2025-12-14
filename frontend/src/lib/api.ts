@@ -60,6 +60,7 @@ class ApiClient {
         ...fetchOptions,
         credentials: 'include',
         headers,
+        cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
       });
 
       if (!response.ok) {
@@ -85,6 +86,7 @@ class ApiClient {
               ...fetchOptions,
               credentials: 'include',
               headers,
+              cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
             });
 
             if (!retryResponse.ok) {
@@ -96,6 +98,7 @@ class ApiClient {
                   ...fetchOptions,
                   credentials: 'include',
                   headers,
+                  cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
                 });
 
                 if (!secondRetryResponse.ok) {
@@ -376,6 +379,7 @@ class ApiClient {
           ...(authToken && { 'Authorization': authToken }),
         },
         body: JSON.stringify(publicStatusData),
+        cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
       });
 
       if (!response.ok) {
@@ -400,6 +404,7 @@ class ApiClient {
           ...(authToken && { 'Authorization': authToken }),
         },
         body: JSON.stringify(statusData),
+        cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
       });
 
       if (!response.ok) {

@@ -13,11 +13,11 @@ describe('/api/me endpoint - プロキシパターン', () => {
     vi.clearAllMocks();
     process.env = { ...ORIGINAL_ENV };
     process.env.API_BASE_URL = API_BASE_URL;
-  });
+    });
 
   afterEach(() => {
     process.env = ORIGINAL_ENV;
-  });
+    });
 
   /**
    * リクエストオブジェクトを作成
@@ -45,7 +45,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
         ok: true,
         status: 200,
         json: async () => backendResponse,
-      });
+    });
 
       const request = createRequest('valid-jwt-token');
       const response = await GET(request);
@@ -78,7 +78,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
         ok: true,
         status: 200,
         json: async () => backendResponse,
-      });
+    });
 
       const request = createRequest('valid-jwt-token');
       const response = await GET(request);
@@ -101,7 +101,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
         ok: true,
         status: 200,
         json: async () => backendResponse,
-      });
+    });
 
       const request = createRequest('valid-jwt-token');
       const response = await GET(request);
@@ -112,7 +112,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
       expect(data.shopId).toBe('shop-456');
       expect(data.merchantId).toBe('merchant-123');
     });
-  });
+    });
 
   describe('🚨 異常系: バックエンドエラーのハンドリング', () => {
     it('トークンなしの場合は401を返す', async () => {
@@ -134,7 +134,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
         json: async () => ({
           error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' }
         }),
-      });
+    });
 
       const request = createRequest('invalid-token');
       const response = await GET(request);
@@ -151,7 +151,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
         json: async () => ({
           error: { code: 'NOT_FOUND', message: 'Account not found' }
         }),
-      });
+    });
 
       const request = createRequest('valid-token');
       const response = await GET(request);
@@ -168,7 +168,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
         json: async () => ({
           error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
         }),
-      });
+    });
 
       const request = createRequest('valid-token');
       const response = await GET(request);
@@ -187,7 +187,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
       expect(data.message).toBe('Internal Server Error');
       expect(data.error).toBe('Network error');
     });
-  });
+    });
 
   describe('🔐 セキュリティ: JWT検証はバックエンドで実施', () => {
     it('偽造されたJWTはバックエンドで検出される', async () => {
@@ -199,7 +199,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
         json: async () => ({
           error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' }
         }),
-      });
+    });
 
       const forgedToken = 'eyJhbGciOiJIUzI1NiJ9.fake.payload';
       const request = createRequest(forgedToken);
@@ -225,7 +225,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
         json: async () => ({
           error: { message: 'Invalid or expired token' }
         }),
-      });
+    });
 
       const tamperedToken = 'header.tamperedPayload.signature';
       const request = createRequest(tamperedToken);
@@ -233,7 +233,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
 
       expect(response.status).toBe(403);
     });
-  });
+    });
 
   describe('📦 レスポンスヘッダー', () => {
     it('キャッシュ無効化ヘッダーが設定される', async () => {
@@ -244,7 +244,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
           accountType: 'admin',
           email: 'admin@example.com',
         }),
-      });
+    });
 
       const request = createRequest('valid-token');
       const response = await GET(request);
@@ -252,7 +252,7 @@ describe('/api/me endpoint - プロキシパターン', () => {
       expect(response.headers.get('Cache-Control')).toBe('no-store');
       expect(response.headers.get('Pragma')).toBe('no-cache');
     });
-  });
+    });
 
   describe('🍪 Cookie処理', () => {
     it('__Host-accessToken から取得できる', async () => {
@@ -260,14 +260,14 @@ describe('/api/me endpoint - プロキシパターン', () => {
         ok: true,
         status: 200,
         json: async () => ({ accountType: 'admin' }),
-      });
+    });
 
       const headers = new Headers();
       headers.set('cookie', '__Host-accessToken=my-token-value');
       const request = new Request('http://localhost:3000/api/me', {
         method: 'GET',
         headers,
-      });
+    });
 
       await GET(request);
 
@@ -286,14 +286,14 @@ describe('/api/me endpoint - プロキシパターン', () => {
         ok: true,
         status: 200,
         json: async () => ({ accountType: 'admin' }),
-      });
+    });
 
       const headers = new Headers();
       headers.set('cookie', 'accessToken=token1; __Host-accessToken=token2');
       const request = new Request('http://localhost:3000/api/me', {
         method: 'GET',
         headers,
-      });
+    });
 
       await GET(request);
 
@@ -306,5 +306,5 @@ describe('/api/me endpoint - プロキシパターン', () => {
         })
       );
     });
-  });
-});
+    });
+    });

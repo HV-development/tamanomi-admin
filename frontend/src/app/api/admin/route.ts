@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { secureFetchWithAuth } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
@@ -35,24 +36,27 @@ export async function GET(request: Request) {
     console.log('🔗 API Route: Fetching from', fullUrl);
     console.log('🔑 API Route: API_BASE_URL', API_BASE_URL);
 
-    const response = await fetch(fullUrl, {
-      method: 'GET',
-      headers: getAuthHeaders(request),
-    });
+    const authHeaders = getAuthHeaders(request);
+    const authHeader = authHeaders.Authorization;
+    if (!authHeader) {
+      return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const response = await secureFetchWithAuth(fullUrl, authHeader, { method: 'GET' });
 
     if (!response.ok) {
       const errorData = await response.json();
       console.error('❌ API Route: Get admin accounts failed', { status: response.status, error: errorData });
-      return NextResponse.json(errorData, { status: response.status });
+      return createNoCacheResponse(errorData, { status: response.status });
     }
 
     const data = await response.json();
     console.log('✅ API Route: Get admin accounts successful', { count: data.accounts?.length || 0 });
-    return NextResponse.json(data);
+    return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Get admin accounts error', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+    return createNoCacheResponse({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }
 
@@ -66,24 +70,33 @@ export async function POST(request: Request) {
       bodyKeys: Object.keys(body)
     });
 
-    const response = await fetch(`${API_BASE_URL}/admin-accounts`, {
-      method: 'POST',
-      headers: getAuthHeaders(request),
-      body: JSON.stringify(body),
-    });
+    const authHeaders = getAuthHeaders(request);
+    const authHeader = authHeaders.Authorization;
+    if (!authHeader) {
+      return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const response = await secureFetchWithAuth(
+      `${API_BASE_URL}/admin-accounts`,
+      authHeader,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json();
       console.error('❌ API Route: admin account creation failed', { status: response.status, error: errorData });
-      return NextResponse.json(errorData, { status: response.status });
+      return createNoCacheResponse(errorData, { status: response.status });
     }
 
     const data = await response.json();
     console.log('✅ API Route: admin account creation successful', { adminAccountId: data.id });
-    return NextResponse.json(data);
+    return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: admin account creation error', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
+    return createNoCacheResponse({ message: '内部サーバーエラー', error: errorMessage }, { status: 500 });
   }
 }

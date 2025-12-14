@@ -9,6 +9,9 @@ const inter = Inter({
   display: "optional"
 });
 
+// 動的レンダリングを強制（キャッシュを無効化）
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "たまのみ - 管理画面",
   description: "たまのみの管理画面です",

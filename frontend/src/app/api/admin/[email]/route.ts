@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { secureFetchWithAuth } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
@@ -28,24 +29,27 @@ export async function GET(request: Request, { params }: { params: Promise<{ emai
     console.log('🔗 API Route: Fetching from', fullUrl);
     console.log('🔑 API Route: API_BASE_URL', API_BASE_URL);
 
-    const response = await fetch(fullUrl, {
-      method: 'GET',
-      headers: getAuthHeaders(request),
-    });
+    const authHeaders = getAuthHeaders(request);
+    const authHeader = authHeaders.Authorization;
+    if (!authHeader) {
+      return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const response = await secureFetchWithAuth(fullUrl, authHeader, { method: 'GET' });
 
     if (!response.ok) {
       const errorData = await response.json();
       console.error('❌ API Route: Get admin account failed', { status: response.status, error: errorData });
-      return NextResponse.json(errorData, { status: response.status });
+      return createNoCacheResponse(errorData, { status: response.status });
     }
 
     const data = await response.json();
     console.log('✅ API Route: Get admin account successful', { email });
-    return NextResponse.json(data);
+    return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Get admin account error', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+    return createNoCacheResponse({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }
 
@@ -55,25 +59,34 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ em
     const body = await request.json();
     console.log('✏️ API Route: Update admin account request received', { email, body });
     
-    const response = await fetch(`${API_BASE_URL}/admin-accounts/${email}`, {
-      method: 'PATCH',
-      headers: getAuthHeaders(request),
-      body: JSON.stringify(body),
-    });
+    const authHeaders = getAuthHeaders(request);
+    const authHeader = authHeaders.Authorization;
+    if (!authHeader) {
+      return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const response = await secureFetchWithAuth(
+      `${API_BASE_URL}/admin-accounts/${email}`,
+      authHeader,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json();
       console.error('❌ API Route: Update admin account failed', { status: response.status, error: errorData });
-      return NextResponse.json(errorData, { status: response.status });
+      return createNoCacheResponse(errorData, { status: response.status });
     }
 
     const data = await response.json();
     console.log('✅ API Route: Update admin account successful', { email });
-    return NextResponse.json(data);
+    return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error(`❌ API Route: Update admin account error`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+    return createNoCacheResponse({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }
 
@@ -82,22 +95,29 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ e
     const { email } = await params;
     console.log('🗑️ API Route: Delete admin account request received', { email });
     
-    const response = await fetch(`${API_BASE_URL}/admin-accounts/${email}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(request),
-    });
+    const authHeaders = getAuthHeaders(request);
+    const authHeader = authHeaders.Authorization;
+    if (!authHeader) {
+      return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const response = await secureFetchWithAuth(
+      `${API_BASE_URL}/admin-accounts/${email}`,
+      authHeader,
+      { method: 'DELETE' }
+    );
 
     if (!response.ok) {
       const errorData = await response.json();
       console.error('❌ API Route: Delete admin account failed', { status: response.status, error: errorData });
-      return NextResponse.json(errorData, { status: response.status });
+      return createNoCacheResponse(errorData, { status: response.status });
     }
 
     console.log('✅ API Route: Delete admin account successful', { email });
-    return NextResponse.json({ message: '管理者アカウントが削除されました' });
+    return createNoCacheResponse({ message: '管理者アカウントが削除されました' });
   } catch (error: unknown) {
     console.error(`❌ API Route: Delete admin account error`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+    return createNoCacheResponse({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }

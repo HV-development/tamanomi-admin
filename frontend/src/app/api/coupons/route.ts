@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { secureFetchWithAuth } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
@@ -56,24 +57,27 @@ export async function GET(request: Request) {
     const fullUrl = `${API_BASE_URL}/coupons?${queryParams.toString()}`;
     console.log('🔗 API Route: Fetching from', fullUrl);
     
-    const response = await fetch(fullUrl, {
-      method: 'GET',
-      headers: getAuthHeaders(request),
-    });
+    const authHeaders = getAuthHeaders(request);
+    const authHeader = authHeaders.Authorization;
+    if (!authHeader) {
+      return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const response = await secureFetchWithAuth(fullUrl, authHeader, { method: 'GET' });
 
     if (!response.ok) {
       const errorData = await response.json();
       console.error('❌ API Route: Get coupons failed', { status: response.status, error: errorData });
-      return NextResponse.json(errorData, { status: response.status });
+      return createNoCacheResponse(errorData, { status: response.status });
     }
 
     const data = await response.json();
     console.log('✅ API Route: Get coupons successful', { count: data.coupons?.length || 0 });
-    return NextResponse.json(data);
+    return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Get coupons error', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+    return createNoCacheResponse({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }
 
@@ -82,25 +86,33 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log('➕ API Route: Create coupon request received', { title: body.title });
     
-    const response = await fetch(`${API_BASE_URL}/coupons`, {
-      method: 'POST',
-      headers: getAuthHeaders(request),
-      body: JSON.stringify(body),
-    });
+    const authHeaders = getAuthHeaders(request);
+    const authHeader = authHeaders.Authorization;
+    if (!authHeader) {
+      return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const response = await secureFetchWithAuth(
+      `${API_BASE_URL}/coupons`,
+      authHeader,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json();
       console.error('❌ API Route: Create coupon failed', { status: response.status, error: errorData });
-      return NextResponse.json(errorData, { status: response.status });
+      return createNoCacheResponse(errorData, { status: response.status });
     }
 
     const data = await response.json();
     console.log('✅ API Route: Create coupon successful', { couponId: data.id });
-    return NextResponse.json(data);
+    return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Create coupon error', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+    return createNoCacheResponse({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }
-

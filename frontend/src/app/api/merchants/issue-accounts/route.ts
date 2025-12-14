@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { secureFetchWithAuth } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
@@ -32,12 +34,19 @@ export async function POST(request: NextRequest) {
       authHeader: authHeaders.Authorization ? 'Bearer ***' : 'none'
     });
     
-    const response = await fetch(`${API_BASE_URL}/admin/merchants/issue-accounts`, {
-      method: 'POST',
-      headers: authHeaders,
-      body: JSON.stringify(body),
-      credentials: 'include',
-    });
+    const authHeader = authHeaders.Authorization;
+    if (!authHeader) {
+      return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const response = await secureFetchWithAuth(
+      `${API_BASE_URL}/admin/merchants/issue-accounts`,
+      authHeader,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }
+    );
 
     console.log('📡 API Route: Response status:', response.status);
 
@@ -48,12 +57,12 @@ export async function POST(request: NextRequest) {
         statusText: response.statusText,
         error: errorData
       });
-      return NextResponse.json(errorData, { status: response.status });
+      return createNoCacheResponse(errorData, { status: response.status });
     }
 
     const data = await response.json();
     console.log('✅ API Route: アカウント発行成功', data);
-    return NextResponse.json(data);
+    return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: アカウント発行エラー', {
       error,
@@ -62,7 +71,7 @@ export async function POST(request: NextRequest) {
       API_BASE_URL
     });
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({
+    return createNoCacheResponse({
       error: {
         code: 'INTERNAL_ERROR',
         message: 'アカウント発行に失敗しました',
@@ -71,6 +80,3 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
-
-
-
