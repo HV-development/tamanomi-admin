@@ -4,14 +4,10 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  js-yaml: '>=4.1.1'
-  tar: '>=7.5.2'
-
 dependencies:
   '@hv-development/schemas':
-    specifier: 1.76.0
-    version: 1.76.0
+    specifier: 1.77.0
+    version: 1.77.0
   autoprefixer:
     specifier: 10.4.21
     version: 10.4.21(postcss@8.5.6)
@@ -22,8 +18,8 @@ dependencies:
     specifier: ^0.555.0
     version: 0.555.0(react@18.3.1)
   next:
-    specifier: ^15.5.9
-    version: 15.5.9(@babel/core@7.28.5)(@playwright/test@1.57.0)(react-dom@18.3.1)(react@18.3.1)
+    specifier: ^15.5.6
+    version: 15.5.9(@babel/core@7.28.5)(react-dom@18.3.1)(react@18.3.1)
   qrcode.react:
     specifier: ^4.2.0
     version: 4.2.0(react@18.3.1)
@@ -45,11 +41,8 @@ devDependencies:
     specifier: 9.36.0
     version: 9.36.0
   '@next/eslint-plugin-next':
-    specifier: 15.5.9
-    version: 15.5.9
-  '@playwright/test':
-    specifier: ^1.57.0
-    version: 1.57.0
+    specifier: 15.5.4
+    version: 15.5.4
   '@rushstack/eslint-patch':
     specifier: 1.12.0
     version: 1.12.0
@@ -101,9 +94,6 @@ devDependencies:
   jsdom:
     specifier: ^27.2.0
     version: 27.2.0
-  playwright:
-    specifier: ^1.57.0
-    version: 1.57.0
   tailwindcss:
     specifier: ^4
     version: 4.1.14
@@ -951,8 +941,8 @@ packages:
     engines: {node: '>=18.18'}
     dev: true
 
-  /@hv-development/schemas@1.76.0:
-    resolution: {integrity: sha512-Mgirg2C6FCrD2aPNubUNaVCGivraPmHt/yo/SGvrY24v2mLBAPEDg6vnAR0rAQy2IfPpT1up1EXBY7NM5byfCw==, tarball: https://npm.pkg.github.com/download/@hv-development/schemas/1.76.0/956814da0faaf49d6d6b2a83e342122d4d6b1880}
+  /@hv-development/schemas@1.77.0:
+    resolution: {integrity: sha512-id9NMBAMxgM5f84oVD1Zxpsml0EnFIogjgPWqaulXkazpmSO1g25T+KAjdobaKFPeZ4L1ZbF2lAzInkhes//Iw==, tarball: https://npm.pkg.github.com/download/@hv-development/schemas/1.77.0/59aff5126f4ea6f0c65a02a2e235262367cfc69f}
     engines: {node: 22.x}
     dependencies:
       zod: 3.25.76
@@ -1221,8 +1211,8 @@ packages:
     resolution: {integrity: sha512-4GlTZ+EJM7WaW2HEZcyU317tIQDjkQIyENDLxYJfSWlfqguN+dHkZgyQTV/7ykvobU7yEH5gKvreNrH4B6QgIg==}
     dev: false
 
-  /@next/eslint-plugin-next@15.5.9:
-    resolution: {integrity: sha512-kUzXx0iFiXw27cQAViE1yKWnz/nF8JzRmwgMRTMh8qMY90crNsdXJRh2e+R0vBpFR3kk1yvAR7wev7+fCCb79Q==}
+  /@next/eslint-plugin-next@15.5.4:
+    resolution: {integrity: sha512-SR1vhXNNg16T4zffhJ4TS7Xn7eq4NfKfcOsRwea7RIAHrjRpI9ALYbamqIJqkAhowLlERffiwk0FMvTLNdnVtw==}
     dependencies:
       fast-glob: 3.3.1
     dev: true
@@ -1319,13 +1309,6 @@ packages:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
     dev: true
-
-  /@playwright/test@1.57.0:
-    resolution: {integrity: sha512-6TyEnHgd6SArQO8UO2OMTxshln3QMWBtPGrOCgs3wVEmQmwyuNtB10IZMfmYDE0riwNR1cu4q+pPcxMVtaG3TA==}
-    engines: {node: '>=18'}
-    hasBin: true
-    dependencies:
-      playwright: 1.57.0
 
   /@rolldown/pluginutils@1.0.0-beta.47:
     resolution: {integrity: sha512-8QagwMH3kNCuzD8EWL8R2YPW5e4OrHNSAHRFDdmFqEwEaD/KcNKjVoumo+gP2vW5eKB2UPbM6vTYiGZX0ixLnw==}
@@ -3222,13 +3205,6 @@ packages:
     resolution: {integrity: sha512-ZsDfxO51wGAXREY55a7la9LScWpwv9RxIrYABrlvOFBlH/ShPnrtsXeuUIfXKKOVicNxQ+o8JTbJvjS4M89yew==}
     dev: false
 
-  /fsevents@2.3.2:
-    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
-    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
-    os: [darwin]
-    requiresBuild: true
-    optional: true
-
   /fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -4017,7 +3993,7 @@ packages:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
     dev: true
 
-  /next@15.5.9(@babel/core@7.28.5)(@playwright/test@1.57.0)(react-dom@18.3.1)(react@18.3.1):
+  /next@15.5.9(@babel/core@7.28.5)(react-dom@18.3.1)(react@18.3.1):
     resolution: {integrity: sha512-agNLK89seZEtC5zUHwtut0+tNrc0Xw4FT/Dg+B/VLEo9pAcS9rtTKpek3V6kVcVwsB2YlqMaHdfZL4eLEVYuCg==}
     engines: {node: ^18.18.0 || ^19.8.0 || >= 20.0.0}
     hasBin: true
@@ -4039,7 +4015,6 @@ packages:
         optional: true
     dependencies:
       '@next/env': 15.5.9
-      '@playwright/test': 1.57.0
       '@swc/helpers': 0.5.15
       caniuse-lite: 1.0.30001760
       postcss: 8.4.31
@@ -4217,20 +4192,6 @@ packages:
     resolution: {integrity: sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==}
     engines: {node: '>=12'}
     dev: true
-
-  /playwright-core@1.57.0:
-    resolution: {integrity: sha512-agTcKlMw/mjBWOnD6kFZttAAGHgi/Nw0CZ2o6JqWSbMlI219lAFLZZCyqByTsvVAJq5XA5H8cA6PrvBRpBWEuQ==}
-    engines: {node: '>=18'}
-    hasBin: true
-
-  /playwright@1.57.0:
-    resolution: {integrity: sha512-ilYQj1s8sr2ppEJ2YVadYBN0Mb3mdo9J0wQ+UuDhzYqURwSoW4n1Xs5vs7ORwgDGmyEh33tRMeS8KhdkMoLXQw==}
-    engines: {node: '>=18'}
-    hasBin: true
-    dependencies:
-      playwright-core: 1.57.0
-    optionalDependencies:
-      fsevents: 2.3.2
 
   /possible-typed-array-names@1.1.0:
     resolution: {integrity: sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg==}
