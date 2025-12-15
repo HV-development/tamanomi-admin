@@ -1,41 +1,25 @@
-import { secureFetchWithAuth } from '@/lib/fetch-utils';
+import { NextRequest } from 'next/server';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
-function getAuthHeaders(request: Request): Record<string, string> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const headerToken = request.headers.get('authorization');
-  if (headerToken) {
-    headers['Authorization'] = headerToken;
-    return headers;
-  }
-  const cookieHeader = request.headers.get('cookie') || '';
-  const pairs = cookieHeader.split(';').map(v => v.trim());
-  const accessPair = pairs.find(v => v.startsWith('accessToken=')) || pairs.find(v => v.startsWith('__Host-accessToken='));
-  const accessToken = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
-  if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
-  }
-  return headers;
-}
-
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     console.log('🏪 API Route: Get shop request received', { shopId: id });
-    
-    const authHeaders = getAuthHeaders(request);
-    const authHeader = authHeaders.Authorization;
-    if (!authHeader) {
+
+    const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/shops/${id}`, {
+      method: 'GET',
+      headerOptions: {
+        requireAuth: true, // 認証が必要
+      },
+    });
+
+    // 認証エラーの場合は401を返す
+    if (response.status === 401) {
       return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
     }
-
-    const response = await secureFetchWithAuth(
-      `${API_BASE_URL}/shops/${id}`,
-      authHeader,
-      { method: 'GET' }
-    );
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -59,25 +43,23 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await request.json();
-    
-    const authHeaders = getAuthHeaders(request);
-    const authHeader = authHeaders.Authorization;
-    if (!authHeader) {
+
+    const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/shops/${id}`, {
+      method: 'PATCH',
+      headerOptions: {
+        requireAuth: true, // 認証が必要
+      },
+      body: JSON.stringify(body),
+    });
+
+    // 認証エラーの場合は401を返す
+    if (response.status === 401) {
       return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
     }
-
-    const response = await secureFetchWithAuth(
-      `${API_BASE_URL}/shops/${id}`,
-      authHeader,
-      {
-        method: 'PATCH',
-        body: JSON.stringify(body),
-      }
-    );
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -95,22 +77,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     console.log('🗑️ API Route: Delete shop request received', { shopId: id });
-    
-    const authHeaders = getAuthHeaders(request);
-    const authHeader = authHeaders.Authorization;
-    if (!authHeader) {
+
+    const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/shops/${id}`, {
+      method: 'DELETE',
+      headerOptions: {
+        requireAuth: true, // 認証が必要
+      },
+    });
+
+    // 認証エラーの場合は401を返す
+    if (response.status === 401) {
       return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
     }
-
-    const response = await secureFetchWithAuth(
-      `${API_BASE_URL}/shops/${id}`,
-      authHeader,
-      { method: 'DELETE' }
-    );
 
     if (!response.ok) {
       const errorData = await response.json();

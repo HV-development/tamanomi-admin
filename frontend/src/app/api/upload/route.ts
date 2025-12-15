@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { secureFetch } from '@/lib/fetch-utils';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
 
 // サーバーサイドではDocker内部URLを使用
@@ -29,30 +29,20 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Authorizationヘッダーを取得
-    const authHeader = request.headers.get('authorization');
-    // CookieからAuthorizationを補完
-    let finalAuth = authHeader || '';
-    if (!finalAuth) {
-      const cookieHeader = request.headers.get('cookie') || '';
-      const pairs = cookieHeader.split(';').map(v => v.trim());
-      const accessPair = pairs.find(v => v.startsWith('accessToken=')) || pairs.find(v => v.startsWith('__Host-accessToken='));
-      const token = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
-      if (token) finalAuth = `Bearer ${token}`;
-    }
-    
     console.log('📤 Upload: Forwarding to', `${API_BASE_URL}/api/upload`);
     
-    // バックエンドAPIに転送（FormDataの場合はsecureFetchを使用）
-    const response = await secureFetch(`${API_BASE_URL}/api/upload`, {
+    // バックエンドAPIに転送（FormDataの場合はContent-Typeを設定しない）
+    const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/api/upload`, {
       method: 'POST',
-      body: formData,
-      headers: {
-        // Authorizationヘッダーを転送（Cookieからの補完含む）
-        ...(finalAuth ? { Authorization: finalAuth } : {}),
-        // Cookieを転送
-        ...(request.headers.get('cookie') ? { cookie: request.headers.get('cookie')! } : {}),
+      headerOptions: {
+        requireAuth: true, // 認証が必要
+        setContentType: false, // FormDataの場合はContent-Typeを設定しない
+        customHeaders: {
+          // Cookieを転送
+          ...(request.headers.get('cookie') ? { cookie: request.headers.get('cookie')! } : {}),
+        },
       },
+      body: formData,
     });
 
     if (!response.ok) {

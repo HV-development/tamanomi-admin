@@ -105,16 +105,8 @@ function CouponNewPageContent() {
       }
     }
     
-    // sessionStorageから画像データを復元
-    const savedImagePreview = sessionStorage.getItem('couponImagePreview');
-    if (savedImagePreview) {
-      setFormData(prev => ({
-        ...prev,
-        imagePreview: savedImagePreview
-      }));
-      // 使用後は削除
-      sessionStorage.removeItem('couponImagePreview');
-    }
+    // メモリ内stateのみを使用（ページリロードで失われることを許容）
+    // sessionStorageは使用しない
   }, [searchParams]);
   
   // アカウントタイプに応じた初期化

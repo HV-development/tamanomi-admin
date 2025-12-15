@@ -35,8 +35,7 @@ function LoginFormWithParams() {
     if (sessionExpired === 'expired') {
       setLoginError('セッションの有効期限が切れました。再度ログインしてください。');
       setIsSessionExpired(true);
-      // ユーザー情報を削除
-      sessionStorage.removeItem('userData');
+      // Cookieベースの認証のみを使用（sessionStorageは使用しない）
       // クエリは残しておく（リダイレクト連鎖を防止）
     }
   }, [searchParams]);
@@ -119,19 +118,21 @@ function LoginFormWithParams() {
         // Cookieが設定されるまで少し待機（ログイン直後のリダイレクト問題を回避）
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        const userDataStr = sessionStorage.getItem('userData');
-        
         // アカウントタイプに応じてリダイレクト先を決定
+        // Cookieベースの認証APIから直接取得
         let redirectPath = '/merchants';
-        if (userDataStr) {
-          try {
-            const userData = JSON.parse(userDataStr);
+        try {
+          const meResponse = await fetch('/api/user/me', {
+            credentials: 'include',
+          });
+          if (meResponse.ok) {
+            const userData = await meResponse.json();
             if (userData.accountType === 'shop') {
               redirectPath = '/shops';
             }
-          } catch (error) {
-            console.error('Failed to parse user data:', error);
           }
+        } catch (error) {
+          console.error('Failed to fetch user data:', error);
         }
         
         // 認証成功時はアカウントタイプに応じた画面に遷移

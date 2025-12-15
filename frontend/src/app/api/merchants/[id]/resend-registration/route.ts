@@ -1,53 +1,30 @@
-import { secureFetchWithAuth } from '@/lib/fetch-utils';
+import { NextRequest } from 'next/server';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
-function getAuthHeaders(request: Request): Record<string, string> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const headerToken = request.headers.get('authorization');
-  if (headerToken) {
-    headers['Authorization'] = headerToken;
-    return headers;
-  }
-  const cookieHeader = request.headers.get('cookie') || '';
-  const pairs = cookieHeader.split(';').map(v => v.trim());
-  const accessPair = pairs.find(v => v.startsWith('accessToken=')) || pairs.find(v => v.startsWith('__Host-accessToken='));
-  const accessToken = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
-  if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
-  }
-  return headers;
-}
-
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
     console.log('📧 API Route: 登録URL再発行リクエスト受信', { merchantId: id });
     console.log('🔗 API Route: API_BASE_URL:', API_BASE_URL);
-    
-    const authHeaders = getAuthHeaders(request);
-    console.log('🔐 API Route: 認証ヘッダー', { 
-      hasAuth: !!authHeaders.Authorization,
-      authHeader: authHeaders.Authorization ? 'Bearer ***' : 'none'
+
+    const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/admin/merchants/${id}/resend-registration`, {
+      method: 'POST',
+      headerOptions: {
+        requireAuth: true, // 認証が必要
+      },
+      body: JSON.stringify({}),
     });
-    
-    const authHeader = authHeaders.Authorization;
-    if (!authHeader) {
+
+    // 認証エラーの場合は401を返す
+    if (response.status === 401) {
       return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
     }
-    
-    const response = await secureFetchWithAuth(
-      `${API_BASE_URL}/admin/merchants/${id}/resend-registration`,
-      authHeader,
-      {
-        method: 'POST',
-        body: JSON.stringify({}),
-      }
-    );
 
     console.log('📡 API Route: Response status:', response.status);
 

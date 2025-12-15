@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { secureFetch } from '@/lib/fetch-utils';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
@@ -25,10 +25,10 @@ export async function POST(
     });
 
     // バックエンドAPIを呼び出し
-    const response = await secureFetch(`${API_BASE_URL}/password/resend-setup-email`, {
+    const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/password/resend-setup-email`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+      headerOptions: {
+        requireAuth: false, // パスワード設定メール再送は認証不要
       },
       body: JSON.stringify({ email }),
     });
