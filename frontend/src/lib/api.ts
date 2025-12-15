@@ -5,6 +5,7 @@ import {
   type RefreshTokenInput,
   type AdminAccountInput,
 } from '@hv-development/schemas';
+import { buildClientHeaders } from './client-header-utils';
 
 type RegisterInput = AdminRegisterInput;
 
@@ -51,9 +52,15 @@ class ApiClient {
     try {
       const isFormData = typeof fetchOptions.body !== 'undefined' && fetchOptions.body instanceof FormData;
       const hasBody = typeof fetchOptions.body !== 'undefined';
+      
+      // 共通ヘッダーを生成（FormDataの場合はContent-Typeを設定しない）
+      const commonHeaders = buildClientHeaders({
+        setContentType: hasBody && !isFormData,
+      });
+      
       const headers: Record<string, string> = {
+        ...commonHeaders,
         ...(fetchOptions.headers as Record<string, string> | undefined),
-        ...(hasBody && !isFormData ? { 'Content-Type': 'application/json' } : {}),
       };
 
       const response = await fetch(url, {

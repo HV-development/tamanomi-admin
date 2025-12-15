@@ -1,16 +1,17 @@
-import { secureFetch } from '@/lib/fetch-utils';
+import { NextRequest } from 'next/server';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     console.log('📱 API Route: Applications request received');
     
-    const response = await secureFetch(`${API_BASE_URL}/applications`, {
+    const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/applications`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
+      headerOptions: {
+        requireAuth: true, // 認証が必要
       },
     });
 

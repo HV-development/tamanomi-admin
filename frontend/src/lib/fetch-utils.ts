@@ -3,6 +3,9 @@
  * キャッシュ無効化とセキュリティ設定を統一
  */
 
+import { NextRequest } from 'next/server'
+import { buildCommonHeaders, type HeaderOptions } from './header-utils'
+
 /**
  * セキュアなfetch呼び出しのデフォルトオプション
  * - cache: 'no-store' - ブラウザのHTTPキャッシュを無効化
@@ -52,6 +55,37 @@ export async function secureFetchWithAuth(
       'Authorization': authHeader,
       ...(options.headers as Record<string, string> | undefined),
     },
+  });
+}
+
+/**
+ * 共通ヘッダーを自動設定するfetch呼び出し
+ * NextRequestから自動的に共通ヘッダーを生成して設定
+ * 
+ * @param request - NextRequestオブジェクト
+ * @param url - リクエストURL
+ * @param options - fetchオプションとヘッダー生成オプション
+ * @returns fetchレスポンス
+ */
+export async function secureFetchWithCommonHeaders(
+  request: NextRequest,
+  url: string | URL,
+  options: RequestInit & { headerOptions?: HeaderOptions } = {}
+): Promise<Response> {
+  const { headerOptions, ...fetchOptions } = options
+  
+  // 共通ヘッダーを生成
+  const commonHeaders = buildCommonHeaders(request, headerOptions)
+  
+  // 既存のヘッダーとマージ（options.headersが優先）
+  const headers = {
+    ...commonHeaders,
+    ...(fetchOptions.headers as Record<string, string> | undefined),
+  }
+
+  return secureFetch(url, {
+    ...fetchOptions,
+    headers,
   });
 }
 
