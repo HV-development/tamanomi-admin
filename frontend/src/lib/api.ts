@@ -234,6 +234,44 @@ class ApiClient {
     });
   }
 
+  // ユーザー関連
+  async getUsers(searchBody: Record<string, unknown>): Promise<unknown> {
+    return this.request<unknown>('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(searchBody),
+    });
+  }
+
+  // パスワード関連
+  async verifyToken(token: string): Promise<unknown> {
+    return this.request<unknown>(`/password/verify-token?token=${token}`, {
+      method: 'GET',
+    });
+  }
+
+  async setPassword(token: string, password: string): Promise<unknown> {
+    return this.request<unknown>('/password/set-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+  }
+
+  // クーポン利用履歴関連
+  async getCouponUsageHistory(searchBody?: Record<string, unknown>, queryParams?: string): Promise<unknown> {
+    if (queryParams) {
+      // GETリクエストの場合
+      return this.request<unknown>(`/admin/coupon-usage-history?${queryParams}`, {
+        method: 'GET',
+      });
+    } else {
+      // POSTリクエストの場合
+      return this.request<unknown>('/admin/coupon-usage-history', {
+        method: 'POST',
+        body: JSON.stringify(searchBody || {}),
+      });
+    }
+  }
+
   async updateMerchant(id: string, merchantData: unknown): Promise<unknown> {
     return this.request<unknown>(`/merchants/${id}`, {
       method: 'PUT',
@@ -256,6 +294,12 @@ class ApiClient {
 
   async resendMerchantRegistration(id: string): Promise<unknown> {
     return this.request<unknown>(`/merchants/${id}/resend-registration`, {
+      method: 'POST',
+    });
+  }
+
+  async sendPasswordReset(id: string): Promise<unknown> {
+    return this.request<unknown>(`/merchants/${id}/send-password-reset`, {
       method: 'POST',
     });
   }

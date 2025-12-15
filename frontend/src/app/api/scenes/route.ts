@@ -1,4 +1,5 @@
-import { secureFetch } from '@/lib/fetch-utils';
+import { NextRequest } from 'next/server';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
@@ -6,17 +7,17 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 // 動的レンダリングを強制（静的生成を無効化）
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   console.log('🎭 Next.js API Route: GET /api/scenes');
   
   try {
     const url = `${API_BASE_URL}/scenes`;
     console.log('📤 Forwarding to:', url);
 
-    const response = await secureFetch(url, {
+    const response = await secureFetchWithCommonHeaders(request, url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
+      headerOptions: {
+        requireAuth: false, // 利用シーン一覧は認証不要（公開エンドポイント）
       },
     });
 

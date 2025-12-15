@@ -11,6 +11,7 @@ import { useAuth } from '@/components/contexts/auth-context';
 import ToastContainer from '@/components/molecules/toast-container';
 import { convertUsersToCSV, downloadCSV, generateFilename, type UserForCSV } from '@/utils/csvExport';
 import { useToast } from '@/hooks/use-toast';
+import { apiClient } from '@/lib/api';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -118,19 +119,7 @@ export default function UsersPage() {
       searchBody.page = pagination.page;
       searchBody.limit = pagination.limit;
 
-      const response = await fetch(`/api/admin/users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(searchBody),
-      });
-      if (!response.ok) {
-        throw new Error('ユーザー一覧の取得に失敗しました');
-      }
-      
-      const data = await response.json();
+      const data = await apiClient.getUsers(searchBody) as { users: User[]; total: number; page: number; limit: number };
       
       // APIレスポンスをフォーマット
       const responseData = data as { 

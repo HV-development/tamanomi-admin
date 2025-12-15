@@ -1,40 +1,10 @@
-import { secureFetchWithAuth } from '@/lib/fetch-utils';
+import { NextRequest } from 'next/server';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
-function getAuthHeaders(request: Request): Record<string, string> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const headerToken = request.headers.get('authorization');
-  const isProd = process.env.NODE_ENV === 'production';
-  if (headerToken) {
-    if (isProd) {
-      console.info('[api/coupons] authorization header detected');
-    }
-    headers['Authorization'] = headerToken;
-    return headers;
-  }
-  const cookieHeader = request.headers.get('cookie') || '';
-  const pairs = cookieHeader.split(';').map(v => v.trim());
-  const accessPair = pairs.find(v => v.startsWith('accessToken=')) || pairs.find(v => v.startsWith('__Host-accessToken='));
-  const accessToken = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
-  if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
-    if (isProd) {
-      console.info('[api/coupons] using cookie-based access token', {
-        hasAccessCookie: pairs.some(v => v.startsWith('accessToken=')),
-        hasHostAccessCookie: pairs.some(v => v.startsWith('__Host-accessToken=')),
-      });
-    }
-  } else if (isProd) {
-    console.warn('[api/coupons] no auth token resolved from header or cookie', {
-      hasCookieHeader: cookieHeader.length > 0,
-    });
-  }
-  return headers;
-}
-
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     console.log('🎟️ API Route: Get coupons request received', {
       host: request.headers.get('host'),
@@ -56,14 +26,18 @@ export async function GET(request: Request) {
     
     const fullUrl = `${API_BASE_URL}/coupons?${queryParams.toString()}`;
     console.log('🔗 API Route: Fetching from', fullUrl);
-    
-    const authHeaders = getAuthHeaders(request);
-    const authHeader = authHeaders.Authorization;
-    if (!authHeader) {
+
+    const response = await secureFetchWithCommonHeaders(request, fullUrl, {
+      method: 'GET',
+      headerOptions: {
+        requireAuth: true, // 認証が必要
+      },
+    });
+
+    // 認証エラーの場合は401を返す
+    if (response.status === 401) {
       return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
     }
-
-    const response = await secureFetchWithAuth(fullUrl, authHeader, { method: 'GET' });
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -81,25 +55,23 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     console.log('➕ API Route: Create coupon request received', { title: body.title });
-    
-    const authHeaders = getAuthHeaders(request);
-    const authHeader = authHeaders.Authorization;
-    if (!authHeader) {
+
+    const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/coupons`, {
+      method: 'POST',
+      headerOptions: {
+        requireAuth: true, // 認証が必要
+      },
+      body: JSON.stringify(body),
+    });
+
+    // 認証エラーの場合は401を返す
+    if (response.status === 401) {
       return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
     }
-
-    const response = await secureFetchWithAuth(
-      `${API_BASE_URL}/coupons`,
-      authHeader,
-      {
-        method: 'POST',
-        body: JSON.stringify(body),
-      }
-    );
 
     if (!response.ok) {
       const errorData = await response.json();

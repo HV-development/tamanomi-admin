@@ -1,20 +1,8 @@
 import { NextRequest } from 'next/server';
-import { secureFetchWithAuth } from '@/lib/fetch-utils';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://api:3002/api/v1';
-
-function getAuthHeader(request: Request): string | null {
-  const authHeader = request.headers.get('authorization');
-  if (authHeader) return authHeader;
-  
-  // Cookieからトークンを取得
-  const cookieHeader = request.headers.get('cookie') || '';
-  const pairs = cookieHeader.split(';').map(v => v.trim());
-  const accessPair = pairs.find(v => v.startsWith('accessToken=')) || pairs.find(v => v.startsWith('__Host-accessToken='));
-  const token = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
-  return token ? `Bearer ${token}` : null;
-}
 
 // セキュリティ改善：個人情報をクエリパラメータで送信しないため、POSTメソッドに変更
 export async function POST(request: NextRequest) {
@@ -30,10 +18,18 @@ export async function POST(request: NextRequest) {
     const fullUrl = `${API_BASE_URL}/admin/coupon-usage-history`;
     console.log('🔗 API Route: Posting to', fullUrl);
 
-    const response = await secureFetchWithAuth(fullUrl, auth, {
+    const response = await secureFetchWithCommonHeaders(request, fullUrl, {
       method: 'POST',
+      headerOptions: {
+        requireAuth: true, // 認証が必要
+      },
       body: JSON.stringify(body),
     });
+
+    // 認証エラーの場合は401を返す
+    if (response.status === 401) {
+      return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
+    }
 
     if (!response.ok) {
       let errorData: { message?: string; error?: { message?: string } } | null = null;

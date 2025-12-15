@@ -1,26 +1,19 @@
-import { secureFetch } from '@/lib/fetch-utils';
+import { NextRequest } from 'next/server';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const headerToken = request.headers.get('authorization');
-    const cookieHeader = request.headers.get('cookie') || '';
-    const pairs = cookieHeader.split(';').map(v => v.trim());
-    const accessPair = pairs.find(v => v.startsWith('accessToken=')) || pairs.find(v => v.startsWith('__Host-accessToken='));
-    const cookieToken = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
-    const authHeader = headerToken || (cookieToken ? `Bearer ${cookieToken}` : null);
     console.log('🚪 API Route: Logout request received');
     
-    const headers: HeadersInit = {};
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
-    }
-
-    const response = await secureFetch(`${API_BASE_URL}/logout`, {
+    // ログアウトは認証がオプショナル（認証されていない場合でもログアウト処理を実行）
+    const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/logout`, {
       method: 'POST',
-      headers: headers,
+      headerOptions: {
+        requireAuth: false, // 認証がオプショナル
+      },
     });
 
     const ok = response.ok;

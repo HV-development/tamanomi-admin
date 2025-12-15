@@ -1,36 +1,22 @@
 import { NextRequest } from 'next/server';
-import { secureFetch, secureFetchWithAuth } from '@/lib/fetch-utils';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
+import { getRefreshToken } from '@/lib/header-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://api:3002/api/v1';
 
-function getAuthHeader(request: Request): string | null {
-  const authHeader = request.headers.get('authorization');
-  if (authHeader) return authHeader;
-  
-  // Cookieからトークンを取得
-  const cookieHeader = request.headers.get('cookie') || '';
-  const pairs = cookieHeader.split(';').map(v => v.trim());
-  const accessPair = pairs.find(v => v.startsWith('accessToken=')) || pairs.find(v => v.startsWith('__Host-accessToken='));
-  const token = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
-  return token ? `Bearer ${token}` : null;
-}
-
-async function refreshAccessToken(request: Request): Promise<{ token: string; refreshToken?: string } | null> {
+async function refreshAccessToken(request: NextRequest): Promise<{ token: string; refreshToken?: string } | null> {
   try {
-    const cookieHeader = request.headers.get('cookie') || '';
-    const pairs = cookieHeader.split(';').map(v => v.trim());
-    const refreshPair = pairs.find(v => v.startsWith('refreshToken=')) || pairs.find(v => v.startsWith('__Host-refreshToken='));
-    const refreshToken = refreshPair ? decodeURIComponent(refreshPair.split('=')[1] || '') : '';
+    const refreshToken = getRefreshToken(request);
     
     if (!refreshToken) {
       return null;
     }
 
-    const refreshResponse = await secureFetch(`${API_BASE_URL}/refresh`, {
+    const refreshResponse = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/refresh`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+      headerOptions: {
+        requireAuth: false, // リフレッシュトークンは認証不要
       },
       body: JSON.stringify({ refreshToken }),
     });
@@ -56,11 +42,11 @@ async function refreshAccessToken(request: Request): Promise<{ token: string; re
 // セキュリティ改善：個人情報をクエリパラメータで送信しないため、POSTメソッドに変更
 export async function POST(request: NextRequest) {
   try {
-    let auth = getAuthHeader(request);
     let refreshResult: { token: string; refreshToken?: string } | null = null;
+    const authHeader = getAuthHeader(request);
     
     // accessTokenがない場合はrefreshTokenでリフレッシュを試みる
-    if (!auth) {
+    if (!authHeader) {
       refreshResult = await refreshAccessToken(request);
       if (!refreshResult) {
         const cookies = request.headers.get('cookie');
@@ -70,7 +56,6 @@ export async function POST(request: NextRequest) {
         });
         return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
       }
-      auth = refreshResult.token;
     }
 
     // セキュリティ改善：個人情報をクエリパラメータで送信しないため、POSTメソッドでボディに含めて送信
@@ -79,8 +64,15 @@ export async function POST(request: NextRequest) {
     const fullUrl = `${API_BASE_URL}/admin/users`;
     console.log('🔗 API Route: Posting to', fullUrl);
 
-    const response = await secureFetchWithAuth(fullUrl, auth, {
+    // リフレッシュされたトークンがある場合はそれを使用、なければ通常の認証ヘッダーを使用
+    const response = await secureFetchWithCommonHeaders(request, fullUrl, {
       method: 'POST',
+      headerOptions: {
+        requireAuth: true,
+        customHeaders: refreshResult ? {
+          'Authorization': refreshResult.token,
+        } : undefined,
+      },
       body: JSON.stringify(body),
     });
 

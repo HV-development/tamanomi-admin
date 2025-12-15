@@ -1,4 +1,5 @@
-import { secureFetch } from '@/lib/fetch-utils';
+import { NextRequest } from 'next/server';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
 
 // 簡易レート制限（同一IPあたり1分間に20回まで）
@@ -25,7 +26,7 @@ function rateLimit(request: Request): boolean {
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   if (!rateLimit(request)) {
     return createNoCacheResponse({ message: 'Too Many Requests' }, { status: 429 });
   }
@@ -44,10 +45,10 @@ export async function POST(request: Request) {
       return createNoCacheResponse({ message: 'No refresh token' }, { status: 401 });
     }
     
-    const response = await secureFetch(`${API_BASE_URL}/refresh`, {
+    const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/refresh`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+      headerOptions: {
+        requireAuth: false, // リフレッシュトークンは認証不要
       },
       body: JSON.stringify({ refreshToken }),
     });

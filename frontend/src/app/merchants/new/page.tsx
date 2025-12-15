@@ -12,6 +12,7 @@ import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-
 import { useAuth } from '@/components/contexts/auth-context';
 import { PREFECTURES } from '@/lib/constants/japan';
 import ErrorMessage from '@/components/atoms/ErrorMessage';
+import { apiClient } from '@/lib/api';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -237,24 +238,26 @@ export default function MerchantNewPage() {
         issueAccount, // アカウント発行フラグ
       };
 
-      const response = await fetch('/api/merchants', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(requestData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
+      const data = await apiClient.createMerchant(requestData) as { id: string; name: string };
+      
+      // 成功時の処理
+      router.push('/merchants');
+      
+    } catch (error) {
+      console.error('登録エラー:', error);
+      
+      // apiClientのエラーレスポンスを処理
+      if (error instanceof Error && 'response' in error) {
+        const apiError = error as Error & { response?: { status: number; data: unknown } };
+        const status = apiError.response?.status;
+        const errorData = apiError.response?.data as { error?: { details?: Array<{ path: string[]; message: string }>; message?: string }; errors?: Record<string, string>; message?: string } | undefined;
         
-        if (response.status === 400) {
+        if (status === 400) {
           // パラメータエラーの場合
-          if (errorData.error?.details) {
+          if (errorData?.error?.details) {
             // 新しいエラー形式: { error: { details: [...] } }
             const fieldErrors: Record<string, string> = {};
-            errorData.error.details.forEach((detail: { path: string[]; message: string }) => {
+            errorData.error.details.forEach((detail) => {
               if (detail.path && detail.path.length > 0) {
                 const fieldName = detail.path[0];
                 fieldErrors[fieldName] = detail.message;
@@ -272,7 +275,7 @@ export default function MerchantNewPage() {
                 block: 'center' 
               });
             }
-          } else if (errorData.errors) {
+          } else if (errorData?.errors) {
             // 古いエラー形式: { errors: {...} }
             setErrors(errorData.errors);
             // 最初のエラーフィールドにスクロール
@@ -286,23 +289,16 @@ export default function MerchantNewPage() {
               });
             }
           } else {
-            setServerError(errorData.error?.message || errorData.message || '入力内容に誤りがあります');
+            setServerError(errorData?.error?.message || errorData?.message || '入力内容に誤りがあります');
           }
         } else {
           // その他のエラーの場合（409 Conflictなど）
-          console.error('Error data:', errorData);
-          const errorMessage = errorData.error?.message || errorData.message || '登録中にエラーが発生しました';
+          const errorMessage = errorData?.error?.message || errorData?.message || error.message || '登録中にエラーが発生しました';
           showError(errorMessage);
         }
-        return;
+      } else {
+        showError('登録中にエラーが発生しました');
       }
-
-      // 成功時の処理
-      router.push('/merchants');
-      
-    } catch (error) {
-      console.error('登録エラー:', error);
-      showError('登録中にエラーが発生しました');
     } finally {
       setIsSubmitting(false);
     }

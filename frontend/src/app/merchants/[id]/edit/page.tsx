@@ -9,6 +9,7 @@ import { validateMerchantField, type MerchantFormData, type MerchantEditFormData
 import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-search';
 import { useAuth } from '@/components/contexts/auth-context';
 import { PREFECTURES } from '@/lib/constants/japan';
+import { apiClient } from '@/lib/api';
 
 export default function MerchantEditPage() {
   const params = useParams();
@@ -78,51 +79,58 @@ export default function MerchantEditPage() {
     const loadMerchantData = async () => {
       try {
         // APIから事業者データを取得（Cookieベース認証）
-        const response = await fetch(`/api/merchants/${merchantId}`, {
-          signal: abortController.signal,
-          credentials: 'include',
-        });
-        
         // コンポーネントがアンマウントされている場合は処理を中断
         if (!isMounted) return;
         
-        if (response.ok) {
-          const result = await response.json();
-          const merchantData = result.data; // APIレスポンスから data プロパティを取得
+        const result = await apiClient.getMerchant(merchantId) as { data: unknown };
+        const merchantData = result.data; // APIレスポンスから data プロパティを取得
+        
+        if (isMounted && merchantData) {
+          const merchant = merchantData as {
+            account?: { status?: string };
+            status?: string;
+            name?: string;
+            nameKana?: string;
+            representativeNameLast?: string;
+            representativeNameFirst?: string;
+            representativeNameLastKana?: string;
+            representativeNameFirstKana?: string;
+            representativePhone?: string;
+            email?: string;
+            phone?: string;
+            postalCode?: string;
+            prefecture?: string;
+            city?: string;
+            address1?: string;
+            address2?: string;
+            applications?: string[];
+          };
           
-          if (isMounted) {
-            // アカウント発行済みかどうかを確認（statusが'pending'または'active'の場合は発行済み）
-            const accountStatus = merchantData.account?.status;
-            setHasAccount(accountStatus === 'pending' || accountStatus === 'active');
-            
-            // 契約ステータスを設定
-            setStatus(merchantData.status || 'inactive');
-            
-            // APIレスポンスをフォームデータに変換
-            setFormData({
-              name: merchantData.name || '',
-              nameKana: merchantData.nameKana || '',
-              representativeNameLast: merchantData.representativeNameLast || '',
-              representativeNameFirst: merchantData.representativeNameFirst || '',
-              representativeNameLastKana: merchantData.representativeNameLastKana || '',
-              representativeNameFirstKana: merchantData.representativeNameFirstKana || '',
-              representativePhone: merchantData.representativePhone || '',
-              email: merchantData.email || '',
-              phone: merchantData.phone || '',
-              postalCode: merchantData.postalCode || '',
-              prefecture: merchantData.prefecture || '',
-              city: merchantData.city || '',
-              address1: merchantData.address1 || '',
-              address2: merchantData.address2 || '',
-              applications: merchantData.applications || [],
-            });
-          }
-        } else {
-          if (!isMounted) return;
+          // アカウント発行済みかどうかを確認（statusが'pending'または'active'の場合は発行済み）
+          const accountStatus = merchant.account?.status;
+          setHasAccount(accountStatus === 'pending' || accountStatus === 'active');
           
-          const errorData = await response.json();
-          console.error('❌ 事業者データの取得に失敗しました:', { status: response.status, error: errorData });
-          alert(`事業者データの取得に失敗しました: ${errorData.error?.message || '不明なエラー'}`);
+          // 契約ステータスを設定
+          setStatus(merchant.status || 'inactive');
+          
+          // APIレスポンスをフォームデータに変換
+          setFormData({
+            name: merchant.name || '',
+            nameKana: merchant.nameKana || '',
+            representativeNameLast: merchant.representativeNameLast || '',
+            representativeNameFirst: merchant.representativeNameFirst || '',
+            representativeNameLastKana: merchant.representativeNameLastKana || '',
+            representativeNameFirstKana: merchant.representativeNameFirstKana || '',
+            representativePhone: merchant.representativePhone || '',
+            email: merchant.email || '',
+            phone: merchant.phone || '',
+            postalCode: merchant.postalCode || '',
+            prefecture: merchant.prefecture || '',
+            city: merchant.city || '',
+            address1: merchant.address1 || '',
+            address2: merchant.address2 || '',
+            applications: merchant.applications || [],
+          });
         }
       } catch (error) {
         // アボート時のエラーは無視
@@ -133,7 +141,13 @@ export default function MerchantEditPage() {
         if (!isMounted) return;
         
         console.error('❌ 事業者データの読み込みエラー:', error);
-        alert(`事業者データの読み込みに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+        if (error instanceof Error && 'response' in error) {
+          const apiError = error as Error & { response?: { data: unknown } };
+          const errorData = apiError.response?.data as { error?: { message?: string } } | undefined;
+          alert(`事業者データの取得に失敗しました: ${errorData?.error?.message || '不明なエラー'}`);
+        } else {
+          alert(`事業者データの読み込みに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -323,19 +337,17 @@ export default function MerchantEditPage() {
     if (window.confirm('パスワード再設定メールを送信しますか？')) {
       setIsSendingPasswordReset(true);
       try {
-        const response = await fetch(`/api/merchants/${merchantId}/send-password-reset`, {
-          method: 'POST',
-        });
-        
-        if (response.ok) {
-          alert('パスワード再設定メールを送信しました');
-        } else {
-          const errorData = await response.json();
-          alert(`パスワード再設定メールの送信に失敗しました: ${errorData.error?.message || '不明なエラー'}`);
-        }
+        await apiClient.sendPasswordReset(merchantId);
+        alert('パスワード再設定メールを送信しました');
       } catch (error) {
         console.error('パスワード再設定メールの送信に失敗しました:', error);
-        alert('パスワード再設定メールの送信に失敗しました');
+        if (error instanceof Error && 'response' in error) {
+          const apiError = error as Error & { response?: { data: unknown } };
+          const errorData = apiError.response?.data as { error?: { message?: string } } | undefined;
+          alert(`パスワード再設定メールの送信に失敗しました: ${errorData?.error?.message || '不明なエラー'}`);
+        } else {
+          alert('パスワード再設定メールの送信に失敗しました');
+        }
       } finally {
         setIsSendingPasswordReset(false);
       }
@@ -371,28 +383,20 @@ export default function MerchantEditPage() {
         status, // 契約ステータス
       };
 
-      const response = await fetch(`/api/merchants/${merchantId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(updateData),
-      });
-
-      if (response.ok) {
-        alert('事業者の更新が完了しました。');
-        // 事業者一覧に遷移
-        router.push('/merchants');
-      } else {
-        const errorData = await response.json();
-        console.error('更新エラー:', errorData);
-        alert(`更新中にエラーが発生しました: ${errorData.message || '不明なエラー'}`);
-      }
+      await apiClient.updateMerchant(merchantId, updateData);
       
+      alert('事業者の更新が完了しました。');
+      // 事業者一覧に遷移
+      router.push('/merchants');
     } catch (error) {
       console.error('更新エラー:', error);
-      alert('更新中にエラーが発生しました。');
+      if (error instanceof Error && 'response' in error) {
+        const apiError = error as Error & { response?: { data: unknown } };
+        const errorData = apiError.response?.data as { message?: string; error?: { message?: string } } | undefined;
+        alert(`更新中にエラーが発生しました: ${errorData?.message || errorData?.error?.message || '不明なエラー'}`);
+      } else {
+        alert('更新中にエラーが発生しました。');
+      }
     } finally {
       setIsSubmitting(false);
     }

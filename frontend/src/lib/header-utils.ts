@@ -24,12 +24,34 @@ export interface HeaderOptions {
 }
 
 /**
+ * Requestからリフレッシュトークンを取得
+ * Cookieから取得し、なければnullを返す
+ */
+export function getRefreshToken(request: NextRequest | Request): string | null {
+  // NextRequestのcookies APIから取得を試みる
+  if ('cookies' in request && request.cookies) {
+    const refreshTokenCookie = request.cookies.get('refreshToken') || request.cookies.get('__Host-refreshToken');
+    if (refreshTokenCookie?.value) {
+      return refreshTokenCookie.value;
+    }
+  }
+
+  // Cookieヘッダーから取得（フォールバック）
+  const cookieHeader = request.headers.get('cookie') || '';
+  const pairs = cookieHeader.split(';').map(v => v.trim());
+  const refreshPair = pairs.find(v => v.startsWith('refreshToken=')) || pairs.find(v => v.startsWith('__Host-refreshToken='));
+  const refreshToken = refreshPair ? decodeURIComponent(refreshPair.split('=')[1] || '') : '';
+  
+  return refreshToken || null;
+}
+
+/**
  * Requestからアクセストークンを取得してAuthorizationヘッダーを返す
  * 
  * @param request - NextRequestまたはRequestオブジェクト
  * @returns Authorizationヘッダーの値（Bearerトークンなど）、またはnull
  */
-function getAuthHeader(request: NextRequest | Request): string | null {
+export function getAuthHeader(request: NextRequest | Request): string | null {
   // まずAuthorizationヘッダーをチェック
   const headerToken = request.headers.get('authorization')
   if (headerToken) {

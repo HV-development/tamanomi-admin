@@ -1,26 +1,23 @@
-import { secureFetchWithAuth } from '@/lib/fetch-utils';
+import { NextRequest } from 'next/server';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
-function getAuthHeader(request: Request): string | null {
-  const cookieHeader = request.headers.get('cookie') || '';
-  const pairs = cookieHeader.split(';').map(v => v.trim());
-  const accessPair = pairs.find(v => v.startsWith('accessToken=')) || 
-                     pairs.find(v => v.startsWith('__Host-accessToken='));
-  const token = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
-  return token ? `Bearer ${token}` : null;
-}
-
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const auth = getAuthHeader(request);
-    if (!auth) {
+    // バックエンドの統合エンドポイントにプロキシ
+    const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/me`, {
+      method: 'GET',
+      headerOptions: {
+        requireAuth: true, // 認証が必要
+      },
+    });
+
+    // 認証エラーの場合は401を返す
+    if (response.status === 401) {
       return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
     }
-
-    // バックエンドの統合エンドポイントにプロキシ
-    const response = await secureFetchWithAuth(`${API_BASE_URL}/me`, auth);
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));

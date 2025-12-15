@@ -1,4 +1,5 @@
-import { secureFetch } from '@/lib/fetch-utils';
+import { NextRequest } from 'next/server';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
 
 // 簡易レート制限（同一IPあたり1分間に10回まで）
@@ -25,7 +26,7 @@ function rateLimit(request: Request): boolean {
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   if (!rateLimit(request)) {
     return createNoCacheResponse({ message: 'Too Many Requests' }, { status: 429 });
   }
@@ -42,10 +43,10 @@ export async function POST(request: Request) {
     });
     
     // 管理者用のログインエンドポイントを使用
-    const response = await secureFetch(loginUrl, {
+    const response = await secureFetchWithCommonHeaders(request, loginUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+      headerOptions: {
+        requireAuth: false, // ログインは認証不要
       },
       body: JSON.stringify(body),
     });

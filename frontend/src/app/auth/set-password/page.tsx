@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+import { apiClient } from '@/lib/api';
 
 function SetPasswordContent() {
   const router = useRouter();
@@ -34,20 +35,7 @@ function SetPasswordContent() {
       }
 
       try {
-        const response = await fetch(
-          `/api/password/verify-token?token=${token}`
-        );
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          setError(
-            errorData.error?.message || 'トークンが無効または期限切れです'
-          );
-          setIsLoading(false);
-          return;
-        }
-
-        const data = await response.json();
+        const data = await apiClient.verifyToken(token) as { data?: { valid: boolean } };
         if (data.data?.valid) {
           setIsTokenValid(true);
         } else {
@@ -56,7 +44,13 @@ function SetPasswordContent() {
         setIsLoading(false);
       } catch (err) {
         console.error('トークン検証エラー:', err);
-        setError('トークンの検証中にエラーが発生しました');
+        if (err instanceof Error && 'response' in err) {
+          const apiError = err as Error & { response?: { data: unknown } };
+          const errorData = apiError.response?.data as { error?: { message?: string } } | undefined;
+          setError(errorData?.error?.message || 'トークンが無効または期限切れです');
+        } else {
+          setError('トークンの検証中にエラーが発生しました');
+        }
         setIsLoading(false);
       }
     };
@@ -142,35 +136,20 @@ function SetPasswordContent() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(
-        '/api/password/set-password',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            token,
-            password,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        setError(
-          errorData.error?.message || 'パスワードの設定に失敗しました'
-        );
-        setIsSubmitting(false);
-        return;
-      }
+      await apiClient.setPassword(token, password);
 
       // 成功: ログインページにリダイレクト
       alert('パスワードが設定されました。ログインしてください。');
       router.push('/login');
     } catch (err) {
       console.error('パスワード設定エラー:', err);
-      setError('パスワードの設定中にエラーが発生しました');
+      if (err instanceof Error && 'response' in err) {
+        const apiError = err as Error & { response?: { data: unknown } };
+        const errorData = apiError.response?.data as { error?: { message?: string } } | undefined;
+        setError(errorData?.error?.message || 'パスワードの設定に失敗しました');
+      } else {
+        setError('パスワードの設定中にエラーが発生しました');
+      }
       setIsSubmitting(false);
     }
   };
