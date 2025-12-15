@@ -344,42 +344,51 @@ export default function UsersPage() {
 
     while (hasMore) {
       try {
-        const queryParams = new URLSearchParams();
+        const searchBody: Record<string, unknown> = {};
         
-        if (appliedSearchForm.nickname) queryParams.append('nickname', appliedSearchForm.nickname);
+        if (appliedSearchForm.nickname) searchBody.nickname = appliedSearchForm.nickname;
         
         if (!isOperatorRole) {
-          if (appliedSearchForm.postalCode) queryParams.append('postalCode', appliedSearchForm.postalCode);
-          if (appliedSearchForm.prefecture) queryParams.append('prefecture', appliedSearchForm.prefecture);
-          if (appliedSearchForm.city) queryParams.append('city', appliedSearchForm.city);
-          if (appliedSearchForm.address) queryParams.append('address', appliedSearchForm.address);
-          if (appliedSearchForm.birthDate) queryParams.append('birthDate', appliedSearchForm.birthDate);
-          if (appliedSearchForm.gender) queryParams.append('gender', appliedSearchForm.gender);
-          if (appliedSearchForm.saitamaAppId) queryParams.append('saitamaAppId', appliedSearchForm.saitamaAppId);
+          if (appliedSearchForm.postalCode) searchBody.postalCode = appliedSearchForm.postalCode;
+          if (appliedSearchForm.prefecture) searchBody.prefecture = appliedSearchForm.prefecture;
+          if (appliedSearchForm.city) searchBody.city = appliedSearchForm.city;
+          if (appliedSearchForm.address) searchBody.address = appliedSearchForm.address;
+          if (appliedSearchForm.birthDate) searchBody.birthDate = appliedSearchForm.birthDate;
+          if (appliedSearchForm.gender) searchBody.gender = appliedSearchForm.gender;
+          if (appliedSearchForm.saitamaAppId) searchBody.saitamaAppId = appliedSearchForm.saitamaAppId;
         }
         
         if (appliedSearchForm.ranks && appliedSearchForm.ranks.length > 0) {
-          queryParams.append('ranks', JSON.stringify(appliedSearchForm.ranks));
+          searchBody.ranks = JSON.stringify(appliedSearchForm.ranks);
         }
-        if (appliedSearchForm.registeredDateStart) queryParams.append('registeredDateStart', appliedSearchForm.registeredDateStart);
-        if (appliedSearchForm.registeredDateEnd) queryParams.append('registeredDateEnd', appliedSearchForm.registeredDateEnd);
+        if (appliedSearchForm.registeredDateStart) searchBody.registeredDateStart = appliedSearchForm.registeredDateStart;
+        if (appliedSearchForm.registeredDateEnd) searchBody.registeredDateEnd = appliedSearchForm.registeredDateEnd;
         
-        queryParams.append('page', page.toString());
-        queryParams.append('limit', limit.toString());
+        searchBody.page = page;
+        searchBody.limit = limit;
 
-        const response = await fetch(`/api/admin/users?${queryParams.toString()}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        });
-        
-        if (!response.ok) {
-          throw new Error('ユーザー一覧の取得に失敗しました');
-        }
-        
-        const data = await response.json();
+        const data = await apiClient.getUsers(searchBody) as { 
+          users?: Array<{
+            id: string;
+            nickname: string;
+            postalCode?: string;
+            prefecture?: string;
+            city?: string;
+            address?: string;
+            birthDate?: string;
+            gender?: string | number;
+            saitamaAppId?: string;
+            rank: number;
+            registeredStore?: string;
+            registeredAt: string;
+          }>;
+          pagination?: { 
+            totalPages?: number; 
+            total?: number;
+            page?: number;
+            limit?: number;
+          };
+        };
         
         let usersArray: User[] = [];
         let pagination: { totalPages?: number; total?: number } = {};
@@ -389,7 +398,41 @@ export default function UsersPage() {
           hasMore = false;
         } else if (data && typeof data === 'object') {
           if ('users' in data) {
-            usersArray = data.users || [];
+            // APIレスポンスをフォーマット
+            usersArray = (data.users || []).map((user) => {
+              const base: User = {
+                id: user.id,
+                nickname: user.nickname,
+                postalCode: '',
+                prefecture: '',
+                city: '',
+                address: '',
+                birthDate: '',
+                gender: 0,
+                saitamaAppId: '',
+                rank: user.rank,
+                registeredStore: '',
+                registeredAt: user.registeredAt ? user.registeredAt.replace(/-/g, '/') : '',
+              };
+
+              // operatorロールでない場合のみ機密情報を設定
+              if (!isOperatorRole) {
+                return {
+                  ...base,
+                  postalCode: user.postalCode ?? '',
+                  prefecture: user.prefecture ?? '',
+                  city: user.city ?? '',
+                  address: user.address ?? '',
+                  birthDate: user.birthDate ? user.birthDate.replace(/-/g, '/') : '',
+                  gender: typeof user.gender === 'string' ? (user.gender === 'male' ? 1 : user.gender === 'female' ? 2 : 3) : (user.gender || 0),
+                  saitamaAppId: user.saitamaAppId ?? '',
+                  registeredStore: user.registeredStore ?? '',
+                };
+              }
+
+              // operatorロールの場合は機密情報を含めない
+              return base;
+            });
             pagination = data.pagination || {};
           }
         }

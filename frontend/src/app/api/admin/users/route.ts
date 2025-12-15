@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
-import { getRefreshToken } from '@/lib/header-utils';
+import { getRefreshToken, getAuthHeader } from '@/lib/header-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://api:3002/api/v1';

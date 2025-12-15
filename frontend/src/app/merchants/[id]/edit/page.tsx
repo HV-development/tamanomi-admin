@@ -111,7 +111,7 @@ export default function MerchantEditPage() {
           setHasAccount(accountStatus === 'pending' || accountStatus === 'active');
           
           // 契約ステータスを設定
-          setStatus(merchant.status || 'inactive');
+          setStatus((merchant.status as 'active' | 'inactive' | 'terminated') || 'inactive');
           
           // APIレスポンスをフォームデータに変換
           setFormData({

@@ -38,6 +38,26 @@ const eslintConfig = [
       ],
     },
   },
+  {
+    files: ['src/app/api/**/route.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.name='fetch']",
+          message: 'APIルートではsecureFetchWithCommonHeadersを使用してください。直接fetch()の使用は禁止されています。',
+        },
+        {
+          selector: "CallExpression[callee.object.name='Response'][callee.property.name='json']",
+          message: 'APIルートではcreateNoCacheResponseを使用してください。Response.json()の直接使用は禁止されています。',
+        },
+        {
+          selector: "CallExpression[callee.object.name='NextResponse'][callee.property.name='json']",
+          message: 'APIルートではcreateNoCacheResponseを使用してください。NextResponse.json()の直接使用は禁止されています。',
+        },
+      ],
+    },
+  },
 ]
 
 export default eslintConfig

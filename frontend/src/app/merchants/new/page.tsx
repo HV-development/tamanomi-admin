@@ -238,7 +238,7 @@ export default function MerchantNewPage() {
         issueAccount, // アカウント発行フラグ
       };
 
-      const data = await apiClient.createMerchant(requestData) as { id: string; name: string };
+      await apiClient.createMerchant(requestData);
       
       // 成功時の処理
       router.push('/merchants');

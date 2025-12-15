@@ -133,6 +133,12 @@ function SetPasswordContent() {
       return;
     }
 
+    if (!token) {
+      setError('トークンが無効です');
+      setIsSubmitting(false);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
