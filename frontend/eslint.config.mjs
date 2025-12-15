@@ -36,6 +36,32 @@ const eslintConfig = [
           caughtErrorsIgnorePattern: '^(_|ignore)',
         },
       ],
+      'no-restricted-globals': [
+        'error',
+        {
+          name: 'sessionStorage',
+          message: 'sessionStorageの使用は禁止されています。セキュリティ上の理由により、Cookieベースのセッション管理を使用してください。',
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[object.name='window'][property.name='sessionStorage']",
+          message: 'window.sessionStorageの使用は禁止されています。セキュリティ上の理由により、Cookieベースのセッション管理を使用してください。',
+        },
+        {
+          selector: "MemberExpression[object.name='sessionStorage']",
+          message: 'sessionStorageの使用は禁止されています。セキュリティ上の理由により、Cookieベースのセッション管理を使用してください。',
+        },
+        {
+          selector: "CallExpression[callee.object.name='sessionStorage']",
+          message: 'sessionStorageのメソッド（getItem、setItem、removeItem、clearなど）の使用は禁止されています。セキュリティ上の理由により、Cookieベースのセッション管理を使用してください。',
+        },
+        {
+          selector: "CallExpression[callee.object.object.name='window'][callee.object.property.name='sessionStorage']",
+          message: 'window.sessionStorageのメソッドの使用は禁止されています。セキュリティ上の理由により、Cookieベースのセッション管理を使用してください。',
+        },
+      ],
     },
   },
   {
