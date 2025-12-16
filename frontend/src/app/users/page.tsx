@@ -43,10 +43,10 @@ const prefectures = [
 export default function UsersPage() {
   const auth = useAuth();
   const lastFetchKeyRef = useRef<string | null>(null);
-  
+
   // operatorロールかどうかを判定
   const isOperatorRole = auth?.user?.accountType === 'admin' && auth?.user?.role === 'operator';
-  
+
   const [searchForm, setSearchForm] = useState({
     nickname: '',
     postalCode: '',
@@ -93,10 +93,10 @@ export default function UsersPage() {
     try {
       // セキュリティ改善：個人情報をクエリパラメータで送信しないため、POSTメソッドでボディに含めて送信
       const searchBody: Record<string, string | number> = {};
-      
+
       // 検索条件をボディに追加
       if (searchParams?.nickname) searchBody.nickname = searchParams.nickname;
-      
+
       // operatorロールでない場合のみ機密情報での検索パラメータを追加
       if (!isOperatorRole) {
         if (searchParams?.postalCode) searchBody.postalCode = searchParams.postalCode;
@@ -107,13 +107,13 @@ export default function UsersPage() {
         if (searchParams?.gender) searchBody.gender = searchParams.gender;
         if (searchParams?.saitamaAppId) searchBody.saitamaAppId = searchParams.saitamaAppId;
       }
-      
+
       if (searchParams?.ranks && searchParams.ranks.length > 0) {
         searchBody.ranks = JSON.stringify(searchParams.ranks);
       }
       if (searchParams?.registeredDateStart) searchBody.registeredDateStart = searchParams.registeredDateStart;
       if (searchParams?.registeredDateEnd) searchBody.registeredDateEnd = searchParams.registeredDateEnd;
-      
+
       // ページネーションパラメータを追加
       searchBody.page = pagination.page;
       searchBody.limit = pagination.limit;
@@ -129,11 +129,11 @@ export default function UsersPage() {
       if (!response.ok) {
         throw new Error('ユーザー一覧の取得に失敗しました');
       }
-      
+
       const data = await response.json();
-      
+
       // APIレスポンスをフォーマット
-      const responseData = data as { 
+      const responseData = data as {
         users: Array<{
           id: string;
           nickname: string;
@@ -155,7 +155,7 @@ export default function UsersPage() {
           totalPages: number;
         };
       };
-      
+
       // ページネーション情報を更新
       if (responseData.pagination) {
         setPagination({
@@ -165,7 +165,7 @@ export default function UsersPage() {
           pages: responseData.pagination.totalPages,
         });
       }
-      
+
       // operatorロールの場合は機密情報を含めない
       const formattedUsers: User[] = responseData.users.map((user) => {
         const base: User = {
@@ -201,7 +201,7 @@ export default function UsersPage() {
         // operatorロールの場合は機密情報を含めない
         return base;
       });
-      
+
       setUsers(formattedUsers);
     } catch (err) {
       console.error('ユーザー一覧の取得に失敗しました:', err);
@@ -214,16 +214,16 @@ export default function UsersPage() {
 
   // データ取得（初回読み込み・検索）
   useEffect(() => {
-     // authの初期化を待つ
-     if (auth?.isLoading) {
-       return;
-     }
-     
-     // 認証情報が取得できていない場合はスキップ
-     if (!auth?.user) {
-       return;
-     }
-     
+    // authの初期化を待つ
+    if (auth?.isLoading) {
+      return;
+    }
+
+    // 認証情報が取得できていない場合はスキップ
+    if (!auth?.user) {
+      return;
+    }
+
     const key = JSON.stringify({
       user: auth?.user?.id ?? auth?.user?.email ?? 'anonymous',
       search: appliedSearchForm,
@@ -254,7 +254,7 @@ export default function UsersPage() {
   const handleRankChange = (rank: number, checked: boolean) => {
     setSearchForm(prev => ({
       ...prev,
-      ranks: checked 
+      ranks: checked
         ? [...prev.ranks, rank]
         : prev.ranks.filter(r => r !== rank)
     }));
@@ -355,46 +355,51 @@ export default function UsersPage() {
 
     while (hasMore) {
       try {
-        const queryParams = new URLSearchParams();
-        
-        if (appliedSearchForm.nickname) queryParams.append('nickname', appliedSearchForm.nickname);
-        
-        if (!isOperatorRole) {
-          if (appliedSearchForm.postalCode) queryParams.append('postalCode', appliedSearchForm.postalCode);
-          if (appliedSearchForm.prefecture) queryParams.append('prefecture', appliedSearchForm.prefecture);
-          if (appliedSearchForm.city) queryParams.append('city', appliedSearchForm.city);
-          if (appliedSearchForm.address) queryParams.append('address', appliedSearchForm.address);
-          if (appliedSearchForm.birthDate) queryParams.append('birthDate', appliedSearchForm.birthDate);
-          if (appliedSearchForm.gender) queryParams.append('gender', appliedSearchForm.gender);
-          if (appliedSearchForm.saitamaAppId) queryParams.append('saitamaAppId', appliedSearchForm.saitamaAppId);
-        }
-        
-        if (appliedSearchForm.ranks && appliedSearchForm.ranks.length > 0) {
-          queryParams.append('ranks', JSON.stringify(appliedSearchForm.ranks));
-        }
-        if (appliedSearchForm.registeredDateStart) queryParams.append('registeredDateStart', appliedSearchForm.registeredDateStart);
-        if (appliedSearchForm.registeredDateEnd) queryParams.append('registeredDateEnd', appliedSearchForm.registeredDateEnd);
-        
-        queryParams.append('page', page.toString());
-        queryParams.append('limit', limit.toString());
+        // セキュリティ改善：個人情報をクエリパラメータで送信しないため、POSTメソッドでボディに含めて送信
+        const searchBody: Record<string, string | number> = {};
 
-        const response = await fetch(`/api/admin/users?${queryParams.toString()}`, {
-          method: 'GET',
+        // 検索条件をボディに追加
+        if (appliedSearchForm.nickname) searchBody.nickname = appliedSearchForm.nickname;
+
+        // operatorロールでない場合のみ機密情報での検索パラメータを追加
+        if (!isOperatorRole) {
+          if (appliedSearchForm.postalCode) searchBody.postalCode = appliedSearchForm.postalCode;
+          if (appliedSearchForm.prefecture) searchBody.prefecture = appliedSearchForm.prefecture;
+          if (appliedSearchForm.city) searchBody.city = appliedSearchForm.city;
+          if (appliedSearchForm.address) searchBody.address = appliedSearchForm.address;
+          if (appliedSearchForm.birthDate) searchBody.birthDate = appliedSearchForm.birthDate;
+          if (appliedSearchForm.gender) searchBody.gender = appliedSearchForm.gender;
+          if (appliedSearchForm.saitamaAppId) searchBody.saitamaAppId = appliedSearchForm.saitamaAppId;
+        }
+
+        if (appliedSearchForm.ranks && appliedSearchForm.ranks.length > 0) {
+          searchBody.ranks = JSON.stringify(appliedSearchForm.ranks);
+        }
+        if (appliedSearchForm.registeredDateStart) searchBody.registeredDateStart = appliedSearchForm.registeredDateStart;
+        if (appliedSearchForm.registeredDateEnd) searchBody.registeredDateEnd = appliedSearchForm.registeredDateEnd;
+
+        // ページネーションパラメータを追加
+        searchBody.page = page;
+        searchBody.limit = limit;
+
+        const response = await fetch(`/api/admin/users`, {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           credentials: 'include',
+          body: JSON.stringify(searchBody),
         });
-        
+
         if (!response.ok) {
           throw new Error('ユーザー一覧の取得に失敗しました');
         }
-        
+
         const data = await response.json();
-        
+
         let usersArray: User[] = [];
         let pagination: { totalPages?: number; total?: number } = {};
-        
+
         if (Array.isArray(data)) {
           usersArray = data;
           hasMore = false;
@@ -422,7 +427,7 @@ export default function UsersPage() {
 
     // フロントエンドのフィルタリングを適用
     return allUsers.filter((user) => {
-      const matchesSearch = 
+      const matchesSearch =
         (appliedSearchForm.nickname === '' || user.nickname.toLowerCase().includes(appliedSearchForm.nickname.toLowerCase())) &&
         (!isOperatorRole || true) &&
         (isOperatorRole || (
@@ -435,7 +440,7 @@ export default function UsersPage() {
           (appliedSearchForm.saitamaAppId === '' || user.saitamaAppId.includes(appliedSearchForm.saitamaAppId))
         )) &&
         (appliedSearchForm.ranks.length === 0 || appliedSearchForm.ranks.includes(user.rank));
-      
+
       let matchesDateRange = true;
       if (appliedSearchForm.registeredDateStart || appliedSearchForm.registeredDateEnd) {
         const userDate = new Date(user.registeredAt);
@@ -448,7 +453,7 @@ export default function UsersPage() {
           if (userDate > endDate) matchesDateRange = false;
         }
       }
-      
+
       return matchesSearch && matchesDateRange;
     });
   };
@@ -457,9 +462,9 @@ export default function UsersPage() {
   const handleDownloadAllCSV = async () => {
     try {
       setIsDownloadingCSV(true);
-      
+
       const allUsers = await fetchAllUsers();
-      
+
       const usersForCSV: UserForCSV[] = allUsers.map((user) => ({
         nickname: user.nickname,
         postalCode: user.postalCode,
@@ -476,7 +481,7 @@ export default function UsersPage() {
       const csvContent = convertUsersToCSV(usersForCSV, isOperatorRole);
       const filename = generateFilename('users');
       downloadCSV(csvContent, filename);
-      
+
       showSuccess(`${allUsers.length}件のユーザーデータをCSVでダウンロードしました`);
     } catch (error: unknown) {
       console.error('CSVダウンロードに失敗しました:', error);
@@ -494,10 +499,10 @@ export default function UsersPage() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-900">ユーザー管理</h1>
-            <p className="text-gray-600">
-              ユーザーの管理・編集を行います
-            </p>
+              <h1 className="text-2xl font-bold text-gray-900">ユーザー管理</h1>
+              <p className="text-gray-600">
+                ユーザーの管理・編集を行います
+              </p>
             </div>
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">
@@ -521,262 +526,262 @@ export default function UsersPage() {
               <Icon name={isSearchExpanded ? 'chevronUp' : 'chevronDown'} size="sm" />
             </Button>
           </div>
-          
+
           {isSearchExpanded && (
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* ニックネーム */}
-            <div>
-              <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 mb-2">
-                ニックネーム
-              </label>
-              <input
-                type="text"
-                id="nickname"
-                placeholder="ニックネームを入力"
-                value={searchForm.nickname}
-                onChange={(e) => handleInputChange('nickname', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-
-            {/* 郵便番号 */}
-            {!isOperatorRole && (
-              <div>
-                <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
-                  郵便番号
-                </label>
-                <input
-                  type="text"
-                  id="postalCode"
-                  placeholder="郵便番号を入力"
-                  value={searchForm.postalCode}
-                  onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            )}
-
-            {/* 都道府県 */}
-            {!isOperatorRole && (
-              <div>
-                <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
-                  都道府県
-                </label>
-                <select
-                  id="prefecture"
-                  value={searchForm.prefecture}
-                  onChange={(e) => handleInputChange('prefecture', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                >
-                  <option value="">都道府県を選択してください</option>
-                  {prefectures.map((pref) => (
-                    <option key={pref} value={pref}>{pref}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* 市区町村 */}
-            {!isOperatorRole && (
-              <div>
-                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
-                  市区町村
-                </label>
-                <input
-                  type="text"
-                  id="city"
-                  placeholder="市区町村を入力"
-                  value={searchForm.city}
-                  onChange={(e) => handleInputChange('city', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            )}
-
-            {/* 住所 */}
-            {!isOperatorRole && (
-              <div>
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                  住所
-                </label>
-                <input
-                  type="text"
-                  id="address"
-                  placeholder="住所を入力"
-                  value={searchForm.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            )}
-
-            {/* 生年月日 */}
-            {!isOperatorRole && (
-              <div>
-                <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-2">
-                  生年月日
-                </label>
-                <input
-                  type="date"
-                  id="birthDate"
-                  value={searchForm.birthDate}
-                  onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            )}
-
-            {/* 登録日範囲指定 */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                登録日（範囲指定）
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* ニックネーム */}
                 <div>
-                  <label htmlFor="registeredDateStart" className="block text-xs text-gray-500 mb-1">
-                    開始日
+                  <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 mb-2">
+                    ニックネーム
                   </label>
                   <input
-                    type="date"
-                    id="registeredDateStart"
-                    value={searchForm.registeredDateStart}
-                    onChange={(e) => handleInputChange('registeredDateStart', e.target.value)}
+                    type="text"
+                    id="nickname"
+                    placeholder="ニックネームを入力"
+                    value={searchForm.nickname}
+                    onChange={(e) => handleInputChange('nickname', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                   />
                 </div>
-                <div>
-                  <label htmlFor="registeredDateEnd" className="block text-xs text-gray-500 mb-1">
-                    終了日
-                  </label>
-                  <input
-                    type="date"
-                    id="registeredDateEnd"
-                    value={searchForm.registeredDateEnd}
-                    onChange={(e) => handleInputChange('registeredDateEnd', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-                </div>
-              </div>
-            </div>
-            </div>
 
-            {/* ランクと性別を横並びに配置 */}
-            <div className="md:col-span-2 mt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* ランク（複数選択可） */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ランク（複数選択可）
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={searchForm.ranks.includes(1)}
-                        onChange={(e) => handleRankChange(1, e.target.checked)}
-                        className="mr-2 text-green-600 focus:ring-green-500"
-                      />
-                      <span className="text-sm text-gray-700">ブロンズ</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={searchForm.ranks.includes(2)}
-                        onChange={(e) => handleRankChange(2, e.target.checked)}
-                        className="mr-2 text-green-600 focus:ring-green-500"
-                      />
-                      <span className="text-sm text-gray-700">シルバー</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={searchForm.ranks.includes(3)}
-                        onChange={(e) => handleRankChange(3, e.target.checked)}
-                        className="mr-2 text-green-600 focus:ring-green-500"
-                      />
-                      <span className="text-sm text-gray-700">ゴールド</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={searchForm.ranks.includes(4)}
-                        onChange={(e) => handleRankChange(4, e.target.checked)}
-                        className="mr-2 text-green-600 focus:ring-green-500"
-                      />
-                      <span className="text-sm text-gray-700">ダイヤモンド</span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* 性別 */}
+                {/* 郵便番号 */}
                 {!isOperatorRole && (
                   <div>
+                    <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
+                      郵便番号
+                    </label>
+                    <input
+                      type="text"
+                      id="postalCode"
+                      placeholder="郵便番号を入力"
+                      value={searchForm.postalCode}
+                      onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                )}
+
+                {/* 都道府県 */}
+                {!isOperatorRole && (
+                  <div>
+                    <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
+                      都道府県
+                    </label>
+                    <select
+                      id="prefecture"
+                      value={searchForm.prefecture}
+                      onChange={(e) => handleInputChange('prefecture', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    >
+                      <option value="">都道府県を選択してください</option>
+                      {prefectures.map((pref) => (
+                        <option key={pref} value={pref}>{pref}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* 市区町村 */}
+                {!isOperatorRole && (
+                  <div>
+                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                      市区町村
+                    </label>
+                    <input
+                      type="text"
+                      id="city"
+                      placeholder="市区町村を入力"
+                      value={searchForm.city}
+                      onChange={(e) => handleInputChange('city', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                )}
+
+                {/* 住所 */}
+                {!isOperatorRole && (
+                  <div>
+                    <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                      住所
+                    </label>
+                    <input
+                      type="text"
+                      id="address"
+                      placeholder="住所を入力"
+                      value={searchForm.address}
+                      onChange={(e) => handleInputChange('address', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                )}
+
+                {/* 生年月日 */}
+                {!isOperatorRole && (
+                  <div>
+                    <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-2">
+                      生年月日
+                    </label>
+                    <input
+                      type="date"
+                      id="birthDate"
+                      value={searchForm.birthDate}
+                      onChange={(e) => handleInputChange('birthDate', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+                )}
+
+                {/* 登録日範囲指定 */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    登録日（範囲指定）
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="registeredDateStart" className="block text-xs text-gray-500 mb-1">
+                        開始日
+                      </label>
+                      <input
+                        type="date"
+                        id="registeredDateStart"
+                        value={searchForm.registeredDateStart}
+                        onChange={(e) => handleInputChange('registeredDateStart', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="registeredDateEnd" className="block text-xs text-gray-500 mb-1">
+                        終了日
+                      </label>
+                      <input
+                        type="date"
+                        id="registeredDateEnd"
+                        value={searchForm.registeredDateEnd}
+                        onChange={(e) => handleInputChange('registeredDateEnd', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ランクと性別を横並びに配置 */}
+              <div className="md:col-span-2 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* ランク（複数選択可） */}
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      性別
+                      ランク（複数選択可）
                     </label>
                     <div className="flex flex-wrap gap-2">
                       <label className="flex items-center">
                         <input
-                          type="radio"
-                          name="gender"
-                          value=""
-                          checked={searchForm.gender === ''}
-                          onChange={(e) => handleInputChange('gender', e.target.value)}
+                          type="checkbox"
+                          checked={searchForm.ranks.includes(1)}
+                          onChange={(e) => handleRankChange(1, e.target.checked)}
                           className="mr-2 text-green-600 focus:ring-green-500"
                         />
-                        <span className="text-sm text-gray-700">すべて</span>
+                        <span className="text-sm text-gray-700">ブロンズ</span>
                       </label>
                       <label className="flex items-center">
                         <input
-                          type="radio"
-                          name="gender"
-                          value="1"
-                          checked={searchForm.gender === '1'}
-                          onChange={(e) => handleInputChange('gender', e.target.value)}
+                          type="checkbox"
+                          checked={searchForm.ranks.includes(2)}
+                          onChange={(e) => handleRankChange(2, e.target.checked)}
                           className="mr-2 text-green-600 focus:ring-green-500"
                         />
-                        <span className="text-sm text-gray-700">男性</span>
+                        <span className="text-sm text-gray-700">シルバー</span>
                       </label>
                       <label className="flex items-center">
                         <input
-                          type="radio"
-                          name="gender"
-                          value="2"
-                          checked={searchForm.gender === '2'}
-                          onChange={(e) => handleInputChange('gender', e.target.value)}
+                          type="checkbox"
+                          checked={searchForm.ranks.includes(3)}
+                          onChange={(e) => handleRankChange(3, e.target.checked)}
                           className="mr-2 text-green-600 focus:ring-green-500"
                         />
-                        <span className="text-sm text-gray-700">女性</span>
+                        <span className="text-sm text-gray-700">ゴールド</span>
                       </label>
                       <label className="flex items-center">
                         <input
-                          type="radio"
-                          name="gender"
-                          value="3"
-                          checked={searchForm.gender === '3'}
-                          onChange={(e) => handleInputChange('gender', e.target.value)}
+                          type="checkbox"
+                          checked={searchForm.ranks.includes(4)}
+                          onChange={(e) => handleRankChange(4, e.target.checked)}
                           className="mr-2 text-green-600 focus:ring-green-500"
                         />
-                        <span className="text-sm text-gray-700">未回答</span>
+                        <span className="text-sm text-gray-700">ダイヤモンド</span>
                       </label>
                     </div>
                   </div>
-                )}
+
+                  {/* 性別 */}
+                  {!isOperatorRole && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        性別
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="gender"
+                            value=""
+                            checked={searchForm.gender === ''}
+                            onChange={(e) => handleInputChange('gender', e.target.value)}
+                            className="mr-2 text-green-600 focus:ring-green-500"
+                          />
+                          <span className="text-sm text-gray-700">すべて</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="gender"
+                            value="1"
+                            checked={searchForm.gender === '1'}
+                            onChange={(e) => handleInputChange('gender', e.target.value)}
+                            className="mr-2 text-green-600 focus:ring-green-500"
+                          />
+                          <span className="text-sm text-gray-700">男性</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="gender"
+                            value="2"
+                            checked={searchForm.gender === '2'}
+                            onChange={(e) => handleInputChange('gender', e.target.value)}
+                            className="mr-2 text-green-600 focus:ring-green-500"
+                          />
+                          <span className="text-sm text-gray-700">女性</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="gender"
+                            value="3"
+                            checked={searchForm.gender === '3'}
+                            onChange={(e) => handleInputChange('gender', e.target.value)}
+                            className="mr-2 text-green-600 focus:ring-green-500"
+                          />
+                          <span className="text-sm text-gray-700">未回答</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+
+              {/* 検索・クリアボタン */}
+              <div className="flex justify-end gap-2 mt-6">
+                <Button variant="outline" onClick={handleClear}>
+                  クリア
+                </Button>
+                <Button variant="primary" onClick={handleSearch}>
+                  検索
+                </Button>
               </div>
             </div>
-
-
-            {/* 検索・クリアボタン */}
-            <div className="flex justify-end gap-2 mt-6">
-              <Button variant="outline" onClick={handleClear}>
-                クリア
-              </Button>
-              <Button variant="primary" onClick={handleSearch}>
-                検索
-              </Button>
-            </div>
-          </div>
           )}
         </div>
 
@@ -804,7 +809,7 @@ export default function UsersPage() {
               {isDownloadingCSV ? 'ダウンロード中...' : 'CSVダウンロード'}
             </Button>
           </div>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
@@ -854,14 +859,14 @@ export default function UsersPage() {
                     <td className="px-6 py-4 whitespace-nowrap" style={{ width: '140px', minWidth: '140px' }}>
                       <div className="flex justify-center gap-2 items-center">
                         <Link href={`/users/${user.id}`}>
-                          <button 
+                          <button
                             className="p-1.5 text-blue-600 hover:text-blue-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] flex-shrink-0"
                             title="詳細"
                             style={{ width: 'auto', height: 'auto' }}
                           >
-                            <Image 
-                              src="/info.png" 
-                              alt="詳細" 
+                            <Image
+                              src="/info.png"
+                              alt="詳細"
                               width={32}
                               height={32}
                               className="object-contain"
@@ -871,14 +876,14 @@ export default function UsersPage() {
                         </Link>
                         {!isOperatorRole && (
                           <Link href={`/users/${user.id}/edit`}>
-                            <button 
+                            <button
                               className="p-1.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] flex-shrink-0"
                               title="編集"
                               style={{ width: 'auto', height: 'auto' }}
                             >
-                              <Image 
-                                src="/edit.svg" 
-                                alt="編集" 
+                              <Image
+                                src="/edit.svg"
+                                alt="編集"
                                 width={24}
                                 height={24}
                                 className="object-contain"
