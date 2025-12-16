@@ -1,14 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { token, password } = body;
     
     if (!token || !password) {
-      return NextResponse.json(
+      return createNoCacheResponse(
         { error: { code: 'VALIDATION_ERROR', message: 'トークンとパスワードが必要です' } },
         { status: 400 }
       );
@@ -19,10 +21,10 @@ export async function POST(request: Request) {
       passwordLength: password.length 
     });
 
-    const response = await fetch(`${API_BASE_URL}/password/set-password`, {
+    const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/password/set-password`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+      headerOptions: {
+        requireAuth: false, // パスワード設定は認証不要
       },
       body: JSON.stringify({ token, password }),
     });
@@ -36,7 +38,7 @@ export async function POST(request: Request) {
         statusText: response.statusText,
         error: errorData 
       });
-      return NextResponse.json(errorData, { status: response.status });
+      return createNoCacheResponse(errorData, { status: response.status });
     }
 
     const data = await response.json();
@@ -45,7 +47,7 @@ export async function POST(request: Request) {
       dataKeys: Object.keys(data),
       hasMessage: 'message' in data
     });
-    return NextResponse.json(data);
+    return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: Password setup error', {
       error,
@@ -54,7 +56,7 @@ export async function POST(request: Request) {
       API_BASE_URL
     });
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ 
+    return createNoCacheResponse({ 
       error: {
         code: 'INTERNAL_ERROR',
         message: 'パスワードの設定に失敗しました', 

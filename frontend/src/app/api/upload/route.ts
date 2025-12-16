@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 // サーバーサイドではDocker内部URLを使用
 const API_BASE_URL = process.env.API_BASE_URL 
@@ -16,59 +18,48 @@ export async function POST(request: NextRequest) {
       if (value instanceof File) {
         fileCount += 1;
         if (fileCount > 5) {
-          return NextResponse.json({ error: 'ファイル数が多すぎます（最大5件）' }, { status: 400 });
+          return createNoCacheResponse({ error: 'ファイル数が多すぎます（最大5件）' }, { status: 400 });
         }
         if (!allowedTypes.has(value.type)) {
-          return NextResponse.json({ error: '許可されていないファイル形式です' }, { status: 400 });
+          return createNoCacheResponse({ error: '許可されていないファイル形式です' }, { status: 400 });
         }
         if (value.size > MAX_FILE_SIZE) {
-          return NextResponse.json({ error: 'ファイルサイズが大きすぎます（最大10MB）' }, { status: 400 });
+          return createNoCacheResponse({ error: 'ファイルサイズが大きすぎます（最大10MB）' }, { status: 400 });
         }
       }
     }
     
-    // Authorizationヘッダーを取得
-    const authHeader = request.headers.get('authorization');
-    // CookieからAuthorizationを補完
-    let finalAuth = authHeader || '';
-    if (!finalAuth) {
-      const cookieHeader = request.headers.get('cookie') || '';
-      const pairs = cookieHeader.split(';').map(v => v.trim());
-      const accessPair = pairs.find(v => v.startsWith('accessToken=')) || pairs.find(v => v.startsWith('__Host-accessToken='));
-      const token = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
-      if (token) finalAuth = `Bearer ${token}`;
-    }
-    
     console.log('📤 Upload: Forwarding to', `${API_BASE_URL}/api/upload`);
     
-    // バックエンドAPIに転送
-    const response = await fetch(`${API_BASE_URL}/api/upload`, {
+    // バックエンドAPIに転送（FormDataの場合はContent-Typeを設定しない）
+    const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/api/upload`, {
       method: 'POST',
-      body: formData,
-      headers: {
-        // Authorizationヘッダーを転送（Cookieからの補完含む）
-        ...(finalAuth ? { Authorization: finalAuth } : {}),
-        // Cookieを転送
-        ...(request.headers.get('cookie') ? { cookie: request.headers.get('cookie')! } : {}),
+      headerOptions: {
+        requireAuth: true, // 認証が必要
+        setContentType: false, // FormDataの場合はContent-Typeを設定しない
+        customHeaders: {
+          // Cookieを転送
+          ...(request.headers.get('cookie') ? { cookie: request.headers.get('cookie')! } : {}),
+        },
       },
+      body: formData,
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: '画像のアップロードに失敗しました' }));
-      return NextResponse.json(
+      return createNoCacheResponse(
         { error: errorData.message || '画像のアップロードに失敗しました' },
         { status: response.status }
       );
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    return createNoCacheResponse(data);
   } catch (error) {
     console.error('Upload API error:', error);
-    return NextResponse.json(
+    return createNoCacheResponse(
       { error: '画像のアップロードに失敗しました' },
       { status: 500 }
     );
   }
 }
-

@@ -45,7 +45,7 @@ describe('/api/password/verify-token endpoint', () => {
         ok: true,
         status: 200,
         json: async () => mockResponse,
-      });
+    });
 
       const request = createRequest('valid-token-123');
       const response = await GET(request);
@@ -57,7 +57,7 @@ describe('/api/password/verify-token endpoint', () => {
           valid: true,
           accountType: 'merchant',
         },
-      });
+    });
 
       expect(mockFetch).toHaveBeenCalledWith(
         `${API_BASE_URL}/password/verify-token?token=valid-token-123`,
@@ -85,7 +85,7 @@ describe('/api/password/verify-token endpoint', () => {
         ok: true,
         status: 200,
         json: async () => mockResponseWithEmail,
-      });
+    });
 
       const request = createRequest('valid-token-123');
       const response = await GET(request);
@@ -98,7 +98,7 @@ describe('/api/password/verify-token endpoint', () => {
           valid: true,
           accountType: 'merchant',
         },
-      });
+    });
       expect(data.data).not.toHaveProperty('email');
       expect(data.data).not.toHaveProperty('displayName');
     });
@@ -114,7 +114,7 @@ describe('/api/password/verify-token endpoint', () => {
         ok: true,
         status: 200,
         json: async () => mockResponse,
-      });
+    });
 
       const request = createRequest('valid-token-123');
       const response = await GET(request);
@@ -125,10 +125,10 @@ describe('/api/password/verify-token endpoint', () => {
         data: {
           valid: true,
         },
-      });
+    });
       expect(data.data).not.toHaveProperty('accountType');
     });
-  });
+    });
 
   describe('異常系: トークン検証失敗', () => {
     it('無効なトークンでエラーレスポンスを返し、フィルタリングされる', async () => {
@@ -143,7 +143,7 @@ describe('/api/password/verify-token endpoint', () => {
         ok: false,
         status: 400,
         json: async () => mockErrorResponse,
-      });
+    });
 
       const request = createRequest('invalid-token');
       const response = await GET(request);
@@ -155,7 +155,7 @@ describe('/api/password/verify-token endpoint', () => {
           code: 'INVALID_TOKEN',
           message: 'トークンが無効または期限切れです',
         },
-      });
+    });
     });
 
     it('バックエンドがメールアドレスを含むエラーレスポンスを返しても、フィルタリングで除外される', async () => {
@@ -172,7 +172,7 @@ describe('/api/password/verify-token endpoint', () => {
         ok: false,
         status: 400,
         json: async () => mockErrorResponseWithEmail,
-      });
+    });
 
       const request = createRequest('invalid-token');
       const response = await GET(request);
@@ -185,7 +185,7 @@ describe('/api/password/verify-token endpoint', () => {
           code: 'INVALID_TOKEN',
           message: 'トークンが無効または期限切れです',
         },
-      });
+    });
       expect(data.error).not.toHaveProperty('email');
       expect(data.error).not.toHaveProperty('accountId');
     });
@@ -205,7 +205,7 @@ describe('/api/password/verify-token endpoint', () => {
         ok: false,
         status: 400,
         json: async () => mockValidationError,
-      });
+    });
 
       const request = createRequest('invalid-token');
       const response = await GET(request);
@@ -220,9 +220,9 @@ describe('/api/password/verify-token endpoint', () => {
             { field: 'token', message: 'トークンは必須です' },
           ],
         },
-      });
     });
-  });
+    });
+    });
 
   describe('バリデーション: リクエストパラメータ', () => {
     it('トークンがない場合は400エラーを返す', async () => {
@@ -236,12 +236,12 @@ describe('/api/password/verify-token endpoint', () => {
           code: 'VALIDATION_ERROR',
           message: 'トークンが正しくありません',
         },
-      });
+    });
 
       // バックエンドへのリクエストは送信されない
       expect(mockFetch).not.toHaveBeenCalled();
     });
-  });
+    });
 
   describe('エラーハンドリング', () => {
     it('予期しないレスポンス形式の場合、500エラーを返す', async () => {
@@ -250,7 +250,7 @@ describe('/api/password/verify-token endpoint', () => {
         ok: true,
         status: 200,
         json: async () => ({ invalidFormat: true }), // dataフィールドがない
-      });
+    });
 
       const request = createRequest('valid-token');
       const response = await GET(request);
@@ -262,7 +262,7 @@ describe('/api/password/verify-token endpoint', () => {
           code: 'INTERNAL_ERROR',
           message: 'トークンの検証に失敗しました',
         },
-      });
+    });
     });
 
     it('ネットワークエラーの場合、500エラーを返す', async () => {
@@ -278,7 +278,7 @@ describe('/api/password/verify-token endpoint', () => {
           code: 'INTERNAL_ERROR',
           message: 'トークンの検証に失敗しました',
         },
-      });
+    });
     });
 
     it('JSON解析エラーの場合、適切に処理する', async () => {
@@ -288,7 +288,7 @@ describe('/api/password/verify-token endpoint', () => {
         json: async () => {
           throw new Error('Invalid JSON');
         },
-      });
+    });
 
       const request = createRequest('invalid-token');
       const response = await GET(request);
@@ -300,7 +300,7 @@ describe('/api/password/verify-token endpoint', () => {
       expect(data.error.code).toBeDefined();
       expect(data.error.message).toBeDefined();
     });
-  });
+    });
 
   describe('セキュリティ検証', () => {
     it('全ての成功レスポンスから個人情報が除外される', async () => {
@@ -320,7 +320,7 @@ describe('/api/password/verify-token endpoint', () => {
         ok: true,
         status: 200,
         json: async () => personalInfoResponse,
-      });
+    });
 
       const request = createRequest('valid-token');
       const response = await GET(request);
@@ -351,7 +351,7 @@ describe('/api/password/verify-token endpoint', () => {
         ok: false,
         status: 400,
         json: async () => personalInfoError,
-      });
+    });
 
       const request = createRequest('invalid-token');
       const response = await GET(request);
@@ -364,5 +364,5 @@ describe('/api/password/verify-token endpoint', () => {
       expect(data.error).not.toHaveProperty('userId');
       expect(data.error).not.toHaveProperty('phone');
     });
-  });
-});
+    });
+    });

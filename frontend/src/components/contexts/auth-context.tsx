@@ -50,16 +50,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const isAuthenticated = !!user;
 
-  // sessionStorage への保存/削除ヘルパー関数
-  const saveUserToSession = (userData: User | null) => {
-    if (typeof window === 'undefined') return;
-    
-    if (userData) {
-      sessionStorage.setItem('userData', JSON.stringify(userData));
-    } else {
-      sessionStorage.removeItem('userData');
-    }
-  };
+  // Cookieベースの認証のみを使用（sessionStorageは使用しない）
 
   // 初期化時にトークンをチェック
   useEffect(() => {
@@ -86,7 +77,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             merchantId: (me.merchantId ?? undefined) || undefined,
           };
           setUser(userData);
-          saveUserToSession(userData);
         }
       } catch (error) {
         console.error('Auth initialization failed:', error);
@@ -134,7 +124,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           merchantId: (me.merchantId ?? accountData.merchantId ?? undefined) || undefined,
         };
         setUser(userData);
-        saveUserToSession(userData);
+        // Cookieベースの認証のみを使用（sessionStorageは使用しない）
       } else {
         // /api/meが失敗した場合でも、accountDataからユーザー情報を設定
         userData = {
@@ -146,7 +136,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           merchantId: accountData.merchantId
         };
         setUser(userData);
-        saveUserToSession(userData);
+        // Cookieベースの認証のみを使用（sessionStorageは使用しない）
       }
     } catch (error) {
       console.error('❌ AuthContext: login failed', error);
@@ -187,7 +177,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       // 表示用ユーザーデータの保存を廃止
       setUser(null);
-      saveUserToSession(null);
     }
   };
 

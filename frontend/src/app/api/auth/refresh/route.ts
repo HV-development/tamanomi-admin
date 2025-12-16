@@ -1,4 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 // 簡易レート制限（同一IPあたり1分間に20回まで）
 const ipCounters = new Map<string, { count: number; resetAt: number }>();
@@ -24,9 +26,9 @@ function rateLimit(request: Request): boolean {
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   if (!rateLimit(request)) {
-    return NextResponse.json({ message: 'Too Many Requests' }, { status: 429 });
+    return createNoCacheResponse({ message: 'Too Many Requests' }, { status: 429 });
   }
   try {
     console.log('🔄 API Route: Refresh token request received');
@@ -40,13 +42,13 @@ export async function POST(request: Request) {
     const refreshToken = refreshPair ? decodeURIComponent(refreshPair.split('=')[1] || '') : '';
     if (!refreshToken) {
       console.warn('🔄 No refresh token cookie');
-      return NextResponse.json({ message: 'No refresh token' }, { status: 401 });
+      return createNoCacheResponse({ message: 'No refresh token' }, { status: 401 });
     }
     
-    const response = await fetch(`${API_BASE_URL}/refresh`, {
+    const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/refresh`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+      headerOptions: {
+        requireAuth: false, // リフレッシュトークンは認証不要
       },
       body: JSON.stringify({ refreshToken }),
     });
@@ -54,7 +56,7 @@ export async function POST(request: Request) {
     if (!response.ok) {
       const errorData = await response.json();
       console.error('❌ API Route: Refresh token failed', { status: response.status, error: errorData });
-      return NextResponse.json(errorData, { status: response.status });
+      return createNoCacheResponse(errorData, { status: response.status });
     }
 
     const data = await response.json();
@@ -63,9 +65,7 @@ export async function POST(request: Request) {
     })();
     console.log('✅ API Route: Refresh token successful');
 
-    const res = NextResponse.json({ ok: true });
-    res.headers.set('Cache-Control', 'no-store');
-    res.headers.set('Pragma', 'no-cache');
+    const res = createNoCacheResponse({ ok: true });
     if (data.accessToken) {
       res.cookies.set('accessToken', data.accessToken, {
         httpOnly: true,
@@ -102,6 +102,6 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     console.error('❌ API Route: Refresh token error', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
+    return createNoCacheResponse({ message: 'Internal Server Error', error: errorMessage }, { status: 500 });
   }
 }

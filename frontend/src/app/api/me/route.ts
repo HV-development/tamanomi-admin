@@ -1,47 +1,37 @@
-import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
 
-function getAuthHeader(request: Request): string | null {
-  const cookieHeader = request.headers.get('cookie') || '';
-  const pairs = cookieHeader.split(';').map(v => v.trim());
-  const accessPair = pairs.find(v => v.startsWith('accessToken=')) || 
-                     pairs.find(v => v.startsWith('__Host-accessToken='));
-  const token = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
-  return token ? `Bearer ${token}` : null;
-}
-
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const auth = getAuthHeader(request);
-    if (!auth) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-
     // バックエンドの統合エンドポイントにプロキシ
-    const response = await fetch(`${API_BASE_URL}/me`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': auth
-      }
+    const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/me`, {
+      method: 'GET',
+      headerOptions: {
+        requireAuth: true, // 認証が必要
+      },
     });
+
+    // 認証エラーの場合は401を返す
+    if (response.status === 401) {
+      return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      return NextResponse.json(
+      return createNoCacheResponse(
         { message: error.error?.message || error.message || 'Failed to fetch account info' },
         { status: response.status }
       );
     }
 
     const data = await response.json();
-    const res = NextResponse.json(data);
-    res.headers.set('Cache-Control', 'no-store');
-    res.headers.set('Pragma', 'no-cache');
-    return res;
+    return createNoCacheResponse(data);
   } catch (error) {
     console.error('Error in /api/me:', error);
-    return NextResponse.json(
+    return createNoCacheResponse(
       { 
         message: 'Internal Server Error',
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -50,5 +40,3 @@ export async function GET(request: Request) {
     );
   }
 }
-
-

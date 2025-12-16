@@ -1,23 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
-
-function getAuthHeaders(request: Request): Record<string, string> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const headerToken = request.headers.get('authorization');
-  if (headerToken) {
-    headers['Authorization'] = headerToken;
-    return headers;
-  }
-  const cookieHeader = request.headers.get('cookie') || '';
-  const pairs = cookieHeader.split(';').map(v => v.trim());
-  const accessPair = pairs.find(v => v.startsWith('accessToken=')) || pairs.find(v => v.startsWith('__Host-accessToken='));
-  const accessToken = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
-  if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
-  }
-  return headers;
-}
 
 export async function POST(
   request: NextRequest,
@@ -31,11 +16,18 @@ export async function POST(
     });
 
     // バックエンドAPIを呼び出し
-    const response = await fetch(`${API_BASE_URL}/admin/merchants/${id}/send-password-reset`, {
+    const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/admin/merchants/${id}/send-password-reset`, {
       method: 'POST',
-      headers: getAuthHeaders(request),
+      headerOptions: {
+        requireAuth: true, // 認証が必要
+      },
       body: JSON.stringify({}), // 空のJSONボディを送信（Fastifyの要件）
     });
+
+    // 認証エラーの場合は401を返す
+    if (response.status === 401) {
+      return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response' }));
@@ -44,7 +36,7 @@ export async function POST(
         error: errorData,
       });
       
-      return NextResponse.json(
+      return createNoCacheResponse(
         errorData,
         { status: response.status }
       );
@@ -53,10 +45,10 @@ export async function POST(
     const data = await response.json();
     console.log('✅ API Route: パスワード再設定メール送信成功', data);
 
-    return NextResponse.json(data);
+    return createNoCacheResponse(data);
   } catch (error) {
     console.error('❌ API Route: パスワード再設定メール送信エラー', error);
-    return NextResponse.json(
+    return createNoCacheResponse(
       { error: { code: 'INTERNAL_ERROR', message: 'パスワード再設定メールの送信に失敗しました' } },
       { status: 500 }
     );
