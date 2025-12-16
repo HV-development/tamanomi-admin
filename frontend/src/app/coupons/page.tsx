@@ -36,6 +36,7 @@ function CouponsPageContent() {
   const { toasts, removeToast, showSuccess, showError } = useToast();
   const isShopAccount = auth?.user?.accountType === 'shop';
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
+  const isAdminAccount = auth?.user?.accountType === 'admin';
   const searchParams = useSearchParams();
   const shopIdFromQuery = searchParams?.get('shopId') ?? undefined;
   const merchantIdFromQuery = searchParams?.get('merchantId') ?? undefined;
@@ -89,21 +90,21 @@ function CouponsPageContent() {
       const params = new URLSearchParams();
       params.append('page', pagination.page.toString());
       params.append('limit', pagination.limit.toString());
-      
+
       // 店舗アカウントの場合
       if (shopId) {
         params.append('shopId', shopId);
       }
-      
+
       // 事業者アカウントの場合
       if (merchantId) {
         params.append('merchantId', merchantId);
       }
-      
+
       if (appliedSearchForm.couponName) {
         params.append('title', appliedSearchForm.couponName);
       }
-      
+
       if (appliedStatusFilter !== 'all') {
         params.append('status', appliedStatusFilter);
       }
@@ -149,12 +150,12 @@ function CouponsPageContent() {
     if (auth?.isLoading) {
       return;
     }
-    
+
     // 認証情報が取得できていない場合はスキップ
     if (!auth?.user) {
       return;
     }
-    
+
     const key = JSON.stringify({
       user: auth?.user?.id ?? auth?.user?.email ?? 'anonymous',
       shopId: shopId ?? null,
@@ -221,6 +222,12 @@ function CouponsPageContent() {
   };
 
   const handleStatusChange = async (couponId: string, status: string) => {
+    // adminアカウントのみ承認ステータスの変更を許可
+    if (!isAdminAccount) {
+      showError('承認ステータスの変更は管理者のみ可能です');
+      return;
+    }
+
     // 元の状態を保存
     const originalCoupon = coupons.find(c => c.id === couponId);
     if (!originalCoupon) return;
@@ -244,7 +251,7 @@ function CouponsPageContent() {
     try {
       // 承認ステータスの更新
       await apiClient.updateCouponStatus(couponId, { status: status as CouponStatus });
-      
+
       // 停止中に変更する場合は公開ステータスも更新
       if (shouldUpdatePublicStatus) {
         await apiClient.updateCouponPublicStatus(couponId, { isPublic: false });
@@ -264,7 +271,7 @@ function CouponsPageContent() {
             : coupon
         )
       );
-      
+
       // エラーメッセージを取得
       let errorMessage = 'ステータスの更新に失敗しました';
       if (error instanceof Error) {
@@ -299,7 +306,7 @@ function CouponsPageContent() {
           coupon.id === couponId ? { ...coupon, isPublic: originalIsPublic } : coupon
         )
       );
-      
+
       // エラーメッセージを取得
       let errorMessage = '公開ステータスの更新に失敗しました';
       if (error instanceof Error) {
@@ -384,6 +391,12 @@ function CouponsPageContent() {
 
   // 一括更新関数
   const handleBulkUpdateStatus = async (status: string) => {
+    // adminアカウントのみ承認ステータスの変更を許可
+    if (!isAdminAccount) {
+      showError('承認ステータスの変更は管理者のみ可能です');
+      return;
+    }
+
     setIsUpdating(true);
     try {
       let successCount = 0;
@@ -397,7 +410,7 @@ function CouponsPageContent() {
         try {
           // 承認ステータスの更新
           await apiClient.updateCouponStatus(couponId, { status: status as CouponStatus });
-          
+
           // 停止中に変更する場合、かつ公開中の場合は公開ステータスも更新
           if (shouldUpdatePublicStatus) {
             const coupon = filteredCoupons.find(c => c.id === couponId);
@@ -411,7 +424,7 @@ function CouponsPageContent() {
               }
             }
           }
-          
+
           successCount++;
         } catch (error) {
           console.error(`クーポン ${couponId} の更新に失敗:`, error);
@@ -450,7 +463,7 @@ function CouponsPageContent() {
 
       for (const couponId of selectedCoupons) {
         const coupon = filteredCoupons.find(c => c.id === couponId);
-        
+
         // 未承認のクーポンをチェック（全アカウント共通）
         const couponStatus = coupon?.status;
         if (coupon && couponStatus !== 'approved' && isPublic) {
@@ -499,28 +512,28 @@ function CouponsPageContent() {
         const params = new URLSearchParams();
         params.append('page', page.toString());
         params.append('limit', limit.toString());
-        
+
         if (shopId) {
           params.append('shopId', shopId);
         }
-        
+
         if (merchantId) {
           params.append('merchantId', merchantId);
         }
-        
+
         if (appliedSearchForm.couponName) {
           params.append('title', appliedSearchForm.couponName);
         }
-        
+
         if (appliedStatusFilter !== 'all') {
           params.append('status', appliedStatusFilter);
         }
 
         const data: { coupons: CouponWithShop[]; pagination: PaginationData } = await apiClient.getCoupons(params.toString()) as { coupons: CouponWithShop[]; pagination: PaginationData };
-        
+
         const couponsArray = data.coupons || [];
         const paginationData = data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 };
-        
+
         allCoupons.push(...couponsArray);
 
         const totalPages = paginationData.totalPages || 1;
@@ -543,9 +556,9 @@ function CouponsPageContent() {
   const handleDownloadAllCSV = async () => {
     try {
       setIsDownloadingCSV(true);
-      
+
       const allCoupons = await fetchAllCoupons();
-      
+
       const couponsForCSV: CouponForCSV[] = allCoupons.map((coupon) => ({
         merchantName: coupon.shop?.merchant?.name,
         shopName: coupon.shop?.name,
@@ -559,7 +572,7 @@ function CouponsPageContent() {
       const csvContent = convertCouponsToCSV(couponsForCSV, !shopId && !merchantId);
       const filename = generateFilename('coupons');
       downloadCSV(csvContent, filename);
-      
+
       showSuccess(`${allCoupons.length}件のクーポンデータをCSVでダウンロードしました`);
     } catch (error: unknown) {
       console.error('CSVダウンロードに失敗しました:', error);
@@ -595,7 +608,7 @@ function CouponsPageContent() {
       const csvContent = convertCouponsToCSV(couponsForCSV, !shopId && !merchantId);
       const filename = generateFilename('coupons_selected');
       downloadCSV(csvContent, filename);
-      
+
       showSuccess(`${selectedCouponsData.length}件のクーポンデータをCSVでダウンロードしました`);
     } catch (error: unknown) {
       console.error('CSVダウンロードに失敗しました:', error);
@@ -639,10 +652,10 @@ function CouponsPageContent() {
                 {isShopAccount ? 'クーポン管理' : (shopId ? '店舗クーポン管理' : 'クーポン管理')}
               </h1>
               <p className="text-gray-600">
-                {isShopAccount 
+                {isShopAccount
                   ? '自身の店舗のクーポンを管理します'
-                  : (shopId 
-                    ? 'この店舗のクーポンを管理します' 
+                  : (shopId
+                    ? 'この店舗のクーポンを管理します'
                     : 'クーポンの管理・編集を行います')
                 }
               </p>
@@ -658,83 +671,83 @@ function CouponsPageContent() {
 
         {/* 検索フォーム（店舗アカウントの場合は簡略表示） */}
         {!isShopAccount && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="pb-3 border-b border-gray-200 flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-              className="flex items-center focus:outline-none"
-            >
-              <Icon name={isSearchExpanded ? 'chevronUp' : 'chevronDown'} size="sm" />
-            </Button>
-          </div>
-          
-          {isSearchExpanded && (
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* クーポンID */}
-            <div>
-              <label htmlFor="couponId" className="block text-sm font-medium text-gray-700 mb-2">
-                クーポンID
-              </label>
-              <input
-                type="text"
-                id="couponId"
-                placeholder="クーポンIDを入力"
-                value={searchForm.couponId}
-                onChange={(e) => handleInputChange('couponId', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-
-            {/* クーポン名 */}
-            <div>
-              <label htmlFor="couponName" className="block text-sm font-medium text-gray-700 mb-2">
-                クーポン名
-              </label>
-              <input
-                type="text"
-                id="couponName"
-                placeholder="クーポン名を入力"
-                value={searchForm.couponName}
-                onChange={(e) => handleInputChange('couponName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-
-            {/* ステータス */}
-            <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                ステータス
-              </label>
-              <select
-                id="status"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as 'all' | CouponStatus)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="pb-3 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+                className="flex items-center focus:outline-none"
               >
-                <option value="all">すべて</option>
-                <option value="active">有効</option>
-                <option value="inactive">無効</option>
-                <option value="expired">期限切れ</option>
-              </select>
-            </div>
+                <Icon name={isSearchExpanded ? 'chevronUp' : 'chevronDown'} size="sm" />
+              </Button>
             </div>
 
-            {/* 検索・クリアボタン */}
-            <div className="flex justify-end gap-2 mt-6">
-              <Button variant="outline" onClick={handleClear}>
-                クリア
-              </Button>
-              <Button variant="primary" onClick={handleSearch}>
-                検索
-              </Button>
-            </div>
+            {isSearchExpanded && (
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* クーポンID */}
+                  <div>
+                    <label htmlFor="couponId" className="block text-sm font-medium text-gray-700 mb-2">
+                      クーポンID
+                    </label>
+                    <input
+                      type="text"
+                      id="couponId"
+                      placeholder="クーポンIDを入力"
+                      value={searchForm.couponId}
+                      onChange={(e) => handleInputChange('couponId', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+
+                  {/* クーポン名 */}
+                  <div>
+                    <label htmlFor="couponName" className="block text-sm font-medium text-gray-700 mb-2">
+                      クーポン名
+                    </label>
+                    <input
+                      type="text"
+                      id="couponName"
+                      placeholder="クーポン名を入力"
+                      value={searchForm.couponName}
+                      onChange={(e) => handleInputChange('couponName', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+
+                  {/* ステータス */}
+                  <div>
+                    <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                      ステータス
+                    </label>
+                    <select
+                      id="status"
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value as 'all' | CouponStatus)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    >
+                      <option value="all">すべて</option>
+                      <option value="active">有効</option>
+                      <option value="inactive">無効</option>
+                      <option value="expired">期限切れ</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 検索・クリアボタン */}
+                <div className="flex justify-end gap-2 mt-6">
+                  <Button variant="outline" onClick={handleClear}>
+                    クリア
+                  </Button>
+                  <Button variant="primary" onClick={handleSearch}>
+                    検索
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
-          )}
-        </div>
         )}
 
         {/* ページネーション */}
@@ -769,7 +782,7 @@ function CouponsPageContent() {
               </Link>
             </div>
           </div>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
@@ -785,7 +798,7 @@ function CouponsPageContent() {
                     アクション
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  事業者名
+                    事業者名
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     店舗名
@@ -840,11 +853,7 @@ function CouponsPageContent() {
                       <div className="text-sm text-gray-900">{coupon.title}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
-                      {isMerchantAccount ? (
-                        <span className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium ${_getStatusSelectColor(coupon.status)}`}>
-                          {coupon.status === 'pending' ? '申請中' : coupon.status === 'approved' ? '承認済み' : '停止中'}
-                        </span>
-                      ) : (
+                      {isAdminAccount ? (
                         <select
                           value={coupon.status}
                           onChange={(e) => handleStatusChange(coupon.id, e.target.value)}
@@ -854,6 +863,10 @@ function CouponsPageContent() {
                           <option value="approved">承認済み</option>
                           <option value="suspended">停止中</option>
                         </select>
+                      ) : (
+                        <span className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium ${_getStatusSelectColor(coupon.status)}`}>
+                          {coupon.status === 'pending' ? '申請中' : coupon.status === 'approved' ? '承認済み' : '停止中'}
+                        </span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">

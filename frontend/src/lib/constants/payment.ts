@@ -16,7 +16,7 @@ export const QR_PAYMENT_SERVICES = [
   'au PAY',
   'd払い',
   'メルペイ',
-  'EAON PAY',
+  'AEON PAY',
   'その他',
 ] as const;
 
