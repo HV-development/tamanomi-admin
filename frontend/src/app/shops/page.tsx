@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'rea
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/toast-container';
@@ -14,8 +15,12 @@ import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
 import Checkbox from '@/components/atoms/Checkbox';
-import FloatingFooter from '@/components/molecules/floating-footer';
 import { convertShopsToCSV, downloadCSV, generateFilename, type ShopForCSV } from '@/utils/csvExport';
+
+// 動的インポート：選択時のみ表示されるフローティングフッター
+const FloatingFooter = dynamic(() => import('@/components/molecules/floating-footer'), {
+  ssr: false,
+});
 
 function ShopsPageContent() {
   const auth = useAuth();
@@ -307,12 +312,12 @@ function ShopsPageContent() {
   }, [merchantId, auth?.isLoading, isMerchantAccount, isShopAccount, auth?.user?.id, auth?.user?.email, fetchShops]);
 
   // 検索フォームの入力ハンドラー
-  const handleInputChange = (field: keyof typeof searchForm, value: string) => {
+  const handleInputChange = useCallback((field: keyof typeof searchForm, value: string) => {
     setSearchForm(prev => ({
       ...prev,
       [field]: value
     }));
-  };
+  }, []);
 
   // 検索実行ハンドラー
   const handleSearch = () => {
@@ -446,9 +451,9 @@ function ShopsPageContent() {
   };
 
   // ページ変更ハンドラー
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     setPagination(prev => ({ ...prev, page }));
-  };
+  }, []);
 
   // チェックボックス関連の関数
   useEffect(() => {
@@ -458,23 +463,25 @@ function ShopsPageContent() {
     setIsIndeterminate(selectedCount > 0 && selectedCount < allCount);
   }, [selectedShops, shops]);
 
-  const handleToggleAll = (checked: boolean) => {
+  const handleToggleAll = useCallback((checked: boolean) => {
     if (checked) {
       setSelectedShops(new Set(shops.map(shop => shop.id)));
     } else {
       setSelectedShops(new Set());
     }
-  };
+  }, [shops]);
 
-  const handleToggleShop = (shopId: string, checked: boolean) => {
-    const newSelected = new Set(selectedShops);
-    if (checked) {
-      newSelected.add(shopId);
-    } else {
-      newSelected.delete(shopId);
-    }
-    setSelectedShops(newSelected);
-  };
+  const handleToggleShop = useCallback((shopId: string, checked: boolean) => {
+    setSelectedShops(prev => {
+      const newSelected = new Set(prev);
+      if (checked) {
+        newSelected.add(shopId);
+      } else {
+        newSelected.delete(shopId);
+      }
+      return newSelected;
+    });
+  }, []);
 
   // 一括更新処理
   const handleBulkUpdateStatus = async (status: string) => {

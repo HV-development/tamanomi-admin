@@ -1,8 +1,9 @@
 'use client';
 
-import { Suspense, useState, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamicImport from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
@@ -15,8 +16,12 @@ import { useAuth } from '@/components/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
 import Checkbox from '@/components/atoms/Checkbox';
-import CouponBulkUpdateFooter from '@/components/molecules/coupon-bulk-update-footer';
 import { convertCouponsToCSV, downloadCSV, generateFilename, type CouponForCSV } from '@/utils/csvExport';
+
+// 動的インポート：選択時のみ表示されるフローティングフッター
+const CouponBulkUpdateFooter = dynamicImport(() => import('@/components/molecules/coupon-bulk-update-footer'), {
+  ssr: false,
+});
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -187,22 +192,22 @@ function CouponsPageContent() {
 
   const filteredCoupons = coupons;
 
-  const handleInputChange = (field: keyof typeof searchForm, value: string) => {
+  const handleInputChange = useCallback((field: keyof typeof searchForm, value: string) => {
     setSearchForm(prev => ({
       ...prev,
       [field]: value
     }));
-  };
+  }, []);
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
-    setAppliedSearchForm({ ...searchForm });
+    setAppliedSearchForm(searchForm);
     setAppliedStatusFilter(statusFilter);
     // ページを1にリセット
     setPagination(prev => ({ ...prev, page: 1 }));
-  };
+  }, [searchForm, statusFilter]);
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     setSearchForm({
       couponId: '',
       couponName: '',
@@ -215,12 +220,12 @@ function CouponsPageContent() {
     setAppliedStatusFilter('all');
     // ページを1にリセット
     setPagination(prev => ({ ...prev, page: 1 }));
-  };
+  }, []);
 
   // ページ変更ハンドラー
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     setPagination(prev => ({ ...prev, page }));
-  };
+  }, []);
 
   const handleStatusChange = async (couponId: string, status: string) => {
     // adminアカウントのみ承認ステータスの変更を許可
@@ -372,23 +377,25 @@ function CouponsPageContent() {
     setIsIndeterminate(selectedCount > 0 && selectedCount < allCount);
   }, [selectedCoupons, filteredCoupons]);
 
-  const handleToggleAll = (checked: boolean) => {
+  const handleToggleAll = useCallback((checked: boolean) => {
     if (checked) {
       setSelectedCoupons(new Set(filteredCoupons.map(coupon => coupon.id)));
     } else {
       setSelectedCoupons(new Set());
     }
-  };
+  }, [filteredCoupons]);
 
-  const handleToggleCoupon = (couponId: string, checked: boolean) => {
-    const newSelected = new Set(selectedCoupons);
-    if (checked) {
-      newSelected.add(couponId);
-    } else {
-      newSelected.delete(couponId);
-    }
-    setSelectedCoupons(newSelected);
-  };
+  const handleToggleCoupon = useCallback((couponId: string, checked: boolean) => {
+    setSelectedCoupons(prev => {
+      const newSelected = new Set(prev);
+      if (checked) {
+        newSelected.add(couponId);
+      } else {
+        newSelected.delete(couponId);
+      }
+      return newSelected;
+    });
+  }, []);
 
   // 一括更新関数
   const handleBulkUpdateStatus = async (status: string) => {

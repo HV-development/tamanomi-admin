@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import IconButton from '@/components/atoms/IconButton';
 import Checkbox from '@/components/atoms/Checkbox';
 import ToastContainer from '@/components/molecules/toast-container';
-import FloatingFooterMerchant from '@/components/molecules/floating-footer-merchant';
 import Pagination from '@/components/molecules/Pagination';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +16,11 @@ import { prefectures } from '@/lib/constants/merchant';
 import { type MerchantWithDetails } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
 import { convertMerchantsToCSV, downloadCSV, generateFilename, type MerchantForCSV } from '@/utils/csvExport';
+
+// 動的インポート：選択時のみ表示されるフローティングフッター
+const FloatingFooterMerchant = dynamic(() => import('@/components/molecules/floating-footer-merchant'), {
+  ssr: false,
+});
 
 // APIレスポンス用の型（日付がstringとして返される）
 type Merchant = Omit<MerchantWithDetails, 'createdAt' | 'updatedAt' | 'deletedAt' | 'account' | 'shops'> & {
@@ -267,16 +272,19 @@ export default function MerchantsPage() {
 
   const [searchErrors, setSearchErrors] = useState<{createdAtFrom?: string; createdAtTo?: string}>({});
 
-  const handleInputChange = (field: keyof typeof searchForm, value: string) => {
+  const handleInputChange = useCallback((field: keyof typeof searchForm, value: string) => {
     setSearchForm(prev => ({
       ...prev,
       [field]: value
     }));
     // エラーがある場合、値を変更したらエラーをクリア
-    if (searchErrors.createdAtFrom || searchErrors.createdAtTo) {
-      setSearchErrors({});
-    }
-  };
+    setSearchErrors(prev => {
+      if (prev.createdAtFrom || prev.createdAtTo) {
+        return {};
+      }
+      return prev;
+    });
+  }, []);
 
   const validateSearchForm = (): boolean => {
     const errors: {createdAtFrom?: string; createdAtTo?: string} = {};
@@ -366,9 +374,9 @@ export default function MerchantsPage() {
   };
 
   // ページ変更ハンドラー
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     setPagination(prev => ({ ...prev, page }));
-  };
+  }, []);
 
   // チェックボックス関連の関数
   useEffect(() => {
@@ -378,23 +386,25 @@ export default function MerchantsPage() {
     setIsIndeterminate(selectedCount > 0 && selectedCount < allCount);
   }, [selectedMerchants, filteredMerchants]);
 
-  const handleToggleAll = (checked: boolean) => {
+  const handleToggleAll = useCallback((checked: boolean) => {
     if (checked) {
       setSelectedMerchants(new Set(filteredMerchants.map(merchant => merchant.id)));
     } else {
       setSelectedMerchants(new Set());
     }
-  };
+  }, [filteredMerchants]);
 
-  const handleToggleMerchant = (merchantId: string, checked: boolean) => {
-    const newSelected = new Set(selectedMerchants);
-    if (checked) {
-      newSelected.add(merchantId);
-    } else {
-      newSelected.delete(merchantId);
-    }
-    setSelectedMerchants(newSelected);
-  };
+  const handleToggleMerchant = useCallback((merchantId: string, checked: boolean) => {
+    setSelectedMerchants(prev => {
+      const newSelected = new Set(prev);
+      if (checked) {
+        newSelected.add(merchantId);
+      } else {
+        newSelected.delete(merchantId);
+      }
+      return newSelected;
+    });
+  }, []);
 
   // アカウント発行処理
   const handleIssueAccount = async () => {
@@ -442,7 +452,7 @@ export default function MerchantsPage() {
   };
 
   // 個別の事業者にアカウント発行（メールアイコンから）
-  const handleResendRegistration = async (merchantId: string) => {
+  const handleResendRegistration = useCallback(async (merchantId: string) => {
     try {
       const result = await apiClient.issueAccounts([merchantId]);
       
@@ -463,7 +473,7 @@ export default function MerchantsPage() {
       const errorMessage = error instanceof Error ? error.message : '不明なエラー';
       showError(`アカウント発行に失敗しました: ${errorMessage}`);
     }
-  };
+  }, [showSuccess, showError]);
 
   // 全データ取得関数（ページネーション対応、検索条件適用）
   const fetchAllMerchants = async (): Promise<Merchant[]> => {

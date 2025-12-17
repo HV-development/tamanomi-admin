@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
@@ -13,8 +14,12 @@ import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
 import Checkbox from '@/components/atoms/Checkbox';
-import FloatingFooter from '@/components/molecules/floating-footer';
 import { convertShopsToCSV, downloadCSV, generateFilename, type ShopForCSV } from '@/utils/csvExport';
+
+// 動的インポート：選択時のみ表示されるフローティングフッター
+const FloatingFooter = dynamic(() => import('@/components/molecules/floating-footer'), {
+  ssr: false,
+});
 
 export default function MerchantShopsPage() {
   const params = useParams();

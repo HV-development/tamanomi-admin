@@ -6,7 +6,9 @@ import ConsoleFilter from "../components/clients/console-filter";
 
 const inter = Inter({ 
   subsets: ["latin"],
-  display: "optional"
+  display: "swap",
+  // 日本語サブセットは含まれないため、デフォルトのシステムフォントにフォールバック
+  fallback: ['system-ui', 'sans-serif'],
 });
 
 // 動的レンダリングを強制（キャッシュを無効化）
@@ -43,10 +45,17 @@ export default function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
+        {/* Material Symbols Outlined: 使用する設定のみ読み込み（opsz:24, wght:400, FILL:0, GRAD:0） */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link
+          rel="preload"
+          as="style"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap"
+        />
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap"
         />
         {/* 明示的にファビコンを指定（ブラウザキャッシュや拡張子差異に強い）*/}
         <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
