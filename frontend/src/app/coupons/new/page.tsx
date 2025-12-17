@@ -282,7 +282,7 @@ function CouponNewPageContent() {
           conditions: formData.couponConditions || null,
           drinkType: (formData.drinkType === 'alcohol' || formData.drinkType === 'soft_drink' || formData.drinkType === 'other') ? formData.drinkType : null,
           imageUrl: null,
-          status: 'active' as CouponStatus,
+          status: 'pending' as CouponStatus,
           isPublic: false
         };
         const createdCoupon = await apiClient.createCoupon(couponData) as Coupon;
