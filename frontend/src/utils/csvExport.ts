@@ -82,7 +82,7 @@ export function convertMerchantsToCSV(
 ): string {
   // CSVヘッダー
   const headers: string[] = [];
-  
+
   if (isOperatorRole) {
     // operatorロールの場合は限定的な項目のみ
     headers.push(
@@ -172,19 +172,19 @@ export function convertMerchantsToCSV(
 export function downloadCSV(csvContent: string, filename: string): void {
   // Blobを作成（UTF-8エンコーディング）
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  
+
   // ダウンロードリンクを作成
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
   link.setAttribute('href', url);
   link.setAttribute('download', `${filename}.csv`);
   link.style.visibility = 'hidden';
-  
+
   // ダウンロード実行
   document.body.appendChild(link);
   link.click();
-  
+
   // クリーンアップ
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
@@ -203,7 +203,7 @@ export function generateFilename(prefix: string = 'merchants'): string {
   const hours = String(now.getHours()).padStart(2, '0');
   const minutes = String(now.getMinutes()).padStart(2, '0');
   const seconds = String(now.getSeconds()).padStart(2, '0');
-  
+
   return `${prefix}_${year}${month}${day}_${hours}${minutes}${seconds}`;
 }
 
@@ -246,7 +246,7 @@ export function convertShopsToCSV(
   includeMerchantName: boolean = false
 ): string {
   const headers: string[] = [];
-  
+
   if (includeMerchantName) {
     headers.push('事業者名');
   }
@@ -266,7 +266,7 @@ export function convertShopsToCSV(
 
   const dataRows = shops.map((shop) => {
     const values: string[] = [];
-    
+
     if (includeMerchantName) {
       values.push(escapeCSVValue(shop.merchantName || ''));
     }
@@ -321,7 +321,7 @@ export function convertCouponsToCSV(
   includeMerchantName: boolean = false
 ): string {
   const headers: string[] = [];
-  
+
   if (includeMerchantName) {
     headers.push('事業者名');
   }
@@ -338,7 +338,7 @@ export function convertCouponsToCSV(
 
   const dataRows = coupons.map((coupon) => {
     const values: string[] = [];
-    
+
     if (includeMerchantName) {
       values.push(escapeCSVValue(coupon.merchantName || ''));
     }
@@ -408,7 +408,7 @@ export function convertUsersToCSV(
   isOperatorRole: boolean = false
 ): string {
   const headers: string[] = [];
-  
+
   if (isOperatorRole) {
     headers.push('ニックネーム', 'ランク', '登録日');
   } else {
@@ -486,37 +486,37 @@ export function convertCouponUsagesToCSV(
   includeCouponInfo: boolean = true
 ): string {
   const headers: string[] = [];
-  
+
   headers.push('クーポン利用ID');
-  
+
   if (includeCouponInfo) {
     headers.push('クーポンID', 'クーポン名');
   }
-  
+
   headers.push('店舗名');
-  
+
   if (isSysAdmin) {
     headers.push('メールアドレス', 'ニックネーム', '性別', '生年月日', '住所');
   }
-  
+
   headers.push('利用日時');
 
   const headerRow = headers.map(escapeCSVValue).join(',');
 
   const dataRows = usages.map((usage) => {
     const values: string[] = [];
-    
+
     values.push(escapeCSVValue(usage.id));
-    
+
     if (includeCouponInfo) {
       values.push(
         escapeCSVValue(usage.couponId || ''),
         escapeCSVValue(usage.couponName || '')
       );
     }
-    
+
     values.push(escapeCSVValue(usage.shopName || ''));
-    
+
     if (isSysAdmin) {
       const genderLabel = usage.gender === 'male' ? '男性' : usage.gender === 'female' ? '女性' : usage.gender === 'other' ? 'その他' : '未回答';
       values.push(
@@ -527,8 +527,8 @@ export function convertCouponUsagesToCSV(
         escapeCSVValue(usage.address || '')
       );
     }
-    
-    values.push(escapeCSVValue(usage.usedAt));
+
+    values.push(escapeCSVValue(formatDate(usage.usedAt)));
 
     return values.join(',');
   });

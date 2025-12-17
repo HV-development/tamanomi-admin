@@ -12,6 +12,8 @@ export function createNoCacheResponse(
   init?: ResponseInit
 ): NextResponse {
   const response = NextResponse.json(data, init);
+  // HSTS: HTTPSの接続を強制（1年間）
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   response.headers.set('Pragma', 'no-cache');
   response.headers.set('Expires', '0');
@@ -25,6 +27,8 @@ export function createNoCacheResponse(
  * @returns キャッシュ無効化ヘッダーが設定されたNextResponse
  */
 export function addNoCacheHeaders(response: NextResponse): NextResponse {
+  // HSTS: HTTPSの接続を強制（1年間）
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   response.headers.set('Pragma', 'no-cache');
   response.headers.set('Expires', '0');

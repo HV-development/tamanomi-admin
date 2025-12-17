@@ -32,19 +32,32 @@ interface CouponUsage {
   usedAt: string;
 }
 
+// 日時を表示用にフォーマット（YYYY/MM/DD HH:MM形式）
+const formatDateTimeForDisplay = (dateString: string): string => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}/${month}/${day} ${hours}:${minutes}`;
+};
+
 export default function CouponHistoryPage() {
   const auth = useAuth();
   const accountType = auth?.user?.accountType;
   const role = auth?.user?.role;
   const isSysAdmin = accountType === 'admin' && role === 'sysadmin';
   const isShopAccount = accountType === 'shop';
-  
+
   const _shopId = isShopAccount ? auth?.user?.shopId : undefined;
   const lastFetchKeyRef = useRef<string | null>(null);
   const pathname = usePathname();
   const router = useRouter();
   const _params = useParams(); // 将来的に使用予定
-  
+
   const [searchForm, setSearchForm] = useState({
     usageId: '',
     couponId: '',
@@ -85,11 +98,11 @@ export default function CouponHistoryPage() {
 
   // APIからデータを取得
   useEffect(() => {
-     // authがロードされるまで待機
-     if (auth?.isLoading) {
-       return;
-     }
- 
+    // authがロードされるまで待機
+    if (auth?.isLoading) {
+      return;
+    }
+
     const key = JSON.stringify({
       pathname,
       search: appliedSearchForm,
@@ -108,7 +121,7 @@ export default function CouponHistoryPage() {
       try {
         // セキュリティ改善：個人情報をクエリパラメータで送信しないため、POSTメソッドでボディに含めて送信
         const searchBody: Record<string, string> = {};
-        
+
         // 遷移元に応じてパラメータを設定
         if (pathname.includes('/coupons/') && pathname.includes('/history')) {
           const couponId = pathname.split('/')[2];
@@ -138,20 +151,22 @@ export default function CouponHistoryPage() {
           searchBody.usedAtEnd = endDate.toISOString();
         }
 
-        const data = await apiClient.getCouponUsageHistory(searchBody) as { history: Array<{
-          id: string;
-          usageId?: string;
-          couponId: string;
-          couponName: string;
-          shopId: string;
-          shopName: string;
-          nickname?: string;
-          email?: string;
-          gender?: string;
-          birthDate?: string;
-          address?: string;
-          usedAt: string;
-        }> };
+        const data = await apiClient.getCouponUsageHistory(searchBody) as {
+          history: Array<{
+            id: string;
+            usageId?: string;
+            couponId: string;
+            couponName: string;
+            shopId: string;
+            shopName: string;
+            nickname?: string;
+            email?: string;
+            gender?: string;
+            birthDate?: string;
+            address?: string;
+            usedAt: string;
+          }>
+        };
         const formattedHistory = data.history.map((item) => ({
           id: item.id,
           usageId: item.usageId || item.id,
@@ -164,9 +179,9 @@ export default function CouponHistoryPage() {
           gender: item.gender,
           birthDate: item.birthDate,
           address: item.address,
-          usedAt: new Date(item.usedAt).toLocaleString('ja-JP'),
+          usedAt: item.usedAt,
         }));
-        
+
         setUsages(formattedHistory);
         setFilteredUsages(formattedHistory);
       } catch (error) {
@@ -210,7 +225,7 @@ export default function CouponHistoryPage() {
   useEffect(() => {
     // APIから取得したデータをフィルタリング
     const filtered = usages.filter((usage) => {
-      const matchesSearch = 
+      const matchesSearch =
         (appliedSearchForm.usageId === '' || usage.id.toLowerCase().includes(appliedSearchForm.usageId.toLowerCase())) &&
         (appliedSearchForm.couponId === '' || usage.couponId.toLowerCase().includes(appliedSearchForm.couponId.toLowerCase())) &&
         (appliedSearchForm.couponName === '' || usage.couponName.toLowerCase().includes(appliedSearchForm.couponName.toLowerCase())) &&
@@ -220,10 +235,10 @@ export default function CouponHistoryPage() {
         (!appliedSearchForm.gender || !usage.gender || usage.gender === appliedSearchForm.gender) &&
         (!appliedSearchForm.birthDate || !usage.birthDate || usage.birthDate === appliedSearchForm.birthDate) &&
         (!appliedSearchForm.address || !usage.address || usage.address.toLowerCase().includes(appliedSearchForm.address.toLowerCase()));
-      
+
       return matchesSearch;
     });
-    
+
     setFilteredUsages(filtered);
   }, [usages, appliedSearchForm]);
 
@@ -283,9 +298,9 @@ export default function CouponHistoryPage() {
       case 'other':
         return 'その他';
       default:
-    return '未回答';
-  }
-};
+        return '未回答';
+    }
+  };
 
   // 全データ取得関数（ページネーション対応、検索条件適用）
   const fetchAllCouponUsages = async (): Promise<CouponUsage[]> => {
@@ -296,55 +311,71 @@ export default function CouponHistoryPage() {
 
     while (hasMore) {
       try {
-        const queryParams = new URLSearchParams();
-        
-        // 遷移元に応じてクエリパラメータを設定
+        // セキュリティ改善：個人情報をクエリパラメータで送信しないため、POSTメソッドでボディに含めて送信
+        const searchBody: Record<string, string | number> = {};
+
+        // 遷移元に応じてパラメータを設定
         if (pathname.includes('/coupons/') && pathname.includes('/history')) {
           const couponId = pathname.split('/')[2];
-          queryParams.append('couponId', couponId);
+          searchBody.couponId = couponId;
         } else if (pathname.includes('/users/') && pathname.includes('/coupon-history')) {
           const userId = pathname.split('/')[2];
-          queryParams.append('userId', userId);
+          searchBody.userId = userId;
         }
 
         // 検索条件を追加
-        if (appliedSearchForm.usageId) queryParams.append('usageId', appliedSearchForm.usageId);
-        if (appliedSearchForm.couponId) queryParams.append('couponId', appliedSearchForm.couponId);
-        if (appliedSearchForm.couponName) queryParams.append('couponName', appliedSearchForm.couponName);
-        if (appliedSearchForm.shopName) queryParams.append('shopName', appliedSearchForm.shopName);
-        if (appliedSearchForm.nickname && isSysAdmin) queryParams.append('nickname', appliedSearchForm.nickname);
-        if (appliedSearchForm.email && isSysAdmin) queryParams.append('email', appliedSearchForm.email);
-        if (appliedSearchForm.gender && isSysAdmin) queryParams.append('gender', appliedSearchForm.gender);
-        if (appliedSearchForm.birthDate && isSysAdmin) queryParams.append('birthDate', appliedSearchForm.birthDate);
-        if (appliedSearchForm.address && isSysAdmin) queryParams.append('address', appliedSearchForm.address);
+        if (appliedSearchForm.usageId) searchBody.usageId = appliedSearchForm.usageId;
+        if (appliedSearchForm.couponId) searchBody.couponId = appliedSearchForm.couponId;
+        if (appliedSearchForm.couponName) searchBody.couponName = appliedSearchForm.couponName;
+        if (appliedSearchForm.shopName) searchBody.shopName = appliedSearchForm.shopName;
+        if (appliedSearchForm.nickname && isSysAdmin) searchBody.nickname = appliedSearchForm.nickname;
+        if (appliedSearchForm.email && isSysAdmin) searchBody.email = appliedSearchForm.email;
+        if (appliedSearchForm.gender && isSysAdmin) searchBody.gender = appliedSearchForm.gender;
+        if (appliedSearchForm.birthDate && isSysAdmin) searchBody.birthDate = appliedSearchForm.birthDate;
+        if (appliedSearchForm.address && isSysAdmin) searchBody.address = appliedSearchForm.address;
         if (appliedSearchForm.usedDateStart) {
           const startDate = new Date(appliedSearchForm.usedDateStart);
-          queryParams.append('usedAtStart', startDate.toISOString());
+          searchBody.usedAtStart = startDate.toISOString();
         }
         if (appliedSearchForm.usedDateEnd) {
-          const toDate = new Date(appliedSearchForm.usedDateEnd);
-          toDate.setHours(23, 59, 59, 999);
-          queryParams.append('usedAtEnd', toDate.toISOString());
+          const endDate = new Date(appliedSearchForm.usedDateEnd);
+          endDate.setHours(23, 59, 59, 999);
+          searchBody.usedAtEnd = endDate.toISOString();
         }
-        
-        queryParams.append('page', page.toString());
-        queryParams.append('limit', limit.toString());
 
-        const data = await apiClient.getCouponUsageHistory(undefined, queryParams.toString()) as { history: Array<{
-          id: string;
-          usageId?: string;
-          couponId: string;
-          couponName: string;
-          shopId: string;
-          shopName: string;
-          nickname?: string;
-          email?: string;
-          gender?: string;
-          birthDate?: string;
-          address?: string;
-          usedAt: string;
-        }>; pagination?: { totalPages?: number; total?: number } };
-        
+        // ページネーションパラメータを追加（数値として送信）
+        searchBody.page = page;
+        searchBody.limit = limit;
+
+        const data = await apiClient.getCouponUsageHistory(searchBody) as {
+          history?: Array<{
+            id: string;
+            usageId?: string;
+            couponId: string;
+            couponName: string;
+            shopId: string;
+            shopName: string;
+            nickname?: string;
+            email?: string;
+            gender?: string;
+            birthDate?: string;
+            address?: string;
+            usedAt: string;
+          }>; pagination?: { totalPages?: number; total?: number }
+        };
+
+        if (!data) {
+          throw new Error('APIレスポンスが空です');
+        }
+
+        if (!data.history) {
+          throw new Error('APIレスポンスにhistoryプロパティがありません');
+        }
+
+        if (!Array.isArray(data.history)) {
+          throw new Error('APIレスポンスのhistoryが配列ではありません');
+        }
+
         const formattedHistory = data.history.map((item) => ({
           id: item.id,
           usageId: item.usageId || item.id,
@@ -357,9 +388,9 @@ export default function CouponHistoryPage() {
           gender: item.gender,
           birthDate: item.birthDate,
           address: item.address,
-          usedAt: new Date(item.usedAt).toLocaleString('ja-JP'),
+          usedAt: item.usedAt,
         }));
-        
+
         allUsages.push(...formattedHistory);
 
         const pagination = data.pagination || {};
@@ -372,13 +403,28 @@ export default function CouponHistoryPage() {
         }
       } catch (error) {
         console.error('全データ取得中にエラーが発生しました:', error);
-        throw error;
+        // より詳細なエラーメッセージを生成
+        let errorMessage = 'データの取得に失敗しました';
+        if (error instanceof Error) {
+          errorMessage = error.message || errorMessage;
+          // レスポンス情報がある場合は追加
+          if ((error as Error & { response?: { status: number; data: unknown } }).response) {
+            const response = (error as Error & { response?: { status: number; data: unknown } }).response;
+            if (response?.status) {
+              errorMessage = `${errorMessage} (HTTP ${response.status})`;
+            }
+            if (response?.data && typeof response.data === 'object' && 'message' in response.data) {
+              errorMessage = `${errorMessage}: ${(response.data as { message: string }).message}`;
+            }
+          }
+        }
+        throw new Error(errorMessage);
       }
     }
 
     // フロントエンドのフィルタリングを適用
     return allUsages.filter((usage) => {
-      const matchesSearch = 
+      const matchesSearch =
         (appliedSearchForm.usageId === '' || usage.id.toLowerCase().includes(appliedSearchForm.usageId.toLowerCase())) &&
         (appliedSearchForm.couponId === '' || usage.couponId.toLowerCase().includes(appliedSearchForm.couponId.toLowerCase())) &&
         (appliedSearchForm.couponName === '' || usage.couponName.toLowerCase().includes(appliedSearchForm.couponName.toLowerCase())) &&
@@ -388,7 +434,7 @@ export default function CouponHistoryPage() {
         (!appliedSearchForm.gender || !usage.gender || usage.gender === appliedSearchForm.gender) &&
         (!appliedSearchForm.birthDate || !usage.birthDate || usage.birthDate === appliedSearchForm.birthDate) &&
         (!appliedSearchForm.address || !usage.address || usage.address.toLowerCase().includes(appliedSearchForm.address.toLowerCase()));
-      
+
       return matchesSearch;
     });
   };
@@ -397,12 +443,12 @@ export default function CouponHistoryPage() {
   const handleDownloadAllCSV = async () => {
     try {
       setIsDownloadingCSV(true);
-      
+
       const allUsages = await fetchAllCouponUsages();
-      
+
       // クーポン情報を含めるかどうかを判定
       const includeCouponInfo = !(pathname.includes('/coupons/') && pathname.includes('/history')) && !(pathname.includes('/users/') && pathname.includes('/coupon-history'));
-      
+
       const usagesForCSV: CouponUsageForCSV[] = allUsages.map((usage) => ({
         id: usage.id,
         couponId: includeCouponInfo ? usage.couponId : undefined,
@@ -419,11 +465,16 @@ export default function CouponHistoryPage() {
       const csvContent = convertCouponUsagesToCSV(usagesForCSV, isSysAdmin, includeCouponInfo);
       const filename = generateFilename('coupon_usage_history');
       downloadCSV(csvContent, filename);
-      
+
       showSuccess(`${allUsages.length}件のクーポン利用履歴データをCSVでダウンロードしました`);
     } catch (error: unknown) {
       console.error('CSVダウンロードに失敗しました:', error);
-      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      let errorMessage = '不明なエラー';
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
       showError(`CSVダウンロードに失敗しました: ${errorMessage}`);
     } finally {
       setIsDownloadingCSV(false);
@@ -437,14 +488,14 @@ export default function CouponHistoryPage() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-900">{pageTitle}</h1>
-            <p className="text-gray-600">
-              {pathname.includes('/coupons/') && pathname.includes('/history') 
-                ? 'このクーポンの利用履歴を表示します' 
-                : pathname.includes('/users/') && pathname.includes('/coupon-history')
-                ? 'このユーザーが使用したクーポンの利用履歴を表示します'
-                : (isShopAccount ? '自身の店舗のクーポン利用履歴を管理します' : 'クーポンの利用履歴を管理します')}
-            </p>
+              <h1 className="text-2xl font-bold text-gray-900">{pageTitle}</h1>
+              <p className="text-gray-600">
+                {pathname.includes('/coupons/') && pathname.includes('/history')
+                  ? 'このクーポンの利用履歴を表示します'
+                  : pathname.includes('/users/') && pathname.includes('/coupon-history')
+                    ? 'このユーザーが使用したクーポンの利用履歴を表示します'
+                    : (isShopAccount ? '自身の店舗のクーポン利用履歴を管理します' : 'クーポンの利用履歴を管理します')}
+              </p>
             </div>
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">
@@ -457,226 +508,226 @@ export default function CouponHistoryPage() {
 
         {/* 検索フォーム（クーポン詳細からの遷移時または店舗アカウントの場合は簡略化） */}
         {!(pathname.includes('/coupons/') && pathname.includes('/history')) && !(pathname.includes('/users/') && pathname.includes('/coupon-history')) && !isShopAccount && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="pb-3 border-b border-gray-200 flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-              className="flex items-center focus:outline-none"
-            >
-              <Icon name={isSearchExpanded ? 'chevronUp' : 'chevronDown'} size="sm" />
-            </Button>
-          </div>
-          
-          {isSearchExpanded && (
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* 利用ID */}
-            <div>
-              <label htmlFor="usageId" className="block text-sm font-medium text-gray-700 mb-2">
-                利用ID
-              </label>
-              <input
-                type="text"
-                id="usageId"
-                placeholder="利用IDを入力"
-                value={searchForm.usageId}
-                onChange={(e) => handleInputChange('usageId', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-
-            {/* クーポンID */}
-            <div>
-              <label htmlFor="couponId" className="block text-sm font-medium text-gray-700 mb-2">
-                クーポンID
-              </label>
-              <input
-                type="text"
-                id="couponId"
-                placeholder="クーポンIDを入力"
-                value={searchForm.couponId}
-                onChange={(e) => handleInputChange('couponId', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-
-            {/* クーポン名 */}
-            <div>
-              <label htmlFor="couponName" className="block text-sm font-medium text-gray-700 mb-2">
-                クーポン名
-              </label>
-              <input
-                type="text"
-                id="couponName"
-                placeholder="クーポン名を入力"
-                value={searchForm.couponName}
-                onChange={(e) => handleInputChange('couponName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-
-            {/* 店舗名 */}
-            <div>
-              <label htmlFor="shopName" className="block text-sm font-medium text-gray-700 mb-2">
-                店舗名
-              </label>
-              <input
-                type="text"
-                id="shopName"
-                placeholder="店舗名を入力"
-                value={searchForm.shopName}
-                onChange={(e) => handleInputChange('shopName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-
-            {/* ニックネーム（sysadmin権限のみ） */}
-            {isSysAdmin && (
-              <div>
-                <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 mb-2">
-                  ニックネーム
-                </label>
-                <input
-                  type="text"
-                  id="nickname"
-                  placeholder="ニックネームを入力"
-                  value={searchForm.nickname}
-                  onChange={(e) => handleInputChange('nickname', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            )}
-
-            {/* メールアドレス（sysadmin権限のみ） */}
-            {isSysAdmin && (
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  メールアドレス
-                </label>
-                <input
-                  type="text"
-                  id="email"
-                  placeholder="メールアドレスを入力"
-                  value={searchForm.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            )}
-
-            {/* 性別（sysadmin権限のみ） */}
-            {isSysAdmin && (
-              <div>
-                <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-2">
-                  性別
-                </label>
-                <select
-                  id="gender"
-                  value={searchForm.gender}
-                  onChange={(e) => handleInputChange('gender', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                >
-                  <option value="">すべて</option>
-                  <option value="male">男性</option>
-                  <option value="female">女性</option>
-                  <option value="other">その他</option>
-                </select>
-              </div>
-            )}
-
-            {/* 生年月日（sysadmin権限のみ） */}
-            {isSysAdmin && (
-              <div>
-                <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-2">
-                  生年月日
-                </label>
-                <input
-                  type="date"
-                  id="birthDate"
-                  value={searchForm.birthDate}
-                  onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            )}
-
-            {/* 住所（sysadmin権限のみ） */}
-            {isSysAdmin && (
-              <div>
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                  住所
-                </label>
-                <input
-                  type="text"
-                  id="address"
-                  placeholder="住所を入力"
-                  value={searchForm.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* 利用日範囲指定 */}
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              利用日（範囲指定）
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="usedDateStart" className="block text-xs text-gray-500 mb-1">
-                  開始日
-                </label>
-                <input
-                  type="date"
-                  id="usedDateStart"
-                  value={searchForm.usedDateStart}
-                  onChange={(e) => handleInputChange('usedDateStart', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-              <div>
-                <label htmlFor="usedDateEnd" className="block text-xs text-gray-500 mb-1">
-                  終了日
-                </label>
-                <input
-                  type="date"
-                  id="usedDateEnd"
-                  value={searchForm.usedDateEnd}
-                  onChange={(e) => handleInputChange('usedDateEnd', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            </div>
-          </div>
-
-            {/* 検索・クリアボタン */}
-            <div className="flex justify-end gap-2 mt-6">
-              <Button variant="outline" onClick={handleClear}>
-                クリア
-              </Button>
-              <Button variant="primary" onClick={handleSearch}>
-                検索
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="pb-3 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+                className="flex items-center focus:outline-none"
+              >
+                <Icon name={isSearchExpanded ? 'chevronUp' : 'chevronDown'} size="sm" />
               </Button>
             </div>
+
+            {isSearchExpanded && (
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* 利用ID */}
+                  <div>
+                    <label htmlFor="usageId" className="block text-sm font-medium text-gray-700 mb-2">
+                      利用ID
+                    </label>
+                    <input
+                      type="text"
+                      id="usageId"
+                      placeholder="利用IDを入力"
+                      value={searchForm.usageId}
+                      onChange={(e) => handleInputChange('usageId', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+
+                  {/* クーポンID */}
+                  <div>
+                    <label htmlFor="couponId" className="block text-sm font-medium text-gray-700 mb-2">
+                      クーポンID
+                    </label>
+                    <input
+                      type="text"
+                      id="couponId"
+                      placeholder="クーポンIDを入力"
+                      value={searchForm.couponId}
+                      onChange={(e) => handleInputChange('couponId', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+
+                  {/* クーポン名 */}
+                  <div>
+                    <label htmlFor="couponName" className="block text-sm font-medium text-gray-700 mb-2">
+                      クーポン名
+                    </label>
+                    <input
+                      type="text"
+                      id="couponName"
+                      placeholder="クーポン名を入力"
+                      value={searchForm.couponName}
+                      onChange={(e) => handleInputChange('couponName', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+
+                  {/* 店舗名 */}
+                  <div>
+                    <label htmlFor="shopName" className="block text-sm font-medium text-gray-700 mb-2">
+                      店舗名
+                    </label>
+                    <input
+                      type="text"
+                      id="shopName"
+                      placeholder="店舗名を入力"
+                      value={searchForm.shopName}
+                      onChange={(e) => handleInputChange('shopName', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
+
+                  {/* ニックネーム（sysadmin権限のみ） */}
+                  {isSysAdmin && (
+                    <div>
+                      <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 mb-2">
+                        ニックネーム
+                      </label>
+                      <input
+                        type="text"
+                        id="nickname"
+                        placeholder="ニックネームを入力"
+                        value={searchForm.nickname}
+                        onChange={(e) => handleInputChange('nickname', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                  )}
+
+                  {/* メールアドレス（sysadmin権限のみ） */}
+                  {isSysAdmin && (
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                        メールアドレス
+                      </label>
+                      <input
+                        type="text"
+                        id="email"
+                        placeholder="メールアドレスを入力"
+                        value={searchForm.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                  )}
+
+                  {/* 性別（sysadmin権限のみ） */}
+                  {isSysAdmin && (
+                    <div>
+                      <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-2">
+                        性別
+                      </label>
+                      <select
+                        id="gender"
+                        value={searchForm.gender}
+                        onChange={(e) => handleInputChange('gender', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      >
+                        <option value="">すべて</option>
+                        <option value="male">男性</option>
+                        <option value="female">女性</option>
+                        <option value="other">その他</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {/* 生年月日（sysadmin権限のみ） */}
+                  {isSysAdmin && (
+                    <div>
+                      <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-2">
+                        生年月日
+                      </label>
+                      <input
+                        type="date"
+                        id="birthDate"
+                        value={searchForm.birthDate}
+                        onChange={(e) => handleInputChange('birthDate', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                  )}
+
+                  {/* 住所（sysadmin権限のみ） */}
+                  {isSysAdmin && (
+                    <div>
+                      <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                        住所
+                      </label>
+                      <input
+                        type="text"
+                        id="address"
+                        placeholder="住所を入力"
+                        value={searchForm.address}
+                        onChange={(e) => handleInputChange('address', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* 利用日範囲指定 */}
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    利用日（範囲指定）
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="usedDateStart" className="block text-xs text-gray-500 mb-1">
+                        開始日
+                      </label>
+                      <input
+                        type="date"
+                        id="usedDateStart"
+                        value={searchForm.usedDateStart}
+                        onChange={(e) => handleInputChange('usedDateStart', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="usedDateEnd" className="block text-xs text-gray-500 mb-1">
+                        終了日
+                      </label>
+                      <input
+                        type="date"
+                        id="usedDateEnd"
+                        value={searchForm.usedDateEnd}
+                        onChange={(e) => handleInputChange('usedDateEnd', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 検索・クリアボタン */}
+                <div className="flex justify-end gap-2 mt-6">
+                  <Button variant="outline" onClick={handleClear}>
+                    クリア
+                  </Button>
+                  <Button variant="primary" onClick={handleSearch}>
+                    検索
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
-          )}
-        </div>
         )}
 
         {/* クーポン利用履歴一覧（クーポン詳細からの遷移時は表示項目を調整） */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
-              {pathname.includes('/coupons/') && pathname.includes('/history') 
-                ? 'クーポン利用履歴' 
-                : pathname.includes('/users/') && pathname.includes('/coupon-history')
+              {pathname.includes('/coupons/') && pathname.includes('/history')
                 ? 'クーポン利用履歴'
-                : 'クーポン利用履歴一覧'} ({filteredUsages.length}件)
+                : pathname.includes('/users/') && pathname.includes('/coupon-history')
+                  ? 'クーポン利用履歴'
+                  : 'クーポン利用履歴一覧'} ({filteredUsages.length}件)
             </h3>
             <Button
               variant="outline"
@@ -687,7 +738,7 @@ export default function CouponHistoryPage() {
               {isDownloadingCSV ? 'ダウンロード中...' : 'CSVダウンロード'}
             </Button>
           </div>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
@@ -697,22 +748,22 @@ export default function CouponHistoryPage() {
                   </th>
                   {!(pathname.includes('/coupons/') && pathname.includes('/history')) && !(pathname.includes('/users/') && pathname.includes('/coupon-history')) && (
                     <>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    クーポンID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    クーポン名
-                  </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        クーポンID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        クーポン名
+                      </th>
                     </>
                   )}
                   {(pathname.includes('/coupons/') && pathname.includes('/history')) || (pathname.includes('/users/') && pathname.includes('/coupon-history')) ? (
                     <>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    クーポンID
-                  </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      クーポン名
-                    </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        クーポンID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        クーポン名
+                      </th>
                     </>
                   ) : null}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
@@ -720,27 +771,27 @@ export default function CouponHistoryPage() {
                   </th>
                   {isSysAdmin && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    メールアドレス
+                      メールアドレス
                     </th>
                   )}
                   {isSysAdmin && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    ニックネーム
+                      ニックネーム
                     </th>
                   )}
                   {isSysAdmin && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    性別
+                      性別
                     </th>
                   )}
                   {isSysAdmin && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    生年月日
+                      生年月日
                     </th>
                   )}
                   {isSysAdmin && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                    住所
+                      住所
                     </th>
                   )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
@@ -756,22 +807,22 @@ export default function CouponHistoryPage() {
                     </td>
                     {!(pathname.includes('/coupons/') && pathname.includes('/history')) && !(pathname.includes('/users/') && pathname.includes('/coupon-history')) && (
                       <>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{usage.couponId}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{usage.couponName}</div>
-                    </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{usage.couponId}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{usage.couponName}</div>
+                        </td>
                       </>
                     )}
                     {(pathname.includes('/coupons/') && pathname.includes('/history')) || (pathname.includes('/users/') && pathname.includes('/coupon-history')) ? (
                       <>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{usage.couponId}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{usage.couponName}</div>
-                      </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{usage.couponId}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{usage.couponName}</div>
+                        </td>
                       </>
                     ) : null}
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -779,31 +830,31 @@ export default function CouponHistoryPage() {
                     </td>
                     {isSysAdmin && (
                       <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{usage.email || '-'}</div>
+                        <div className="text-sm text-gray-900">{usage.email || '-'}</div>
                       </td>
                     )}
                     {isSysAdmin && (
                       <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{usage.nickname || '-'}</div>
+                        <div className="text-sm text-gray-900">{usage.nickname || '-'}</div>
                       </td>
                     )}
                     {isSysAdmin && (
                       <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{getGenderLabel(usage.gender)}</div>
+                        <div className="text-sm text-gray-900">{getGenderLabel(usage.gender)}</div>
                       </td>
                     )}
                     {isSysAdmin && (
                       <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{usage.birthDate || '-'}</div>
+                        <div className="text-sm text-gray-900">{usage.birthDate || '-'}</div>
                       </td>
                     )}
                     {isSysAdmin && (
                       <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{usage.address || '-'}</div>
+                        <div className="text-sm text-gray-900">{usage.address || '-'}</div>
                       </td>
                     )}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{usage.usedAt}</div>
+                      <div className="text-sm text-gray-900">{formatDateTimeForDisplay(usage.usedAt)}</div>
                     </td>
                   </tr>
                 ))}

@@ -67,7 +67,9 @@ export async function middleware(request: NextRequest) {
         method: request.method,
         fullUrl: request.nextUrl.toString(),
       });
-      return NextResponse.json({ message: 'Invalid image URL' }, { status: 403 });
+      const errorResponse = NextResponse.json({ message: 'Invalid image URL' }, { status: 403 });
+      errorResponse.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+      return errorResponse;
     }
     // 検証通過後は通常の処理へ
     // 画像はキャッシュを有効化（パフォーマンス向上のため）
@@ -141,7 +143,9 @@ export async function middleware(request: NextRequest) {
     })();
 
     if (!sameOrigin) {
-      return NextResponse.json({ message: 'Invalid origin' }, { status: 403 });
+      const errorResponse = NextResponse.json({ message: 'Invalid origin' }, { status: 403 });
+      errorResponse.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+      return errorResponse;
     }
   }
 
@@ -151,7 +155,8 @@ export async function middleware(request: NextRequest) {
     url.pathname = '/merchants';
     // 307リダイレクトを実行（リダイレクト実行直後にスクリプトを終了）
     const redirectResponse = NextResponse.redirect(url, 307);
-    // リダイレクトレスポンスにもキャッシュ無効化ヘッダーを設定
+    // リダイレクトレスポンスにもセキュリティヘッダーを設定
+    redirectResponse.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
     redirectResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     redirectResponse.headers.set('Pragma', 'no-cache');
     redirectResponse.headers.set('Expires', '0');
@@ -203,7 +208,8 @@ export async function middleware(request: NextRequest) {
       url.searchParams.set('session', 'expired');
       // 307リダイレクトを実行（リダイレクト実行直後にスクリプトを終了）
       const redirectResponse = NextResponse.redirect(url, 307);
-      // リダイレクトレスポンスにもキャッシュ無効化ヘッダーを設定
+      // リダイレクトレスポンスにもセキュリティヘッダーを設定
+      redirectResponse.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
       redirectResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
       redirectResponse.headers.set('Pragma', 'no-cache');
       redirectResponse.headers.set('Expires', '0');
