@@ -5,6 +5,7 @@ export const CREDIT_CARD_BRANDS = [
   'JCB',
   'AMEX',
   'Diners',
+  '交通系マネー',
   'その他',
 ] as const;
 

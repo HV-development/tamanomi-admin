@@ -58,7 +58,7 @@ function CouponConfirmPageContent() {
 
   const handleRegister = async () => {
     if (!couponData) return;
-    
+
     setIsSubmitting(true);
     try {
       const createData: CouponCreateRequest = {
@@ -70,7 +70,7 @@ function CouponConfirmPageContent() {
         status: (couponData.publishStatus === '1' ? 'approved' : 'pending') as CouponStatus,
         isPublic: couponData.publishStatus === '1'
       };
-      
+
       await apiClient.createCoupon(createData);
       alert('クーポンを登録しました');
       router.push('/coupons');
@@ -98,10 +98,10 @@ function CouponConfirmPageContent() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-900">クーポン登録内容確認</h1>
-            <p className="text-gray-600">
-              入力内容を確認してください
-            </p>
+              <h1 className="text-2xl font-bold text-gray-900">クーポン登録内容確認</h1>
+              <p className="text-gray-600">
+                入力内容を確認してください
+              </p>
             </div>
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">
@@ -126,7 +126,7 @@ function CouponConfirmPageContent() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 クーポン内容
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{couponData.couponContent}</p>
+              <p className="text-base text-black bg-gray-50 p-2 rounded">{couponData.couponContent}</p>
             </div>
 
             {couponData.couponConditions && (
@@ -134,7 +134,7 @@ function CouponConfirmPageContent() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   利用条件
                 </label>
-                <p className="text-gray-900 bg-gray-50 p-2 rounded">{couponData.couponConditions}</p>
+                <p className="text-base text-black bg-gray-50 p-2 rounded">{couponData.couponConditions}</p>
               </div>
             )}
 
@@ -183,7 +183,7 @@ function CouponConfirmPageContent() {
               onClick={handleRegister}
               disabled={isSubmitting}
               className="px-8"
-              >
+            >
               {isSubmitting ? '登録中...' : '登録する'}
             </Button>
           </div>
