@@ -234,9 +234,9 @@ function CouponsPageContent() {
     const originalStatus = originalCoupon.status;
     const originalIsPublic = originalCoupon.isPublic;
 
-    // 停止中に変更する場合は公開ステータスも非公開にする
-    const shouldUpdatePublicStatus = status === 'suspended' && originalIsPublic;
-    const newIsPublic = status === 'suspended' ? false : originalIsPublic;
+    // 申請中または停止中に変更する場合は公開ステータスも非公開にする
+    const shouldUpdatePublicStatus = (status === 'pending' || status === 'suspended') && originalIsPublic;
+    const newIsPublic = (status === 'pending' || status === 'suspended') ? false : originalIsPublic;
 
     // UIを即座に更新（オプティミスティックアップデート）
     setCoupons(prevCoupons =>
@@ -403,8 +403,8 @@ function CouponsPageContent() {
       let failCount = 0;
       let publicStatusUpdatedCount = 0;
 
-      // 停止中に変更する場合は公開ステータスも非公開にする
-      const shouldUpdatePublicStatus = status === 'suspended';
+      // 申請中または停止中に変更する場合は公開ステータスも非公開にする
+      const shouldUpdatePublicStatus = status === 'pending' || status === 'suspended';
 
       for (const couponId of selectedCoupons) {
         try {
@@ -873,8 +873,8 @@ function CouponsPageContent() {
                       <select
                         value={coupon.isPublic ? 'true' : 'false'}
                         onChange={(e) => handlePublicStatusChange(coupon.id, e.target.value === 'true')}
-                        disabled={isMerchantAccount && coupon.status !== 'approved'}
-                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[100px] ${_getPublicStatusSelectColor(coupon.isPublic)} ${isMerchantAccount && coupon.status !== 'approved' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={coupon.status !== 'approved'}
+                        className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[100px] ${_getPublicStatusSelectColor(coupon.isPublic)} ${coupon.status !== 'approved' ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <option value="true">公開中</option>
                         <option value="false">非公開</option>
@@ -910,8 +910,9 @@ function CouponsPageContent() {
       </div>
       <CouponBulkUpdateFooter
         selectedCount={selectedCoupons.size}
-        isAdminAccount={!isMerchantAccount && !isShopAccount}
+        isAdminAccount={isAdminAccount}
         isMerchantAccount={isMerchantAccount}
+        isShopAccount={isShopAccount}
         onBulkUpdateStatus={handleBulkUpdateStatus}
         onBulkUpdatePublicStatus={handleBulkUpdatePublicStatus}
         isUpdating={isUpdating}
