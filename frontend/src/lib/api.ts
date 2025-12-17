@@ -1,6 +1,6 @@
 // APIクライアント - Next.js APIルート経由
-import { 
-  type AdminLoginInput, 
+import {
+  type AdminLoginInput,
   type AdminRegisterInput,
   type RefreshTokenInput,
   type AdminAccountInput,
@@ -52,29 +52,65 @@ class ApiClient {
     try {
       const isFormData = typeof fetchOptions.body !== 'undefined' && fetchOptions.body instanceof FormData;
       const hasBody = typeof fetchOptions.body !== 'undefined';
-      
+
       // 共通ヘッダーを生成（FormDataの場合はContent-Typeを設定しない）
       const commonHeaders = buildClientHeaders({
         setContentType: hasBody && !isFormData,
       });
-      
+
       const headers: Record<string, string> = {
         ...commonHeaders,
         ...(fetchOptions.headers as Record<string, string> | undefined),
       };
 
-      const response = await fetch(url, {
-        ...fetchOptions,
-        credentials: 'include',
-        headers,
-        cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
-      });
+      let response: Response;
+      try {
+        response = await fetch(url, {
+          ...fetchOptions,
+          credentials: 'include',
+          headers,
+          cache: 'no-store', // キャッシュを無効化して機密情報の漏洩を防止
+        });
+      } catch (fetchError) {
+        // ネットワークエラーやタイムアウトなどの場合
+        const networkError = fetchError instanceof Error
+          ? fetchError.message
+          : 'Network error occurred';
+        throw new Error(`ネットワークエラー: ${networkError}`);
+      }
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ 
-          message: 'Unknown error',
-          error: { message: 'Failed to parse error response' }
-        }));
+        // 405エラー（Method Not Allowed）の場合は特別なメッセージを設定
+        const isMethodNotAllowed = response.status === 405;
+        let errorData: { message?: string; error?: { message?: string } } = {
+          message: isMethodNotAllowed
+            ? `HTTP ${response.status}: Method Not Allowed - このエンドポイントは${fetchOptions.method || 'GET'}メソッドをサポートしていません`
+            : `HTTP error! status: ${response.status}`,
+          error: {
+            message: isMethodNotAllowed
+              ? 'Method Not Allowed - リクエストメソッドが正しくありません'
+              : `Failed to parse error response (status: ${response.status})`
+          }
+        };
+
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            errorData = await response.json();
+          } else {
+            const text = await response.text();
+            if (text) {
+              errorData = { message: text, error: { message: text } };
+            }
+          }
+        } catch (parseError) {
+          // JSONパースに失敗した場合は、ステータスコードとステータステキストを使用
+          const parseErrorMessage = parseError instanceof Error ? parseError.message : 'Failed to parse error response';
+          errorData = {
+            message: `HTTP error! status: ${response.status} ${response.statusText || ''} - ${parseErrorMessage}`,
+            error: { message: parseErrorMessage }
+          };
+        }
 
         // 401/403エラー（認証エラー）の場合の処理
         if ((response.status === 401 || response.status === 403) && !skipAuthRedirect) {
@@ -82,12 +118,12 @@ class ApiClient {
           try {
             // ログイン直後の場合、Cookieが設定されるまで少し待機
             await new Promise(resolve => setTimeout(resolve, 200));
-            
+
             await this.refreshToken();
 
             // リフレッシュ成功後、Cookieが反映されるまで少し待機
             await new Promise(resolve => setTimeout(resolve, 100));
-            
+
             // リフレッシュ成功後、元のリクエストを再実行
             const retryResponse = await fetch(url, {
               ...fetchOptions,
@@ -100,7 +136,7 @@ class ApiClient {
               // リトライが失敗した場合、もう一度待機して再試行
               if (retryResponse.status === 401 || retryResponse.status === 403) {
                 await new Promise(resolve => setTimeout(resolve, 300));
-                
+
                 const secondRetryResponse = await fetch(url, {
                   ...fetchOptions,
                   credentials: 'include',
@@ -125,12 +161,43 @@ class ApiClient {
               window.location.href = '/login?session=expired';
             }
 
-            return new Promise(() => {}) as Promise<T>;
+            return new Promise(() => { }) as Promise<T>;
           }
         }
 
         // エラーオブジェクトを作成して投げる
-        const errorMessage = errorData?.message || errorData?.error?.message || `HTTP error! status: ${response.status}`;
+        // エラーメッセージを複数のパターンから抽出
+        let errorMessage = `HTTP error! status: ${response.status}`;
+
+        // エラーメッセージの抽出を試みる
+        if (errorData) {
+          if (typeof errorData === 'string') {
+            errorMessage = errorData;
+          } else if (typeof errorData === 'object') {
+            // messageプロパティを優先的に使用
+            if (errorData.message && typeof errorData.message === 'string') {
+              errorMessage = errorData.message;
+            } else if (errorData.error && typeof errorData.error === 'object' && errorData.error.message) {
+              errorMessage = String(errorData.error.message);
+            } else {
+              // オブジェクトの場合は、可能な限りメッセージを抽出
+              try {
+                const errorStr = JSON.stringify(errorData);
+                if (errorStr && errorStr !== '{}' && errorStr.length > 2) {
+                  errorMessage = `HTTP ${response.status}: ${errorStr.substring(0, 200)}`;
+                }
+              } catch {
+                // JSON.stringifyに失敗した場合はデフォルトメッセージを使用
+              }
+            }
+          }
+        }
+
+        // エラーメッセージが空またはデフォルトのままの場合は、ステータステキストを追加
+        if (errorMessage === `HTTP error! status: ${response.status}` && response.statusText) {
+          errorMessage = `${errorMessage} ${response.statusText}`;
+        }
+
         const error = new Error(errorMessage);
         (error as Error & { response?: { status: number; data: unknown } }).response = {
           status: response.status,
@@ -139,10 +206,47 @@ class ApiClient {
         throw error;
       }
 
-      return response.json();
+      // レスポンスのJSONパース
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          return await response.json();
+        } else {
+          // JSONでない場合はテキストとして取得
+          const text = await response.text();
+          // 空の場合は空オブジェクトを返す
+          if (!text.trim()) {
+            return {} as T;
+          }
+          // テキストをJSONとしてパースを試みる
+          try {
+            return JSON.parse(text) as T;
+          } catch {
+            // パースに失敗した場合はテキストをメッセージとして返す
+            throw new Error(`Invalid JSON response: ${text.substring(0, 200)}`);
+          }
+        }
+      } catch (jsonError) {
+        // JSONパースに失敗した場合
+        if (jsonError instanceof Error && jsonError.message.includes('Invalid JSON response')) {
+          throw jsonError;
+        }
+        const text = await response.text().catch(() => '');
+        const errorMessage = jsonError instanceof Error ? jsonError.message : 'JSON parse error';
+        throw new Error(`Failed to parse response as JSON: ${errorMessage}${text ? ` (Response: ${text.substring(0, 100)})` : ''}`);
+      }
     } catch (error) {
-      // ログは控え、呼び出し元でハンドリングする
-      throw error;
+      // エラーが既にErrorオブジェクトの場合はそのまま投げる
+      if (error instanceof Error) {
+        // エラーメッセージが空の場合はデフォルトメッセージを使用
+        if (!error.message || error.message.trim() === '') {
+          throw new Error('API request failed: Unknown error');
+        }
+        throw error;
+      }
+      // それ以外の場合はErrorオブジェクトに変換
+      const errorMessage = String(error);
+      throw new Error(errorMessage || 'API request failed: Unknown error');
     }
   }
 
@@ -257,19 +361,13 @@ class ApiClient {
   }
 
   // クーポン利用履歴関連
-  async getCouponUsageHistory(searchBody?: Record<string, unknown>, queryParams?: string): Promise<unknown> {
-    if (queryParams) {
-      // GETリクエストの場合
-      return this.request<unknown>(`/admin/coupon-usage-history?${queryParams}`, {
-        method: 'GET',
-      });
-    } else {
-      // POSTリクエストの場合
-      return this.request<unknown>('/admin/coupon-usage-history', {
-        method: 'POST',
-        body: JSON.stringify(searchBody || {}),
-      });
-    }
+  // セキュリティ改善：個人情報をクエリパラメータで送信しないため、常にPOSTメソッドを使用
+  async getCouponUsageHistory(searchBody?: Record<string, unknown>, _queryParams?: string): Promise<unknown> {
+    // 常にPOSTリクエストを使用（queryParamsは無視）
+    return this.request<unknown>('/admin/coupon-usage-history', {
+      method: 'POST',
+      body: JSON.stringify(searchBody || {}),
+    });
   }
 
   async updateMerchant(id: string, merchantData: unknown): Promise<unknown> {

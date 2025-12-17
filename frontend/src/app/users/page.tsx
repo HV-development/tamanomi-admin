@@ -41,6 +41,17 @@ const prefectures = [
   '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'
 ];
 
+// 日付を表示用にフォーマット（YYYY/MM/DD形式）
+const formatDateForDisplay = (dateString: string): string => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}/${month}/${day}`;
+};
+
 export default function UsersPage() {
   const auth = useAuth();
   const lastFetchKeyRef = useRef<string | null>(null);
@@ -168,7 +179,7 @@ export default function UsersPage() {
           saitamaAppId: '',
           rank: user.rank,
           registeredStore: '',
-          registeredAt: user.registeredAt ? user.registeredAt.replace(/-/g, '/') : '',
+          registeredAt: user.registeredAt || '',
         };
 
         // operatorロールでない場合のみ機密情報を設定
@@ -391,11 +402,18 @@ export default function UsersPage() {
         let usersArray: User[] = [];
         let pagination: { totalPages?: number; total?: number } = {};
 
+        if (!data) {
+          throw new Error('APIレスポンスが空です');
+        }
+
         if (Array.isArray(data)) {
           usersArray = data;
           hasMore = false;
         } else if (data && typeof data === 'object') {
           if ('users' in data) {
+            if (!Array.isArray(data.users)) {
+              throw new Error('APIレスポンスのusersが配列ではありません');
+            }
             // APIレスポンスをフォーマット
             usersArray = (data.users || []).map((user) => {
               const base: User = {
@@ -410,7 +428,7 @@ export default function UsersPage() {
                 saitamaAppId: '',
                 rank: user.rank,
                 registeredStore: '',
-                registeredAt: user.registeredAt ? user.registeredAt.replace(/-/g, '/') : '',
+                registeredAt: user.registeredAt || '',
               };
 
               // operatorロールでない場合のみ機密情報を設定
@@ -432,7 +450,11 @@ export default function UsersPage() {
               return base;
             });
             pagination = data.pagination || {};
+          } else {
+            throw new Error('APIレスポンスにusersプロパティがありません');
           }
+        } else {
+          throw new Error('APIレスポンスの形式が不正です');
         }
 
         allUsers.push(...usersArray);
@@ -446,7 +468,22 @@ export default function UsersPage() {
         }
       } catch (error) {
         console.error('全データ取得中にエラーが発生しました:', error);
-        throw error;
+        // より詳細なエラーメッセージを生成
+        let errorMessage = 'データの取得に失敗しました';
+        if (error instanceof Error) {
+          errorMessage = error.message || errorMessage;
+          // レスポンス情報がある場合は追加
+          if ((error as Error & { response?: { status: number; data: unknown } }).response) {
+            const response = (error as Error & { response?: { status: number; data: unknown } }).response;
+            if (response?.status) {
+              errorMessage = `${errorMessage} (HTTP ${response.status})`;
+            }
+            if (response?.data && typeof response.data === 'object' && 'message' in response.data) {
+              errorMessage = `${errorMessage}: ${(response.data as { message: string }).message}`;
+            }
+          }
+        }
+        throw new Error(errorMessage);
       }
     }
 
@@ -510,7 +547,12 @@ export default function UsersPage() {
       showSuccess(`${allUsers.length}件のユーザーデータをCSVでダウンロードしました`);
     } catch (error: unknown) {
       console.error('CSVダウンロードに失敗しました:', error);
-      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      let errorMessage = '不明なエラー';
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
       showError(`CSVダウンロードに失敗しました: ${errorMessage}`);
     } finally {
       setIsDownloadingCSV(false);
@@ -953,7 +995,7 @@ export default function UsersPage() {
                       </td>
                     )}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{user.registeredAt}</div>
+                      <div className="text-sm text-gray-900">{formatDateForDisplay(user.registeredAt)}</div>
                     </td>
                   </tr>
                 ))}

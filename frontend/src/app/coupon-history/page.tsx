@@ -32,6 +32,19 @@ interface CouponUsage {
   usedAt: string;
 }
 
+// 日時を表示用にフォーマット（YYYY/MM/DD HH:MM形式）
+const formatDateTimeForDisplay = (dateString: string): string => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}/${month}/${day} ${hours}:${minutes}`;
+};
+
 export default function CouponHistoryPage() {
   const auth = useAuth();
   const accountType = auth?.user?.accountType;
@@ -138,20 +151,22 @@ export default function CouponHistoryPage() {
           searchBody.usedAtEnd = endDate.toISOString();
         }
 
-        const data = await apiClient.getCouponUsageHistory(searchBody) as { history: Array<{
-          id: string;
-          usageId?: string;
-          couponId: string;
-          couponName: string;
-          shopId: string;
-          shopName: string;
-          nickname?: string;
-          email?: string;
-          gender?: string;
-          birthDate?: string;
-          address?: string;
-          usedAt: string;
-        }> };
+        const data = await apiClient.getCouponUsageHistory(searchBody) as {
+          history: Array<{
+            id: string;
+            usageId?: string;
+            couponId: string;
+            couponName: string;
+            shopId: string;
+            shopName: string;
+            nickname?: string;
+            email?: string;
+            gender?: string;
+            birthDate?: string;
+            address?: string;
+            usedAt: string;
+          }>
+        };
         const formattedHistory = data.history.map((item) => ({
           id: item.id,
           usageId: item.usageId || item.id,
@@ -164,7 +179,7 @@ export default function CouponHistoryPage() {
           gender: item.gender,
           birthDate: item.birthDate,
           address: item.address,
-          usedAt: new Date(item.usedAt).toLocaleString('ja-JP'),
+          usedAt: item.usedAt,
         }));
 
         setUsages(formattedHistory);
@@ -333,7 +348,7 @@ export default function CouponHistoryPage() {
         searchBody.limit = limit;
 
         const data = await apiClient.getCouponUsageHistory(searchBody) as {
-          history: Array<{
+          history?: Array<{
             id: string;
             usageId?: string;
             couponId: string;
@@ -348,6 +363,19 @@ export default function CouponHistoryPage() {
             usedAt: string;
           }>; pagination?: { totalPages?: number; total?: number }
         };
+
+        if (!data) {
+          throw new Error('APIレスポンスが空です');
+        }
+
+        if (!data.history) {
+          throw new Error('APIレスポンスにhistoryプロパティがありません');
+        }
+
+        if (!Array.isArray(data.history)) {
+          throw new Error('APIレスポンスのhistoryが配列ではありません');
+        }
+
         const formattedHistory = data.history.map((item) => ({
           id: item.id,
           usageId: item.usageId || item.id,
@@ -360,7 +388,7 @@ export default function CouponHistoryPage() {
           gender: item.gender,
           birthDate: item.birthDate,
           address: item.address,
-          usedAt: new Date(item.usedAt).toLocaleString('ja-JP'),
+          usedAt: item.usedAt,
         }));
 
         allUsages.push(...formattedHistory);
@@ -375,7 +403,22 @@ export default function CouponHistoryPage() {
         }
       } catch (error) {
         console.error('全データ取得中にエラーが発生しました:', error);
-        throw error;
+        // より詳細なエラーメッセージを生成
+        let errorMessage = 'データの取得に失敗しました';
+        if (error instanceof Error) {
+          errorMessage = error.message || errorMessage;
+          // レスポンス情報がある場合は追加
+          if ((error as Error & { response?: { status: number; data: unknown } }).response) {
+            const response = (error as Error & { response?: { status: number; data: unknown } }).response;
+            if (response?.status) {
+              errorMessage = `${errorMessage} (HTTP ${response.status})`;
+            }
+            if (response?.data && typeof response.data === 'object' && 'message' in response.data) {
+              errorMessage = `${errorMessage}: ${(response.data as { message: string }).message}`;
+            }
+          }
+        }
+        throw new Error(errorMessage);
       }
     }
 
@@ -426,7 +469,12 @@ export default function CouponHistoryPage() {
       showSuccess(`${allUsages.length}件のクーポン利用履歴データをCSVでダウンロードしました`);
     } catch (error: unknown) {
       console.error('CSVダウンロードに失敗しました:', error);
-      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      let errorMessage = '不明なエラー';
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
       showError(`CSVダウンロードに失敗しました: ${errorMessage}`);
     } finally {
       setIsDownloadingCSV(false);
@@ -806,7 +854,7 @@ export default function CouponHistoryPage() {
                       </td>
                     )}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{usage.usedAt}</div>
+                      <div className="text-sm text-gray-900">{formatDateTimeForDisplay(usage.usedAt)}</div>
                     </td>
                   </tr>
                 ))}
