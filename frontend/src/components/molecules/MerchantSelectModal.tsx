@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { apiClient } from '@/lib/api';
+import { useAuth } from '@/components/contexts/auth-context';
 
 interface Merchant {
   id: string;
@@ -26,6 +27,9 @@ function MerchantSelectModal({
   onSelect,
   selectedMerchantId,
 }: MerchantSelectModalProps) {
+  const auth = useAuth();
+  const isAdmin = auth?.user?.accountType === 'admin';
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -88,7 +92,7 @@ function MerchantSelectModal({
     }
   }, []);
 
-  // 初期表示：モーダルが開いたときに10件取得
+  // 初期表示：モーダルが開いたときに10件取得（adminアカウントのみ）
   useEffect(() => {
     if (isOpen) {
       setMerchants([]);
@@ -96,9 +100,12 @@ function MerchantSelectModal({
       setHasMore(true);
       setCurrentSearch('');
       setSearchQuery('');
-      fetchMerchants('', 1, false);
+      // adminアカウントの場合のみ初期表示で全事業者一覧を取得
+      if (isAdmin) {
+        fetchMerchants('', 1, false);
+      }
     }
-  }, [isOpen, fetchMerchants]);
+  }, [isOpen, isAdmin, fetchMerchants]);
 
   // 検索実行
   const handleSearch = useCallback(async () => {
@@ -229,9 +236,9 @@ function MerchantSelectModal({
           ) : merchants.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <p>事業者が見つかりませんでした</p>
+              <p>{currentSearch ? '事業者が見つかりませんでした' : '事業者名またはメールアドレスで検索してください'}</p>
             </div>
           ) : (
             <div className="space-y-2">
