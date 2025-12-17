@@ -1,18 +1,16 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import AdminLayout from '@/components/templates/admin-layout';
-import Button from '@/components/atoms/Button';
-import IconButton from '@/components/atoms/IconButton';
-import Checkbox from '@/components/atoms/Checkbox';
 import ToastContainer from '@/components/molecules/toast-container';
 import Pagination from '@/components/molecules/Pagination';
+import MerchantSearchForm, { type MerchantSearchFormData, type MerchantSearchErrors } from '@/components/organisms/MerchantSearchForm';
+import MerchantDetailView from '@/components/organisms/MerchantDetailView';
+import MerchantTable from '@/components/organisms/MerchantTable';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
-import { prefectures } from '@/lib/constants/merchant';
 import { type MerchantWithDetails } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
 import { convertMerchantsToCSV, downloadCSV, generateFilename, type MerchantForCSV } from '@/utils/csvExport';
@@ -66,7 +64,7 @@ export default function MerchantsPage() {
   const [isIssuingAccount, setIsIssuingAccount] = useState(false);
   const [isDownloadingCSV, setIsDownloadingCSV] = useState(false);
   
-  const [searchForm, setSearchForm] = useState({
+  const [searchForm, setSearchForm] = useState<MerchantSearchFormData>({
     keyword: '',
     merchantName: '',
     merchantNameKana: '',
@@ -82,7 +80,7 @@ export default function MerchantsPage() {
     createdAtFrom: '',
     createdAtTo: '',
   });
-  const [appliedSearchForm, setAppliedSearchForm] = useState({
+  const [appliedSearchForm, setAppliedSearchForm] = useState<MerchantSearchFormData>({
     keyword: '',
     merchantName: '',
     merchantNameKana: '',
@@ -99,6 +97,7 @@ export default function MerchantsPage() {
     createdAtTo: '',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [searchErrors, setSearchErrors] = useState<MerchantSearchErrors>({});
 
   // データ取得関数
   const fetchMerchants = async () => {
@@ -225,54 +224,18 @@ export default function MerchantsPage() {
     appliedSearchForm,
   ]);
 
-  // チェックボックス関連の関数
-
-
-
-  const getAccountStatusLabel = (status: string) => {
-    switch (status) {
-      case 'active': return '発行済み';
-      case 'inactive': return '未発行';
-      case 'pending': return '承認待ち';
-      case 'suspended': return '停止中';
-      default: return status;
-    }
-  };
-
-  const getAccountStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'text-green-600';
-      case 'inactive': return 'text-yellow-600';
-      case 'pending': return 'text-orange-600';
-      case 'suspended': return 'text-red-600';
-      default: return 'text-gray-900';
-    }
-  };
-
-  const getMerchantStatusLabel = (status: string) => {
-    switch (status) {
-      case 'active': return '契約中';
-      case 'inactive': return '未契約';
-      case 'terminated': return '解約済み';
-      default: return status;
-    }
-  };
-
-  const getMerchantStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'text-green-600';
-      case 'inactive': return 'text-yellow-600';
-      case 'terminated': return 'text-gray-600';
-      default: return 'text-gray-900';
-    }
-  };
-
   // バックエンドでフィルタリングされるため、フロントエンドでのフィルタリングは不要
   const filteredMerchants = merchants;
 
-  const [searchErrors, setSearchErrors] = useState<{createdAtFrom?: string; createdAtTo?: string}>({});
+  // チェックボックス関連の関数
+  useEffect(() => {
+    const allCount = filteredMerchants.length;
+    const selectedCount = selectedMerchants.size;
+    setIsAllSelected(allCount > 0 && selectedCount === allCount);
+    setIsIndeterminate(selectedCount > 0 && selectedCount < allCount);
+  }, [selectedMerchants, filteredMerchants]);
 
-  const handleInputChange = useCallback((field: keyof typeof searchForm, value: string) => {
+  const handleInputChange = useCallback((field: keyof MerchantSearchFormData, value: string) => {
     setSearchForm(prev => ({
       ...prev,
       [field]: value
@@ -287,7 +250,7 @@ export default function MerchantsPage() {
   }, []);
 
   const validateSearchForm = (): boolean => {
-    const errors: {createdAtFrom?: string; createdAtTo?: string} = {};
+    const errors: MerchantSearchErrors = {};
     
     // 開始日のバリデーション
     if (searchForm.createdAtFrom) {
@@ -326,7 +289,7 @@ export default function MerchantsPage() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     if (!validateSearchForm()) {
       return;
     }
@@ -334,10 +297,10 @@ export default function MerchantsPage() {
     setAppliedSearchForm({ ...searchForm });
     // ページを1にリセット
     setPagination(prev => ({ ...prev, page: 1 }));
-  };
+  }, [searchForm]);
 
-  const handleClear = () => {
-    setSearchForm({
+  const handleClear = useCallback(() => {
+    const emptyForm: MerchantSearchFormData = {
       keyword: '',
       merchantName: '',
       merchantNameKana: '',
@@ -352,39 +315,17 @@ export default function MerchantsPage() {
       contractStatus: '',
       createdAtFrom: '',
       createdAtTo: '',
-    });
-    setAppliedSearchForm({
-      keyword: '',
-      merchantName: '',
-      merchantNameKana: '',
-      representativeName: '',
-      representativeNameKana: '',
-      phone: '',
-      email: '',
-      address: '',
-      postalCode: '',
-      prefecture: '',
-      accountStatus: '',
-      contractStatus: '',
-      createdAtFrom: '',
-      createdAtTo: '',
-    });
+    };
+    setSearchForm(emptyForm);
+    setAppliedSearchForm(emptyForm);
     // ページを1にリセット
     setPagination(prev => ({ ...prev, page: 1 }));
-  };
+  }, []);
 
   // ページ変更ハンドラー
   const handlePageChange = useCallback((page: number) => {
     setPagination(prev => ({ ...prev, page }));
   }, []);
-
-  // チェックボックス関連の関数
-  useEffect(() => {
-    const allCount = filteredMerchants.length;
-    const selectedCount = selectedMerchants.size;
-    setIsAllSelected(allCount > 0 && selectedCount === allCount);
-    setIsIndeterminate(selectedCount > 0 && selectedCount < allCount);
-  }, [selectedMerchants, filteredMerchants]);
 
   const handleToggleAll = useCallback((checked: boolean) => {
     if (checked) {
@@ -499,7 +440,7 @@ export default function MerchantsPage() {
 
         // APIレスポンスから事業者データを抽出
         let merchantsArray: unknown[] = [];
-        let pagination: { totalPages?: number; total?: number } = {};
+        let paginationInfo: { totalPages?: number; total?: number } = {};
 
         if (Array.isArray(data)) {
           merchantsArray = data;
@@ -508,19 +449,19 @@ export default function MerchantsPage() {
           // 新しいAPIレスポンス形式: {success: true, data: {merchants: [...], pagination: {...}}}
           if ('data' in data && data.data && typeof data.data === 'object' && 'merchants' in data.data) {
             merchantsArray = (data.data as { merchants: unknown[]; pagination?: unknown }).merchants || [];
-            pagination = (data.data as { pagination?: { totalPages?: number; total?: number } }).pagination || {};
+            paginationInfo = (data.data as { pagination?: { totalPages?: number; total?: number } }).pagination || {};
           }
           // 古いAPIレスポンス形式: {merchants: [...], pagination: {...}}
           else if ('merchants' in data) {
             merchantsArray = (data as { merchants: unknown[] }).merchants || [];
-            pagination = (data as { pagination?: { totalPages?: number; total?: number } }).pagination || {};
+            paginationInfo = (data as { pagination?: { totalPages?: number; total?: number } }).pagination || {};
           }
         }
 
         allMerchants.push(...(merchantsArray as Merchant[]));
 
         // ページネーション情報を確認
-        const totalPages = pagination.totalPages || 1;
+        const totalPages = paginationInfo.totalPages || 1;
         hasMore = page < totalPages;
         page++;
 
@@ -528,9 +469,9 @@ export default function MerchantsPage() {
         if (merchantsArray.length === 0) {
           hasMore = false;
         }
-      } catch (error) {
-        console.error('全データ取得中にエラーが発生しました:', error);
-        throw error;
+      } catch (err) {
+        console.error('全データ取得中にエラーが発生しました:', err);
+        throw err;
       }
     }
 
@@ -599,7 +540,7 @@ export default function MerchantsPage() {
   };
 
   // 全データをCSVダウンロード
-  const handleDownloadAllCSV = async () => {
+  const handleDownloadAllCSV = useCallback(async () => {
     try {
       setIsDownloadingCSV(true);
       
@@ -636,17 +577,17 @@ export default function MerchantsPage() {
       downloadCSV(csvContent, filename);
       
       showSuccess(`${allMerchants.length}件の事業者データをCSVでダウンロードしました`);
-    } catch (error: unknown) {
-      console.error('CSVダウンロードに失敗しました:', error);
-      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+    } catch (err: unknown) {
+      console.error('CSVダウンロードに失敗しました:', err);
+      const errorMessage = err instanceof Error ? err.message : '不明なエラー';
       showError(`CSVダウンロードに失敗しました: ${errorMessage}`);
     } finally {
       setIsDownloadingCSV(false);
     }
-  };
+  }, [appliedSearchForm, isOperatorRole, showSuccess, showError]);
 
   // 選択レコードをCSVダウンロード
-  const handleDownloadSelectedCSV = () => {
+  const handleDownloadSelectedCSV = useCallback(() => {
     try {
       if (selectedMerchants.size === 0) {
         showError('選択されている事業者がありません');
@@ -688,158 +629,24 @@ export default function MerchantsPage() {
       downloadCSV(csvContent, filename);
       
       showSuccess(`${selectedMerchantsData.length}件の事業者データをCSVでダウンロードしました`);
-    } catch (error: unknown) {
-      console.error('CSVダウンロードに失敗しました:', error);
-      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+    } catch (err: unknown) {
+      console.error('CSVダウンロードに失敗しました:', err);
+      const errorMessage = err instanceof Error ? err.message : '不明なエラー';
       showError(`CSVダウンロードに失敗しました: ${errorMessage}`);
     }
-  };
+  }, [selectedMerchants, filteredMerchants, isOperatorRole, showSuccess, showError]);
 
   // 事業者アカウントの場合は自分の事業者情報のみを表示
   if (isMerchantAccount) {
     return (
-      <AdminLayout>
-        <div className="space-y-6">
-          {/* ヘッダー */}
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">事業者情報</h1>
-            <p className="text-gray-600 mt-1">事業者の詳細情報を確認できます</p>
-          </div>
-
-          {/* ローディング状態 */}
-          {isLoading && (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-              <p className="text-gray-600">読み込み中...</p>
-            </div>
-          )}
-
-          {/* エラー状態 */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-800">{error}</p>
-            </div>
-          )}
-
-          {/* 事業者情報 */}
-          {!isLoading && !error && myMerchant && (
-            <div className="bg-white rounded-lg shadow">
-              <div className="p-6 space-y-6">
-                {/* 基本情報 */}
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">基本情報</h2>
-                  <table className="w-full border-collapse border border-gray-300">
-                    <tbody>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/2">事業者名</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.name}</td>
-                      </tr>
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">事業者名（カナ）</td>
-                        <td className="py-3 px-4 text-gray-900">{myMerchant.nameKana}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* 代表者情報 */}
-                {!isOperatorRole && (
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">代表者情報</h2>
-                    <table className="w-full border-collapse border border-gray-300">
-                      <tbody>
-                        <tr className="border-b border-gray-300">
-                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">代表者名</td>
-                          <td className="py-3 px-4 text-gray-900">{myMerchant.representativeNameLast} {myMerchant.representativeNameFirst}</td>
-                        </tr>
-                        <tr className="border-b border-gray-300">
-                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">代表者名（カナ）</td>
-                          <td className="py-3 px-4 text-gray-900">{myMerchant.representativeNameLastKana} {myMerchant.representativeNameFirstKana}</td>
-                        </tr>
-                        <tr className="border-b border-gray-300">
-                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">電話番号</td>
-                          <td className="py-3 px-4 text-gray-900">{myMerchant.representativePhone}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {/* 住所情報 */}
-                {!isOperatorRole && (
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">住所情報</h2>
-                    <table className="w-full border-collapse border border-gray-300">
-                      <tbody>
-                        <tr className="border-b border-gray-300">
-                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">郵便番号</td>
-                          <td className="py-3 px-4 text-gray-900">{myMerchant.postalCode}</td>
-                        </tr>
-                        <tr className="border-b border-gray-300">
-                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">都道府県</td>
-                          <td className="py-3 px-4 text-gray-900">{myMerchant.prefecture}</td>
-                        </tr>
-                        <tr className="border-b border-gray-300">
-                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">市区町村</td>
-                          <td className="py-3 px-4 text-gray-900">{myMerchant.city}</td>
-                        </tr>
-                        <tr className="border-b border-gray-300">
-                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">番地</td>
-                          <td className="py-3 px-4 text-gray-900">{myMerchant.address1}</td>
-                        </tr>
-                        {myMerchant.address2 && (
-                          <tr className="border-b border-gray-300">
-                            <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">建物名・部屋番号</td>
-                            <td className="py-3 px-4 text-gray-900">{myMerchant.address2}</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {/* アカウント情報 */}
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">アカウント情報</h2>
-                  <table className="w-full border-collapse border border-gray-300">
-                    <tbody>
-                      {!isOperatorRole && (
-                        <tr className="border-b border-gray-300">
-                          <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">メールアドレス</td>
-                          <td className="py-3 px-4 text-gray-900">{myMerchant.account?.email || myMerchant.accountEmail}</td>
-                        </tr>
-                      )}
-                      <tr className="border-b border-gray-300">
-                        <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">アカウントステータス</td>
-                        <td className={`py-3 px-4 text-sm font-medium ${getAccountStatusColor(myMerchant.account?.status || 'inactive')}`}>
-                          {getAccountStatusLabel(myMerchant.account?.status || 'inactive')}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ボタンエリア */}
-          {!isLoading && !error && myMerchant && (
-            <div className="flex justify-center gap-4">
-              <Link href={`/merchants/${myMerchant.id}/shops`}>
-                <Button variant="outline-green">
-                  店舗一覧を見る
-                </Button>
-              </Link>
-              <Link href={`/merchants/${myMerchant.id}/edit-account`}>
-                <Button variant="primary">
-                  アカウント情報編集
-                </Button>
-              </Link>
-            </div>
-          )}
-        </div>
-        <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
-      </AdminLayout>
+      <MerchantDetailView
+        merchant={myMerchant}
+        isLoading={isLoading}
+        error={error}
+        isOperatorRole={isOperatorRole}
+        toasts={toasts}
+        onRemoveToast={removeToast}
+      />
     );
   }
 
@@ -880,261 +687,16 @@ export default function MerchantsPage() {
         )}
 
         {/* 検索フォーム */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="pb-3 border-b border-gray-200 flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-              className="flex items-center focus:outline-none"
-            >
-              <div className="w-4 h-4 flex items-center justify-center">
-                <span className={`text-gray-600 text-sm transition-transform duration-200 ${isSearchExpanded ? 'rotate-180' : ''}`}>
-                  ▼
-                </span>
-              </div>
-            </Button>
-          </div>
-          
-          {isSearchExpanded && (
-          <div className="p-6 space-y-3">
-            {/* フリーワード検索 */}
-            <div>
-              <label htmlFor="keyword" className="block text-sm font-medium text-gray-700 mb-2">
-                フリーワード検索
-              </label>
-              <input
-                type="text"
-                id="keyword"
-                placeholder="事業者名、代表者名、メールアドレス、電話番号などで検索"
-                value={searchForm.keyword}
-                onChange={(e) => handleInputChange('keyword', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-
-            {/* 事業者名と事業者名（カナ） */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="merchantName" className="block text-sm font-medium text-gray-700 mb-2">
-                  事業者名
-                </label>
-                <input
-                  type="text"
-                  id="merchantName"
-                  placeholder="事業者名を入力"
-                  value={searchForm.merchantName}
-                  onChange={(e) => handleInputChange('merchantName', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-              <div>
-                <label htmlFor="merchantNameKana" className="block text-sm font-medium text-gray-700 mb-2">
-                  事業者名（カナ）
-                </label>
-                <input
-                  type="text"
-                  id="merchantNameKana"
-                  placeholder="事業者名（カナ）を入力"
-                  value={searchForm.merchantNameKana}
-                  onChange={(e) => handleInputChange('merchantNameKana', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            </div>
-
-            {/* 代表者名と代表者名（カナ） */}
-            {!isOperatorRole && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="representativeName" className="block text-sm font-medium text-gray-700 mb-2">
-                    代表者名
-                  </label>
-                  <input
-                    type="text"
-                    id="representativeName"
-                    placeholder="代表者名を入力"
-                    value={searchForm.representativeName}
-                    onChange={(e) => handleInputChange('representativeName', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="representativeNameKana" className="block text-sm font-medium text-gray-700 mb-2">
-                    代表者名（カナ）
-                  </label>
-                  <input
-                    type="text"
-                    id="representativeNameKana"
-                    placeholder="代表者名（カナ）を入力"
-                    value={searchForm.representativeNameKana}
-                    onChange={(e) => handleInputChange('representativeNameKana', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* 電話番号とメールアドレス */}
-            {!isOperatorRole && (
-              <div className="flex gap-4">
-                <div className="flex-shrink-0">
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                    電話番号
-                  </label>
-                  <input
-                    type="text"
-                    id="phone"
-                    placeholder="電話番号を入力"
-                    value={searchForm.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-                </div>
-                <div className="flex-1">
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                    メールアドレス
-                  </label>
-                  <input
-                    type="text"
-                    id="email"
-                    placeholder="メールアドレスを入力"
-                    value={searchForm.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* 郵便番号、都道府県、住所 */}
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
-                  郵便番号
-                </label>
-                <input
-                  type="text"
-                  id="postalCode"
-                  placeholder="0000000"
-                  value={searchForm.postalCode}
-                  onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                  className="w-[120px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-              <div className="flex-shrink-0">
-                <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
-                  都道府県
-                </label>
-                <select
-                  id="prefecture"
-                  value={searchForm.prefecture}
-                  onChange={(e) => handleInputChange('prefecture', e.target.value)}
-                  className="w-[180px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                >
-                  <option value="">すべて</option>
-                  {prefectures.map((pref) => (
-                    <option key={pref} value={pref}>{pref}</option>
-                  ))}
-                </select>
-              </div>
-              {!isOperatorRole && (
-                <div className="flex-1">
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                    住所
-                  </label>
-                  <input
-                    type="text"
-                    id="address"
-                    placeholder="住所を入力"
-                    value={searchForm.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* アカウント発行、契約ステータス、登録日 */}
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <label htmlFor="accountStatus" className="block text-sm font-medium text-gray-700 mb-2">
-                  アカウント発行
-                </label>
-                <select
-                  id="accountStatus"
-                  value={searchForm.accountStatus}
-                  onChange={(e) => handleInputChange('accountStatus', e.target.value)}
-                  className="w-[180px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                >
-                  <option value="">すべて</option>
-                  <option value="inactive">未発行</option>
-                  <option value="pending">承認待ち</option>
-                  <option value="active">発行済み</option>
-                  <option value="suspended">停止中</option>
-                </select>
-              </div>
-              <div className="flex-shrink-0">
-                <label htmlFor="contractStatus" className="block text-sm font-medium text-gray-700 mb-2">
-                  契約ステータス
-                </label>
-                <select
-                  id="contractStatus"
-                  value={searchForm.contractStatus}
-                  onChange={(e) => handleInputChange('contractStatus', e.target.value)}
-                  className="w-[180px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                >
-                  <option value="">すべて</option>
-                  <option value="active">契約中</option>
-                  <option value="inactive">未契約</option>
-                  <option value="terminated">解約済み</option>
-                </select>
-              </div>
-              <div className="flex-shrink-0">
-                <label htmlFor="createdAtFrom" className="block text-sm font-medium text-gray-700 mb-2">
-                  登録日（開始）
-                </label>
-                <input
-                  type="date"
-                  id="createdAtFrom"
-                  value={searchForm.createdAtFrom}
-                  onChange={(e) => handleInputChange('createdAtFrom', e.target.value)}
-                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-                {searchErrors.createdAtFrom && (
-                  <p className="text-red-600 text-sm mt-1">{searchErrors.createdAtFrom}</p>
-                )}
-              </div>
-              <div className="flex-shrink-0">
-                <label htmlFor="createdAtTo" className="block text-sm font-medium text-gray-700 mb-2">
-                  登録日（終了）
-                </label>
-                <input
-                  type="date"
-                  id="createdAtTo"
-                  value={searchForm.createdAtTo}
-                  onChange={(e) => handleInputChange('createdAtTo', e.target.value)}
-                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-                {searchErrors.createdAtTo && (
-                  <p className="text-red-600 text-sm mt-1">{searchErrors.createdAtTo}</p>
-                )}
-              </div>
-            </div>
-
-            {/* 検索・クリアボタン */}
-            <div className="flex justify-center gap-2 mt-4">
-              <Button variant="outline" onClick={handleClear}>
-                クリア
-              </Button>
-              <Button variant="primary" onClick={handleSearch}>
-                検索
-              </Button>
-            </div>
-          </div>
-          )}
-        </div>
+        <MerchantSearchForm
+          searchForm={searchForm}
+          searchErrors={searchErrors}
+          isSearchExpanded={isSearchExpanded}
+          isOperatorRole={isOperatorRole}
+          onInputChange={handleInputChange}
+          onSearch={handleSearch}
+          onClear={handleClear}
+          onToggleExpand={() => setIsSearchExpanded(!isSearchExpanded)}
+        />
 
         {/* ページネーション */}
         {!isMerchantAccount && pagination.pages > 1 && (
@@ -1146,201 +708,21 @@ export default function MerchantsPage() {
         )}
 
         {/* 事業者一覧 */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900">
-              事業者一覧 ({!isMerchantAccount ? pagination.total : filteredMerchants.length}件)
-            </h3>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={handleDownloadAllCSV}
-                disabled={isDownloadingCSV || filteredMerchants.length === 0}
-                className="bg-white text-blue-600 border-blue-600 hover:bg-blue-50 cursor-pointer"
-              >
-                {isDownloadingCSV ? 'ダウンロード中...' : 'CSVダウンロード'}
-              </Button>
-              <Link href="/merchants/new">
-                <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
-                  <span className="mr-2">+</span>
-                  新規登録
-                </Button>
-              </Link>
-            </div>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1200px]">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                    <Checkbox
-                      checked={isAllSelected}
-                      indeterminate={isIndeterminate}
-                      onChange={handleToggleAll}
-                    />
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48 whitespace-nowrap">
-                    <span className="text-xs whitespace-nowrap">アクション</span>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-                    事業者名
-                  </th>
-                  {!isOperatorRole && (
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
-                      代表者名
-                    </th>
-                  )}
-                  {!isOperatorRole && (
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
-                      電話番号
-                    </th>
-                  )}
-                  {!isOperatorRole && (
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-                      メールアドレス
-                    </th>
-                  )}
-                  {!isOperatorRole && (
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[250px]">
-                      住所
-                    </th>
-                  )}
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[180px]">
-                    アカウント発行
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[180px]">
-                    契約ステータス
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
-                    登録日
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-              {filteredMerchants.map((merchant) => (
-                  <tr key={merchant.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap w-12">
-                      <Checkbox
-                        checked={selectedMerchants.has(merchant.id)}
-                        onChange={(checked) => handleToggleMerchant(merchant.id, checked)}
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap w-48">
-                      <div className="flex items-center justify-center gap-2">
-                        <Link href={`/merchants/${merchant.id}/edit`}>
-                          <IconButton color="green" title="編集">
-                            <Image 
-                              src="/edit.svg" 
-                              alt="編集" 
-                              width={24}
-                              height={24}
-                              className="w-6 h-6 flex-shrink-0"
-                            />
-                          </IconButton>
-                        </Link>
-                        <Link href={`/merchants/${merchant.id}/shops`}>
-                          <IconButton color="blue" title="店舗一覧">
-                            <Image 
-                              src="/store-list.svg" 
-                              alt="店舗一覧" 
-                              width={24}
-                              height={24}
-                              className="w-6 h-6 flex-shrink-0"
-                            />
-                          </IconButton>
-                        </Link>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
-                      <div className="text-sm font-medium text-gray-900">{merchant.name}</div>
-                      <div className="text-sm text-gray-500">{merchant.nameKana}</div>
-                    </td>
-                    {!isOperatorRole && (
-                      <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
-                        <div className="text-sm font-medium text-gray-900">{merchant.representativeNameLast} {merchant.representativeNameFirst}</div>
-                        <div className="text-sm text-gray-500">{merchant.representativeNameLastKana} {merchant.representativeNameFirstKana}</div>
-                      </td>
-                    )}
-                    {!isOperatorRole && (
-                      <td className="px-6 py-4 whitespace-nowrap min-w-[120px]">
-                        <div className="text-sm text-gray-900">{merchant.representativePhone}</div>
-                      </td>
-                    )}
-                    {!isOperatorRole && (
-                      <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
-                        <div className="text-sm text-gray-900">{merchant.email}</div>
-                      </td>
-                    )}
-                    {!isOperatorRole && (
-                      <td className="px-6 py-4 whitespace-nowrap min-w-[250px]">
-                        <div className="text-sm text-gray-900">
-                          〒{merchant.postalCode}<br />
-                          {merchant.prefecture}{merchant.city}{merchant.address1}{merchant.address2}
-                        </div>
-                      </td>
-                    )}
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[180px]">
-                      <div className="flex items-center gap-2">
-                        <div className={`text-sm font-medium ${getAccountStatusColor(merchant.account?.status || 'inactive')}`}>
-                          {getAccountStatusLabel(merchant.account?.status || 'inactive')}
-                        </div>
-                        {(merchant.account?.status === 'inactive' || merchant.account?.status === 'pending') && (
-                          <IconButton
-                            color="orange"
-                            onClick={() => handleResendRegistration(merchant.id)}
-                            title="アカウント発行メール再送"
-                          >
-                            <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                            </svg>
-                          </IconButton>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[180px]">
-                      <div className={`text-sm font-medium ${getMerchantStatusColor(merchant.status || 'active')}`}>
-                        {getMerchantStatusLabel(merchant.status || 'active')}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
-                      <div className="text-sm text-gray-900">
-                        {new Date(merchant.createdAt).toLocaleDateString('ja-JP', {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </div>
-                    </td>
-                  </tr>
-              ))}
-              </tbody>
-            </table>
-          </div>
-
-          {isLoading && (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-              <p className="text-gray-500">データを読み込み中...</p>
-            </div>
-          )}
-
-          {!isLoading && filteredMerchants.length === 0 && (
-            <div className="text-center py-12">
-              <Image 
-                src="/storefront-icon.svg" 
-                alt="店舗" 
-                width={48} 
-                height={48}
-                className="mx-auto text-gray-400 mb-4"
-              />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">事業者が見つかりません</h3>
-              <p className="text-gray-500">検索条件を変更してお試しください。</p>
-            </div>
-          )}
-        </div>
+        <MerchantTable
+          merchants={filteredMerchants}
+          isLoading={isLoading}
+          isOperatorRole={isOperatorRole}
+          isMerchantAccount={isMerchantAccount}
+          selectedMerchants={selectedMerchants}
+          isAllSelected={isAllSelected}
+          isIndeterminate={isIndeterminate}
+          isDownloadingCSV={isDownloadingCSV}
+          pagination={pagination}
+          onToggleAll={handleToggleAll}
+          onToggleMerchant={handleToggleMerchant}
+          onDownloadAllCSV={handleDownloadAllCSV}
+          onResendRegistration={handleResendRegistration}
+        />
       </div>
 
       <FloatingFooterMerchant
