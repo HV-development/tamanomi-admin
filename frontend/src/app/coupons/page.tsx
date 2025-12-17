@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
+import IconButton from '@/components/atoms/IconButton';
 import Icon from '@/components/atoms/Icon';
 import Pagination from '@/components/molecules/Pagination';
 import { apiClient } from '@/lib/api';
@@ -832,14 +833,14 @@ function CouponsPageContent() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium min-w-[120px]">
                       <div className="flex items-center justify-center gap-2">
                         <Link href={`/coupons/${coupon.id}/edit`}>
-                          <button className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]">
+                          <IconButton color="green" title="編集">
                             <Image src="/edit.svg" alt="編集" width={24} height={24} className="w-6 h-6 flex-shrink-0" />
-                          </button>
+                          </IconButton>
                         </Link>
                         <Link href={`/coupons/${coupon.id}/history`}>
-                          <button className="p-2.5 text-orange-600 hover:text-orange-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]">
+                          <IconButton color="orange" title="利用履歴">
                             <Image src="/history.png" alt="利用履歴" width={24} height={24} className="w-6 h-6 flex-shrink-0" />
-                          </button>
+                          </IconButton>
                         </Link>
                       </div>
                     </td>

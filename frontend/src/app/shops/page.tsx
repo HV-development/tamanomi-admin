@@ -1217,15 +1217,8 @@ function ShopsPageContent() {
                     query: { returnTo: encodedReturnTo },
                   }}
                 >
-                  <Button variant="primary" className="cursor-pointer bg-green-600 hover:bg-green-700 text-white flex items-center gap-2">
-                    <Image
-                      src="/edit.svg"
-                      alt="編集"
-                      width={24}
-                      height={24}
-                      className="w-6 h-6 flex-shrink-0"
-                    />
-                    <span>編集</span>
+                  <Button variant="primary" className="cursor-pointer bg-green-600 hover:bg-green-700 text-white">
+                    編集
                   </Button>
                 </Link>
               </div>
@@ -1327,10 +1320,10 @@ function ShopsPageContent() {
                           }}
                         >
                            <button
-                            className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                            className="px-3 py-1.5 text-sm text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors cursor-pointer"
                             title="編集"
                           >
-                            <Image 
+                            <Image
                               src="/edit.svg"
                               alt="編集"
                               width={24}

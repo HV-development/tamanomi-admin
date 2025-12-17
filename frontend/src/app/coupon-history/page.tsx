@@ -55,7 +55,7 @@ export default function CouponHistoryPage() {
   const _shopId = isShopAccount ? auth?.user?.shopId : undefined;
   const lastFetchKeyRef = useRef<string | null>(null);
   const pathname = usePathname();
-  const router = useRouter();
+  const _router = useRouter(); // 将来的に使用予定
   const _params = useParams(); // 将来的に使用予定
 
   const [searchForm, setSearchForm] = useState({
@@ -85,8 +85,6 @@ export default function CouponHistoryPage() {
     usedDateEnd: '',
   });
 
-  const [showBackButton, setShowBackButton] = useState(false);
-  const [backUrl, setBackUrl] = useState('');
   const [pageTitle, setPageTitle] = useState('クーポン利用履歴');
   const [usages, setUsages] = useState<CouponUsage[]>([]);
   const [filteredUsages, setFilteredUsages] = useState<CouponUsage[]>([]);
@@ -197,29 +195,18 @@ export default function CouponHistoryPage() {
   }, [pathname, appliedSearchForm, isSysAdmin, auth?.isLoading, auth?.user?.id, auth?.user?.email]);
 
   useEffect(() => {
-    // 遷移元を判定して戻るボタンの表示を制御
+    // 遷移元を判定してページタイトルを設定
     if (pathname.includes('/coupons/') && pathname.includes('/history')) {
-      // クーポン詳細からの遷移
-      const couponId = pathname.split('/')[2];
-      setShowBackButton(true);
-      setBackUrl(`/coupons/${couponId}`);
       setPageTitle('クーポン利用履歴');
       setIsFromCouponDetail(true);
     } else if (pathname.includes('/users/') && pathname.includes('/coupon-history')) {
-      // ユーザー詳細からの遷移
-      const userId = pathname.split('/')[2];
-      setShowBackButton(true);
-      setBackUrl(`/users/${userId}`);
       setPageTitle('クーポン利用履歴');
       setIsFromCouponDetail(false);
     } else if (pathname === '/coupon-history') {
-      // クーポン一覧またはユーザー一覧からの遷移（referrerで判定）
-      setShowBackButton(true);
-      setBackUrl('/coupons'); // デフォルトはクーポン一覧
-      setPageTitle(isShopAccount ? 'クーポン利用履歴' : 'クーポン利用履歴');
+      setPageTitle('クーポン利用履歴');
       setIsFromCouponDetail(false);
     }
-  }, [pathname, isShopAccount]);
+  }, [pathname]);
 
   // 検索条件の変更時にフィルタリング（クライアント側の追加フィルタリング）
   useEffect(() => {
@@ -282,10 +269,6 @@ export default function CouponHistoryPage() {
       usedDateStart: '',
       usedDateEnd: '',
     });
-  };
-
-  const _handleBack = () => {
-    router.push(backUrl);
   };
 
   const getGenderLabel = (gender?: string) => {
@@ -877,20 +860,6 @@ export default function CouponHistoryPage() {
             </div>
           )}
         </div>
-
-        {/* 戻るボタン（画面下部） */}
-        {showBackButton && (
-          <div className="flex justify-end">
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={_handleBack}
-              className="px-8"
-            >
-              戻る
-            </Button>
-          </div>
-        )}
       </div>
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>

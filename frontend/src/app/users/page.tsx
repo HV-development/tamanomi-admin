@@ -927,7 +927,7 @@ export default function UsersPage() {
                       <div className="flex justify-center gap-2 items-center">
                         <Link href={`/users/${user.id}`}>
                           <button
-                            className="p-1.5 text-blue-600 hover:text-blue-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] flex-shrink-0"
+                            className="p-2 text-blue-600 hover:text-blue-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] flex-shrink-0"
                             title="詳細"
                             style={{ width: 'auto', height: 'auto' }}
                           >
@@ -944,7 +944,7 @@ export default function UsersPage() {
                         {!isOperatorRole && (
                           <Link href={`/users/${user.id}/edit`}>
                             <button
-                              className="p-1.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] flex-shrink-0"
+                              className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] flex-shrink-0"
                               title="編集"
                               style={{ width: 'auto', height: 'auto' }}
                             >

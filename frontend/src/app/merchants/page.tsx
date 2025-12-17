@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
+import IconButton from '@/components/atoms/IconButton';
 import Checkbox from '@/components/atoms/Checkbox';
 import ToastContainer from '@/components/molecules/toast-container';
 import FloatingFooterMerchant from '@/components/molecules/floating-footer-merchant';
@@ -815,14 +816,14 @@ export default function MerchantsPage() {
           {!isLoading && !error && myMerchant && (
             <div className="flex justify-center gap-4">
               <Link href={`/merchants/${myMerchant.id}/shops`}>
-                <button className="px-6 py-3 border-2 border-green-600 bg-white text-green-600 rounded-lg hover:bg-green-50 transition-colors font-medium text-base">
+                <Button variant="outline-green">
                   店舗一覧を見る
-                </button>
+                </Button>
               </Link>
               <Link href={`/merchants/${myMerchant.id}/edit-account`}>
-                <button className="px-6 py-3 border-2 border-green-600 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:border-green-700 transition-colors font-medium text-base">
+                <Button variant="primary">
                   アカウント情報編集
-                </button>
+                </Button>
               </Link>
             </div>
           )}
@@ -1218,10 +1219,7 @@ export default function MerchantsPage() {
                     <td className="px-6 py-4 whitespace-nowrap w-48">
                       <div className="flex items-center justify-center gap-2">
                         <Link href={`/merchants/${merchant.id}/edit`}>
-                          <button 
-                            className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
-                            title="編集"
-                          >
+                          <IconButton color="green" title="編集">
                             <Image 
                               src="/edit.svg" 
                               alt="編集" 
@@ -1229,13 +1227,10 @@ export default function MerchantsPage() {
                               height={24}
                               className="w-6 h-6 flex-shrink-0"
                             />
-                          </button>
+                          </IconButton>
                         </Link>
                         <Link href={`/merchants/${merchant.id}/shops`}>
-                          <button 
-                            className="p-2 text-blue-600 hover:text-blue-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
-                            title="店舗一覧"
-                          >
+                          <IconButton color="blue" title="店舗一覧">
                             <Image 
                               src="/store-list.svg" 
                               alt="店舗一覧" 
@@ -1243,7 +1238,7 @@ export default function MerchantsPage() {
                               height={24}
                               className="w-6 h-6 flex-shrink-0"
                             />
-                          </button>
+                          </IconButton>
                         </Link>
                       </div>
                     </td>
@@ -1281,15 +1276,15 @@ export default function MerchantsPage() {
                           {getAccountStatusLabel(merchant.account?.status || 'inactive')}
                         </div>
                         {(merchant.account?.status === 'inactive' || merchant.account?.status === 'pending') && (
-                          <button 
+                          <IconButton
+                            color="orange"
                             onClick={() => handleResendRegistration(merchant.id)}
-                            className="p-1.5 text-orange-600 hover:text-orange-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
                             title="アカウント発行メール再送"
                           >
                             <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
-                          </button>
+                          </IconButton>
                         )}
                       </div>
                     </td>

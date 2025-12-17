@@ -32,10 +32,10 @@ export default function Sidebar() {
   const router = useRouter();
 
   // アカウントタイプに基づいてメニューをフィルタリング
-  // 認証情報がロード中の場合は空配列を返してちらつきを防ぐ
+  // 認証情報がロード中、またはユーザーがnullの場合は空配列を返してちらつきを防ぐ
   const filteredMenuItems = useMemo(
     () => {
-      if (auth?.isLoading) return [];
+      if (auth?.isLoading || !auth?.user) return [];
       
       return menuItems.filter((item) => {
         // 店舗アカウントの場合、店舗管理、クーポン管理、クーポン利用履歴のみ表示
@@ -49,7 +49,7 @@ export default function Sidebar() {
         return true;
       });
     },
-    [auth?.isLoading, auth?.user?.accountType]
+    [auth?.isLoading, auth?.user]
   );
 
   // ローカルストレージからサイドバーの状態を復元
@@ -115,7 +115,7 @@ export default function Sidebar() {
     setIsLogoReady(true);
   }, []);
 
-  const isReady = isLoaded && !auth?.isLoading && isFontReady && (isCollapsed || isLogoReady);
+  const isReady = isLoaded && !auth?.isLoading && auth?.user && isFontReady && (isCollapsed || isLogoReady);
 
   return (
     <div
@@ -158,20 +158,13 @@ export default function Sidebar() {
               if (!auth) return;
               
               if (confirm('ログアウトしますか？')) {
+                // 先にページ遷移を開始してUIの変化を防ぐ
+                window.location.href = '/login';
+                // バックグラウンドでログアウト処理を実行
                 try {
                   await auth.logout();
                 } catch (error) {
                   console.error('Logout failed', error);
-                } finally {
-                  try {
-                    router.replace('/login?session=expired');
-                    router.refresh();
-                  } catch (error) {
-                    console.error('Router navigation failed, falling back to hard redirect', error);
-                    if (typeof window !== 'undefined') {
-                      window.location.href = '/login?session=expired';
-                    }
-                  }
                 }
               }
             }}

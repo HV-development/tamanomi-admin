@@ -320,7 +320,7 @@ export default function AdminsPage() {
                         <div className="flex items-center gap-2">
                           <Link href={`/admins/${admin.id}/edit`}>
                             <button 
-                              className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                              className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
                               title="編集"
                             >
                               <Image 
@@ -334,7 +334,7 @@ export default function AdminsPage() {
                           </Link>
                           <button 
                             onClick={() => handleDelete(admin.id, admin.email)}
-                            className="p-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] group"
+                            className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] group"
                             title="削除"
                           >
                             <Image 
