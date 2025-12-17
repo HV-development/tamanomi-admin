@@ -2,11 +2,9 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import AdminLayout from '@/components/templates/admin-layout';
-import Button from '@/components/atoms/Button';
 import ToastContainer from '@/components/molecules/toast-container';
 import Pagination from '@/components/molecules/Pagination';
 import { apiClient } from '@/lib/api';
@@ -14,8 +12,11 @@ import { useToast } from '@/hooks/use-toast';
 import { statusLabels, statusOptions } from '@/lib/constants/shop';
 import type { Shop } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
-import Checkbox from '@/components/atoms/Checkbox';
 import { convertShopsToCSV, downloadCSV, generateFilename, type ShopForCSV } from '@/utils/csvExport';
+// 分割されたコンポーネント
+import ShopSearchForm from '@/components/organisms/ShopSearchForm';
+import ShopDetailView from '@/components/organisms/ShopDetailView';
+import ShopTable from '@/components/organisms/ShopTable';
 
 // 動的インポート：選択時のみ表示されるフローティングフッター
 const FloatingFooter = dynamic(() => import('@/components/molecules/floating-footer'), {
@@ -811,269 +812,16 @@ function ShopsPageContent() {
 
         {/* 検索フォーム（店舗アカウントの場合は非表示） */}
         {!isShopAccount && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="pb-3 border-b border-gray-200 flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900">検索条件</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-              className="flex items-center focus:outline-none"
-            >
-              <div className="w-4 h-4 flex items-center justify-center">
-                <span className={`text-gray-600 text-sm transition-transform duration-200 ${isSearchExpanded ? 'rotate-180' : ''}`}>
-                  ▼
-                </span>
-              </div>
-            </Button>
-          </div>
-          
-          {isSearchExpanded && (
-          <div className="p-6 space-y-4">
-            {/* フリーワード検索 */}
-            <div>
-              <label htmlFor="keyword" className="block text-sm font-medium text-gray-700 mb-2">
-                フリーワード検索
-              </label>
-              <input
-                type="text"
-                id="keyword"
-                placeholder="店舗名、住所、電話番号などで検索（2文字以上）"
-                value={searchForm.keyword}
-                onChange={(e) => handleInputChange('keyword', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-            
-            {/* 事業者名と事業者名（カナ） */}
-            {!merchantId && (
-              <div className="flex gap-4" style={{ marginTop: '16px' }}>
-                <div className="flex-1">
-                  <label htmlFor="merchantName" className="block text-sm font-medium text-gray-700 mb-2">
-                    事業者名
-                  </label>
-                  <input
-                    type="text"
-                    id="merchantName"
-                    placeholder="事業者名を入力"
-                    value={searchForm.merchantName}
-                    onChange={(e) => handleInputChange('merchantName', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-                </div>
-                <div className="flex-1">
-                  <label htmlFor="merchantNameKana" className="block text-sm font-medium text-gray-700 mb-2">
-                    事業者名（カナ）
-                  </label>
-                  <input
-                    type="text"
-                    id="merchantNameKana"
-                    placeholder="事業者名（カナ）を入力"
-                    value={searchForm.merchantNameKana}
-                    onChange={(e) => handleInputChange('merchantNameKana', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* 店舗名と店舗名（カナ） */}
-            <div className="flex gap-4" style={{ marginTop: '16px' }}>
-              <div className="flex-1">
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  店舗名
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  placeholder="店舗名を入力"
-                  value={searchForm.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-              <div className="flex-1">
-                <label htmlFor="nameKana" className="block text-sm font-medium text-gray-700 mb-2">
-                  店舗名（カナ）
-                </label>
-                <input
-                  type="text"
-                  id="nameKana"
-                  placeholder="店舗名（カナ）を入力"
-                  value={searchForm.nameKana}
-                  onChange={(e) => handleInputChange('nameKana', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            </div>
-
-            {/* 電話番号とメールアドレス */}
-            <div className="flex gap-4" style={{ marginTop: '16px' }}>
-              <div className="flex-shrink-0">
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                  電話番号
-                </label>
-                <input
-                  type="text"
-                  id="phone"
-                  placeholder="電話番号を入力"
-                  value={searchForm.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-              <div className="flex-1">
-                <label htmlFor="accountEmail" className="block text-sm font-medium text-gray-700 mb-2">
-                  メールアドレス
-                </label>
-                <input
-                  type="text"
-                  id="accountEmail"
-                  placeholder="メールアドレスを入力"
-                  value={searchForm.accountEmail}
-                  onChange={(e) => handleInputChange('accountEmail', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            </div>
-
-            {/* 郵便番号、都道府県、住所 */}
-            <div className="flex gap-4" style={{ marginTop: '16px' }}>
-              <div className="flex-shrink-0">
-                <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
-                  郵便番号
-                </label>
-                <input
-                  type="text"
-                  id="postalCode"
-                  placeholder="郵便番号を入力"
-                  value={searchForm.postalCode}
-                  onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                  className="w-[120px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-              <div className="flex-shrink-0">
-                <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
-                  都道府県
-                </label>
-                <input
-                  type="text"
-                  id="prefecture"
-                  placeholder="都道府県を入力"
-                  value={searchForm.prefecture}
-                  onChange={(e) => handleInputChange('prefecture', e.target.value)}
-                  className="w-[150px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-              <div className="flex-1">
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                  住所
-                </label>
-                <input
-                  type="text"
-                  id="address"
-                  placeholder="住所を入力"
-                  value={searchForm.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            </div>
-
-            {/* 承認ステータス */}
-            <div className="max-w-[200px]" style={{ marginTop: '16px' }}>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                承認ステータス
-              </label>
-              <select
-                id="status"
-                value={searchForm.status}
-                onChange={(e) => handleInputChange('status', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              >
-                <option value="all">すべて</option>
-                {statusOptions?.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* 登録日・更新日の範囲 */}
-            <div className="flex gap-4" style={{ marginTop: '16px' }}>
-              <div>
-                <label htmlFor="createdAtFrom" className="block text-sm font-medium text-gray-700 mb-2">
-                  登録日（開始）
-                </label>
-                <input
-                  type="date"
-                  id="createdAtFrom"
-                  value={searchForm.createdAtFrom}
-                  onChange={(e) => handleInputChange('createdAtFrom', e.target.value)}
-                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-                {searchErrors.createdAtFrom && (
-                  <p className="text-red-600 text-sm mt-1">{searchErrors.createdAtFrom}</p>
-                )}
-              </div>
-              <div>
-                <label htmlFor="createdAtTo" className="block text-sm font-medium text-gray-700 mb-2">
-                  登録日（終了）
-                </label>
-                <input
-                  type="date"
-                  id="createdAtTo"
-                  value={searchForm.createdAtTo}
-                  onChange={(e) => handleInputChange('createdAtTo', e.target.value)}
-                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-                {searchErrors.createdAtTo && (
-                  <p className="text-red-600 text-sm mt-1">{searchErrors.createdAtTo}</p>
-                )}
-              </div>
-              <div>
-                <label htmlFor="updatedAtFrom" className="block text-sm font-medium text-gray-700 mb-2">
-                  更新日（開始）
-                </label>
-                <input
-                  type="date"
-                  id="updatedAtFrom"
-                  value={searchForm.updatedAtFrom}
-                  onChange={(e) => handleInputChange('updatedAtFrom', e.target.value)}
-                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-                {searchErrors.updatedAtFrom && (
-                  <p className="text-red-600 text-sm mt-1">{searchErrors.updatedAtFrom}</p>
-                )}
-              </div>
-              <div>
-                <label htmlFor="updatedAtTo" className="block text-sm font-medium text-gray-700 mb-2">
-                  更新日（終了）
-                </label>
-                <input
-                  type="date"
-                  id="updatedAtTo"
-                  value={searchForm.updatedAtTo}
-                  onChange={(e) => handleInputChange('updatedAtTo', e.target.value)}
-                  className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-                {searchErrors.updatedAtTo && (
-                  <p className="text-red-600 text-sm mt-1">{searchErrors.updatedAtTo}</p>
-                )}
-              </div>
-            </div>
-
-            {/* 検索・クリアボタン */}
-            <div className="flex justify-center gap-2 mt-6">
-              <Button variant="outline" onClick={handleClear}>
-                クリア
-              </Button>
-              <Button variant="primary" onClick={handleSearch}>
-                検索
-              </Button>
-            </div>
-          </div>
-          )}
-        </div>
+          <ShopSearchForm
+            searchForm={searchForm}
+            searchErrors={searchErrors}
+            isSearchExpanded={isSearchExpanded}
+            merchantId={merchantId}
+            onInputChange={handleInputChange}
+            onSearch={handleSearch}
+            onClear={handleClear}
+            onToggleExpand={() => setIsSearchExpanded(!isSearchExpanded)}
+          />
         )}
 
         {/* ページネーション */}
@@ -1087,383 +835,34 @@ function ShopsPageContent() {
 
         {/* 店舗アカウント用の詳細ビュー */}
         {isShopAccount && shops.length > 0 && shops[0] ? (
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6 space-y-6">
-              {/* 基本情報 */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">基本情報</h3>
-                <table className="w-full border-collapse border border-gray-300">
-                  <tbody>
-                    <tr className="border-b border-gray-300">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">店舗名</td>
-                      <td className="py-3 px-4 text-gray-900">{shops[0].name}</td>
-                    </tr>
-                    <tr className="border-b border-gray-300">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">店舗名（カナ）</td>
-                      <td className="py-3 px-4 text-gray-900">{shops[0].nameKana}</td>
-                    </tr>
-                    <tr className="border-b border-gray-300">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">電話番号</td>
-                      <td className="py-3 px-4 text-gray-900">{shops[0].phone}</td>
-                    </tr>
-                    <tr className="border-b border-gray-300">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">事業者名</td>
-                      <td className="py-3 px-4 text-gray-900">{shops[0].merchant?.name || '-'}</td>
-                    </tr>
-                    <tr className="border-b border-gray-300">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">ジャンル</td>
-                      <td className="py-3 px-4 text-gray-900">{shops[0].genre?.name || '-'}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* 住所情報 */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">住所情報</h3>
-                <table className="w-full border-collapse border border-gray-300">
-                  <tbody>
-                    <tr className="border-b border-gray-300">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">郵便番号</td>
-                      <td className="py-3 px-4 text-gray-900">{shops[0].postalCode ? `〒${shops[0].postalCode}` : '-'}</td>
-                    </tr>
-                    <tr className="border-b border-gray-300">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">住所</td>
-                      <td className="py-3 px-4 text-gray-900">{shops[0].address || '-'}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* 店舗詳細情報 */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">店舗詳細</h3>
-                <table className="w-full border-collapse border border-gray-300">
-                  <tbody>
-                    <tr className="border-b border-gray-300">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">定休日</td>
-                      <td className="py-3 px-4 text-gray-900">{shops[0].holidays || '-'}</td>
-                    </tr>
-                    <tr className="border-b border-gray-300">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">喫煙可否</td>
-                      <td className="py-3 px-4 text-gray-900">
-                        {shops[0].smokingType === 'non_smoking' ? '禁煙' : 
-                         shops[0].smokingType === 'smoking_allowed' ? '喫煙可' : 
-                         shops[0].smokingType === 'separated' ? '分煙' : 
-                         shops[0].smokingType === 'electronic_only' ? '電子のみ' : '-'}
-                      </td>
-                    </tr>
-                    <tr className="border-b border-gray-300">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">ホームページURL</td>
-                      <td className="py-3 px-4 text-gray-900">
-                        {('homepageUrl' in shops[0] && shops[0].homepageUrl) ? (
-                          <a href={shops[0].homepageUrl as string} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{shops[0].homepageUrl as string}</a>
-                        ) : '-'}
-                      </td>
-                    </tr>
-                    <tr className="border-b border-gray-300">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">クーポン利用時間</td>
-                      <td className="py-3 px-4 text-gray-900">
-                        {('couponUsageStart' in shops[0] && 'couponUsageEnd' in shops[0] && shops[0].couponUsageStart && shops[0].couponUsageEnd) ? `${shops[0].couponUsageStart as string}〜${shops[0].couponUsageEnd as string}` : '-'}
-                      </td>
-                    </tr>
-                    <tr className="border-b border-gray-300">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">ステータス</td>
-                      <td className={`py-3 px-4 text-sm font-medium ${getStatusColor(shops[0].status)}`}>
-                        {statusOptions.find(opt => opt.value === shops[0].status)?.label || shops[0].status}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* アカウント情報 */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">アカウント情報</h3>
-                <table className="w-full border-collapse border border-gray-300">
-                  <tbody>
-                    <tr className="border-b border-gray-300">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">メールアドレス</td>
-                      <td className="py-3 px-4 text-gray-900">{shops[0].accountEmail || '-'}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* 決済情報 */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">決済情報</h3>
-                <table className="w-full border-collapse border border-gray-300">
-                  <tbody>
-                    <tr className="border-b border-gray-300">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">さいこいん決済</td>
-                      <td className="py-3 px-4 text-gray-900">{shops[0].paymentSaicoin ? '利用可能' : '利用不可'}</td>
-                    </tr>
-                    <tr className="border-b border-gray-300">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">たまぽん決済</td>
-                      <td className="py-3 px-4 text-gray-900">{shops[0].paymentTamapon ? '利用可能' : '利用不可'}</td>
-                    </tr>
-                    <tr className="border-b border-gray-300">
-                      <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">現金決済</td>
-                      <td className="py-3 px-4 text-gray-900">{shops[0].paymentCash ? '利用可能' : '利用不可'}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* フッターボタン */}
-              <div className="flex justify-center gap-4 pt-6 border-t border-gray-200">
-                <Link href="/coupons">
-                  <Button variant="outline" className="cursor-pointer border-green-600 text-green-600 hover:bg-green-50">
-                    クーポン一覧
-                  </Button>
-                </Link>
-                <Link
-                  href={{
-                    pathname: merchantId ? `/merchants/${merchantId}/shops/${shops[0].id}/edit` : `/shops/${shops[0].id}/edit`,
-                    query: { returnTo: encodedReturnTo },
-                  }}
-                >
-                  <Button variant="primary" className="cursor-pointer bg-green-600 hover:bg-green-700 text-white">
-                    編集
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
+          <ShopDetailView
+            shop={shops[0]}
+            merchantId={merchantId}
+            encodedReturnTo={encodedReturnTo}
+            getStatusColor={getStatusColor}
+          />
         ) : null}
 
         {/* 店舗一覧（管理者・事業者アカウント用） */}
         {!isShopAccount && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900">
-              店舗一覧 ({pagination.total}件)
-            </h3>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={handleDownloadAllCSV}
-                disabled={isDownloadingCSV || shops.length === 0}
-                className="bg-white text-blue-600 border-blue-600 hover:bg-blue-50 cursor-pointer"
-              >
-                {isDownloadingCSV ? 'ダウンロード中...' : 'CSVダウンロード'}
-              </Button>
-              <Link
-                href={{
-                  pathname: merchantId ? `/merchants/${merchantId}/shops/new` : '/shops/new',
-                  query: { returnTo: encodedReturnTo },
-                }}
-              >
-                <Button variant="outline" className="bg-white text-green-600 border-green-600 hover:bg-green-50 cursor-pointer">
-                  <span className="mr-2">+</span>
-                  新規登録
-                </Button>
-              </Link>
-            </div>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1200px]">
-              <thead className="bg-gray-50">
-                <tr>
-                  {!isMerchantAccount && !isShopAccount && (
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
-                      <Checkbox
-                        checked={isAllSelected}
-                        indeterminate={isIndeterminate}
-                        onChange={handleToggleAll}
-                      />
-                    </th>
-                  )}
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
-                    アクション
-                  </th>
-                  {!merchantId && !isMerchantAccount && (
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-                      事業者名
-                    </th>
-                  )}
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-                    店舗名
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[250px]">
-                    住所
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-                    メールアドレス
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
-                    電話番号
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
-                    承認ステータス
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
-                    登録日時
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
-                    更新日時
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-              {shops.map((shop) => (
-                  <tr key={shop.id} className="hover:bg-gray-50">
-                    {!isMerchantAccount && !isShopAccount && (
-                      <td className="px-6 py-4 whitespace-nowrap w-32">
-                        <Checkbox
-                          checked={selectedShops.has(shop.id)}
-                          onChange={(checked) => handleToggleShop(shop.id, checked)}
-                        />
-                      </td>
-                    )}
-                    <td className="px-6 py-4 whitespace-nowrap w-32">
-                      <div className="flex items-center justify-center gap-2">
-                        <Link
-                          href={{
-                            pathname: `/merchants/${merchantId || shop.merchantId}/shops/${shop.id}/edit`,
-                            query: { returnTo: encodedReturnTo },
-                          }}
-                        >
-                           <button
-                            className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
-                            title="編集"
-                          >
-                            <Image
-                              src="/edit.svg"
-                              alt="編集"
-                              width={24}
-                              height={24}
-                              className="w-6 h-6 flex-shrink-0"
-                            />
-                          </button>
-                        </Link>
-                        <Link
-                          href={{
-                            pathname: '/coupons',
-                            query: {
-                              shopId: shop.id,
-                              ...(merchantId || shop.merchantId ? { merchantId: merchantId || shop.merchantId } : {}),
-                              returnTo: encodedReturnTo,
-                            },
-                          }}
-                          prefetch={false}
-                        >
-                          <button 
-                            className="p-2 text-orange-600 hover:text-orange-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[48px] min-h-[48px]"
-                            title="クーポン管理"
-                          >
-                            <Image 
-                              src="/coupon.svg" 
-                              alt="クーポン" 
-                              width={48}
-                              height={48}
-                              className="w-10 h-10"
-                            />
-                          </button>
-                        </Link>
-                      </div>
-                    </td>
-                    {!merchantId && !isMerchantAccount && (
-                      <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
-                        <div className="text-sm font-medium text-gray-900">
-                          {shop.merchant?.name || '-'}
-                        </div>
-                      </td>
-                    )}
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
-                      <div className="text-sm font-medium text-gray-900">{shop.name}</div>
-                      {shop.nameKana && (
-                        <div className="text-sm text-gray-500">{shop.nameKana}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 min-w-[250px]">
-                      <div className="text-sm text-gray-900">
-                        {shop.postalCode ? `〒${shop.postalCode}` : '-'}
-                      </div>
-                      <div className="text-sm text-gray-900 mt-1">
-                        {shop.address || '-'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
-                      <div className="text-sm text-gray-900">{shop.accountEmail || '-'}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{shop.phone}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
-                      {isMerchantAccount ? (
-                        <div className={`text-sm font-medium rounded-lg px-3 py-2 ${getStatusColor(shop.status)}`}>
-                          {statusLabels[shop.status] || shop.status}
-                        </div>
-                      ) : (
-                        <select
-                          value={shop.status}
-                          onChange={(e) => handleIndividualStatusChange(shop.id, e.target.value)}
-                          className={`text-sm font-medium rounded-lg px-3 py-2 border border-gray-300 bg-white focus:ring-2 focus:ring-green-500 w-full min-w-[180px] ${getStatusColor(shop.status)}`}
-                        >
-                          {statusOptions?.map((option) => (
-                            <option key={option.value} value={option.value} className={getStatusColor(option.value)}>
-                              {option.label}
-                            </option>
-                          )) || (
-                            <option value={shop.status} className={getStatusColor(shop.status)}>
-                              {statusLabels[shop.status] || shop.status}
-                            </option>
-                          )}
-                        </select>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
-                      <div className="text-sm text-gray-900">
-                        {new Date(shop.createdAt).toLocaleDateString('ja-JP', {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap min-w-[150px]">
-                      <div className="text-sm text-gray-900">
-                        {new Date(shop.updatedAt).toLocaleDateString('ja-JP', {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </div>
-                    </td>
-                  </tr>
-              ))}
-              </tbody>
-            </table>
-          </div>
-
-          {isLoading && (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-              <p className="text-gray-500">データを読み込み中...</p>
-            </div>
-          )}
-
-          {!isLoading && shops.length === 0 && (
-            <div className="text-center py-12">
-              <Image 
-                src="/storefront-icon.svg" 
-                alt="店舗" 
-                width={48} 
-                height={48}
-                className="mx-auto text-gray-400 mb-4"
-              />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">店舗が見つかりません</h3>
-              <p className="text-gray-500">検索条件を変更してお試しください。</p>
-            </div>
-          )}
-        </div>
+          <ShopTable
+            shops={shops}
+            pagination={pagination}
+            selectedShops={selectedShops}
+            isAllSelected={isAllSelected}
+            isIndeterminate={isIndeterminate}
+            isLoading={isLoading}
+            isDownloadingCSV={isDownloadingCSV}
+            isMerchantAccount={isMerchantAccount}
+            isShopAccount={isShopAccount}
+            merchantId={merchantId}
+            encodedReturnTo={encodedReturnTo}
+            onToggleAll={handleToggleAll}
+            onToggleShop={handleToggleShop}
+            onStatusChange={handleIndividualStatusChange}
+            onDownloadAllCSV={handleDownloadAllCSV}
+            getStatusColor={getStatusColor}
+          />
         )}
       </div>
 
