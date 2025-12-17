@@ -303,9 +303,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           promises.push(myMerchantPromise);
         }
 
-        // 加盟店一覧を取得（管理者アカウントの場合のみ）
+        // 加盟店一覧を取得（adminアカウントの場合のみ）
         let merchantsPromise: Promise<unknown> | null = null;
-        if (!isMerchantAccount) {
+        if (isAdminAccount) {
           merchantsPromise = apiClient.getMerchants();
           promises.push(merchantsPromise);
         }
@@ -353,8 +353,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           }
         }
 
-        // 管理者アカウントの場合
-        if (!isMerchantAccount && merchantsPromise) {
+        // adminアカウントの場合
+        if (isAdminAccount && merchantsPromise) {
           const result = results[resultIndex++];
           if (result.status === 'fulfilled') {
             const merchantsData = result.value;
@@ -560,7 +560,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       isMounted = false;
       abortController.abort();
     };
-  }, [shopId, isEdit, merchantId, showError, isMerchantAccount]);
+  }, [shopId, isEdit, merchantId, showError, isMerchantAccount, isAdminAccount]);
 
   // formData.merchantIdが変更されたときに加盟店名とaccountEmailを更新
   useEffect(() => {
