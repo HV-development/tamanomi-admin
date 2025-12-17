@@ -1,12 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { usePathname, useRouter } from 'next/navigation';
 import SidebarHeader from '@/components/molecules/sidebar-header';
 import MenuItem from '@/components/molecules/menu-item';
 import Icon from '@/components/atoms/Icon';
-import ConfirmModal from '@/components/molecules/ConfirmModal';
 import { useAuth } from '@/components/contexts/auth-context';
+
+// 動的インポート：ログアウト確認時のみ表示されるモーダル
+const ConfirmModal = dynamic(() => import('@/components/molecules/ConfirmModal'), {
+  ssr: false,
+});
 
 interface MenuItemData {
   name: string;

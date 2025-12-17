@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamicImport from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
@@ -15,8 +16,12 @@ import { useAuth } from '@/components/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
 import Checkbox from '@/components/atoms/Checkbox';
-import CouponBulkUpdateFooter from '@/components/molecules/coupon-bulk-update-footer';
 import { convertCouponsToCSV, downloadCSV, generateFilename, type CouponForCSV } from '@/utils/csvExport';
+
+// 動的インポート：選択時のみ表示されるフローティングフッター
+const CouponBulkUpdateFooter = dynamicImport(() => import('@/components/molecules/coupon-bulk-update-footer'), {
+  ssr: false,
+});
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';

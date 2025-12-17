@@ -1,8 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Button from '@/components/atoms/Button';
-import BulkUpdateConfirmModal from '@/components/molecules/bulk-update-confirm-modal';
+
+// 動的インポート：確認時のみ表示されるモーダル
+const BulkUpdateConfirmModal = dynamic(() => import('@/components/molecules/bulk-update-confirm-modal'), {
+  ssr: false,
+});
 
 interface CouponBulkUpdateFooterProps {
   selectedCount: number;

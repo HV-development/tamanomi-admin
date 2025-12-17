@@ -3,12 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import IconButton from '@/components/atoms/IconButton';
 import Checkbox from '@/components/atoms/Checkbox';
 import ToastContainer from '@/components/molecules/toast-container';
-import FloatingFooterMerchant from '@/components/molecules/floating-footer-merchant';
 import Pagination from '@/components/molecules/Pagination';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +16,11 @@ import { prefectures } from '@/lib/constants/merchant';
 import { type MerchantWithDetails } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
 import { convertMerchantsToCSV, downloadCSV, generateFilename, type MerchantForCSV } from '@/utils/csvExport';
+
+// 動的インポート：選択時のみ表示されるフローティングフッター
+const FloatingFooterMerchant = dynamic(() => import('@/components/molecules/floating-footer-merchant'), {
+  ssr: false,
+});
 
 // APIレスポンス用の型（日付がstringとして返される）
 type Merchant = Omit<MerchantWithDetails, 'createdAt' | 'updatedAt' | 'deletedAt' | 'account' | 'shops'> & {
