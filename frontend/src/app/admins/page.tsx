@@ -9,11 +9,14 @@ import Icon from '@/components/atoms/Icon';
 import Pagination from '@/components/molecules/Pagination';
 import { type Admin, type AdminSearchForm } from '@hv-development/schemas';
 import { apiClient } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
+import ToastContainer from '@/components/molecules/toast-container';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
 
 export default function AdminsPage() {
+  const { toasts, removeToast, showSuccess, showError } = useToast();
   const [searchForm, setSearchForm] = useState<AdminSearchForm>({
     accountId: '',
     name: '',
@@ -140,10 +143,10 @@ export default function AdminsPage() {
       await apiClient.deleteAdminAccount(adminId);
       // 手動で再取得
       fetchAdmins(appliedSearchForm);
-      alert('管理者アカウントを削除しました');
+      showSuccess('管理者アカウントを削除しました');
     } catch (error: unknown) {
       console.error('管理者アカウントの削除に失敗しました:', error);
-      alert('管理者アカウントの削除に失敗しました。もう一度お試しください。');
+      showError('管理者アカウントの削除に失敗しました。もう一度お試しください。');
     }
   };
 
@@ -379,6 +382,7 @@ export default function AdminsPage() {
           )}
         </div>
       </div>
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
   );
 }

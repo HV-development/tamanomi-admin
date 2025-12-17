@@ -734,8 +734,8 @@ function ShopsPageContent() {
             </div>
           </div>
           
-          {/* 検索条件の表示 */}
-          {!isShopAccount && (() => {
+          {/* 検索条件の表示（adminアカウントのみ） */}
+          {!isShopAccount && !isMerchantAccount && (() => {
             const conditions: string[] = [];
             
             // merchantIdがある場合
@@ -1320,7 +1320,7 @@ function ShopsPageContent() {
                           }}
                         >
                            <button
-                            className="px-3 py-1.5 text-sm text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors cursor-pointer"
+                            className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
                             title="編集"
                           >
                             <Image

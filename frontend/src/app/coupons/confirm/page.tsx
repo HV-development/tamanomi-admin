@@ -8,6 +8,8 @@ import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { apiClient } from '@/lib/api';
 import type { CouponCreateRequest, CouponStatus } from '@hv-development/schemas';
+import { useToast } from '@/hooks/use-toast';
+import ToastContainer from '@/components/molecules/toast-container';
 
 export const dynamic = 'force-dynamic';
 export const dynamicParams = true;
@@ -27,6 +29,7 @@ function CouponConfirmPageContent() {
   const router = useRouter();
   const [couponData, setCouponData] = useState<CouponData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toasts, removeToast, showSuccess, showError } = useToast();
 
   useEffect(() => {
     const data: CouponData = {
@@ -72,11 +75,13 @@ function CouponConfirmPageContent() {
       };
       
       await apiClient.createCoupon(createData);
-      alert('クーポンを登録しました');
-      router.push('/coupons');
+      showSuccess('クーポンを登録しました');
+      setTimeout(() => {
+        router.push('/coupons');
+      }, 1500);
     } catch (error) {
       console.error('クーポンの作成に失敗しました:', error);
-      alert('クーポンの作成に失敗しました。もう一度お試しください。');
+      showError('クーポンの作成に失敗しました。もう一度お試しください。');
       setIsSubmitting(false);
     }
   };
@@ -189,6 +194,7 @@ function CouponConfirmPageContent() {
           </div>
         </div>
       </div>
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
   );
 }

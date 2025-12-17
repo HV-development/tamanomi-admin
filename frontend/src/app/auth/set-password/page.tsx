@@ -6,11 +6,14 @@ import { Eye, EyeOff } from 'lucide-react';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { apiClient } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
+import ToastContainer from '@/components/molecules/toast-container';
 
 function SetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
+  const { toasts, removeToast, showSuccess } = useToast();
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -145,8 +148,10 @@ function SetPasswordContent() {
       await apiClient.setPassword(token, password);
 
       // 成功: ログインページにリダイレクト
-      alert('パスワードが設定されました。ログインしてください。');
-      router.push('/login');
+      showSuccess('パスワードが設定されました。ログインしてください。');
+      setTimeout(() => {
+        router.push('/login');
+      }, 1500);
     } catch (err) {
       console.error('パスワード設定エラー:', err);
       if (err instanceof Error && 'response' in err) {
@@ -316,6 +321,7 @@ function SetPasswordContent() {
           </div>
         </div>
       </div>
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </div>
   );
 }

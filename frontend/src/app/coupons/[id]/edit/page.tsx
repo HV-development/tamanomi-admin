@@ -14,6 +14,8 @@ import {
   validateFileSize
 } from '@/utils/validation';
 import { useAuth } from '@/components/contexts/auth-context';
+import { useToast } from '@/hooks/use-toast';
+import ToastContainer from '@/components/molecules/toast-container';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -36,6 +38,7 @@ function CouponEditPageContent() {
   const searchParams = useSearchParams();
   const couponId = params.id as string;
   const auth = useAuth();
+  const { toasts, removeToast, showError } = useToast();
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
 
   const [formData, setFormData] = useState<CouponFormData>({
@@ -99,9 +102,11 @@ function CouponEditPageContent() {
       } catch (error) {
         console.error('クーポン情報の取得に失敗しました:', error);
         const errorMessage = error instanceof Error ? error.message : 'クーポン情報の取得に失敗しました';
-        alert(errorMessage);
+        showError(errorMessage);
         // エラー時は一覧画面に戻る
-        router.push('/coupons');
+        setTimeout(() => {
+          router.push('/coupons');
+        }, 1500);
       } finally {
         setIsLoading(false);
       }
@@ -230,7 +235,7 @@ function CouponEditPageContent() {
         if (formData.couponImage) {
           // 必須パラメータのバリデーション
           if (!shopId || !merchantId) {
-            alert('店舗情報または事業者情報が取得できませんでした。ページを再読み込みしてください。');
+            showError('店舗情報または事業者情報が取得できませんでした。ページを再読み込みしてください。');
             setIsSubmitting(false);
             return;
           }
@@ -271,7 +276,7 @@ function CouponEditPageContent() {
           } catch (error) {
             console.error('❌ Image upload error:', error);
             const errorMessage = error instanceof Error ? error.message : '画像のアップロードに失敗しました';
-            alert(errorMessage);
+            showError(errorMessage);
             setIsSubmitting(false);
             setIsUploading(false);
             return;
@@ -303,7 +308,7 @@ function CouponEditPageContent() {
           }
         }
         
-        alert(errorMessage);
+        showError(errorMessage);
         setIsSubmitting(false);
       }
     } else {
@@ -553,6 +558,7 @@ function CouponEditPageContent() {
         </div>
         )}
       </div>
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
   );
 }

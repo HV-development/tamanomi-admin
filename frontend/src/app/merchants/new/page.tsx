@@ -69,7 +69,6 @@ export default function MerchantNewPage() {
     },
     (error) => {
       setErrors(prev => ({ ...prev, postalCode: error }));
-      showError(error);
     }
   );
   
@@ -561,11 +560,11 @@ export default function MerchantNewPage() {
             
             <div className="space-y-6">
               {/* 郵便番号と住所検索 */}
-              <div className="flex gap-4">
-                <div className="w-40">
-                  <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
-                    郵便番号 <span className="text-red-500">*</span>
-                  </label>
+              <div>
+                <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
+                  郵便番号 <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-4 items-center">
                   <input
                     ref={(el) => { fieldRefs.current.postalCode = el; }}
                     type="text"
@@ -573,17 +572,12 @@ export default function MerchantNewPage() {
                     value={formData.postalCode}
                     onChange={(e) => handleInputChange('postalCode', e.target.value.replace(/\D/g, ''))}
                     onBlur={() => handleBlur('postalCode')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    className={`w-40 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                       errors.postalCode ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="1234567"
                     maxLength={7}
                   />
-                  <div className="mt-1 flex justify-between">
-                    <ErrorMessage message={errors.postalCode} />
-                  </div>
-                </div>
-                <div className="flex items-end">
                   <Button
                     type="button"
                     variant="outline"
@@ -594,6 +588,11 @@ export default function MerchantNewPage() {
                     {isSearchingAddress ? '検索中...' : '住所検索'}
                   </Button>
                 </div>
+                {errors.postalCode && (
+                  <div className="mt-1" style={{ maxWidth: 'calc(10rem + 8rem + 1rem)' }}>
+                    <ErrorMessage message={errors.postalCode} />
+                  </div>
+                )}
               </div>
 
               {/* 都道府県 */}

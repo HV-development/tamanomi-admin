@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import SidebarHeader from '@/components/molecules/sidebar-header';
 import MenuItem from '@/components/molecules/menu-item';
 import Icon from '@/components/atoms/Icon';
+import ConfirmModal from '@/components/molecules/ConfirmModal';
 import { useAuth } from '@/components/contexts/auth-context';
 
 interface MenuItemData {
@@ -28,6 +29,7 @@ export default function Sidebar() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isFontReady, setIsFontReady] = useState(false);
   const [isLogoReady, setIsLogoReady] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -154,20 +156,7 @@ export default function Sidebar() {
         {/* ログアウトボタン */}
         <div className="px-4 py-2">
           <button
-            onClick={async () => {
-              if (!auth) return;
-              
-              if (confirm('ログアウトしますか？')) {
-                // 先にページ遷移を開始してUIの変化を防ぐ
-                window.location.href = '/login';
-                // バックグラウンドでログアウト処理を実行
-                try {
-                  await auth.logout();
-                } catch (error) {
-                  console.error('Logout failed', error);
-                }
-              }
-            }}
+            onClick={() => setIsLogoutModalOpen(true)}
             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900`}
           >
             <Icon name="logout" size="md" />
@@ -183,6 +172,27 @@ export default function Sidebar() {
           </div>
         )}
       </div>
+
+      {/* ログアウト確認モーダル */}
+      <ConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={async () => {
+          if (!auth) return;
+          // 先にページ遷移を開始してUIの変化を防ぐ
+          window.location.href = '/login';
+          // バックグラウンドでログアウト処理を実行
+          try {
+            await auth.logout();
+          } catch (error) {
+            console.error('Logout failed', error);
+          }
+        }}
+        title="ログアウト"
+        message="ログアウトしますか？"
+        confirmText="ログアウト"
+        cancelText="キャンセル"
+      />
     </div>
   );
 }

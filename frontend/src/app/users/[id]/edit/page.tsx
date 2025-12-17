@@ -42,6 +42,7 @@ export default function UserEditPage() {
   const [formData, setFormData] = useState<UserFormData>(EMPTY_USER_FORM_DATA);
 
   const [errors, setErrors] = useState<Partial<UserFormData>>({});
+  const [addressSearchSuccess, setAddressSearchSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -202,9 +203,12 @@ export default function UserEditPage() {
   };
 
   const handleAddressSearch = () => {
+    // 成功メッセージをクリア
+    setAddressSearchSuccess(null);
+    
     // 郵便番号の存在チェック
     if (formData.postalCode.length !== 7) {
-      alert('郵便番号を正しく入力してください（7桁の数字）');
+      setErrors(prev => ({ ...prev, postalCode: '郵便番号を正しく入力してください（7桁の数字）' }));
       return;
     }
 
@@ -218,17 +222,15 @@ export default function UserEditPage() {
             ...prev,
             address: fullAddress
           }));
-          alert('住所を取得しました');
+          setErrors(prev => ({ ...prev, postalCode: undefined }));
+          setAddressSearchSuccess('住所を取得しました');
         } else {
-          const newErrors = { ...errors };
-          newErrors.postalCode = '入力された郵便番号は存在しません';
-          setErrors(newErrors);
-          alert('該当する住所が見つかりませんでした');
+          setErrors(prev => ({ ...prev, postalCode: '該当する住所が見つかりませんでした' }));
         }
       })
       .catch(error => {
         console.error('住所検索エラー:', error);
-        alert('住所検索に失敗しました');
+        setErrors(prev => ({ ...prev, postalCode: '住所検索に失敗しました' }));
       });
   };
 
@@ -356,6 +358,9 @@ export default function UserEditPage() {
                 />
                 {errors.postalCode && (
                   <p className="mt-1 text-sm text-red-500">{errors.postalCode}</p>
+                )}
+                {addressSearchSuccess && !errors.postalCode && (
+                  <p className="mt-1 text-sm text-green-600">{addressSearchSuccess}</p>
                 )}
               </div>
               <div className="flex items-end">

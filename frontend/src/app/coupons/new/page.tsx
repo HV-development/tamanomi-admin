@@ -17,6 +17,8 @@ import {
 } from '@/utils/validation';
 import { useAuth } from '@/components/contexts/auth-context';
 import ErrorMessage from '@/components/atoms/ErrorMessage';
+import { useToast } from '@/hooks/use-toast';
+import ToastContainer from '@/components/molecules/toast-container';
 
 const MerchantSelectModal = dynamicImport(() => import('@/components/molecules/MerchantSelectModal'), {
   loading: () => null,
@@ -57,6 +59,7 @@ function CouponNewPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const auth = useAuth();
+  const { toasts, removeToast, showError } = useToast();
   
   // アカウントタイプの判定
   const isAdminAccount = auth?.user?.accountType === 'admin';
@@ -360,7 +363,7 @@ function CouponNewPageContent() {
           errorMessage = '画像URLが無効です。画像を再度アップロードしてください。';
         }
         
-        alert(errorMessage);
+        showError(errorMessage);
         setIsSubmitting(false);
       }
     } else {
@@ -677,6 +680,7 @@ function CouponNewPageContent() {
           </div>
         </div>
       </div>
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
   );
 }

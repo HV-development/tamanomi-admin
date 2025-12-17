@@ -10,11 +10,14 @@ import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-
 import { useAuth } from '@/components/contexts/auth-context';
 import { PREFECTURES } from '@/lib/constants/japan';
 import { apiClient } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
+import ToastContainer from '@/components/molecules/toast-container';
 
 export default function MerchantEditPage() {
   const params = useParams();
   const router = useRouter();
   const auth = useAuth();
+  const { toasts, removeToast, showSuccess, showError } = useToast();
   const merchantId = params.id as string;
   
   const [formData, setFormData] = useState<MerchantEditFormData>({
@@ -144,9 +147,9 @@ export default function MerchantEditPage() {
         if (error instanceof Error && 'response' in error) {
           const apiError = error as Error & { response?: { data: unknown } };
           const errorData = apiError.response?.data as { error?: { message?: string } } | undefined;
-          alert(`事業者データの取得に失敗しました: ${errorData?.error?.message || '不明なエラー'}`);
+          showError(`事業者データの取得に失敗しました: ${errorData?.error?.message || '不明なエラー'}`);
         } else {
-          alert(`事業者データの読み込みに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+          showError(`事業者データの読み込みに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
         }
       } finally {
         if (isMounted) {
@@ -338,15 +341,15 @@ export default function MerchantEditPage() {
       setIsSendingPasswordReset(true);
       try {
         await apiClient.sendPasswordReset(merchantId);
-        alert('パスワード再設定メールを送信しました');
+        showSuccess('パスワード再設定メールを送信しました');
       } catch (error) {
         console.error('パスワード再設定メールの送信に失敗しました:', error);
         if (error instanceof Error && 'response' in error) {
           const apiError = error as Error & { response?: { data: unknown } };
           const errorData = apiError.response?.data as { error?: { message?: string } } | undefined;
-          alert(`パスワード再設定メールの送信に失敗しました: ${errorData?.error?.message || '不明なエラー'}`);
+          showError(`パスワード再設定メールの送信に失敗しました: ${errorData?.error?.message || '不明なエラー'}`);
         } else {
-          alert('パスワード再設定メールの送信に失敗しました');
+          showError('パスワード再設定メールの送信に失敗しました');
         }
       } finally {
         setIsSendingPasswordReset(false);
@@ -385,17 +388,19 @@ export default function MerchantEditPage() {
 
       await apiClient.updateMerchant(merchantId, updateData);
       
-      alert('事業者の更新が完了しました。');
+      showSuccess('事業者の更新が完了しました。');
       // 事業者一覧に遷移
-      router.push('/merchants');
+      setTimeout(() => {
+        router.push('/merchants');
+      }, 1500);
     } catch (error) {
       console.error('更新エラー:', error);
       if (error instanceof Error && 'response' in error) {
         const apiError = error as Error & { response?: { data: unknown } };
         const errorData = apiError.response?.data as { message?: string; error?: { message?: string } } | undefined;
-        alert(`更新中にエラーが発生しました: ${errorData?.message || errorData?.error?.message || '不明なエラー'}`);
+        showError(`更新中にエラーが発生しました: ${errorData?.message || errorData?.error?.message || '不明なエラー'}`);
       } else {
-        alert('更新中にエラーが発生しました。');
+        showError('更新中にエラーが発生しました。');
       }
     } finally {
       setIsSubmitting(false);
@@ -680,11 +685,11 @@ export default function MerchantEditPage() {
             
             <div className="space-y-6">
               {/* 郵便番号と住所検索 */}
-              <div className="flex gap-4">
-                <div className="w-40">
-                  <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
-                    郵便番号 <span className="text-red-500">*</span>
-                  </label>
+              <div>
+                <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
+                  郵便番号 <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-4 items-center">
                   <input
                     ref={(el) => { fieldRefs.current.postalCode = el; }}
                     type="text"
@@ -692,19 +697,12 @@ export default function MerchantEditPage() {
                     value={formData.postalCode}
                     onChange={(e) => handleInputChange('postalCode', e.target.value.replace(/\D/g, ''))}
                     onBlur={() => handleBlur('postalCode')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    className={`w-40 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                       errors.postalCode ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="1234567"
                     maxLength={7}
                   />
-                  <div className="mt-1 flex justify-between">
-                    {errors.postalCode && (
-                      <p className="text-sm text-red-600">{errors.postalCode}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-end">
                   <Button
                     type="button"
                     variant="outline"
@@ -715,6 +713,11 @@ export default function MerchantEditPage() {
                     {isSearchingAddress ? '検索中...' : '住所検索'}
                   </Button>
                 </div>
+                {errors.postalCode && (
+                  <div className="mt-1" style={{ maxWidth: 'calc(10rem + 8rem + 1rem)' }}>
+                    <p className="text-sm text-red-600">{errors.postalCode}</p>
+                  </div>
+                )}
               </div>
 
               {/* 都道府県 */}
@@ -881,6 +884,7 @@ export default function MerchantEditPage() {
           </div>
         </form>
       </div>
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
   );
 }
