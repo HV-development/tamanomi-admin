@@ -1,23 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3002/api/v1';
-
-function getAuthHeaders(request: Request): Record<string, string> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const headerToken = request.headers.get('authorization');
-  if (headerToken) {
-    headers['Authorization'] = headerToken;
-    return headers;
-  }
-  const cookieHeader = request.headers.get('cookie') || '';
-  const pairs = cookieHeader.split(';').map(v => v.trim());
-  const accessPair = pairs.find(v => v.startsWith('accessToken=')) || pairs.find(v => v.startsWith('__Host-accessToken='));
-  const accessToken = accessPair ? decodeURIComponent(accessPair.split('=')[1] || '') : '';
-  if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
-  }
-  return headers;
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,18 +11,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('🎫 API Route: Request body', body);
     
-    const authHeaders = getAuthHeaders(request);
-    console.log('🔐 API Route: 認証ヘッダー', {
-      hasAuth: !!authHeaders.Authorization,
-      authHeader: authHeaders.Authorization ? 'Bearer ***' : 'none'
-    });
-    
-    const response = await fetch(`${API_BASE_URL}/admin/merchants/issue-accounts`, {
+    const response = await secureFetchWithCommonHeaders(request, `${API_BASE_URL}/admin/merchants/issue-accounts`, {
       method: 'POST',
-      headers: authHeaders,
+      headerOptions: {
+        requireAuth: true, // 認証が必要
+      },
       body: JSON.stringify(body),
-      credentials: 'include',
     });
+
+    // 認証エラーの場合は401を返す
+    if (response.status === 401) {
+      return createNoCacheResponse({ message: 'Unauthorized' }, { status: 401 });
+    }
 
     console.log('📡 API Route: Response status:', response.status);
 
@@ -48,12 +33,12 @@ export async function POST(request: NextRequest) {
         statusText: response.statusText,
         error: errorData
       });
-      return NextResponse.json(errorData, { status: response.status });
+      return createNoCacheResponse(errorData, { status: response.status });
     }
 
     const data = await response.json();
     console.log('✅ API Route: アカウント発行成功', data);
-    return NextResponse.json(data);
+    return createNoCacheResponse(data);
   } catch (error: unknown) {
     console.error('❌ API Route: アカウント発行エラー', {
       error,
@@ -62,7 +47,7 @@ export async function POST(request: NextRequest) {
       API_BASE_URL
     });
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({
+    return createNoCacheResponse({
       error: {
         code: 'INTERNAL_ERROR',
         message: 'アカウント発行に失敗しました',
@@ -71,6 +56,3 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
-
-
-

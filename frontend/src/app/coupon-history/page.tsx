@@ -9,6 +9,7 @@ import { useAuth } from '@/components/contexts/auth-context';
 import { convertCouponUsagesToCSV, downloadCSV, generateFilename, type CouponUsageForCSV } from '@/utils/csvExport';
 import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
+import { apiClient } from '@/lib/api';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -137,52 +138,20 @@ export default function CouponHistoryPage() {
           searchBody.usedAtEnd = endDate.toISOString();
         }
 
-        const response = await fetch(`/api/admin/coupon-usage-history`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify(searchBody),
-        });
-
-        if (!response.ok) {
-          let errorData: { message?: string; error?: { message?: string } } | null = null;
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            try {
-              errorData = await response.json();
-            } catch (_e) {
-              errorData = { message: 'Failed to parse JSON response' };
-            }
-          } else {
-            const text = await response.text().catch(() => '');
-            errorData = { message: text || `HTTP ${response.status} ${response.statusText}` };
-          }
-          console.error('利用履歴取得エラー:', {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorData,
-          });
-          throw new Error(errorData?.message || errorData?.error?.message || `Failed to fetch usage history (${response.status})`);
-        }
-
-        const data = await response.json() as {
-          history: Array<{
-            id: string;
-            usageId?: string;
-            couponId: string;
-            couponName: string;
-            shopId: string;
-            shopName: string;
-            nickname?: string;
-            email?: string;
-            gender?: string;
-            birthDate?: string;
-            address?: string;
-            usedAt: string;
-          }>
-        };
+        const data = await apiClient.getCouponUsageHistory(searchBody) as { history: Array<{
+          id: string;
+          usageId?: string;
+          couponId: string;
+          couponName: string;
+          shopId: string;
+          shopName: string;
+          nickname?: string;
+          email?: string;
+          gender?: string;
+          birthDate?: string;
+          address?: string;
+          usedAt: string;
+        }> };
         const formattedHistory = data.history.map((item) => ({
           id: item.id,
           usageId: item.usageId || item.id,
@@ -363,20 +332,7 @@ export default function CouponHistoryPage() {
         searchBody.page = page;
         searchBody.limit = limit;
 
-        const response = await fetch(`/api/admin/coupon-usage-history`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify(searchBody),
-        });
-
-        if (!response.ok) {
-          throw new Error('クーポン利用履歴の取得に失敗しました');
-        }
-
-        const data = await response.json() as {
+        const data = await apiClient.getCouponUsageHistory(searchBody) as {
           history: Array<{
             id: string;
             usageId?: string;
@@ -392,7 +348,6 @@ export default function CouponHistoryPage() {
             usedAt: string;
           }>; pagination?: { totalPages?: number; total?: number }
         };
-
         const formattedHistory = data.history.map((item) => ({
           id: item.id,
           usageId: item.usageId || item.id,

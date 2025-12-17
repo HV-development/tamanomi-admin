@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { createNoCacheResponse } from '@/lib/response-utils';
 
 export async function POST(request: Request) {
   try {
@@ -12,12 +12,8 @@ export async function POST(request: Request) {
     }
     // ここではサーバの標準出力へ記録（本番ではログ基盤に送る）
     console.warn('🔐 CSP Report received:', body);
-    return new NextResponse(null, { status: 204 });
+    return createNoCacheResponse(null, { status: 204 });
   } catch (_e) {
-    return NextResponse.json({ ok: false }, { status: 204 });
+    return createNoCacheResponse({ ok: false }, { status: 204 });
   }
 }
-
-
-
-

@@ -157,6 +157,14 @@ const nextConfig = {
         key: 'Permissions-Policy',
         value: 'camera=(), microphone=(), geolocation=(), fullscreen=(), payment=(), usb=(), serial=(), magnetometer=(), gyroscope=(), accelerometer=()',
       },
+      {
+        key: 'Cache-Control',
+        value: 'no-store, no-cache, must-revalidate, private',
+      },
+      {
+        key: 'Pragma',
+        value: 'no-cache',
+      },
     ];
 
     if (process.env.VERCEL_ENV === 'preview') {
@@ -168,8 +176,53 @@ const nextConfig = {
 
     return [
       {
+        // 全てのルートに適用（静的ファイルを除く）
         source: '/(.*)',
         headers: securityHeaders,
+      },
+      {
+        // APIルートにも明示的に適用
+        source: '/api/:path*',
+        headers: securityHeaders,
+      },
+      {
+        // 静的ファイル（画像、フォント、CSS、JS）はキャッシュを有効化
+        source: '/:path*\\.(svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot|css|js)$',
+        headers: [
+          ...securityHeaders.filter(h =>
+            h.key !== 'Cache-Control' && h.key !== 'Pragma'
+          ),
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        // Next.jsの静的ファイル（_next/static）はキャッシュを有効化
+        source: '/_next/static/:path*',
+        headers: [
+          ...securityHeaders.filter(h =>
+            h.key !== 'Cache-Control' && h.key !== 'Pragma'
+          ),
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        // Next.jsの画像最適化エンドポイント（/_next/image）はキャッシュを有効化
+        source: '/_next/image',
+        headers: [
+          ...securityHeaders.filter(h =>
+            h.key !== 'Cache-Control' && h.key !== 'Pragma'
+          ),
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
       },
     ];
   },

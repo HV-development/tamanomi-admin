@@ -62,3 +62,7 @@ next-env.d.ts
 # Temporary folders
 tmp/
 temp/
+
+# Playwright test results
+frontend/playwright-report/
+frontend/test-results/

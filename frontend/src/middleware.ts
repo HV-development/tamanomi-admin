@@ -70,8 +70,11 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json({ message: 'Invalid image URL' }, { status: 403 });
     }
     // 検証通過後は通常の処理へ
+    // 画像はキャッシュを有効化（パフォーマンス向上のため）
     const response = NextResponse.next();
     response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    // 画像は長期間キャッシュ可能（1年間、immutable）
+    response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
     return response;
   }
 
@@ -89,6 +92,9 @@ export async function middleware(request: NextRequest) {
     if (csrfSkip) {
       const response = NextResponse.next();
       response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
       return response;
     }
 
@@ -100,6 +106,9 @@ export async function middleware(request: NextRequest) {
     if (secFetchSite === 'same-origin' || secFetchSite === 'same-site' || secFetchSite === 'none') {
       const response = NextResponse.next();
       response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
       return response;
     }
 
@@ -141,7 +150,12 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/merchants';
     // 307リダイレクトを実行（リダイレクト実行直後にスクリプトを終了）
-    return NextResponse.redirect(url, 307);
+    const redirectResponse = NextResponse.redirect(url, 307);
+    // リダイレクトレスポンスにもキャッシュ無効化ヘッダーを設定
+    redirectResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    redirectResponse.headers.set('Pragma', 'no-cache');
+    redirectResponse.headers.set('Expires', '0');
+    return redirectResponse;
   }
 
   // アプリの保護ページはCookieが無ければログインへ
@@ -188,7 +202,12 @@ export async function middleware(request: NextRequest) {
       url.pathname = '/login';
       url.searchParams.set('session', 'expired');
       // 307リダイレクトを実行（リダイレクト実行直後にスクリプトを終了）
-      return NextResponse.redirect(url, 307);
+      const redirectResponse = NextResponse.redirect(url, 307);
+      // リダイレクトレスポンスにもキャッシュ無効化ヘッダーを設定
+      redirectResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      redirectResponse.headers.set('Pragma', 'no-cache');
+      redirectResponse.headers.set('Expires', '0');
+      return redirectResponse;
     }
     // 署名検証はAPI層で実施。ここではCookieの存在のみでガード。
   }
@@ -199,20 +218,13 @@ export async function middleware(request: NextRequest) {
   // HSTS: HTTPSの接続を強制（1年間）
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
 
-  // キャッシュ制御: APIルートはキャッシュを無効化して機密情報の漏洩を防止
-  if (pathname.startsWith('/api/')) {
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    response.headers.set('Pragma', 'no-cache');
-    response.headers.set('Expires', '0');
-  } else {
-    // 保護されたページ（認証が必要なページ）はキャッシュ無効化
-    // 機密情報を含む可能性があるため、キャッシュから情報が漏洩することを防止
-    if (protectedPaths.some(p => pathname === p || pathname.startsWith(`${p}/`))) {
-      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-      response.headers.set('Pragma', 'no-cache');
-      response.headers.set('Expires', '0');
-    }
-  }
+  // キャッシュ制御: 全てのページでキャッシュを無効化して機密情報の漏洩を防止
+  // 管理画面の全てのページは機密情報を含む可能性があるため、キャッシュから情報が漏洩することを防止
+  // Next.jsのデフォルトのCache-Controlヘッダーを削除してから設定
+  response.headers.delete('Cache-Control');
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
 
   return response;
 }
