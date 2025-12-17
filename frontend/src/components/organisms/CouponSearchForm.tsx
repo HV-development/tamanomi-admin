@@ -3,19 +3,24 @@
 import React from 'react';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
-import type { CouponStatus } from '@hv-development/schemas';
 
 export interface CouponSearchFormData {
-  couponId: string;
+  merchantName: string;
+  shopName: string;
   couponName: string;
 }
 
+export type ApprovalStatus = 'all' | 'pending' | 'approved' | 'suspended';
+export type PublicStatus = 'all' | 'public' | 'private';
+
 interface CouponSearchFormProps {
   searchForm: CouponSearchFormData;
-  statusFilter: 'all' | CouponStatus;
+  approvalStatus: ApprovalStatus;
+  publicStatus: PublicStatus;
   isSearchExpanded: boolean;
   onInputChange: (field: keyof CouponSearchFormData, value: string) => void;
-  onStatusFilterChange: (value: 'all' | CouponStatus) => void;
+  onApprovalStatusChange: (value: ApprovalStatus) => void;
+  onPublicStatusChange: (value: PublicStatus) => void;
   onSearch: () => void;
   onClear: () => void;
   onToggleExpand: () => void;
@@ -23,10 +28,12 @@ interface CouponSearchFormProps {
 
 export default function CouponSearchForm({
   searchForm,
-  statusFilter,
+  approvalStatus,
+  publicStatus,
   isSearchExpanded,
   onInputChange,
-  onStatusFilterChange,
+  onApprovalStatusChange,
+  onPublicStatusChange,
   onSearch,
   onClear,
   onToggleExpand,
@@ -48,17 +55,32 @@ export default function CouponSearchForm({
       {isSearchExpanded && (
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* クーポンID */}
+            {/* 事業者名 */}
             <div>
-              <label htmlFor="couponId" className="block text-sm font-medium text-gray-700 mb-2">
-                クーポンID
+              <label htmlFor="merchantName" className="block text-sm font-medium text-gray-700 mb-2">
+                事業者名
               </label>
               <input
                 type="text"
-                id="couponId"
-                placeholder="クーポンIDを入力"
-                value={searchForm.couponId}
-                onChange={(e) => onInputChange('couponId', e.target.value)}
+                id="merchantName"
+                placeholder="事業者名を入力"
+                value={searchForm.merchantName}
+                onChange={(e) => onInputChange('merchantName', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+
+            {/* 店舗名 */}
+            <div>
+              <label htmlFor="shopName" className="block text-sm font-medium text-gray-700 mb-2">
+                店舗名
+              </label>
+              <input
+                type="text"
+                id="shopName"
+                placeholder="店舗名を入力"
+                value={searchForm.shopName}
+                onChange={(e) => onInputChange('shopName', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
@@ -78,21 +100,38 @@ export default function CouponSearchForm({
               />
             </div>
 
-            {/* ステータス */}
+            {/* 承認ステータス */}
             <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                ステータス
+              <label htmlFor="approvalStatus" className="block text-sm font-medium text-gray-700 mb-2">
+                承認ステータス
               </label>
               <select
-                id="status"
-                value={statusFilter}
-                onChange={(e) => onStatusFilterChange(e.target.value as 'all' | CouponStatus)}
+                id="approvalStatus"
+                value={approvalStatus}
+                onChange={(e) => onApprovalStatusChange(e.target.value as ApprovalStatus)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               >
                 <option value="all">すべて</option>
-                <option value="active">有効</option>
-                <option value="inactive">無効</option>
-                <option value="expired">期限切れ</option>
+                <option value="pending">申請中</option>
+                <option value="approved">承認済み</option>
+                <option value="suspended">停止中</option>
+              </select>
+            </div>
+
+            {/* 公開ステータス */}
+            <div>
+              <label htmlFor="publicStatus" className="block text-sm font-medium text-gray-700 mb-2">
+                公開ステータス
+              </label>
+              <select
+                id="publicStatus"
+                value={publicStatus}
+                onChange={(e) => onPublicStatusChange(e.target.value as PublicStatus)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              >
+                <option value="all">すべて</option>
+                <option value="public">公開中</option>
+                <option value="private">非公開</option>
               </select>
             </div>
           </div>
@@ -111,4 +150,3 @@ export default function CouponSearchForm({
     </div>
   );
 }
-

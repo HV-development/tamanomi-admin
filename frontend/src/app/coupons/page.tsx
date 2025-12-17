@@ -6,10 +6,10 @@ import dynamicImport from 'next/dynamic';
 import AdminLayout from '@/components/templates/admin-layout';
 import Icon from '@/components/atoms/Icon';
 import Pagination from '@/components/molecules/Pagination';
-import CouponSearchForm, { type CouponSearchFormData } from '@/components/organisms/CouponSearchForm';
+import CouponSearchForm, { type CouponSearchFormData, type ApprovalStatus, type PublicStatus } from '@/components/organisms/CouponSearchForm';
 import CouponTable from '@/components/organisms/CouponTable';
 import { apiClient } from '@/lib/api';
-import type { CouponWithShop, CouponStatus, CouponListResponse } from '@hv-development/schemas';
+import type { CouponWithShop, CouponListResponse, CouponStatus } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
@@ -66,15 +66,19 @@ function CouponsPageContent() {
   });
   const [loading, setLoading] = useState(true);
   const [searchForm, setSearchForm] = useState<CouponSearchFormData>({
-    couponId: '',
+    merchantName: '',
+    shopName: '',
     couponName: '',
   });
   const [appliedSearchForm, setAppliedSearchForm] = useState<CouponSearchFormData>({
-    couponId: '',
+    merchantName: '',
+    shopName: '',
     couponName: '',
   });
-  const [statusFilter, setStatusFilter] = useState<'all' | CouponStatus>('all');
-  const [appliedStatusFilter, setAppliedStatusFilter] = useState<'all' | CouponStatus>('all');
+  const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus>('all');
+  const [appliedApprovalStatus, setAppliedApprovalStatus] = useState<ApprovalStatus>('all');
+  const [publicStatus, setPublicStatus] = useState<PublicStatus>('all');
+  const [appliedPublicStatus, setAppliedPublicStatus] = useState<PublicStatus>('all');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // チェックボックス関連の状態
@@ -104,12 +108,24 @@ function CouponsPageContent() {
         params.append('merchantId', merchantId);
       }
 
+      if (appliedSearchForm.merchantName) {
+        params.append('merchantName', appliedSearchForm.merchantName);
+      }
+
+      if (appliedSearchForm.shopName) {
+        params.append('shopName', appliedSearchForm.shopName);
+      }
+
       if (appliedSearchForm.couponName) {
         params.append('title', appliedSearchForm.couponName);
       }
 
-      if (appliedStatusFilter !== 'all') {
-        params.append('status', appliedStatusFilter);
+      if (appliedApprovalStatus !== 'all') {
+        params.append('status', appliedApprovalStatus);
+      }
+
+      if (appliedPublicStatus !== 'all') {
+        params.append('isPublic', appliedPublicStatus === 'public' ? 'true' : 'false');
       }
 
       const data: { coupons: CouponWithShop[]; pagination: PaginationData } = await apiClient.getCoupons(params.toString()) as { coupons: CouponWithShop[]; pagination: PaginationData };
@@ -166,7 +182,8 @@ function CouponsPageContent() {
       page: pagination.page,
       limit: pagination.limit,
       search: appliedSearchForm,
-      status: appliedStatusFilter,
+      approvalStatus: appliedApprovalStatus,
+      publicStatus: appliedPublicStatus,
     });
 
     if (lastCouponsFetchKeyRef.current === key) {
@@ -184,7 +201,8 @@ function CouponsPageContent() {
     pagination.page,
     pagination.limit,
     appliedSearchForm,
-    appliedStatusFilter,
+    appliedApprovalStatus,
+    appliedPublicStatus,
   ]);
 
   const filteredCoupons = coupons;
@@ -199,20 +217,24 @@ function CouponsPageContent() {
   const handleSearch = useCallback(() => {
     // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
     setAppliedSearchForm(searchForm);
-    setAppliedStatusFilter(statusFilter);
+    setAppliedApprovalStatus(approvalStatus);
+    setAppliedPublicStatus(publicStatus);
     // ページを1にリセット
     setPagination(prev => ({ ...prev, page: 1 }));
-  }, [searchForm, statusFilter]);
+  }, [searchForm, approvalStatus, publicStatus]);
 
   const handleClear = useCallback(() => {
     const emptyForm: CouponSearchFormData = {
-      couponId: '',
+      merchantName: '',
+      shopName: '',
       couponName: '',
     };
     setSearchForm(emptyForm);
-    setStatusFilter('all');
+    setApprovalStatus('all');
+    setPublicStatus('all');
     setAppliedSearchForm(emptyForm);
-    setAppliedStatusFilter('all');
+    setAppliedApprovalStatus('all');
+    setAppliedPublicStatus('all');
     // ページを1にリセット
     setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
@@ -477,12 +499,24 @@ function CouponsPageContent() {
           params.append('merchantId', merchantId);
         }
 
+        if (appliedSearchForm.merchantName) {
+          params.append('merchantName', appliedSearchForm.merchantName);
+        }
+
+        if (appliedSearchForm.shopName) {
+          params.append('shopName', appliedSearchForm.shopName);
+        }
+
         if (appliedSearchForm.couponName) {
           params.append('title', appliedSearchForm.couponName);
         }
 
-        if (appliedStatusFilter !== 'all') {
-          params.append('status', appliedStatusFilter);
+        if (appliedApprovalStatus !== 'all') {
+          params.append('status', appliedApprovalStatus);
+        }
+
+        if (appliedPublicStatus !== 'all') {
+          params.append('isPublic', appliedPublicStatus === 'public' ? 'true' : 'false');
         }
 
         const data: { coupons: CouponWithShop[]; pagination: PaginationData } = await apiClient.getCoupons(params.toString()) as { coupons: CouponWithShop[]; pagination: PaginationData };
@@ -537,7 +571,7 @@ function CouponsPageContent() {
     } finally {
       setIsDownloadingCSV(false);
     }
-  }, [shopId, merchantId, appliedSearchForm, appliedStatusFilter, showSuccess, showError]);
+  }, [shopId, merchantId, appliedSearchForm, appliedApprovalStatus, appliedPublicStatus, showSuccess, showError]);
 
   // 選択レコードをCSVダウンロード
   const handleDownloadSelectedCSV = useCallback(() => {
@@ -629,10 +663,12 @@ function CouponsPageContent() {
         {!isShopAccount && (
           <CouponSearchForm
             searchForm={searchForm}
-            statusFilter={statusFilter}
+            approvalStatus={approvalStatus}
+            publicStatus={publicStatus}
             isSearchExpanded={isSearchExpanded}
             onInputChange={handleInputChange}
-            onStatusFilterChange={setStatusFilter}
+            onApprovalStatusChange={setApprovalStatus}
+            onPublicStatusChange={setPublicStatus}
             onSearch={handleSearch}
             onClear={handleClear}
             onToggleExpand={() => setIsSearchExpanded(!isSearchExpanded)}
