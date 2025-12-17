@@ -307,12 +307,12 @@ function ShopsPageContent() {
   }, [merchantId, auth?.isLoading, isMerchantAccount, isShopAccount, auth?.user?.id, auth?.user?.email, fetchShops]);
 
   // 検索フォームの入力ハンドラー
-  const handleInputChange = (field: keyof typeof searchForm, value: string) => {
+  const handleInputChange = useCallback((field: keyof typeof searchForm, value: string) => {
     setSearchForm(prev => ({
       ...prev,
       [field]: value
     }));
-  };
+  }, []);
 
   // 検索実行ハンドラー
   const handleSearch = () => {
@@ -446,9 +446,9 @@ function ShopsPageContent() {
   };
 
   // ページ変更ハンドラー
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     setPagination(prev => ({ ...prev, page }));
-  };
+  }, []);
 
   // チェックボックス関連の関数
   useEffect(() => {
@@ -458,23 +458,25 @@ function ShopsPageContent() {
     setIsIndeterminate(selectedCount > 0 && selectedCount < allCount);
   }, [selectedShops, shops]);
 
-  const handleToggleAll = (checked: boolean) => {
+  const handleToggleAll = useCallback((checked: boolean) => {
     if (checked) {
       setSelectedShops(new Set(shops.map(shop => shop.id)));
     } else {
       setSelectedShops(new Set());
     }
-  };
+  }, [shops]);
 
-  const handleToggleShop = (shopId: string, checked: boolean) => {
-    const newSelected = new Set(selectedShops);
-    if (checked) {
-      newSelected.add(shopId);
-    } else {
-      newSelected.delete(shopId);
-    }
-    setSelectedShops(newSelected);
-  };
+  const handleToggleShop = useCallback((shopId: string, checked: boolean) => {
+    setSelectedShops(prev => {
+      const newSelected = new Set(prev);
+      if (checked) {
+        newSelected.add(shopId);
+      } else {
+        newSelected.delete(shopId);
+      }
+      return newSelected;
+    });
+  }, []);
 
   // 一括更新処理
   const handleBulkUpdateStatus = async (status: string) => {

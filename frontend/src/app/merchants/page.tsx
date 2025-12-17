@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import AdminLayout from '@/components/templates/admin-layout';
@@ -267,16 +267,19 @@ export default function MerchantsPage() {
 
   const [searchErrors, setSearchErrors] = useState<{createdAtFrom?: string; createdAtTo?: string}>({});
 
-  const handleInputChange = (field: keyof typeof searchForm, value: string) => {
+  const handleInputChange = useCallback((field: keyof typeof searchForm, value: string) => {
     setSearchForm(prev => ({
       ...prev,
       [field]: value
     }));
     // エラーがある場合、値を変更したらエラーをクリア
-    if (searchErrors.createdAtFrom || searchErrors.createdAtTo) {
-      setSearchErrors({});
-    }
-  };
+    setSearchErrors(prev => {
+      if (prev.createdAtFrom || prev.createdAtTo) {
+        return {};
+      }
+      return prev;
+    });
+  }, []);
 
   const validateSearchForm = (): boolean => {
     const errors: {createdAtFrom?: string; createdAtTo?: string} = {};
@@ -366,9 +369,9 @@ export default function MerchantsPage() {
   };
 
   // ページ変更ハンドラー
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     setPagination(prev => ({ ...prev, page }));
-  };
+  }, []);
 
   // チェックボックス関連の関数
   useEffect(() => {
@@ -378,23 +381,25 @@ export default function MerchantsPage() {
     setIsIndeterminate(selectedCount > 0 && selectedCount < allCount);
   }, [selectedMerchants, filteredMerchants]);
 
-  const handleToggleAll = (checked: boolean) => {
+  const handleToggleAll = useCallback((checked: boolean) => {
     if (checked) {
       setSelectedMerchants(new Set(filteredMerchants.map(merchant => merchant.id)));
     } else {
       setSelectedMerchants(new Set());
     }
-  };
+  }, [filteredMerchants]);
 
-  const handleToggleMerchant = (merchantId: string, checked: boolean) => {
-    const newSelected = new Set(selectedMerchants);
-    if (checked) {
-      newSelected.add(merchantId);
-    } else {
-      newSelected.delete(merchantId);
-    }
-    setSelectedMerchants(newSelected);
-  };
+  const handleToggleMerchant = useCallback((merchantId: string, checked: boolean) => {
+    setSelectedMerchants(prev => {
+      const newSelected = new Set(prev);
+      if (checked) {
+        newSelected.add(merchantId);
+      } else {
+        newSelected.delete(merchantId);
+      }
+      return newSelected;
+    });
+  }, []);
 
   // アカウント発行処理
   const handleIssueAccount = async () => {
@@ -442,7 +447,7 @@ export default function MerchantsPage() {
   };
 
   // 個別の事業者にアカウント発行（メールアイコンから）
-  const handleResendRegistration = async (merchantId: string) => {
+  const handleResendRegistration = useCallback(async (merchantId: string) => {
     try {
       const result = await apiClient.issueAccounts([merchantId]);
       
@@ -463,7 +468,7 @@ export default function MerchantsPage() {
       const errorMessage = error instanceof Error ? error.message : '不明なエラー';
       showError(`アカウント発行に失敗しました: ${errorMessage}`);
     }
-  };
+  }, [showSuccess, showError]);
 
   // 全データ取得関数（ページネーション対応、検索条件適用）
   const fetchAllMerchants = async (): Promise<Merchant[]> => {
