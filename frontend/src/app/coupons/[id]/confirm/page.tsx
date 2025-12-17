@@ -58,7 +58,7 @@ export default function CouponEditConfirmPage() {
 
   const handleUpdate = async () => {
     if (!couponData) return;
-    
+
     setIsSubmitting(true);
     try {
       const updateData: CouponUpdateRequest = {
@@ -68,7 +68,7 @@ export default function CouponEditConfirmPage() {
         imageUrl: couponData.imageUrl || null,
         status: (couponData.publishStatus === '1' ? 'active' : 'inactive') as CouponStatus
       };
-      
+
       await apiClient.updateCoupon(couponId, updateData);
       showSuccess('クーポン情報を更新しました');
       setTimeout(() => {
@@ -98,10 +98,10 @@ export default function CouponEditConfirmPage() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-900">クーポン変更内容確認</h1>
-            <p className="text-gray-600">
-              変更内容を確認してください
-            </p>
+              <h1 className="text-2xl font-bold text-gray-900">クーポン変更内容確認</h1>
+              <p className="text-gray-600">
+                変更内容を確認してください
+              </p>
             </div>
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">
@@ -126,7 +126,7 @@ export default function CouponEditConfirmPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 クーポン内容
               </label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{couponData.couponContent}</p>
+              <p className="text-base text-black bg-gray-50 p-2 rounded">{couponData.couponContent}</p>
             </div>
 
             {couponData.couponConditions && (
@@ -134,7 +134,7 @@ export default function CouponEditConfirmPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   利用条件
                 </label>
-                <p className="text-gray-900 bg-gray-50 p-2 rounded">{couponData.couponConditions}</p>
+                <p className="text-base text-black bg-gray-50 p-2 rounded">{couponData.couponConditions}</p>
               </div>
             )}
 

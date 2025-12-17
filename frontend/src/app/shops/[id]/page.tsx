@@ -14,7 +14,7 @@ export default function ShopDetailPage() {
   const params = useParams();
   const router = useRouter();
   const shopId = params.id as string;
-  
+
   const [shop, setShop] = useState<ShopDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +29,7 @@ export default function ShopDetailPage() {
         setIsLoading(true);
         setError(null);
         const data = await apiClient.getShop(shopId);
-        
+
         // コンポーネントがマウントされている場合のみ状態を更新
         if (isMounted) {
           setShop(data as ShopDetailResponse);
@@ -39,7 +39,7 @@ export default function ShopDetailPage() {
         if (err instanceof Error && err.name === 'AbortError') {
           return;
         }
-        
+
         if (isMounted) {
           console.error('Failed to fetch shop:', err);
           setError(err instanceof Error ? err.message : '店舗データの取得に失敗しました');
@@ -65,11 +65,11 @@ export default function ShopDetailPage() {
 
   const handleStatusChange = async (newStatus: string) => {
     if (!shop) return;
-    
+
     try {
       await apiClient.updateShopStatus(shop.id, { status: newStatus });
       showSuccess('ステータスを更新しました');
-      
+
       // データを再取得
       const data = await apiClient.getShop(shopId);
       setShop(data as ShopDetailResponse);
@@ -81,9 +81,9 @@ export default function ShopDetailPage() {
 
   const handleDeleteShop = async () => {
     if (!shop) return;
-    
+
     if (!confirm('この店舗を削除しますか？')) return;
-    
+
     try {
       await apiClient.deleteShop(shop.id);
       showSuccess('店舗を削除しました');
@@ -154,7 +154,7 @@ export default function ShopDetailPage() {
     <AdminLayout>
       <div className="space-y-6">
         <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
-        
+
         {/* ヘッダー */}
         <div className="flex justify-between items-center">
           <div>
@@ -188,42 +188,42 @@ export default function ShopDetailPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">店舗名</label>
               <div className="text-sm text-gray-900">{shop.name}</div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">店舗名（カナ）</label>
               <div className="text-sm text-gray-900">{shop.nameKana || '-'}</div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
               <div className="text-sm text-gray-900">{shop.accountEmail || '-'}</div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">電話番号</label>
               <div className="text-sm text-gray-900">{shop.phone}</div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">郵便番号</label>
               <div className="text-sm text-gray-900">{shop.postalCode ? `〒${shop.postalCode}` : '-'}</div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">住所</label>
               <div className="text-sm text-gray-900">{shop.address || '-'}</div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">緯度</label>
               <div className="text-sm text-gray-900">{shop.latitude || '-'}</div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">経度</label>
               <div className="text-sm text-gray-900">{shop.longitude || '-'}</div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
               <div className="flex items-center space-x-3">
@@ -252,12 +252,12 @@ export default function ShopDetailPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">詳細情報</label>
               <div className="text-sm text-gray-900 whitespace-pre-wrap">{shop.details || '-'}</div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">定休日</label>
               <div className="text-sm text-gray-900">{shop.holidays || '-'}</div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">喫煙タイプ</label>
               <div className="text-sm text-gray-900">{getSmokingLabel(shop.smokingType as string)}</div>
@@ -276,12 +276,21 @@ export default function ShopDetailPage() {
                 {('couponUsageStart' in shop && 'couponUsageEnd' in shop && shop.couponUsageStart && shop.couponUsageEnd) ? `${shop.couponUsageStart as string}〜${shop.couponUsageEnd as string}` : '-'}
               </div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">利用シーン</label>
               <div className="text-sm text-gray-900">
-                {shop.scenes && Array.isArray(shop.scenes) 
+                {shop.scenes && Array.isArray(shop.scenes)
                   ? shop.scenes.map(s => s.name).join(', ')
+                  : '-'}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">具体的な利用シーン</label>
+              <div className="text-sm text-gray-900">
+                {shop.customSceneText && shop.customSceneText.trim()
+                  ? shop.customSceneText
                   : '-'}
               </div>
             </div>
@@ -296,22 +305,22 @@ export default function ShopDetailPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">サイコイン決済</label>
               <div className="text-sm text-gray-900">{shop.paymentSaicoin ? '対応' : '非対応'}</div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">たまぽん決済</label>
               <div className="text-sm text-gray-900">{shop.paymentTamapon ? '対応' : '非対応'}</div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">現金決済</label>
               <div className="text-sm text-gray-900">{shop.paymentCash ? '対応' : '非対応'}</div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">クレジット決済</label>
               <div className="text-sm text-gray-900">{shop.paymentCredit || '-'}</div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">QRコード決済</label>
               <div className="text-sm text-gray-900">{shop.paymentCode || '-'}</div>
@@ -327,15 +336,26 @@ export default function ShopDetailPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">加盟店名</label>
               <div className="text-sm text-gray-900">{shop.merchant.name}</div>
             </div>
-            
+          </div>
+        </div>
+
+        {/* 担当者情報 */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">担当者情報</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">担当者名</label>
-              <div className="text-sm text-gray-900">{shop.merchant.name}</div>
+              <div className="text-sm text-gray-900">{shop.contactName || '-'}</div>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">担当者メール</label>
-              <div className="text-sm text-gray-900">{shop.merchant.account.email}</div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">担当者電話番号</label>
+              <div className="text-sm text-gray-900">{shop.contactPhone || '-'}</div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">担当者メールアドレス</label>
+              <div className="text-sm text-gray-900">{shop.contactEmail || '-'}</div>
             </div>
           </div>
         </div>
@@ -365,16 +385,16 @@ export default function ShopDetailPage() {
                     </th>
                   </tr>
                 </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {shop.coupons.map((coupon) => (
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {shop.coupons.map((coupon) => (
                     <tr key={coupon.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {coupon.title}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
+                      <td className="px-6 py-4 text-base text-black">
                         {coupon.description}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
+                      <td className="px-6 py-4 text-base text-black">
                         {coupon.conditions}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -401,7 +421,7 @@ export default function ShopDetailPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">作成日時</label>
               <div className="text-sm text-gray-900">{new Date(shop.createdAt).toLocaleString('ja-JP')}</div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">更新日時</label>
               <div className="text-sm text-gray-900">{new Date(shop.updatedAt).toLocaleString('ja-JP')}</div>

@@ -45,6 +45,9 @@ export interface ShopDataResponse extends ShopCreateRequest {
     name: string;
   };
   images?: string[];
+  contactName?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
 }
 
 export interface Genre {
@@ -69,6 +72,9 @@ export type ExtendedShopCreateRequest = ShopCreateRequest & {
   couponUsageStart?: string | null;
   couponUsageEnd?: string | null;
   couponUsageDays?: string | null;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
 };
 
 
