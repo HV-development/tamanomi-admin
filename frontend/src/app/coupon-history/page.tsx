@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname, useRouter, useParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Icon from '@/components/atoms/Icon';
+import Pagination from '@/components/molecules/Pagination';
 import { useAuth } from '@/components/contexts/auth-context';
 import CouponHistorySearchForm, { type CouponHistorySearchFormData } from '@/components/organisms/CouponHistorySearchForm';
 import CouponHistoryTable from '@/components/organisms/CouponHistoryTable';
@@ -72,12 +73,17 @@ export default function CouponHistoryPage() {
 
   const [pageTitle, setPageTitle] = useState('クーポン利用履歴');
   const [usages, setUsages] = useState<CouponUsage[]>([]);
-  const [filteredUsages, setFilteredUsages] = useState<CouponUsage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [_isFromCouponDetail, setIsFromCouponDetail] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isDownloadingCSV, setIsDownloadingCSV] = useState(false);
   const { toasts, removeToast, showSuccess, showError } = useToast();
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+  });
 
   // APIからデータを取得
   useEffect(() => {
@@ -91,6 +97,8 @@ export default function CouponHistoryPage() {
       search: appliedSearchForm,
       isSysAdmin,
       user: auth?.user?.id ?? auth?.user?.email ?? 'anonymous',
+      page: pagination.page,
+      limit: pagination.limit,
     });
 
     if (lastFetchKeyRef.current === key) {
@@ -103,7 +111,7 @@ export default function CouponHistoryPage() {
       setIsLoading(true);
       try {
         // セキュリティ改善：個人情報をクエリパラメータで送信しないため、POSTメソッドでボディに含めて送信
-        const searchBody: Record<string, string> = {};
+        const searchBody: Record<string, string | number> = {};
 
         // 遷移元に応じてパラメータを設定
         if (pathname.includes('/coupons/') && pathname.includes('/history')) {
@@ -134,6 +142,10 @@ export default function CouponHistoryPage() {
           searchBody.usedAtEnd = endDate.toISOString();
         }
 
+        // ページネーションパラメータを追加
+        searchBody.page = pagination.page;
+        searchBody.limit = pagination.limit;
+
         const data = await apiClient.getCouponUsageHistory(searchBody) as {
           history: Array<{
             id: string;
@@ -148,7 +160,13 @@ export default function CouponHistoryPage() {
             birthDate?: string;
             address?: string;
             usedAt: string;
-          }>
+          }>;
+          pagination?: {
+            page: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+          };
         };
         const formattedHistory = data.history.map((item) => ({
           id: item.id,
@@ -166,18 +184,25 @@ export default function CouponHistoryPage() {
         }));
 
         setUsages(formattedHistory);
-        setFilteredUsages(formattedHistory);
+        
+        // ページネーション情報を更新
+        if (data.pagination) {
+          setPagination(prev => ({
+            ...prev,
+            total: data.pagination?.total || 0,
+            pages: data.pagination?.totalPages || 0,
+          }));
+        }
       } catch (error) {
         console.error('利用履歴の取得に失敗しました:', error);
         setUsages([]);
-        setFilteredUsages([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchUsageHistory();
-  }, [pathname, appliedSearchForm, isSysAdmin, auth?.isLoading, auth?.user?.id, auth?.user?.email]);
+  }, [pathname, appliedSearchForm, isSysAdmin, auth?.isLoading, auth?.user?.id, auth?.user?.email, pagination.page, pagination.limit]);
 
   useEffect(() => {
     // 遷移元を判定してページタイトルを設定
@@ -193,27 +218,6 @@ export default function CouponHistoryPage() {
     }
   }, [pathname]);
 
-  // 検索条件の変更時にフィルタリング（クライアント側の追加フィルタリング）
-  useEffect(() => {
-    // APIから取得したデータをフィルタリング
-    const filtered = usages.filter((usage) => {
-      const matchesSearch =
-        (appliedSearchForm.usageId === '' || usage.id.toLowerCase().includes(appliedSearchForm.usageId.toLowerCase())) &&
-        (appliedSearchForm.couponId === '' || usage.couponId.toLowerCase().includes(appliedSearchForm.couponId.toLowerCase())) &&
-        (appliedSearchForm.couponName === '' || usage.couponName.toLowerCase().includes(appliedSearchForm.couponName.toLowerCase())) &&
-        (appliedSearchForm.shopName === '' || usage.shopName.toLowerCase().includes(appliedSearchForm.shopName.toLowerCase())) &&
-        (!appliedSearchForm.nickname || !usage.nickname || usage.nickname.toLowerCase().includes(appliedSearchForm.nickname.toLowerCase())) &&
-        (!appliedSearchForm.email || !usage.email || usage.email.toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
-        (!appliedSearchForm.gender || !usage.gender || usage.gender === appliedSearchForm.gender) &&
-        (!appliedSearchForm.birthDate || !usage.birthDate || usage.birthDate === appliedSearchForm.birthDate) &&
-        (!appliedSearchForm.address || !usage.address || usage.address.toLowerCase().includes(appliedSearchForm.address.toLowerCase()));
-
-      return matchesSearch;
-    });
-
-    setFilteredUsages(filtered);
-  }, [usages, appliedSearchForm]);
-
   const handleInputChange = useCallback((field: keyof CouponHistorySearchFormData, value: string) => {
     setSearchForm(prev => ({
       ...prev,
@@ -224,6 +228,8 @@ export default function CouponHistoryPage() {
   const handleSearch = useCallback(() => {
     // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
     setAppliedSearchForm({ ...searchForm });
+    // ページを1にリセット
+    setPagination(prev => ({ ...prev, page: 1 }));
     console.log('検索実行:', searchForm);
   }, [searchForm]);
 
@@ -243,6 +249,13 @@ export default function CouponHistoryPage() {
     };
     setSearchForm(emptyForm);
     setAppliedSearchForm(emptyForm);
+    // ページを1にリセット
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, []);
+
+  // ページ変更ハンドラー
+  const handlePageChange = useCallback((page: number) => {
+    setPagination(prev => ({ ...prev, page }));
   }, []);
 
   // 全データ取得関数（ページネーション対応、検索条件適用）
@@ -336,8 +349,8 @@ export default function CouponHistoryPage() {
 
         allUsages.push(...formattedHistory);
 
-        const pagination = data.pagination || {};
-        const totalPages = pagination.totalPages || 1;
+        const paginationData = data.pagination || {};
+        const totalPages = paginationData.totalPages || 1;
         hasMore = page < totalPages;
         page++;
 
@@ -365,21 +378,7 @@ export default function CouponHistoryPage() {
       }
     }
 
-    // フロントエンドのフィルタリングを適用
-    return allUsages.filter((usage) => {
-      const matchesSearch =
-        (appliedSearchForm.usageId === '' || usage.id.toLowerCase().includes(appliedSearchForm.usageId.toLowerCase())) &&
-        (appliedSearchForm.couponId === '' || usage.couponId.toLowerCase().includes(appliedSearchForm.couponId.toLowerCase())) &&
-        (appliedSearchForm.couponName === '' || usage.couponName.toLowerCase().includes(appliedSearchForm.couponName.toLowerCase())) &&
-        (appliedSearchForm.shopName === '' || usage.shopName.toLowerCase().includes(appliedSearchForm.shopName.toLowerCase())) &&
-        (!appliedSearchForm.nickname || !usage.nickname || usage.nickname.toLowerCase().includes(appliedSearchForm.nickname.toLowerCase())) &&
-        (!appliedSearchForm.email || !usage.email || usage.email.toLowerCase().includes(appliedSearchForm.email.toLowerCase())) &&
-        (!appliedSearchForm.gender || !usage.gender || usage.gender === appliedSearchForm.gender) &&
-        (!appliedSearchForm.birthDate || !usage.birthDate || usage.birthDate === appliedSearchForm.birthDate) &&
-        (!appliedSearchForm.address || !usage.address || usage.address.toLowerCase().includes(appliedSearchForm.address.toLowerCase()));
-
-      return matchesSearch;
-    });
+    return allUsages;
   };
 
   // 全データをCSVダウンロード
@@ -466,13 +465,23 @@ export default function CouponHistoryPage() {
           />
         )}
 
+        {/* ページネーション */}
+        {pagination.pages > 1 && (
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.pages}
+            onPageChange={handlePageChange}
+          />
+        )}
+
         {/* クーポン利用履歴一覧 */}
         <CouponHistoryTable
-          usages={filteredUsages}
+          usages={usages}
           isLoading={isLoading}
           isSysAdmin={isSysAdmin}
           isDownloadingCSV={isDownloadingCSV}
           pathname={pathname}
+          total={pagination.total}
           onDownloadAllCSV={handleDownloadAllCSV}
         />
       </div>

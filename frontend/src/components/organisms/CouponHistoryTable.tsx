@@ -25,6 +25,7 @@ interface CouponHistoryTableProps {
   isSysAdmin: boolean;
   isDownloadingCSV: boolean;
   pathname: string;
+  total: number;
   onDownloadAllCSV: () => void;
 }
 
@@ -47,6 +48,7 @@ export default function CouponHistoryTable({
   isSysAdmin,
   isDownloadingCSV,
   pathname,
+  total,
   onDownloadAllCSV,
 }: CouponHistoryTableProps) {
   const getGenderLabel = (gender?: string) => {
@@ -74,12 +76,12 @@ export default function CouponHistoryTable({
             ? 'クーポン利用履歴'
             : isUserHistoryView
               ? 'クーポン利用履歴'
-              : 'クーポン利用履歴一覧'} ({usages.length}件)
+              : 'クーポン利用履歴一覧'} ({total}件)
         </h3>
         <Button
           variant="outline"
           onClick={onDownloadAllCSV}
-          disabled={isDownloadingCSV || usages.length === 0}
+          disabled={isDownloadingCSV || total === 0}
           className="bg-white text-blue-600 border-blue-600 hover:bg-blue-50 cursor-pointer"
         >
           {isDownloadingCSV ? 'ダウンロード中...' : 'CSVダウンロード'}
