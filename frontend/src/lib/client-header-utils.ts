@@ -65,3 +65,4 @@ export function buildFormDataHeaders(
     setContentType: false, // FormDataの場合はContent-Typeを設定しない
   })
 }
+
