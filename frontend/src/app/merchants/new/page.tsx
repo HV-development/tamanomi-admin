@@ -45,7 +45,7 @@ export default function MerchantNewPage() {
     city: '',
     address1: '',
     address2: '',
-    applications: ['たまのみ'], // デフォルトで'たまのみ'を設定
+    applicationId: '', // アプリケーションIDは空（APIで自動設定）
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -77,7 +77,7 @@ export default function MerchantNewPage() {
   const handleInputChange = (field: keyof (MerchantFormData & { email: string }), value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     
-    // リアルタイムバリデーション（emailとapplicationsフィールドは個別にバリデーション）
+    // リアルタイムバリデーション（emailフィールドは個別にバリデーション）
     if (field === 'email') {
       // emailの簡易バリデーション
       if (!value.trim()) {
@@ -91,19 +91,7 @@ export default function MerchantNewPage() {
           return newErrors;
         });
       }
-    } else if (field === 'applications') {
-      // applicationsフィールドの簡易バリデーション
-      const apps = value.split(',').filter(app => app.trim() !== '');
-      if (apps.length === 0) {
-        setErrors((prev) => ({ ...prev, applications: '少なくとも1つのアプリケーションを選択してください' }));
-      } else {
-        setErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors.applications;
-          return newErrors;
-        });
-      }
-    } else {
+    } else if (field !== 'applicationId') {
       const error = validateMerchantField(field, value || '');
       if (error) {
         setErrors((prev) => ({ ...prev, [field]: error }));
@@ -134,7 +122,7 @@ export default function MerchantNewPage() {
           return newErrors;
         });
       }
-    } else if (field !== 'applications') {
+    } else if (field !== 'applicationId') {
       const error = validateMerchantField(field as keyof MerchantFormData, (value as string) || '');
       if (error) {
         setErrors((prev) => ({ ...prev, [field]: error }));
@@ -189,12 +177,6 @@ export default function MerchantNewPage() {
       hasErrors = true;
     }
 
-    // applicationsフィールドのバリデーション
-    if (!formData.applications || formData.applications.length === 0) {
-      fieldErrors.applications = '少なくとも1つのアプリケーションを選択してください';
-      hasErrors = true;
-    }
-
     if (hasErrors) {
       setErrors(fieldErrors);
       return false;
@@ -233,7 +215,6 @@ export default function MerchantNewPage() {
         city: formData.city,
         address1: formData.address1,
         address2: formData.address2 || undefined,
-        applications: formData.applications.length > 0 ? formData.applications : ['たまのみ'], // デフォルトで'たまのみ'を設定
         issueAccount, // アカウント発行フラグ
       };
 
