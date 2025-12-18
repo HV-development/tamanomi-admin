@@ -68,7 +68,7 @@ function VerifyEmailChangeContent() {
         <div className="bg-white p-8 rounded-lg shadow-md">
           {status === 'loading' && (
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
               <p className="text-gray-600">確認中...</p>
             </div>
           )}
@@ -91,7 +91,7 @@ function VerifyEmailChangeContent() {
               </p>
               <button
                 onClick={() => router.push('/login')}
-                className="w-full inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 px-4 py-2 text-sm border border-transparent bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
+                className="w-full inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 px-4 py-2 text-sm border border-transparent bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary"
               >
                 ログインページへ
               </button>
@@ -129,7 +129,7 @@ export default function VerifyEmailChangePage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     }>
       <VerifyEmailChangeContent />

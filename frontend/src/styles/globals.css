@@ -33,6 +33,16 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
+  /* 入力フィールドのテキストカラーを黒に */
+  input,
+  textarea,
+  select {
+    color: #000000;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: #9ca3af;
+  }
 }
 
 /* Material Symbols Outlined */

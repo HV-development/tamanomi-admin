@@ -61,6 +61,8 @@ export async function POST(request: NextRequest) {
     // セキュリティ改善：個人情報をクエリパラメータで送信しないため、POSTメソッドでボディに含めて送信
     const body = await request.json().catch(() => ({}));
     
+    // アプリケーションフィルタリングはバックエンドでX-Forwarded-Hostから自動判定
+    
     const fullUrl = `${API_BASE_URL}/admin/users`;
     console.log('🔗 API Route: Posting to', fullUrl);
 

@@ -8,7 +8,11 @@ export async function GET(request: NextRequest) {
   try {
     // URLからクエリパラメータを取得
     const url = new URL(request.url);
-    const queryString = url.search; // ?search=xxx&page=1 など
+    const queryParams = new URLSearchParams(url.search);
+    
+    // アプリケーションフィルタリングはバックエンドでX-Forwarded-Hostから自動判定
+    
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
     
     console.log('🌐 API Route: 事業者一覧取得リクエスト受信');
     console.log('🔗 API Route: API_BASE_URL:', API_BASE_URL);

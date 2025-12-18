@@ -20,6 +20,8 @@ export async function GET(request: NextRequest) {
     if (!queryParams.has('page')) queryParams.append('page', '1');
     if (!queryParams.has('limit')) queryParams.append('limit', '10');
     
+    // アプリケーションフィルタリングはバックエンドでX-Forwarded-Hostから自動判定
+    
     const fullUrl = `${API_BASE_URL}/shops?${queryParams.toString()}`;
     console.log('🔗 API Route: Fetching from', fullUrl);
     console.log('🔑 API Route: API_BASE_URL', API_BASE_URL);

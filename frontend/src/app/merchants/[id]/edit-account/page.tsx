@@ -327,7 +327,7 @@ export default function MerchantAccountEditPage() {
     return (
       <AdminLayout>
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">読み込み中...</p>
         </div>
       </AdminLayout>
@@ -418,7 +418,7 @@ export default function MerchantAccountEditPage() {
                     value={emailFormData.newEmail}
                     onChange={(e) => handleEmailInputChange('newEmail', e.target.value)}
                     onBlur={() => handleEmailBlur('newEmail')}
-                    className={`w-full max-w-md px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    className={`w-full max-w-md px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
                       emailErrors.newEmail ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="新しいメールアドレスを入力"
@@ -440,7 +440,7 @@ export default function MerchantAccountEditPage() {
                     value={emailFormData.confirmEmail}
                     onChange={(e) => handleEmailInputChange('confirmEmail', e.target.value)}
                     onBlur={() => handleEmailBlur('confirmEmail')}
-                    className={`w-full max-w-md px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    className={`w-full max-w-md px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
                       emailErrors.confirmEmail ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="確認のため再度入力"
@@ -462,7 +462,7 @@ export default function MerchantAccountEditPage() {
                     value={emailFormData.currentPassword}
                     onChange={(e) => handleEmailInputChange('currentPassword', e.target.value)}
                     onBlur={() => handleEmailBlur('currentPassword')}
-                    className={`w-full max-w-md px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    className={`w-full max-w-md px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
                       emailErrors.currentPassword ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="セキュリティのため現在のパスワードを入力"
@@ -476,7 +476,7 @@ export default function MerchantAccountEditPage() {
                   <button
                     type="submit"
                     disabled={isEmailSubmitting}
-                    className="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm border border-transparent bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
+                    className="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm border border-transparent bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary"
                   >
                     {isEmailSubmitting ? '送信中...' : '確認メールを送信'}
                   </button>
@@ -504,7 +504,7 @@ export default function MerchantAccountEditPage() {
                   value={passwordFormData.newPassword}
                   onChange={(e) => handlePasswordInputChange('newPassword', e.target.value)}
                   onBlur={() => handlePasswordBlur('newPassword')}
-                  className={`w-full max-w-md px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  className={`w-full max-w-md px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
                     passwordErrors.newPassword ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="新しいパスワードを入力"
@@ -530,7 +530,7 @@ export default function MerchantAccountEditPage() {
                   value={passwordFormData.confirmPassword}
                   onChange={(e) => handlePasswordInputChange('confirmPassword', e.target.value)}
                   onBlur={() => handlePasswordBlur('confirmPassword')}
-                  className={`w-full max-w-md px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  className={`w-full max-w-md px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
                     passwordErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="確認のため再度入力"
@@ -544,7 +544,7 @@ export default function MerchantAccountEditPage() {
                 <button
                   type="submit"
                   disabled={isPasswordSubmitting}
-                  className="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm border border-transparent bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
+                  className="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm border border-transparent bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary"
                 >
                   {isPasswordSubmitting ? '更新中...' : 'パスワードを更新'}
                 </button>
