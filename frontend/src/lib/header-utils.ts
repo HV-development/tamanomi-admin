@@ -126,6 +126,13 @@ export function buildCommonHeaders(
   const requestId = randomUUID()
   headers['X-Request-ID'] = requestId
 
+  // X-Forwarded-Hostヘッダーを追加（バックエンドでのアプリケーション判定用）
+  // 実際のリクエストのHostヘッダーを転送
+  const host = request.headers.get('host')
+  if (host) {
+    headers['X-Forwarded-Host'] = host
+  }
+
   // カスタムヘッダーをマージ（後から追加されたヘッダーが優先）
   Object.assign(headers, customHeaders)
 
@@ -148,3 +155,5 @@ export function buildCommonHeadersWithoutAuth(
     requireAuth: false,
   })
 }
+
+

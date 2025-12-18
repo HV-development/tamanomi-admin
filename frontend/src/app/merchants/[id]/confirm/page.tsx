@@ -6,11 +6,14 @@ import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { type MerchantEditConfirmationData } from '@hv-development/schemas';
+import { useToast } from '@/hooks/use-toast';
+import ToastContainer from '@/components/molecules/toast-container';
 
 export default function MerchantEditConfirmPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const merchantId = params.id as string;
+  const { toasts, removeToast, showSuccess, showError } = useToast();
   
   const [formData, setFormData] = useState<MerchantEditConfirmationData>({
     name: '',
@@ -48,11 +51,11 @@ export default function MerchantEditConfirmPage() {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // 成功時の処理（実際の実装では適切なページにリダイレクト）
-      alert('事業者の更新が完了しました。');
+      showSuccess('事業者の更新が完了しました。');
       
     } catch (error) {
       console.error('更新エラー:', error);
-      alert('更新中にエラーが発生しました。');
+      showError('更新中にエラーが発生しました。');
     } finally {
       setIsSubmitting(false);
     }
@@ -217,6 +220,7 @@ export default function MerchantEditConfirmPage() {
           </Button>
         </div>
       </div>
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
   );
 }

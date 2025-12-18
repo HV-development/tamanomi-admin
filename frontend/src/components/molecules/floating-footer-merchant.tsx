@@ -1,8 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Button from '@/components/atoms/Button';
-import BulkIssueAccountConfirmModal from './bulk-issue-account-confirm-modal';
+
+// 動的インポート：確認時のみ表示されるモーダル
+const BulkIssueAccountConfirmModal = dynamic(() => import('./bulk-issue-account-confirm-modal'), {
+  ssr: false,
+});
 
 interface FloatingFooterMerchantProps {
   selectedCount: number;

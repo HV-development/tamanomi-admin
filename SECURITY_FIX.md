@@ -112,3 +112,4 @@ GET /_next/image?url=../tamanomi_logo.svg&w=32&q=75
 
 `unoptimized: true`を設定し、`public`ディレクトリからの直接配信に変更することで、`/_next/image`エンドポイントを使用しないため、パストラバーサル攻撃のリスクが解消されました。この方式は、Next.jsの標準機能を活用した安全でシンプルな実装です。
 
+

@@ -83,12 +83,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     () => (params.shopId || (!propMerchantId ? params.id : undefined)) as string | undefined,
     [params.shopId, params.id, propMerchantId]
   );
-
+  
   const merchantIdFromParams = useMemo(
     () => params.id as string,
     [params.id]
   );
-
+  
   const isEdit = useMemo(() => !!shopId, [shopId]);
 
   // merchantIdの決定（props > URLパラメータ）
@@ -96,7 +96,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     () => propMerchantId || merchantIdFromParams,
     [propMerchantId, merchantIdFromParams]
   );
-
+  
   const returnToParam = searchParamsHook?.get('returnTo') || null;
   const decodedReturnTo = useMemo(() => {
     if (!returnToParam) return null;
@@ -146,9 +146,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     paymentCash: true,
     paymentCredit: '',
     paymentCode: '',
-    contactName: '',
-    contactPhone: '',
-    contactEmail: '',
     status: 'registering',
     createAccount: false,
     password: '',
@@ -306,9 +303,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           promises.push(myMerchantPromise);
         }
 
-        // 加盟店一覧を取得（管理者アカウントの場合のみ）
+        // 加盟店一覧を取得（adminアカウントの場合のみ）
         let merchantsPromise: Promise<unknown> | null = null;
-        if (!isMerchantAccount) {
+        if (isAdminAccount) {
           merchantsPromise = apiClient.getMerchants();
           promises.push(merchantsPromise);
         }
@@ -356,8 +353,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           }
         }
 
-        // 管理者アカウントの場合
-        if (!isMerchantAccount && merchantsPromise) {
+        // adminアカウントの場合
+        if (isAdminAccount && merchantsPromise) {
           const result = results[resultIndex++];
           if (result.status === 'fulfilled') {
             const merchantsData = result.value;
@@ -422,10 +419,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               // latitude/longitudeを文字列に変換
               latitude: shopData.latitude ? String(shopData.latitude) : '',
               longitude: shopData.longitude ? String(shopData.longitude) : '',
-              // 担当者情報を明示的に設定
-              contactName: shopData.contactName ?? null,
-              contactPhone: shopData.contactPhone ?? null,
-              contactEmail: shopData.contactEmail ?? null,
             });
 
             // 編集モード時は必須フィールドを最初から touched として設定
@@ -567,7 +560,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       isMounted = false;
       abortController.abort();
     };
-  }, [shopId, isEdit, merchantId, showError, isMerchantAccount]);
+  }, [shopId, isEdit, merchantId, showError, isMerchantAccount, isAdminAccount]);
 
   // formData.merchantIdが変更されたときに加盟店名とaccountEmailを更新
   useEffect(() => {
@@ -649,7 +642,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     // カンマが含まれている場合は緯度経度として処理
     if (pastedText.includes(',')) {
       e.preventDefault(); // デフォルトの貼り付け動作を防ぐ
-
+      
       const parts = pastedText.split(',').map(part => part.trim());
       if (parts.length === 2) {
         const [lat, lng] = parts;
@@ -707,7 +700,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       address1,
       address2,
     ].filter(Boolean);
-
+    
     const address = addressParts.join(' ');
 
     // Google Mapsで住所検索を開く（検索ボックスに入力された状態、最大ズーム）
@@ -732,17 +725,17 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       // 「その他」シーンの選択状態を確認
       const otherScene = scenes.find(s => s.name === 'その他');
       const isOtherSceneSelected = otherScene && selectedScenes.includes(otherScene.id);
-
+      
       const paymentCreditJson = selectedCreditBrands.length > 0 ? {
         brands: selectedCreditBrands.filter(b => b !== 'その他'),
         ...(isCreditOtherSelected && customCreditText && { other: customCreditText })
       } : null;
-
+      
       const paymentCodeJson = selectedQrBrands.length > 0 ? {
         services: selectedQrBrands.filter(s => s !== 'その他'),
         ...(isQrOtherSelected && customQrText && { other: customQrText })
       } : null;
-
+      
       const dataToValidate = {
         ...formData,
         // 空文字列の場合はnullに変換（zodのバリデーションに対応）
@@ -864,19 +857,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customErrors.details = '詳細情報は1000文字以内で入力してください';
       }
 
-      // 担当者情報のバリデーション
-      if (formData.contactName && formData.contactName.length > 100) {
-        customErrors.contactName = '担当者名は100文字以内で入力してください';
-      }
-
-      if (formData.contactPhone && formData.contactPhone.trim().length > 0 && !isValidPhone(formData.contactPhone)) {
-        customErrors.contactPhone = '有効な電話番号を入力してください（10-11桁の数字）';
-      }
-
-      if (formData.contactEmail && formData.contactEmail.trim().length > 0 && !isValidEmail(formData.contactEmail)) {
-        customErrors.contactEmail = '有効なメールアドレスを入力してください';
-      }
-
       // クレジットカード「その他」のテキストボックス必須チェック
       if (isCreditOtherSelected && (!customCreditText || customCreditText.trim().length === 0)) {
         customErrors.customCreditText = 'その他のクレジットカードブランド名を入力してください';
@@ -985,7 +965,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         formData.address1,
         formData.address2
       ].filter(Boolean).join('');
-
+      
       // 画像URLを結合（既存画像 + 新規アップロード画像）
       const allImageUrls = [...existingImages, ...uploadedImageUrls];
       // 画面上の既存画像も即時更新（古い世代で404になるのを避ける）
@@ -1026,9 +1006,6 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         couponUsageStart: normalizedCouponStart,
         couponUsageEnd: normalizedCouponEnd,
         couponUsageDays: normalizedCouponDays,
-        contactName: formData.contactName && formData.contactName.trim() !== '' ? formData.contactName.trim() : null,
-        contactPhone: formData.contactPhone && formData.contactPhone.trim() !== '' ? formData.contactPhone.trim() : null,
-        contactEmail: formData.contactEmail && formData.contactEmail.trim() !== '' ? formData.contactEmail.trim() : null,
       };
 
       if (isEdit && shopId) {
@@ -1042,7 +1019,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       } else {
         // 新規作成時は店舗を先に作成
         const createdShop = await apiClient.createShop(submitData) as { id: string; merchantId: string };
-
+        
         // 作成された店舗のIDを使って画像をアップロード
         // merchantIdはcreatedShopから取得（formData.merchantIdが空の場合でも対応）
         const targetMerchantId = createdShop?.merchantId || formData.merchantId;
@@ -1170,27 +1147,81 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
           </div>
         </div>
       ) : (
-        <form
-          noValidate
-          onSubmit={(e) => {
-            handleSubmit(e);
-          }}
-          className="space-y-6"
-        >
-          {/* 基本情報 */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">基本情報</h2>
-            <div className="space-y-4">
-              <div className="w-full" data-field="merchantId">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  事業者名 <span className="text-red-500">*</span>
-                </label>
-                {isMerchantAccount ? (
-                  // 事業者アカウントの場合は事業者名を固定表示（親事業者からコピーボタン付き）
-                  <div>
-                    <div className="text-gray-900 mb-2">
-                      {merchantName || '読み込み中...'}
-                    </div>
+      <form 
+        noValidate
+        onSubmit={(e) => {
+          handleSubmit(e);
+        }} 
+        className="space-y-6"
+      >
+        {/* 基本情報 */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">基本情報</h2>
+          <div className="space-y-4">
+            <div className="w-full" data-field="merchantId">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                事業者名 <span className="text-red-500">*</span>
+              </label>
+              {isMerchantAccount ? (
+                // 事業者アカウントの場合は事業者名を固定表示（親事業者からコピーボタン付き）
+                <div>
+                  <div className="text-gray-900 mb-2">
+                    {merchantName || '読み込み中...'}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // 親事業者の情報を取得
+                      const merchant = merchants.find(m => m.id === formData.merchantId);
+                      if (merchant) {
+                        // 親事業者の情報をフォームに反映
+                        setFormData(prev => {
+                          const newFormData = {
+                            ...prev,
+                            // 店舗名（事業者名をそのまま使用）
+                            name: merchant.name,
+                            // 店舗名（カナ）
+                            nameKana: merchant.nameKana,
+                            // 電話番号
+                            phone: merchant.representativePhone || '',
+                            // 郵便番号
+                            postalCode: merchant.postalCode || '',
+                            // 都道府県
+                            prefecture: merchant.prefecture || '',
+                            // 市区町村
+                            city: merchant.city || '',
+                            // 番地以降
+                            address1: merchant.address1 || '',
+                            // 建物名
+                            address2: merchant.address2 || ''
+                          };
+
+                          return newFormData;
+                        });
+                      }
+                    }}
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    親事業者からコピー
+                  </button>
+                </div>
+              ) : (propMerchantId || merchantIdFromParams) ? (
+                <div>
+                  <div className="text-gray-900 mb-2">
+                    {merchantName || '読み込み中...'}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsMerchantModalOpen(true)}
+                      className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
+                      title="事業者を変更"
+                    >
+                      事業者を変更
+                    </button>
                     <button
                       type="button"
                       onClick={() => {
@@ -1231,134 +1262,22 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                       親事業者からコピー
                     </button>
                   </div>
-                ) : (propMerchantId || merchantIdFromParams) ? (
-                  <div>
-                    <div className="text-gray-900 mb-2">
-                      {merchantName || '読み込み中...'}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setIsMerchantModalOpen(true)}
-                        className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
-                        title="事業者を変更"
-                      >
-                        事業者を変更
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          // 親事業者の情報を取得
-                          const merchant = merchants.find(m => m.id === formData.merchantId);
-                          if (merchant) {
-                            // 親事業者の情報をフォームに反映
-                            setFormData(prev => {
-                              const newFormData = {
-                                ...prev,
-                                // 店舗名（事業者名をそのまま使用）
-                                name: merchant.name,
-                                // 店舗名（カナ）
-                                nameKana: merchant.nameKana,
-                                // 電話番号
-                                phone: merchant.representativePhone || '',
-                                // 郵便番号
-                                postalCode: merchant.postalCode || '',
-                                // 都道府県
-                                prefecture: merchant.prefecture || '',
-                                // 市区町村
-                                city: merchant.city || '',
-                                // 番地以降
-                                address1: merchant.address1 || '',
-                                // 建物名
-                                address2: merchant.address2 || ''
-                              };
-
-                              return newFormData;
-                            });
-                          }
-                        }}
-                        className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        親事業者からコピー
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    {merchantName ? (
-                      <div>
-                        <div className="text-gray-900 mb-2">
-                          {merchantName}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setIsMerchantModalOpen(true)}
-                            className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
-                            title="事業者を変更"
-                          >
-                            事業者を変更
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              // 親事業者の情報を取得
-                              const merchant = merchants.find(m => m.id === formData.merchantId);
-                              if (merchant) {
-                                // 親事業者の情報をフォームに反映
-                                setFormData(prev => {
-                                  const newFormData = {
-                                    ...prev,
-                                    // 店舗名（事業者名をそのまま使用）
-                                    name: merchant.name,
-                                    // 店舗名（カナ）
-                                    nameKana: merchant.nameKana,
-                                    // 電話番号
-                                    phone: merchant.representativePhone || '',
-                                    // 郵便番号
-                                    postalCode: merchant.postalCode || '',
-                                    // 都道府県
-                                    prefecture: merchant.prefecture || '',
-                                    // 市区町村
-                                    city: merchant.city || '',
-                                    // 番地以降
-                                    address1: merchant.address1 || '',
-                                    // 建物名
-                                    address2: merchant.address2 || ''
-                                  };
-
-                                  return newFormData;
-                                });
-                              }
-                            }}
-                            className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                            親事業者からコピー
-                          </button>
-                        </div>
+                </div>
+              ) : (
+                <div>
+                  {merchantName ? (
+                    <div>
+                      <div className="text-gray-900 mb-2">
+                        {merchantName}
                       </div>
-                    ) : (
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => {
-                            setIsMerchantModalOpen(true);
-                            // モーダルを開いたことをタッチとして記録
-                            setTouchedFields(prev => ({
-                              ...prev,
-                              merchantId: true,
-                            }));
-                          }}
-                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
-                          title="事業者を選択"
+                          onClick={() => setIsMerchantModalOpen(true)}
+                          className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
+                          title="事業者を変更"
                         >
-                          事業者を選択
+                          事業者を変更
                         </button>
                         <button
                           type="button"
@@ -1400,699 +1319,709 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                           親事業者からコピー
                         </button>
                       </div>
-                    )}
-                    <ErrorMessage message={validationErrors.merchantId} />
-                  </div>
-                )}
-              </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMerchantModalOpen(true);
+                          // モーダルを開いたことをタッチとして記録
+                          setTouchedFields(prev => ({
+                            ...prev,
+                            merchantId: true,
+                          }));
+                        }}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
+                        title="事業者を選択"
+                      >
+                        事業者を選択
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // 親事業者の情報を取得
+                          const merchant = merchants.find(m => m.id === formData.merchantId);
+                          if (merchant) {
+                            // 親事業者の情報をフォームに反映
+                            setFormData(prev => {
+                              const newFormData = {
+                                ...prev,
+                                // 店舗名（事業者名をそのまま使用）
+                                name: merchant.name,
+                                // 店舗名（カナ）
+                                nameKana: merchant.nameKana,
+                                // 電話番号
+                                phone: merchant.representativePhone || '',
+                                // 郵便番号
+                                postalCode: merchant.postalCode || '',
+                                // 都道府県
+                                prefecture: merchant.prefecture || '',
+                                // 市区町村
+                                city: merchant.city || '',
+                                // 番地以降
+                                address1: merchant.address1 || '',
+                                // 建物名
+                                address2: merchant.address2 || ''
+                              };
 
-              <div className="w-1/2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  店舗名 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  onBlur={(e) => handleFieldBlur('name', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${validationErrors.name
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                  maxLength={100}
-                  required
-                />
-                <ErrorMessage message={validationErrors.name} field="name" />
-                <p className="mt-1 text-xs text-gray-500 text-right">
-                  {formData.name.length} / 100文字
-                </p>
-              </div>
-
-              <div className="w-1/2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  店舗名（カナ）
-                </label>
-                <input
-                  type="text"
-                  name="nameKana"
-                  value={formData.nameKana}
-                  onChange={(e) => handleInputChange('nameKana', e.target.value)}
-                  onBlur={(e) => handleFieldBlur('nameKana', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${validationErrors.nameKana
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                  maxLength={100}
-                  placeholder="例: タマノミショクドウ"
-                />
-                <ErrorMessage message={validationErrors.nameKana} />
-                <p className="mt-1 text-xs text-gray-500 text-right">
-                  {(formData.nameKana || '').length} / 100文字
-                </p>
-              </div>
-
-              <div className="w-1/4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  電話番号 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={(e) => {
-                    // 数値のみ許可
-                    const value = e.target.value.replace(/[^0-9]/g, '');
-                    handleInputChange('phone', value);
-                  }}
-                  onBlur={(e) => handleFieldBlur('phone', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${validationErrors.phone
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                  required
-                  placeholder="例: 0312345678（ハイフンなし）"
-                  maxLength={11}
-                />
-                <ErrorMessage message={validationErrors.phone} />
-              </div>
-
-              {/* 郵便番号と住所検索 */}
-              <div className="flex gap-4">
-                <div className="w-32">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    郵便番号 <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="postalCode"
-                    value={formData.postalCode}
-                    onChange={(e) => {
-                      // 数値のみ許可
-                      const value = e.target.value.replace(/[^0-9]/g, '');
-                      handleInputChange('postalCode', value);
-                    }}
-                    onBlur={(e) => handleFieldBlur('postalCode', e.target.value)}
-                    onKeyDown={(e) => {
-                      // Enterキーが押された場合は住所検索を実行
-                      if (e.key === 'Enter') {
-                        e.preventDefault(); // フォーム送信を防ぐ
-                        handleZipcodeSearch();
-                      }
-                    }}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${validationErrors.postalCode
-                      ? 'border-red-500 focus:ring-red-500'
-                      : 'border-gray-300 focus:ring-blue-500'
-                      }`}
-                    placeholder="1234567"
-                    maxLength={7}
-                    required
-                  />
-                  <ErrorMessage message={validationErrors.postalCode} />
-                </div>
-                <div className="flex items-end">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleZipcodeSearch}
-                    disabled={formData.postalCode.length !== 7 || isSearchingAddress}
-                    className="w-32"
-                  >
-                    {isSearchingAddress ? '検索中...' : '住所検索'}
-                  </Button>
-                </div>
-              </div>
-
-              {/* 都道府県 */}
-              <div className="w-60">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  都道府県 <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="prefecture"
-                  value={formData.prefecture}
-                  onChange={(e) => handleInputChange('prefecture', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${validationErrors.prefecture
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                  required
-                >
-                  <option value="">都道府県を選択</option>
-                  {PREFECTURES.map(pref => (
-                    <option key={pref} value={pref}>{pref}</option>
-                  ))}
-                </select>
-                <ErrorMessage message={validationErrors.prefecture} />
-              </div>
-
-              {/* 市区町村 */}
-              <div className="max-w-md">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  市区町村 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={(e) => handleInputChange('city', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${validationErrors.city
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                  placeholder="市区町村を入力してください"
-                  required
-                />
-                <ErrorMessage message={validationErrors.city} />
-              </div>
-
-              {/* 番地以降 */}
-              <div className="max-w-lg">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  番地以降 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="address1"
-                  value={formData.address1}
-                  onChange={(e) => handleInputChange('address1', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${validationErrors.address1
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                  placeholder="番地以降を入力してください"
-                  required
-                />
-                <ErrorMessage message={validationErrors.address1} />
-              </div>
-
-              {/* 建物名 / 部屋番号 */}
-              <div className="max-w-lg">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  建物名 / 部屋番号
-                </label>
-                <input
-                  type="text"
-                  value={formData.address2}
-                  onChange={(e) => handleInputChange('address2', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="建物名 / 部屋番号を入力してください（任意）"
-                />
-              </div>
-
-              {/* 緯度・経度 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  緯度・経度 <span className="text-red-500">*</span>
-                </label>
-                <div className="flex gap-2 items-start">
-                  <div className="w-48">
-                    <input
-                      type="text"
-                      name="latitude"
-                      value={formData.latitude}
-                      onChange={(e) => handleInputChange('latitude', e.target.value)}
-                      onBlur={(e) => handleFieldBlur('latitude', e.target.value)}
-                      onPaste={handleCoordinatesPaste}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${validationErrors.latitude
-                        ? 'border-red-500 focus:ring-red-500'
-                        : 'border-gray-300 focus:ring-blue-500'
-                        }`}
-                      placeholder="緯度（例: 35.681236）"
-                      required
-                    />
-                    <ErrorMessage message={validationErrors.latitude} field="latitude" />
-                  </div>
-                  <div className="w-48">
-                    <input
-                      type="text"
-                      name="longitude"
-                      value={formData.longitude}
-                      onChange={(e) => handleInputChange('longitude', e.target.value)}
-                      onBlur={(e) => handleFieldBlur('longitude', e.target.value)}
-                      onPaste={handleCoordinatesPaste}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${validationErrors.longitude
-                        ? 'border-red-500 focus:ring-red-500'
-                        : 'border-gray-300 focus:ring-blue-500'
-                        }`}
-                      placeholder="経度（例: 139.767125）"
-                      required
-                    />
-                    <ErrorMessage message={validationErrors.longitude} field="longitude" />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={openGoogleMapsForAddress}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap"
-                  >
-                    地図で確認
-                  </button>
-                </div>
-                <div className="mt-2 text-xs text-gray-500">
-                  <p className="font-semibold mb-1">座標取得手順：</p>
-                  <ol className="list-decimal list-inside space-y-1 ml-2">
-                    <li>「地図で確認」ボタンをクリック</li>
-                    <li>Google Mapで<span className="font-semibold text-gray-700">検索ボタンをクリック</span>してピンを表示</li>
-                    <li>地図上で場所を右クリック → 緯度経度をコピー</li>
-                    <li>緯度または経度欄に貼り付け（カンマ区切りで自動的に分割されます）</li>
-                  </ol>
-                </div>
-                {formData.latitude && formData.longitude && (
-                  <div className="mt-2">
-                    <a
-                      href={`https://www.google.com/maps/@${formData.latitude},${formData.longitude},21z/data=!3m1!1e3`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                    >
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      入力された座標をGoogle Mapで確認
-                    </a>
-                  </div>
-                )}
-              </div>
-
-              {/* ステータス（編集時のみ表示） */}
-              {isEdit && (
-                <div className="w-64">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    ステータス
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => handleInputChange('status', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="registering">登録中</option>
-                    <option value="collection_requested">情報収集依頼済み</option>
-                    <option value="approval_pending">承認待ち</option>
-                    <option value="promotional_materials_preparing">宣材準備中</option>
-                    <option value="promotional_materials_shipping">宣材発送中</option>
-                    <option value="operating">営業中</option>
-                    <option value="suspended">停止中</option>
-                    <option value="terminated">終了</option>
-                  </select>
+                              return newFormData;
+                            });
+                          }
+                        }}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        親事業者からコピー
+                      </button>
+                    </div>
+                  )}
+                  <ErrorMessage message={validationErrors.merchantId} />
                 </div>
               )}
             </div>
-          </div>
 
-          {/* ジャンル */}
-          <div className="bg-white rounded-lg shadow p-6" data-field="genreId">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">ジャンル <span className="text-red-500">*</span></h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {genres.map((genre) => (
-                <label
-                  key={genre.id}
-                  className="flex items-center space-x-2 cursor-pointer"
-                >
-                  <input
-                    type="radio"
-                    name="genreId"
-                    value={genre.id}
-                    checked={formData.genreId === genre.id}
-                    onChange={(e) => handleInputChange('genreId', e.target.value)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    required
-                  />
-                  <span className="text-sm text-gray-700">{genre.name}</span>
-                </label>
-              ))}
+            <div className="w-1/2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                店舗名 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                onBlur={(e) => handleFieldBlur('name', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  validationErrors.name 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
+                maxLength={100}
+                required
+              />
+              <ErrorMessage message={validationErrors.name} field="name" />
+              <p className="mt-1 text-xs text-gray-500 text-right">
+                {formData.name.length} / 100文字
+              </p>
             </div>
-            <ErrorMessage message={validationErrors.genreId} field="genreId" />
-          </div>
 
-          {/* 利用シーン */}
-          <SceneSelector
-            scenes={scenes}
-            selectedScenes={selectedScenes}
-            customSceneText={customSceneText}
-            validationErrors={validationErrors}
-            onScenesChange={setSelectedScenes}
-            onCustomTextChange={setCustomSceneText}
-            onValidationErrorChange={(field, error) => {
-              setValidationErrors(prev => {
-                const newErrors = { ...prev };
-                if (error === null) {
-                  delete newErrors[field];
-                } else {
-                  newErrors[field] = error;
-                }
-                return newErrors;
-              });
-            }}
-          />
-
-          {/* 店舗紹介・詳細情報 */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">店舗紹介・詳細情報</h2>
-            <div className="space-y-6">
-              {/* 店舗紹介説明 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  店舗紹介説明
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  rows={4}
-                  maxLength={500}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${validationErrors.description
-                    ? 'border-red-500 focus:ring-red-500'
+            <div className="w-1/2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                店舗名（カナ）
+              </label>
+              <input
+                type="text"
+                name="nameKana"
+                value={formData.nameKana}
+                onChange={(e) => handleInputChange('nameKana', e.target.value)}
+                onBlur={(e) => handleFieldBlur('nameKana', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  validationErrors.nameKana 
+                    ? 'border-red-500 focus:ring-red-500' 
                     : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                  placeholder="例：アットホームな雰囲気の居酒屋です。新鮮な魚介類と地元の食材を使った料理が自慢です。"
-                />
-                <ErrorMessage message={validationErrors.description} />
-                <p className="mt-1 text-xs text-gray-500 text-right">
-                  {formData.description?.length || 0} / 500文字
-                </p>
-              </div>
-
-              {/* 詳細情報 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  詳細情報
-                </label>
-                <textarea
-                  name="details"
-                  value={formData.details}
-                  onChange={(e) => handleInputChange('details', e.target.value)}
-                  rows={6}
-                  maxLength={1000}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${validationErrors.details
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                  placeholder="【営業時間】&#10;ランチ: 11:30-14:00（L.O. 13:30）&#10;ディナー: 17:00-23:00（L.O. 22:00）&#10;&#10;【予算】&#10;ランチ: ¥1,000〜¥1,500&#10;ディナー: ¥3,000〜¥5,000"
-                />
-                <ErrorMessage message={validationErrors.details} />
-                <p className="mt-1 text-xs text-gray-500 text-right">
-                  {formData.details?.length || 0} / 1000文字
-                </p>
-              </div>
-
-              {/* 定休日 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  定休日
-                </label>
-                <div className="flex flex-wrap gap-4">
-                  {WEEKDAYS.map((day) => (
-                    <label key={day} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedHolidays.includes(day)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedHolidays([...selectedHolidays, day]);
-                          } else {
-                            setSelectedHolidays(selectedHolidays.filter(h => h !== day));
-                          }
-                        }}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">{day === '祝日' ? day : `${day}曜日`}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* ホームページURL（任意） */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ホームページURL
-                </label>
-                <input
-                  type="url"
-                  name="homepageUrl"
-                  value={formData.homepageUrl || ''}
-                  onChange={(e) => handleInputChange('homepageUrl', e.target.value)}
-                  onBlur={(e) => handleFieldBlur('homepageUrl', e.target.value)}
-                  placeholder="https://example.com"
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${validationErrors.homepageUrl
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                />
-                <ErrorMessage message={validationErrors.homepageUrl} field="homepageUrl" />
-              </div>
-
-              {/* クーポン利用時間（任意、開始・終了） */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  クーポン利用時間
-                </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="time"
-                    name="couponUsageStart"
-                    value={formData.couponUsageStart || ''}
-                    onChange={(e) => handleInputChange('couponUsageStart', e.target.value)}
-                    onBlur={(e) => handleFieldBlur('couponUsageStart', e.target.value)}
-                    className={`px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${validationErrors.couponUsageStart
-                      ? 'border-red-500 focus:ring-red-500'
-                      : 'border-gray-300 focus:ring-blue-500'
-                      }`}
-                  />
-                  <span className="text-gray-500">〜</span>
-                  <input
-                    type="time"
-                    name="couponUsageEnd"
-                    value={formData.couponUsageEnd || ''}
-                    onChange={(e) => handleInputChange('couponUsageEnd', e.target.value)}
-                    onBlur={(e) => handleFieldBlur('couponUsageEnd', e.target.value)}
-                    className={`px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${validationErrors.couponUsageEnd
-                      ? 'border-red-500 focus:ring-red-500'
-                      : 'border-gray-300 focus:ring-blue-500'
-                      }`}
-                  />
-                </div>
-                {(validationErrors.couponUsageStart || validationErrors.couponUsageEnd) && (
-                  <ErrorMessage
-                    message={validationErrors.couponUsageStart || validationErrors.couponUsageEnd}
-                    field="couponUsage"
-                  />
-                )}
-                <p className="mt-1 text-xs text-gray-500">両方入力するか、両方未入力にしてください</p>
-              </div>
-
-              {/* クーポン利用可能曜日 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  クーポン利用可能曜日
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  {WEEKDAYS.filter(d => d !== '祝日').map((day) => (
-                    <label key={day} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.couponUsageDays?.includes(day) || false}
-                        onChange={(e) => {
-                          const current = formData.couponUsageDays?.split(',').filter(Boolean) || [];
-                          const updated = e.target.checked
-                            ? [...current, day]
-                            : current.filter(d => d !== day);
-                          handleInputChange('couponUsageDays', updated.join(','));
-                        }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">{day}曜日</span>
-                    </label>
-                  ))}
-                </div>
-                <p className="mt-1 text-xs text-gray-500">クーポンを利用できる曜日を選択してください（任意）</p>
-              </div>
-
-              {/* 喫煙タイプ */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  喫煙タイプ <span className="text-red-500">*</span>
-                </label>
-                <div className="flex flex-wrap gap-4">
-                  {SMOKING_OPTIONS.map((opt) => (
-                    <label key={opt.value} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="smokingType"
-                        value={opt.value}
-                        checked={formData.smokingType === opt.value}
-                        onChange={(e) => handleInputChange('smokingType', e.target.value)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">{opt.label}</span>
-                    </label>
-                  ))}
-                </div>
-                <ErrorMessage message={validationErrors.smokingType} field="smokingType" />
-              </div>
+                }`}
+                maxLength={100}
+                placeholder="例: タマノミショクドウ"
+              />
+              <ErrorMessage message={validationErrors.nameKana} />
+              <p className="mt-1 text-xs text-gray-500 text-right">
+                {(formData.nameKana || '').length} / 100文字
+              </p>
             </div>
-          </div>
 
-          {/* 決済情報 */}
-          <PaymentMethodSelector
-            paymentCash={formData.paymentCash ?? false}
-            paymentSaicoin={formData.paymentSaicoin ?? false}
-            paymentTamapon={formData.paymentTamapon ?? false}
-            selectedCreditBrands={selectedCreditBrands}
-            customCreditText={customCreditText}
-            selectedQrBrands={selectedQrBrands}
-            customQrText={customQrText}
-            validationErrors={validationErrors}
-            onPaymentChange={(field, value) => handleInputChange(field, value)}
-            onCreditBrandsChange={setSelectedCreditBrands}
-            onCreditTextChange={setCustomCreditText}
-            onQrBrandsChange={setSelectedQrBrands}
-            onQrTextChange={setCustomQrText}
-            onValidationErrorChange={(field, error) => {
-              setValidationErrors(prev => {
-                const newErrors = { ...prev };
-                if (error === null) {
-                  delete newErrors[field];
-                } else {
-                  newErrors[field] = error;
-                }
-                return newErrors;
-              });
-            }}
-          />
+            <div className="w-1/4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                電話番号 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={(e) => {
+                  // 数値のみ許可
+                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  handleInputChange('phone', value);
+                }}
+                onBlur={(e) => handleFieldBlur('phone', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  validationErrors.phone 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
+                required
+                placeholder="例: 0312345678（ハイフンなし）"
+                maxLength={11}
+              />
+              <ErrorMessage message={validationErrors.phone} />
+            </div>
 
-          {/* 店舗画像 */}
-          <ImageUploader
-            imagePreviews={imagePreviews}
-            existingImages={existingImages}
-            maxImages={3}
-            onImageSelect={handleImageSelect}
-            onRemoveImage={handleRemoveImage}
-            onRemoveExistingImage={handleRemoveExistingImage}
-          />
-
-          {/* QRコード表示（編集モードのみ） */}
-          {isEdit && shopId && (
-            <QRCodeGenerator
-              qrCodeLoading={qrCodeLoading}
-              qrCodeUrl={qrCodeUrl || ''}
-              shopId={shopId}
-              showSuccess={showSuccess}
-              onLoadRequest={handleLoadQrCode}
-            />
-          )}
-
-          {/* 担当者情報 */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">担当者情報</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
+            {/* 郵便番号と住所検索 */}
+            <div className="flex gap-4">
+              <div className="w-32">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  担当者名
+                  郵便番号 <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  name="contactName"
-                  value={formData.contactName || ''}
-                  onChange={(e) => handleInputChange('contactName', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="担当者名を入力してください（任意）"
-                  maxLength={100}
-                />
-                <p className="mt-1 text-xs text-gray-500 text-right">
-                  {(formData.contactName || '').length} / 100文字
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  担当者電話番号
-                </label>
-                <input
-                  type="tel"
-                  name="contactPhone"
-                  value={formData.contactPhone || ''}
+                  name="postalCode"
+                  value={formData.postalCode}
                   onChange={(e) => {
                     // 数値のみ許可
                     const value = e.target.value.replace(/[^0-9]/g, '');
-                    handleInputChange('contactPhone', value);
+                    handleInputChange('postalCode', value);
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="担当者電話番号を入力してください（任意）"
-                  maxLength={11}
+                  onBlur={(e) => handleFieldBlur('postalCode', e.target.value)}
+                  onKeyDown={(e) => {
+                    // Enterキーが押された場合は住所検索を実行
+                    if (e.key === 'Enter') {
+                      e.preventDefault(); // フォーム送信を防ぐ
+                      handleZipcodeSearch();
+                    }
+                  }}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    validationErrors.postalCode 
+                      ? 'border-red-500 focus:ring-red-500' 
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
+                  placeholder="1234567"
+                  maxLength={7}
+                  required
                 />
+                <ErrorMessage message={validationErrors.postalCode} />
               </div>
+              <div className="flex items-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleZipcodeSearch}
+                  disabled={formData.postalCode.length !== 7 || isSearchingAddress}
+                  className="w-32"
+                >
+                  {isSearchingAddress ? '検索中...' : '住所検索'}
+                </Button>
+              </div>
+            </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  担当者メールアドレス
-                </label>
-                <input
-                  type="email"
-                  name="contactEmail"
-                  value={formData.contactEmail || ''}
-                  onChange={(e) => handleInputChange('contactEmail', e.target.value)}
-                  onBlur={(e) => handleFieldBlur('contactEmail', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${validationErrors.contactEmail
-                    ? 'border-red-500 focus:ring-red-500'
+            {/* 都道府県 */}
+            <div className="w-60">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                都道府県 <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="prefecture"
+                value={formData.prefecture}
+                onChange={(e) => handleInputChange('prefecture', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  validationErrors.prefecture 
+                    ? 'border-red-500 focus:ring-red-500' 
                     : 'border-gray-300 focus:ring-blue-500'
+                }`}
+                required
+              >
+                <option value="">都道府県を選択</option>
+                {PREFECTURES.map(pref => (
+                  <option key={pref} value={pref}>{pref}</option>
+                ))}
+              </select>
+              <ErrorMessage message={validationErrors.prefecture} />
+            </div>
+
+            {/* 市区町村 */}
+            <div className="max-w-md">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                市区町村 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={(e) => handleInputChange('city', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  validationErrors.city 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
+                placeholder="市区町村を入力してください"
+                required
+              />
+              <ErrorMessage message={validationErrors.city} />
+            </div>
+
+            {/* 番地以降 */}
+            <div className="max-w-lg">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                番地以降 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="address1"
+                value={formData.address1}
+                onChange={(e) => handleInputChange('address1', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  validationErrors.address1 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
+                placeholder="番地以降を入力してください"
+                required
+              />
+              <ErrorMessage message={validationErrors.address1} />
+            </div>
+
+            {/* 建物名 / 部屋番号 */}
+            <div className="max-w-lg">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                建物名 / 部屋番号
+              </label>
+              <input
+                type="text"
+                value={formData.address2}
+                onChange={(e) => handleInputChange('address2', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="建物名 / 部屋番号を入力してください（任意）"
+              />
+            </div>
+
+            {/* 緯度・経度 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                緯度・経度 <span className="text-red-500">*</span>
+              </label>
+              <div className="flex gap-2 items-start">
+                <div className="w-48">
+                  <input
+                    type="text"
+                    name="latitude"
+                    value={formData.latitude}
+                    onChange={(e) => handleInputChange('latitude', e.target.value)}
+                    onBlur={(e) => handleFieldBlur('latitude', e.target.value)}
+                    onPaste={handleCoordinatesPaste}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      validationErrors.latitude 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 focus:ring-blue-500'
                     }`}
-                  placeholder="担当者メールアドレスを入力してください（任意）"
+                    placeholder="緯度（例: 35.681236）"
+                    required
+                  />
+                  <ErrorMessage message={validationErrors.latitude} field="latitude" />
+                </div>
+                <div className="w-48">
+                  <input
+                    type="text"
+                    name="longitude"
+                    value={formData.longitude}
+                    onChange={(e) => handleInputChange('longitude', e.target.value)}
+                    onBlur={(e) => handleFieldBlur('longitude', e.target.value)}
+                    onPaste={handleCoordinatesPaste}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      validationErrors.longitude 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 focus:ring-blue-500'
+                    }`}
+                    placeholder="経度（例: 139.767125）"
+                    required
+                  />
+                  <ErrorMessage message={validationErrors.longitude} field="longitude" />
+                </div>
+                <button
+                  type="button"
+                  onClick={openGoogleMapsForAddress}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap"
+                >
+                  地図で確認
+                </button>
+              </div>
+              <div className="mt-2 text-xs text-gray-500">
+                <p className="font-semibold mb-1">座標取得手順：</p>
+                <ol className="list-decimal list-inside space-y-1 ml-2">
+                  <li>「地図で確認」ボタンをクリック</li>
+                  <li>Google Mapで<span className="font-semibold text-gray-700">検索ボタンをクリック</span>してピンを表示</li>
+                  <li>地図上で場所を右クリック → 緯度経度をコピー</li>
+                  <li>緯度または経度欄に貼り付け（カンマ区切りで自動的に分割されます）</li>
+                </ol>
+              </div>
+              {formData.latitude && formData.longitude && (
+                <div className="mt-2">
+                  <a
+                    href={`https://www.google.com/maps/@${formData.latitude},${formData.longitude},21z/data=!3m1!1e3`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    入力された座標をGoogle Mapで確認
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* ステータス（編集時のみ表示） */}
+            {isEdit && (
+              <div className="w-64">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ステータス
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => handleInputChange('status', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="registering">登録中</option>
+                  <option value="collection_requested">情報収集依頼済み</option>
+                  <option value="approval_pending">承認待ち</option>
+                  <option value="promotional_materials_preparing">宣材準備中</option>
+                  <option value="promotional_materials_shipping">宣材発送中</option>
+                  <option value="operating">営業中</option>
+                  <option value="suspended">停止中</option>
+                  <option value="terminated">終了</option>
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ジャンル */}
+        <div className="bg-white rounded-lg shadow p-6" data-field="genreId">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">ジャンル <span className="text-red-500">*</span></h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {genres.map((genre) => (
+              <label
+                key={genre.id}
+                className="flex items-center space-x-2 cursor-pointer"
+              >
+                <input
+                  type="radio"
+                  name="genreId"
+                  value={genre.id}
+                  checked={formData.genreId === genre.id}
+                  onChange={(e) => handleInputChange('genreId', e.target.value)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  required
                 />
-                <ErrorMessage message={validationErrors.contactEmail} />
+                <span className="text-sm text-gray-700">{genre.name}</span>
+              </label>
+            ))}
+          </div>
+          <ErrorMessage message={validationErrors.genreId} field="genreId" />
+        </div>
+
+        {/* 利用シーン */}
+        <SceneSelector
+          scenes={scenes}
+          selectedScenes={selectedScenes}
+          customSceneText={customSceneText}
+          validationErrors={validationErrors}
+          onScenesChange={setSelectedScenes}
+          onCustomTextChange={setCustomSceneText}
+          onValidationErrorChange={(field, error) => {
+            setValidationErrors(prev => {
+              const newErrors = { ...prev };
+              if (error === null) {
+                delete newErrors[field];
+              } else {
+                newErrors[field] = error;
+              }
+              return newErrors;
+            });
+          }}
+        />
+
+        {/* 店舗紹介・詳細情報 */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">店舗紹介・詳細情報</h2>
+          <div className="space-y-6">
+            {/* 店舗紹介説明 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                店舗紹介説明
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                rows={4}
+                maxLength={500}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  validationErrors.description 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
+                placeholder="例：アットホームな雰囲気の居酒屋です。新鮮な魚介類と地元の食材を使った料理が自慢です。"
+              />
+              <ErrorMessage message={validationErrors.description} />
+              <p className="mt-1 text-xs text-gray-500 text-right">
+                {formData.description?.length || 0} / 500文字
+              </p>
+            </div>
+
+            {/* 詳細情報 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                詳細情報
+              </label>
+              <textarea
+                name="details"
+                value={formData.details}
+                onChange={(e) => handleInputChange('details', e.target.value)}
+                rows={6}
+                maxLength={1000}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  validationErrors.details 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
+                placeholder="【営業時間】&#10;ランチ: 11:30-14:00（L.O. 13:30）&#10;ディナー: 17:00-23:00（L.O. 22:00）&#10;&#10;【予算】&#10;ランチ: ¥1,000〜¥1,500&#10;ディナー: ¥3,000〜¥5,000"
+              />
+              <ErrorMessage message={validationErrors.details} />
+              <p className="mt-1 text-xs text-gray-500 text-right">
+                {formData.details?.length || 0} / 1000文字
+              </p>
+            </div>
+
+            {/* 定休日 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                定休日
+              </label>
+              <div className="flex flex-wrap gap-4">
+                {WEEKDAYS.map((day) => (
+                  <label key={day} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedHolidays.includes(day)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedHolidays([...selectedHolidays, day]);
+                        } else {
+                          setSelectedHolidays(selectedHolidays.filter(h => h !== day));
+                        }
+                      }}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{day === '祝日' ? day : `${day}曜日`}</span>
+                  </label>
+                ))}
               </div>
             </div>
-          </div>
 
-          {/* アカウント発行 / 店舗用アカウント情報 */}
-          <AccountSection
-            isEdit={isEdit}
-            hasExistingAccount={hasExistingAccount}
-            createAccount={formData.createAccount ?? false}
-            accountEmail={formData.accountEmail || ''}
-            password={formData.password || ''}
-            validationErrors={validationErrors}
-            onCreateAccountChange={(value) => handleInputChange('createAccount', value)}
-            onAccountEmailChange={(value) => handleInputChange('accountEmail', value)}
-            onPasswordChange={(value) => handleInputChange('password', value)}
-            onValidationErrorChange={(field, error) => {
-              setValidationErrors(prev => {
-                const newErrors = { ...prev };
-                if (error === null) {
-                  delete newErrors[field];
-                } else {
-                  newErrors[field] = error;
-                }
-                return newErrors;
-              });
-            }}
-            onFieldBlur={(field, value) => handleFieldBlur(field as keyof ExtendedShopCreateRequest, value)}
-            onDeleteAccountChange={(deleteAccount) => {
-              if (deleteAccount) {
-                handleInputChange('createAccount', false);
-              }
-            }}
-          />
+            {/* ホームページURL（任意） */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ホームページURL
+              </label>
+              <input
+                type="url"
+                name="homepageUrl"
+                value={formData.homepageUrl || ''}
+                onChange={(e) => handleInputChange('homepageUrl', e.target.value)}
+                onBlur={(e) => handleFieldBlur('homepageUrl', e.target.value)}
+                placeholder="https://example.com"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                  validationErrors.homepageUrl 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
+              />
+              <ErrorMessage message={validationErrors.homepageUrl} field="homepageUrl" />
+            </div>
 
-          {/* ボタン */}
-          <div className="flex justify-center items-center">
-            <div className="flex space-x-3">
-              <Button type="button" variant="outline" onClick={handleCancel}>
-                キャンセル
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={isSubmitting}
-                onClick={() => {
-                  // Submit button clicked
-                }}
-              >
-                {isSubmitting ? '保存中...' : (isEdit ? '更新' : '作成')}
-              </Button>
+            {/* クーポン利用時間（任意、開始・終了） */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                クーポン利用時間
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="time"
+                  name="couponUsageStart"
+                  value={formData.couponUsageStart || ''}
+                  onChange={(e) => handleInputChange('couponUsageStart', e.target.value)}
+                  onBlur={(e) => handleFieldBlur('couponUsageStart', e.target.value)}
+                  className={`px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    validationErrors.couponUsageStart 
+                      ? 'border-red-500 focus:ring-red-500' 
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
+                />
+                <span className="text-gray-500">〜</span>
+                <input
+                  type="time"
+                  name="couponUsageEnd"
+                  value={formData.couponUsageEnd || ''}
+                  onChange={(e) => handleInputChange('couponUsageEnd', e.target.value)}
+                  onBlur={(e) => handleFieldBlur('couponUsageEnd', e.target.value)}
+                  className={`px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    validationErrors.couponUsageEnd 
+                      ? 'border-red-500 focus:ring-red-500' 
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
+                />
+              </div>
+              {(validationErrors.couponUsageStart || validationErrors.couponUsageEnd) && (
+                <ErrorMessage
+                  message={validationErrors.couponUsageStart || validationErrors.couponUsageEnd}
+                  field="couponUsage"
+                />
+              )}
+              <p className="mt-1 text-xs text-gray-500">両方入力するか、両方未入力にしてください</p>
+            </div>
+
+            {/* クーポン利用可能曜日 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                クーポン利用可能曜日
+              </label>
+              <div className="flex flex-wrap gap-3">
+                {WEEKDAYS.filter(d => d !== '祝日').map((day) => (
+                  <label key={day} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.couponUsageDays?.includes(day) || false}
+                      onChange={(e) => {
+                        const current = formData.couponUsageDays?.split(',').filter(Boolean) || [];
+                        const updated = e.target.checked
+                          ? [...current, day]
+                          : current.filter(d => d !== day);
+                        handleInputChange('couponUsageDays', updated.join(','));
+                      }}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{day}曜日</span>
+                  </label>
+                ))}
+              </div>
+              <p className="mt-1 text-xs text-gray-500">クーポンを利用できる曜日を選択してください（任意）</p>
+            </div>
+
+            {/* 喫煙タイプ */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                喫煙タイプ <span className="text-red-500">*</span>
+              </label>
+              <div className="flex flex-wrap gap-4">
+                {SMOKING_OPTIONS.map((opt) => (
+                  <label key={opt.value} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="smokingType"
+                      value={opt.value}
+                      checked={formData.smokingType === opt.value}
+                      onChange={(e) => handleInputChange('smokingType', e.target.value)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+              <ErrorMessage message={validationErrors.smokingType} field="smokingType" />
             </div>
           </div>
-        </form>
+        </div>
+
+        {/* 決済情報 */}
+        <PaymentMethodSelector
+          paymentCash={formData.paymentCash ?? false}
+          paymentSaicoin={formData.paymentSaicoin ?? false}
+          paymentTamapon={formData.paymentTamapon ?? false}
+          selectedCreditBrands={selectedCreditBrands}
+          customCreditText={customCreditText}
+          selectedQrBrands={selectedQrBrands}
+          customQrText={customQrText}
+          validationErrors={validationErrors}
+          onPaymentChange={(field, value) => handleInputChange(field, value)}
+          onCreditBrandsChange={setSelectedCreditBrands}
+          onCreditTextChange={setCustomCreditText}
+          onQrBrandsChange={setSelectedQrBrands}
+          onQrTextChange={setCustomQrText}
+          onValidationErrorChange={(field, error) => {
+            setValidationErrors(prev => {
+              const newErrors = { ...prev };
+              if (error === null) {
+                delete newErrors[field];
+              } else {
+                newErrors[field] = error;
+              }
+              return newErrors;
+            });
+          }}
+        />
+
+        {/* 店舗画像 */}
+        <ImageUploader
+          imagePreviews={imagePreviews}
+          existingImages={existingImages}
+          maxImages={3}
+          onImageSelect={handleImageSelect}
+          onRemoveImage={handleRemoveImage}
+          onRemoveExistingImage={handleRemoveExistingImage}
+        />
+
+        {/* QRコード表示（編集モードのみ） */}
+        {isEdit && shopId && (
+          <QRCodeGenerator
+            qrCodeLoading={qrCodeLoading}
+            qrCodeUrl={qrCodeUrl || ''}
+            shopId={shopId}
+            showSuccess={showSuccess}
+            onLoadRequest={handleLoadQrCode}
+          />
+        )}
+
+        {/* アカウント発行 / 店舗用アカウント情報 */}
+        <AccountSection
+          isEdit={isEdit}
+          hasExistingAccount={hasExistingAccount}
+          createAccount={formData.createAccount ?? false}
+          accountEmail={formData.accountEmail || ''}
+          password={formData.password || ''}
+          validationErrors={validationErrors}
+          onCreateAccountChange={(value) => handleInputChange('createAccount', value)}
+          onAccountEmailChange={(value) => handleInputChange('accountEmail', value)}
+          onPasswordChange={(value) => handleInputChange('password', value)}
+          onValidationErrorChange={(field, error) => {
+            setValidationErrors(prev => {
+              const newErrors = { ...prev };
+              if (error === null) {
+                delete newErrors[field];
+              } else {
+                newErrors[field] = error;
+              }
+              return newErrors;
+            });
+          }}
+          onFieldBlur={(field, value) => handleFieldBlur(field as keyof ExtendedShopCreateRequest, value)}
+          onDeleteAccountChange={(deleteAccount) => {
+            if (deleteAccount) {
+              handleInputChange('createAccount', false);
+            }
+          }}
+        />
+
+        {/* ボタン */}
+        <div className="flex justify-center items-center">
+          <div className="flex space-x-3">
+            <Button type="button" variant="outline" onClick={handleCancel}>
+              キャンセル
+            </Button>
+            <Button 
+              type="submit" 
+              variant="primary" 
+              disabled={isSubmitting}
+              onClick={() => {
+                // Submit button clicked
+              }}
+            >
+              {isSubmitting ? '保存中...' : (isEdit ? '更新' : '作成')}
+            </Button>
+          </div>
+        </div>
+      </form>
       )}
     </div>
   );

@@ -6,9 +6,12 @@ import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { type MerchantConfirmationData } from '@hv-development/schemas';
+import { useToast } from '@/hooks/use-toast';
+import ToastContainer from '@/components/molecules/toast-container';
 
 function MerchantConfirmContent() {
   const searchParams = useSearchParams();
+  const { toasts, removeToast, showSuccess, showError } = useToast();
   const [formData, setFormData] = useState<MerchantConfirmationData>({
     accountEmail: '',
     name: '',
@@ -45,11 +48,11 @@ function MerchantConfirmContent() {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // 成功時の処理（実際の実装では適切なページにリダイレクト）
-      alert('事業者の登録が完了しました。');
+      showSuccess('事業者の登録が完了しました。');
       
     } catch (error) {
       console.error('登録エラー:', error);
-      alert('登録中にエラーが発生しました。');
+      showError('登録中にエラーが発生しました。');
     } finally {
       setIsSubmitting(false);
     }
@@ -204,6 +207,7 @@ function MerchantConfirmContent() {
           </Button>
         </div>
       </div>
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
   );
 }

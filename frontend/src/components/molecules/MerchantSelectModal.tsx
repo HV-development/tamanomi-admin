@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { apiClient } from '@/lib/api';
+import { useAuth } from '@/components/contexts/auth-context';
 
 interface Merchant {
   id: string;
@@ -18,67 +19,138 @@ interface MerchantSelectModalProps {
   selectedMerchantId?: string;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 function MerchantSelectModal({
   isOpen,
   onClose,
   onSelect,
   selectedMerchantId,
 }: MerchantSelectModalProps) {
+  const auth = useAuth();
+  const isAdmin = auth?.user?.accountType === 'admin';
+  
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Merchant[]>([]);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
+  const [merchants, setMerchants] = useState<Merchant[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentSearch, setCurrentSearch] = useState('');
+  const listRef = useRef<HTMLDivElement>(null);
 
-  // 検索実行（API経由）
-  const handleSearch = useCallback(async () => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      setHasSearched(false);
-      return;
+  // データ取得関数
+  const fetchMerchants = useCallback(async (searchTerm: string, pageNum: number, isLoadMore: boolean = false) => {
+    if (isLoadMore) {
+      setIsLoadingMore(true);
+    } else {
+      setIsLoading(true);
     }
-    
+
     try {
-      setIsSearching(true);
-      const response = await apiClient.getMerchants({ 
-        search: searchQuery,
-        limit: 100 // 検索結果の上限
+      const response = await apiClient.getMerchants({
+        search: searchTerm || undefined,
+        page: pageNum,
+        limit: ITEMS_PER_PAGE,
       });
 
-      // レスポンスの形式を確認して適切に処理
-      let merchants: Merchant[] = [];
+      let fetchedMerchants: Merchant[] = [];
+      let totalPages = 1;
+
       if (response && typeof response === 'object') {
         if ('data' in response && response.data && typeof response.data === 'object' && 'merchants' in response.data) {
-          merchants = (response.data as { merchants: Merchant[] }).merchants || [];
+          fetchedMerchants = (response.data as { merchants: Merchant[] }).merchants || [];
         } else if ('merchants' in response) {
-          merchants = (response as { merchants: Merchant[] }).merchants || [];
+          fetchedMerchants = (response as { merchants: Merchant[] }).merchants || [];
         } else if (Array.isArray(response)) {
-          merchants = response as Merchant[];
+          fetchedMerchants = response as Merchant[];
+        }
+
+        // pagination情報を取得
+        if ('pagination' in response && response.pagination && typeof response.pagination === 'object') {
+          const pagination = response.pagination as { totalPages?: number };
+          totalPages = pagination.totalPages || 1;
         }
       }
 
-      setSearchResults(merchants);
-      setHasSearched(true);
+      if (isLoadMore) {
+        setMerchants(prev => [...prev, ...fetchedMerchants]);
+      } else {
+        setMerchants(fetchedMerchants);
+      }
+
+      setHasMore(pageNum < totalPages);
     } catch (error) {
-      console.error('❌ Search error:', error);
-      setSearchResults([]);
-      setHasSearched(true);
+      console.error('❌ Fetch merchants error:', error);
+      if (!isLoadMore) {
+        setMerchants([]);
+      }
+      setHasMore(false);
     } finally {
-      setIsSearching(false);
+      setIsLoading(false);
+      setIsLoadingMore(false);
     }
-  }, [searchQuery]);
+  }, []);
+
+  // 初期表示：モーダルが開いたときに10件取得（adminアカウントのみ）
+  useEffect(() => {
+    if (isOpen) {
+      setMerchants([]);
+      setPage(1);
+      setHasMore(true);
+      setCurrentSearch('');
+      setSearchQuery('');
+      // adminアカウントの場合のみ初期表示で全事業者一覧を取得
+      if (isAdmin) {
+        fetchMerchants('', 1, false);
+      }
+    }
+  }, [isOpen, isAdmin, fetchMerchants]);
+
+  // 検索実行
+  const handleSearch = useCallback(async () => {
+    setPage(1);
+    setHasMore(true);
+    setCurrentSearch(searchQuery);
+    await fetchMerchants(searchQuery, 1, false);
+  }, [searchQuery, fetchMerchants]);
+
+  // 追加読み込み
+  const loadMore = useCallback(async () => {
+    if (isLoadingMore || !hasMore) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    await fetchMerchants(currentSearch, nextPage, true);
+  }, [isLoadingMore, hasMore, page, currentSearch, fetchMerchants]);
+
+  // スクロールイベント監視
+  const handleScroll = useCallback(() => {
+    const listElement = listRef.current;
+    if (!listElement) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = listElement;
+    // 末端から50px以内に達したら追加読み込み
+    if (scrollHeight - scrollTop - clientHeight < 50) {
+      loadMore();
+    }
+  }, [loadMore]);
 
   const handleSelect = useCallback((merchant: Merchant) => {
     onSelect(merchant);
     setSearchQuery('');
-    setSearchResults([]);
-    setHasSearched(false);
+    setMerchants([]);
+    setPage(1);
+    setHasMore(true);
+    setCurrentSearch('');
     onClose();
   }, [onSelect, onClose]);
 
   const handleClose = useCallback(() => {
     setSearchQuery('');
-    setSearchResults([]);
-    setHasSearched(false);
+    setMerchants([]);
+    setPage(1);
+    setHasMore(true);
+    setCurrentSearch('');
     onClose();
   }, [onClose]);
 
@@ -129,11 +201,11 @@ function MerchantSelectModal({
             <button
               type="button"
               onClick={handleSearch}
-              disabled={isSearching}
+              disabled={isLoading}
               className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
               title="検索"
             >
-              {isSearching ? (
+              {isLoading ? (
                 <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -148,24 +220,29 @@ function MerchantSelectModal({
         </div>
 
         {/* 事業者リスト */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {!hasSearched ? (
+        <div 
+          ref={listRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-6"
+        >
+          {isLoading ? (
+            <div className="text-center py-12 text-gray-500">
+              <svg className="mx-auto h-12 w-12 text-gray-400 mb-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <p>読み込み中...</p>
+            </div>
+          ) : merchants.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <p>事業者名またはメールアドレスで検索してください</p>
-            </div>
-          ) : searchResults.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p>検索結果が見つかりませんでした</p>
+              <p>{currentSearch ? '事業者が見つかりませんでした' : '事業者名またはメールアドレスで検索してください'}</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {searchResults.map((merchant) => (
+              {merchants.map((merchant) => (
                 <button
                   key={merchant.id}
                   onClick={() => handleSelect(merchant)}
@@ -178,7 +255,7 @@ function MerchantSelectModal({
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="font-medium text-gray-900">{merchant.name}</div>
-                      <div className="text-sm text-gray-500 mt-1">{merchant.account.email}</div>
+                      <div className="text-sm text-gray-500 mt-1">{merchant.account?.email}</div>
                     </div>
                     {selectedMerchantId === merchant.id && (
                       <svg className="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
@@ -188,6 +265,15 @@ function MerchantSelectModal({
                   </div>
                 </button>
               ))}
+              {/* 追加読み込み中のインジケーター */}
+              {isLoadingMore && (
+                <div className="text-center py-4 text-gray-500">
+                  <svg className="mx-auto h-6 w-6 text-gray-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+              )}
             </div>
           )}
         </div>

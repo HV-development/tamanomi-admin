@@ -1,3 +1,9 @@
+import bundleAnalyzer from '@next/bundle-analyzer';
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // 管理画面は動的レンダリングが適切（認証・データベース依存）
@@ -24,6 +30,8 @@ const nextConfig = {
   generateEtags: false,
 
   // 画像最適化の設定
+  // セキュリティ上の理由から画像最適化を無効化
+  // （/_next/imageエンドポイントへのパストラバーサル攻撃を防止）
   images: {
     unoptimized: true,
     remotePatterns: [
@@ -235,4 +243,4 @@ const nextConfig = {
   }),
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

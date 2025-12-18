@@ -1,13 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Button from '@/components/atoms/Button';
-import BulkUpdateConfirmModal from '@/components/molecules/bulk-update-confirm-modal';
+
+// 動的インポート：確認時のみ表示されるモーダル
+const BulkUpdateConfirmModal = dynamic(() => import('@/components/molecules/bulk-update-confirm-modal'), {
+  ssr: false,
+});
 
 interface CouponBulkUpdateFooterProps {
   selectedCount: number;
   isAdminAccount: boolean;
   isMerchantAccount: boolean;
+  isShopAccount: boolean;
   onBulkUpdateStatus?: (status: string) => void;
   onBulkUpdatePublicStatus?: (isPublic: boolean) => void;
   isUpdating?: boolean;
@@ -19,6 +25,7 @@ export default function CouponBulkUpdateFooter({
   selectedCount,
   isAdminAccount,
   isMerchantAccount,
+  isShopAccount,
   onBulkUpdateStatus,
   onBulkUpdatePublicStatus,
   isUpdating = false,
@@ -142,7 +149,7 @@ export default function CouponBulkUpdateFooter({
               </div>
             )}
 
-            {(isAdminAccount || isMerchantAccount) && (
+            {(isAdminAccount || isMerchantAccount || isShopAccount) && (
               <div className="flex items-center space-x-2">
                 <select
                   value={pendingPublicStatus}

@@ -5,6 +5,8 @@ import { useSearchParams, useParams } from 'next/navigation';
 import AdminLayout from '@/components/templates/admin-layout';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
+import { useToast } from '@/hooks/use-toast';
+import ToastContainer from '@/components/molecules/toast-container';
 
 interface UserData {
   nickname: string;
@@ -21,6 +23,7 @@ export default function UserEditConfirmPage() {
   const params = useParams();
   const userId = params.id as string;
   const [userData, setUserData] = useState<UserData | null>(null);
+  const { toasts, removeToast, showSuccess } = useToast();
 
   useEffect(() => {
     const data: UserData = {
@@ -66,9 +69,11 @@ export default function UserEditConfirmPage() {
   const handleUpdate = () => {
     // 実際の更新処理（APIコール等）
     console.log('ユーザー更新:', userData);
-    alert('ユーザー情報を更新しました');
+    showSuccess('ユーザー情報を更新しました');
     // 更新後はユーザー一覧画面に遷移
-    window.location.href = '/users';
+    setTimeout(() => {
+      window.location.href = '/users';
+    }, 1500);
   };
 
   if (!userData) {
@@ -170,6 +175,7 @@ export default function UserEditConfirmPage() {
           </div>
         </div>
       </div>
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
   );
 }

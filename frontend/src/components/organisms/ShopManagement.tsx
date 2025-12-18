@@ -495,7 +495,7 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
                       <div className="flex justify-center gap-2">
                         <Link href={`/merchants/${merchantId || shop.merchantId}/shops/${shop.id}/edit`}>
                           <button 
-                            className="p-2.5 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
+                            className="p-2 text-green-600 hover:text-green-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px]"
                             title="編集"
                           >
                             <Image 

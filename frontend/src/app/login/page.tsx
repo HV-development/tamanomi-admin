@@ -122,7 +122,7 @@ function LoginFormWithParams() {
         // Cookieベースの認証APIから直接取得
         let redirectPath = '/merchants';
         try {
-          const meResponse = await fetch('/api/user/me', {
+          const meResponse = await fetch('/api/me', {
             credentials: 'include',
           });
           if (meResponse.ok) {

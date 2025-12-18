@@ -1,11 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { usePathname, useRouter } from 'next/navigation';
 import SidebarHeader from '@/components/molecules/sidebar-header';
 import MenuItem from '@/components/molecules/menu-item';
 import Icon from '@/components/atoms/Icon';
 import { useAuth } from '@/components/contexts/auth-context';
+
+// 動的インポート：ログアウト確認時のみ表示されるモーダル
+const ConfirmModal = dynamic(() => import('@/components/molecules/ConfirmModal'), {
+  ssr: false,
+});
 
 interface MenuItemData {
   name: string;
@@ -28,14 +34,15 @@ export default function Sidebar() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isFontReady, setIsFontReady] = useState(false);
   const [isLogoReady, setIsLogoReady] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
   // アカウントタイプに基づいてメニューをフィルタリング
-  // 認証情報がロード中の場合は空配列を返してちらつきを防ぐ
+  // 認証情報がロード中、またはユーザーがnullの場合は空配列を返してちらつきを防ぐ
   const filteredMenuItems = useMemo(
     () => {
-      if (auth?.isLoading) return [];
+      if (auth?.isLoading || !auth?.user) return [];
       
       return menuItems.filter((item) => {
         // 店舗アカウントの場合、店舗管理、クーポン管理、クーポン利用履歴のみ表示
@@ -49,7 +56,7 @@ export default function Sidebar() {
         return true;
       });
     },
-    [auth?.isLoading, auth?.user?.accountType]
+    [auth?.isLoading, auth?.user]
   );
 
   // ローカルストレージからサイドバーの状態を復元
@@ -115,7 +122,7 @@ export default function Sidebar() {
     setIsLogoReady(true);
   }, []);
 
-  const isReady = isLoaded && !auth?.isLoading && isFontReady && (isCollapsed || isLogoReady);
+  const isReady = isLoaded && !auth?.isLoading && auth?.user && isFontReady && (isCollapsed || isLogoReady);
 
   return (
     <div
@@ -154,27 +161,7 @@ export default function Sidebar() {
         {/* ログアウトボタン */}
         <div className="px-4 py-2">
           <button
-            onClick={async () => {
-              if (!auth) return;
-              
-              if (confirm('ログアウトしますか？')) {
-                try {
-                  await auth.logout();
-                } catch (error) {
-                  console.error('Logout failed', error);
-                } finally {
-                  try {
-                    router.replace('/login?session=expired');
-                    router.refresh();
-                  } catch (error) {
-                    console.error('Router navigation failed, falling back to hard redirect', error);
-                    if (typeof window !== 'undefined') {
-                      window.location.href = '/login?session=expired';
-                    }
-                  }
-                }
-              }
-            }}
+            onClick={() => setIsLogoutModalOpen(true)}
             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900`}
           >
             <Icon name="logout" size="md" />
@@ -190,6 +177,27 @@ export default function Sidebar() {
           </div>
         )}
       </div>
+
+      {/* ログアウト確認モーダル */}
+      <ConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={async () => {
+          if (!auth) return;
+          // 先にページ遷移を開始してUIの変化を防ぐ
+          window.location.href = '/login';
+          // バックグラウンドでログアウト処理を実行
+          try {
+            await auth.logout();
+          } catch (error) {
+            console.error('Logout failed', error);
+          }
+        }}
+        title="ログアウト"
+        message="ログアウトしますか？"
+        confirmText="ログアウト"
+        cancelText="キャンセル"
+      />
     </div>
   );
 }

@@ -10,13 +10,16 @@ import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-
 import { useAuth } from '@/components/contexts/auth-context';
 import { PREFECTURES } from '@/lib/constants/japan';
 import { apiClient } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
+import ToastContainer from '@/components/molecules/toast-container';
 
 export default function MerchantEditPage() {
   const params = useParams();
   const router = useRouter();
   const auth = useAuth();
+  const { toasts, removeToast, showSuccess, showError } = useToast();
   const merchantId = params.id as string;
-
+  
   const [formData, setFormData] = useState<MerchantEditFormData>({
     name: '',
     nameKana: '',
@@ -32,7 +35,7 @@ export default function MerchantEditPage() {
     city: '',
     address1: '',
     address2: '',
-    applications: [],
+    applicationId: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -42,7 +45,7 @@ export default function MerchantEditPage() {
   const [hasAccount, setHasAccount] = useState(false); // アカウント発行済みかどうか
   const [isSendingPasswordReset, setIsSendingPasswordReset] = useState(false);
   const [status, setStatus] = useState<'inactive' | 'active' | 'terminated'>('inactive'); // 契約ステータス
-
+  
   // 事業者アカウントの場合はアクセス拒否
   useEffect(() => {
     if (auth?.user?.accountType === 'merchant') {
@@ -50,7 +53,7 @@ export default function MerchantEditPage() {
       return;
     }
   }, [auth, router]);
-
+  
   // 住所検索フック
   const { isSearching: isSearchingAddress, searchAddress } = useAddressSearch(
     (result) => {
@@ -68,7 +71,7 @@ export default function MerchantEditPage() {
       setErrors(prev => ({ ...prev, postalCode: error }));
     }
   );
-
+  
   const fieldRefs = useRef<{ [key: string]: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null }>({});
 
   // 事業者データの読み込み
@@ -81,10 +84,10 @@ export default function MerchantEditPage() {
         // APIから事業者データを取得（Cookieベース認証）
         // コンポーネントがアンマウントされている場合は処理を中断
         if (!isMounted) return;
-
+        
         const result = await apiClient.getMerchant(merchantId) as { data: unknown };
         const merchantData = result.data; // APIレスポンスから data プロパティを取得
-
+        
         if (isMounted && merchantData) {
           const merchant = merchantData as {
             account?: { status?: string };
@@ -103,16 +106,16 @@ export default function MerchantEditPage() {
             city?: string;
             address1?: string;
             address2?: string;
-            applications?: string[];
+            applicationId?: string;
           };
-
+          
           // アカウント発行済みかどうかを確認（statusが'pending'または'active'の場合は発行済み）
           const accountStatus = merchant.account?.status;
           setHasAccount(accountStatus === 'pending' || accountStatus === 'active');
-
+          
           // 契約ステータスを設定
           setStatus((merchant.status as 'active' | 'inactive' | 'terminated') || 'inactive');
-
+          
           // APIレスポンスをフォームデータに変換
           setFormData({
             name: merchant.name || '',
@@ -129,7 +132,7 @@ export default function MerchantEditPage() {
             city: merchant.city || '',
             address1: merchant.address1 || '',
             address2: merchant.address2 || '',
-            applications: merchant.applications || [],
+            applicationId: merchant.applicationId || '',
           });
         }
       } catch (error) {
@@ -137,16 +140,16 @@ export default function MerchantEditPage() {
         if (error instanceof Error && error.name === 'AbortError') {
           return;
         }
-
+        
         if (!isMounted) return;
-
+        
         console.error('❌ 事業者データの読み込みエラー:', error);
         if (error instanceof Error && 'response' in error) {
           const apiError = error as Error & { response?: { data: unknown } };
           const errorData = apiError.response?.data as { error?: { message?: string } } | undefined;
-          alert(`事業者データの取得に失敗しました: ${errorData?.error?.message || '不明なエラー'}`);
+          showError(`事業者データの取得に失敗しました: ${errorData?.error?.message || '不明なエラー'}`);
         } else {
-          alert(`事業者データの読み込みに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+          showError(`事業者データの読み込みに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
         }
       } finally {
         if (isMounted) {
@@ -168,7 +171,7 @@ export default function MerchantEditPage() {
 
   const handleInputChange = (field: keyof MerchantEditFormData, value: string) => {
     setFormData((prev: MerchantEditFormData) => ({ ...prev, [field]: value }));
-
+    
     // リアルタイムバリデーション（emailとphoneフィールドは個別にバリデーション）
     if (field === 'email') {
       // emailの簡易バリデーション
@@ -214,7 +217,7 @@ export default function MerchantEditPage() {
 
   const handleBlur = (field: keyof MerchantEditFormData) => {
     const value = formData[field];
-
+    
     // emailとphoneフィールドは個別にバリデーション
     if (field === 'email') {
       const emailValue = value as string;
@@ -274,7 +277,7 @@ export default function MerchantEditPage() {
     // 各フィールドを個別にバリデーション
     const fieldsToValidate: (keyof MerchantEditFormData)[] = [
       'name',
-      'nameKana',
+      'nameKana', 
       'representativeNameLast',
       'representativeNameFirst',
       'representativeNameLastKana',
@@ -312,8 +315,8 @@ export default function MerchantEditPage() {
             hasErrors = true;
           }
         }
-      } else if (field !== 'applications') {
-        // applications以外のフィールドはMerchantFormSchemaでバリデーション
+      } else if (field !== 'applicationId') {
+        // applicationId以外のフィールドはMerchantFormSchemaでバリデーション
         const value = formData[field] || '';
         const error = validateMerchantField(field as keyof MerchantFormData, value);
         if (error) {
@@ -327,7 +330,7 @@ export default function MerchantEditPage() {
       setErrors(fieldErrors);
       return false;
     }
-
+    
     // バリデーション成功
     setErrors({});
     return true;
@@ -338,15 +341,15 @@ export default function MerchantEditPage() {
       setIsSendingPasswordReset(true);
       try {
         await apiClient.sendPasswordReset(merchantId);
-        alert('パスワード再設定メールを送信しました');
+        showSuccess('パスワード再設定メールを送信しました');
       } catch (error) {
         console.error('パスワード再設定メールの送信に失敗しました:', error);
         if (error instanceof Error && 'response' in error) {
           const apiError = error as Error & { response?: { data: unknown } };
           const errorData = apiError.response?.data as { error?: { message?: string } } | undefined;
-          alert(`パスワード再設定メールの送信に失敗しました: ${errorData?.error?.message || '不明なエラー'}`);
+          showError(`パスワード再設定メールの送信に失敗しました: ${errorData?.error?.message || '不明なエラー'}`);
         } else {
-          alert('パスワード再設定メールの送信に失敗しました');
+          showError('パスワード再設定メールの送信に失敗しました');
         }
       } finally {
         setIsSendingPasswordReset(false);
@@ -356,13 +359,13 @@ export default function MerchantEditPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     if (!validateFormData()) {
       return;
     }
 
     setIsSubmitting(true);
-
+    
     try {
       // APIに送信するデータを準備
       const updateData = {
@@ -384,18 +387,20 @@ export default function MerchantEditPage() {
       };
 
       await apiClient.updateMerchant(merchantId, updateData);
-
-      alert('事業者の更新が完了しました。');
+      
+      showSuccess('事業者の更新が完了しました。');
       // 事業者一覧に遷移
-      router.push('/merchants');
+      setTimeout(() => {
+        router.push('/merchants');
+      }, 1500);
     } catch (error) {
       console.error('更新エラー:', error);
       if (error instanceof Error && 'response' in error) {
         const apiError = error as Error & { response?: { data: unknown } };
         const errorData = apiError.response?.data as { message?: string; error?: { message?: string } } | undefined;
-        alert(`更新中にエラーが発生しました: ${errorData?.message || errorData?.error?.message || '不明なエラー'}`);
+        showError(`更新中にエラーが発生しました: ${errorData?.message || errorData?.error?.message || '不明なエラー'}`);
       } else {
-        alert('更新中にエラーが発生しました。');
+        showError('更新中にエラーが発生しました。');
       }
     } finally {
       setIsSubmitting(false);
@@ -437,7 +442,7 @@ export default function MerchantEditPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-lg font-medium text-gray-900 mb-6">基本情報</h3>
-
+            
             <div className="space-y-6">
               {/* 事業者名 */}
               <div>
@@ -451,8 +456,9 @@ export default function MerchantEditPage() {
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   onBlur={() => handleBlur('name')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${errors.name ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    errors.name ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="事業者名を入力"
                 />
                 <div className="mt-1 flex justify-between items-center">
@@ -477,8 +483,9 @@ export default function MerchantEditPage() {
                   value={formData.nameKana}
                   onChange={(e) => handleInputChange('nameKana', e.target.value)}
                   onBlur={() => handleBlur('nameKana')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${errors.nameKana ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    errors.nameKana ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="事業者名（カナ）を入力"
                 />
                 <div className="mt-1 flex justify-between items-center">
@@ -495,7 +502,7 @@ export default function MerchantEditPage() {
               <div className="flex gap-4">
                 <div className="w-50">
                   <label htmlFor="representativeNameLast" className="block text-sm font-medium text-gray-700 mb-2">
-                    代表者名（姓）
+                    代表者名（姓） <span className="text-red-500">*</span>
                   </label>
                   <input
                     ref={(el) => { fieldRefs.current.representativeNameLast = el; }}
@@ -504,8 +511,9 @@ export default function MerchantEditPage() {
                     value={formData.representativeNameLast}
                     onChange={(e) => handleInputChange('representativeNameLast', e.target.value)}
                     onBlur={() => handleBlur('representativeNameLast')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${errors.representativeNameLast ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                      errors.representativeNameLast ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder="姓を入力してください"
                     maxLength={25}
                   />
@@ -521,7 +529,7 @@ export default function MerchantEditPage() {
 
                 <div className="w-50">
                   <label htmlFor="representativeNameFirst" className="block text-sm font-medium text-gray-700 mb-2">
-                    代表者名（名）
+                    代表者名（名） <span className="text-red-500">*</span>
                   </label>
                   <input
                     ref={(el) => { fieldRefs.current.representativeNameFirst = el; }}
@@ -530,8 +538,9 @@ export default function MerchantEditPage() {
                     value={formData.representativeNameFirst}
                     onChange={(e) => handleInputChange('representativeNameFirst', e.target.value)}
                     onBlur={() => handleBlur('representativeNameFirst')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${errors.representativeNameFirst ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                      errors.representativeNameFirst ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder="名を入力してください"
                     maxLength={25}
                   />
@@ -550,7 +559,7 @@ export default function MerchantEditPage() {
               <div className="flex gap-4">
                 <div className="w-50">
                   <label htmlFor="representativeNameLastKana" className="block text-sm font-medium text-gray-700 mb-2">
-                    代表者名（姓 / カナ）
+                    代表者名（姓 / カナ） <span className="text-red-500">*</span>
                   </label>
                   <input
                     ref={(el) => { fieldRefs.current.representativeNameLastKana = el; }}
@@ -559,8 +568,9 @@ export default function MerchantEditPage() {
                     value={formData.representativeNameLastKana}
                     onChange={(e) => handleInputChange('representativeNameLastKana', e.target.value)}
                     onBlur={() => handleBlur('representativeNameLastKana')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${errors.representativeNameLastKana ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                      errors.representativeNameLastKana ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder="姓（カナ）を入力してください"
                     maxLength={50}
                   />
@@ -576,7 +586,7 @@ export default function MerchantEditPage() {
 
                 <div className="w-50">
                   <label htmlFor="representativeNameFirstKana" className="block text-sm font-medium text-gray-700 mb-2">
-                    代表者名（名 / カナ）
+                    代表者名（名 / カナ） <span className="text-red-500">*</span>
                   </label>
                   <input
                     ref={(el) => { fieldRefs.current.representativeNameFirstKana = el; }}
@@ -585,8 +595,9 @@ export default function MerchantEditPage() {
                     value={formData.representativeNameFirstKana}
                     onChange={(e) => handleInputChange('representativeNameFirstKana', e.target.value)}
                     onBlur={() => handleBlur('representativeNameFirstKana')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${errors.representativeNameFirstKana ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                      errors.representativeNameFirstKana ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder="名（カナ）を入力してください"
                     maxLength={50}
                   />
@@ -604,7 +615,7 @@ export default function MerchantEditPage() {
               {/* 代表者電話番号 */}
               <div className="w-100">
                 <label htmlFor="representativePhone" className="block text-sm font-medium text-gray-700 mb-2">
-                  代表者電話番号
+                  代表者電話番号 <span className="text-red-500">*</span>
                 </label>
                 <input
                   ref={(el) => { fieldRefs.current.representativePhone = el; }}
@@ -613,8 +624,9 @@ export default function MerchantEditPage() {
                   value={formData.representativePhone}
                   onChange={(e) => handleInputChange('representativePhone', e.target.value.replace(/\D/g, ''))}
                   onBlur={() => handleBlur('representativePhone')}
-                  className={`w-100 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${errors.representativePhone ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  className={`w-100 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    errors.representativePhone ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="電話番号を入力してください（ハイフン無し）"
                 />
                 {errors.representativePhone && (
@@ -625,7 +637,7 @@ export default function MerchantEditPage() {
               {/* メールアドレス */}
               <div className="w-100">
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  メールアドレス
+                  メールアドレス <span className="text-red-500">*</span>
                 </label>
                 <input
                   ref={(el) => { fieldRefs.current.email = el; }}
@@ -634,8 +646,9 @@ export default function MerchantEditPage() {
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   onBlur={() => handleBlur('email')}
-                  className={`w-100 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${errors.email ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  className={`w-100 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    errors.email ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="メールアドレスを入力してください"
                 />
                 <div className="mt-1 flex justify-between items-center">
@@ -669,14 +682,14 @@ export default function MerchantEditPage() {
           {/* 住所情報 */}
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-lg font-medium text-gray-900 mb-6">住所情報</h3>
-
+            
             <div className="space-y-6">
               {/* 郵便番号と住所検索 */}
-              <div className="flex gap-4">
-                <div className="w-40">
-                  <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
-                    郵便番号 <span className="text-red-500">*</span>
-                  </label>
+              <div>
+                <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
+                  郵便番号 <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-4 items-center">
                   <input
                     ref={(el) => { fieldRefs.current.postalCode = el; }}
                     type="text"
@@ -684,18 +697,12 @@ export default function MerchantEditPage() {
                     value={formData.postalCode}
                     onChange={(e) => handleInputChange('postalCode', e.target.value.replace(/\D/g, ''))}
                     onBlur={() => handleBlur('postalCode')}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${errors.postalCode ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-40 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                      errors.postalCode ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder="1234567"
                     maxLength={7}
                   />
-                  <div className="mt-1 flex justify-between">
-                    {errors.postalCode && (
-                      <p className="text-sm text-red-600">{errors.postalCode}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-end">
                   <Button
                     type="button"
                     variant="outline"
@@ -706,6 +713,11 @@ export default function MerchantEditPage() {
                     {isSearchingAddress ? '検索中...' : '住所検索'}
                   </Button>
                 </div>
+                {errors.postalCode && (
+                  <div className="mt-1" style={{ maxWidth: 'calc(10rem + 8rem + 1rem)' }}>
+                    <p className="text-sm text-red-600">{errors.postalCode}</p>
+                  </div>
+                )}
               </div>
 
               {/* 都道府県 */}
@@ -719,8 +731,9 @@ export default function MerchantEditPage() {
                   value={formData.prefecture}
                   onChange={(e) => handleInputChange('prefecture', e.target.value)}
                   onBlur={() => handleBlur('prefecture')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${errors.prefecture ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    errors.prefecture ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 >
                   <option value="">都道府県を選択</option>
                   {PREFECTURES.map(pref => (
@@ -746,8 +759,9 @@ export default function MerchantEditPage() {
                   value={formData.city}
                   onChange={(e) => handleInputChange('city', e.target.value)}
                   onBlur={() => handleBlur('city')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${errors.city ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    errors.city ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="市区町村を入力してください"
                 />
                 <div className="mt-1 flex justify-between items-center">
@@ -772,8 +786,9 @@ export default function MerchantEditPage() {
                   value={formData.address1}
                   onChange={(e) => handleInputChange('address1', e.target.value)}
                   onBlur={() => handleBlur('address1')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${errors.address1 ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    errors.address1 ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="番地以降を入力してください"
                 />
                 <div className="mt-1 flex justify-between items-center">
@@ -798,8 +813,9 @@ export default function MerchantEditPage() {
                   value={formData.address2}
                   onChange={(e) => handleInputChange('address2', e.target.value)}
                   onBlur={() => handleBlur('address2')}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${errors.address2 ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                    errors.address2 ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="建物名 / 部屋番号を入力してください（任意）"
                 />
                 <div className="mt-1 flex justify-between items-center">
@@ -817,7 +833,7 @@ export default function MerchantEditPage() {
           {/* 契約ステータス */}
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-lg font-medium text-gray-900 mb-6">契約ステータス</h3>
-
+            
             <div className="space-y-6">
               <div className="w-60">
                 <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
@@ -868,6 +884,7 @@ export default function MerchantEditPage() {
           </div>
         </form>
       </div>
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </AdminLayout>
   );
 }
