@@ -222,12 +222,12 @@ export default function ShopConfirmPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">サイコイン決済</label>
-              <div className="text-sm text-gray-900">{shop.paymentSaicoin ? '対応' : '非対応'}</div>
+              <div className="text-sm text-gray-900">{((shop as { paymentApps?: Record<string, boolean> }).paymentApps?.saicoin ?? (shop as { paymentSaicoin?: boolean }).paymentSaicoin) ? '対応' : '非対応'}</div>
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">たまぽん決済</label>
-              <div className="text-sm text-gray-900">{shop.paymentTamapon ? '対応' : '非対応'}</div>
+              <div className="text-sm text-gray-900">{((shop as { paymentApps?: Record<string, boolean> }).paymentApps?.tamapon ?? (shop as { paymentTamapon?: boolean }).paymentTamapon) ? '対応' : '非対応'}</div>
             </div>
             
             <div>

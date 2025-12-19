@@ -45,6 +45,9 @@ export interface ShopDataResponse extends ShopCreateRequest {
     name: string;
   };
   images?: string[];
+  paymentSaicoin?: boolean;
+  paymentTamapon?: boolean;
+  paymentApps?: Record<string, boolean>;
 }
 
 export interface Genre {
@@ -69,6 +72,9 @@ export type ExtendedShopCreateRequest = ShopCreateRequest & {
   couponUsageStart?: string | null;
   couponUsageEnd?: string | null;
   couponUsageDays?: string | null;
+  paymentSaicoin?: boolean;
+  paymentTamapon?: boolean;
+  paymentApps?: Record<string, boolean>;
 };
 
 

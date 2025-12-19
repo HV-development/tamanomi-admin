@@ -412,6 +412,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             const accountEmail = shopData.accountEmail;
             setHasExistingAccount(!!accountEmail); // 既存アカウントの有無を記録
             setOriginalAccountEmail(accountEmail ?? null);
+
+            // paymentAppsからsaicoin/tamaponの値を取得（後方互換性: paymentSaicoin/paymentTamaponも参照）
+            const paymentAppsData = (shopData as { paymentApps?: Record<string, boolean> }).paymentApps;
+            const paymentSaicoinValue = paymentAppsData?.saicoin ?? shopData.paymentSaicoin ?? false;
+            const paymentTamaponValue = paymentAppsData?.tamapon ?? shopData.paymentTamapon ?? false;
+
             setFormData({
               ...shopData,
               merchantId: finalMerchantId,
@@ -419,6 +425,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               // latitude/longitudeを文字列に変換
               latitude: shopData.latitude ? String(shopData.latitude) : '',
               longitude: shopData.longitude ? String(shopData.longitude) : '',
+              // paymentAppsからpaymentSaicoin/paymentTamaponを設定
+              paymentSaicoin: paymentSaicoinValue,
+              paymentTamapon: paymentTamaponValue,
             });
 
             // 編集モード時は必須フィールドを最初から touched として設定
@@ -1002,6 +1011,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         customSceneText: isOtherSceneSelected ? customSceneText : undefined,  // 「その他」選択時のみ送信
         paymentCredit: paymentCreditJson,
         paymentCode: paymentCodeJson,
+        // paymentApps: saicoin/tamapon用の決済方法をJSON形式で送信
+        paymentApps: {
+          saicoin: formData.paymentSaicoin ?? false,
+          tamapon: formData.paymentTamapon ?? false,
+        },
         homepageUrl: normalizedHomepageUrl,
         couponUsageStart: normalizedCouponStart,
         couponUsageEnd: normalizedCouponEnd,
