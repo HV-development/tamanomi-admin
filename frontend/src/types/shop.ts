@@ -75,6 +75,7 @@ export type ExtendedShopCreateRequest = ShopCreateRequest & {
   paymentSaicoin?: boolean;
   paymentTamapon?: boolean;
   paymentApps?: Record<string, boolean>;
+  area?: string;
 };
 
 

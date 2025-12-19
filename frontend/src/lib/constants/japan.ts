@@ -17,5 +17,9 @@ export const WEEKDAYS = ['月', '火', '水', '木', '金', '土', '日', '祝�
 // 定休日の特殊オプション
 export const HOLIDAY_SPECIAL_OPTIONS = ['不定休', 'その他'] as const;
 
-
+// さいたま市の区（たまのみの対象エリア）
+export const SAITAMA_WARDS = [
+  '西区', '北区', '大宮区', '見沼区', '中央区',
+  '桜区', '浦和区', '南区', '緑区', '岩槻区'
+] as const;
 
