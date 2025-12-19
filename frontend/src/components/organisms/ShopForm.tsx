@@ -414,9 +414,14 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             setOriginalAccountEmail(accountEmail ?? null);
 
             // paymentAppsからsaicoin/tamaponの値を取得（後方互換性: paymentSaicoin/paymentTamaponも参照）
-            const paymentAppsData = (shopData as { paymentApps?: Record<string, boolean> }).paymentApps;
+            // APIレスポンスが文字列の場合はパースする
+            const rawPaymentApps = (shopData as { paymentApps?: Record<string, boolean> | string }).paymentApps;
+            const paymentAppsData = typeof rawPaymentApps === 'string' 
+              ? (() => { try { return JSON.parse(rawPaymentApps); } catch { return null; } })()
+              : rawPaymentApps;
             const paymentSaicoinValue = paymentAppsData?.saicoin ?? shopData.paymentSaicoin ?? false;
             const paymentTamaponValue = paymentAppsData?.tamapon ?? shopData.paymentTamapon ?? false;
+            console.log('🔍 ShopForm - paymentApps loading:', { rawPaymentApps, paymentAppsData, paymentSaicoinValue, paymentTamaponValue });
 
             setFormData({
               ...shopData,

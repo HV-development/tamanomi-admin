@@ -130,11 +130,11 @@ function ShopDetailView({
             <tbody>
               <tr className="border-b border-gray-300">
                 <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">さいこいん決済</td>
-                <td className="py-3 px-4 text-gray-900">{shop.paymentSaicoin ? '利用可能' : '利用不可'}</td>
+                <td className="py-3 px-4 text-gray-900">{((shop as { paymentApps?: Record<string, boolean> }).paymentApps?.saicoin ?? (shop as { paymentSaicoin?: boolean }).paymentSaicoin) ? '利用可能' : '利用不可'}</td>
               </tr>
               <tr className="border-b border-gray-300">
                 <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">たまぽん決済</td>
-                <td className="py-3 px-4 text-gray-900">{shop.paymentTamapon ? '利用可能' : '利用不可'}</td>
+                <td className="py-3 px-4 text-gray-900">{((shop as { paymentApps?: Record<string, boolean> }).paymentApps?.tamapon ?? (shop as { paymentTamapon?: boolean }).paymentTamapon) ? '利用可能' : '利用不可'}</td>
               </tr>
               <tr className="border-b border-gray-300">
                 <td className="py-3 px-4 text-sm font-medium text-gray-700 bg-gray-50 w-1/3">現金決済</td>
