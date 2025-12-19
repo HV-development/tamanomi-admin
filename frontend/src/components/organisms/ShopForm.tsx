@@ -444,6 +444,8 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               // paymentAppsからpaymentSaicoin/paymentTamaponを設定
               paymentSaicoin: paymentSaicoinValue,
               paymentTamapon: paymentTamaponValue,
+              // areaがnullの場合は空文字列に変換
+              area: shopData.area ?? '',
             });
 
             // 編集モード時は必須フィールドを最初から touched として設定

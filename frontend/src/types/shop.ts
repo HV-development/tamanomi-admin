@@ -45,9 +45,12 @@ export interface ShopDataResponse extends ShopCreateRequest {
     name: string;
   };
   images?: string[];
+  latitude?: string | number;
+  longitude?: string | number;
   paymentSaicoin?: boolean;
   paymentTamapon?: boolean;
   paymentApps?: Record<string, boolean>;
+  area?: string | null;
 }
 
 export interface Genre {
