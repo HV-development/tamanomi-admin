@@ -619,9 +619,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     } else {
       // 存在しない場合は詳細情報を取得
       try {
-        const response = await apiClient.getMerchant(merchant.id);
-        if (response) {
-          const merchantDetails = response as Merchant;
+        const response = await apiClient.getMerchant(merchant.id) as { data?: Merchant } | Merchant;
+        // APIレスポンスが { data: ... } 形式の場合とそうでない場合に対応
+        const merchantDetails = (response && typeof response === 'object' && 'data' in response && response.data)
+          ? response.data as Merchant
+          : response as Merchant;
+        if (merchantDetails && merchantDetails.id) {
           setSelectedMerchantDetails(merchantDetails);
           setMerchants(prev => [...prev, merchantDetails]);
         }
