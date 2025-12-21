@@ -38,7 +38,7 @@ export interface Merchant {
   }>;
 }
 
-export interface ShopDataResponse extends ShopCreateRequest {
+export interface ShopDataResponse extends Omit<ShopCreateRequest, 'area'> {
   accountEmail?: string;
   merchant?: {
     id: string;
