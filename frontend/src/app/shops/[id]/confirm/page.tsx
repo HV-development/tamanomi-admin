@@ -156,7 +156,7 @@ function ShopEditConfirmContent() {
       }
 
       // 新しく追加された画像をアップロード
-      let uploadedImageUrls: string[] = [];
+      const uploadedImageUrls: string[] = [];
       if (shopData.imagePreviews && shopData.imagePreviews.length > 0) {
         try {
           const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '').split('.')[0];
