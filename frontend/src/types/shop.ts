@@ -60,6 +60,9 @@ export interface ShopDataResponse extends Omit<ShopCreateRequest, 'area'> {
   paymentTamapon?: boolean;
   paymentApps?: Record<string, boolean>;
   area?: string | null;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
 }
 
 export interface Genre {

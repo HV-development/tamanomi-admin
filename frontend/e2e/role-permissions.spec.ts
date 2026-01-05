@@ -6,6 +6,10 @@ import { config } from 'dotenv';
 const envPath = path.resolve(__dirname, '.env');
 config({ path: envPath });
 
+// タイムアウト値（サーバ応答が遅い環境向けに延長）
+const LOGIN_TIMEOUT = 60_000;
+const NAVIGATION_TIMEOUT = 60_000;
+
 // 各ロールの認証情報
 const ROLES = {
     sysadmin: {
@@ -31,6 +35,8 @@ const ROLES = {
 async function loginAsRole(browser: Browser, role: keyof typeof ROLES): Promise<{ page: Page; context: BrowserContext }> {
     const context = await browser.newContext();
     const page = await context.newPage();
+    page.setDefaultTimeout(NAVIGATION_TIMEOUT);
+    page.setDefaultNavigationTimeout(NAVIGATION_TIMEOUT);
     const { email, password } = ROLES[role];
 
     await page.goto('/login');
@@ -63,7 +69,7 @@ test.describe('ロール別権限テスト', () => {
 
             try {
                 // ログイン成功を確認（ログインページから離れているか）
-                await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
+                await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: LOGIN_TIMEOUT });
                 const isLoggedIn = !page.url().includes('/login');
                 
                 if (isLoggedIn) {
@@ -125,7 +131,7 @@ test.describe('ロール別権限テスト', () => {
             const { page, context } = await loginAsRole(browser, 'operator');
 
             try {
-                await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
+                await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: LOGIN_TIMEOUT });
                 const isLoggedIn = !page.url().includes('/login');
                 
                 if (isLoggedIn) {
@@ -216,7 +222,7 @@ test.describe('ロール別権限テスト', () => {
             const { page, context } = await loginAsRole(browser, 'viewer');
 
             try {
-                await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
+                await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: LOGIN_TIMEOUT });
                 const isLoggedIn = !page.url().includes('/login');
                 
                 if (isLoggedIn) {
@@ -303,7 +309,7 @@ test.describe('ロール別権限テスト', () => {
                 const { page, context } = await loginAsRole(browser, role as keyof typeof ROLES);
                 
                 try {
-                    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
+                    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: LOGIN_TIMEOUT });
                     const isLoggedIn = !page.url().includes('/login');
                     
                     if (isLoggedIn) {
