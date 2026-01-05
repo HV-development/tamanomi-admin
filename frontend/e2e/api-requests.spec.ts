@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Request, Response } from '@playwright/test';
 
 /**
  * APIリクエストテスト
@@ -24,8 +24,8 @@ test.describe('APIリクエストテスト', () => {
             const testEmail = `merchant-${uniqueId()}@example.com`;
 
             // ネットワークリクエストを監視
-            const requests: unknown[] = [];
-            const responses: unknown[] = [];
+            const requests: Request[] = [];
+            const responses: Response[] = [];
             page.on('request', (request) => {
                 if (request.url().includes('/api/merchants') && request.method() === 'POST') {
                     requests.push(request);
@@ -135,7 +135,7 @@ test.describe('APIリクエストテスト', () => {
             const submitButton = page.getByRole('button', { name: /^登録する$/i });
             await expect(submitButton).toBeVisible({ timeout: 10000 });
             await expect(submitButton).toBeEnabled({ timeout: 5000 });
-            
+
             {
                 // APIリクエストを待機（送信ボタンをクリックする前に設定）
                 const responsePromise = page.waitForResponse(
@@ -146,7 +146,7 @@ test.describe('APIリクエストテスト', () => {
                 await submitButton.click();
 
                 // レスポンスを待機または確認
-                let response: unknown = null;
+                let response: Response | null = null;
                 try {
                     response = await responsePromise;
                 } catch (_e) {
@@ -163,11 +163,11 @@ test.describe('APIリクエストテスト', () => {
                 // 登録完了トーストが表示されるまで待機（必須）
                 const toastSelector = 'div[class*="bg-green-50"], div[class*="toast"][class*="success"], [data-testid="toast-success"]';
                 const toastLocator = page.locator(toastSelector).first();
-                
+
                 // トーストが表示されるまで最大10秒待機
                 await page.waitForTimeout(1000); // トーストアニメーション開始を待機
                 const toastVisible = await toastLocator.isVisible({ timeout: 10000 }).catch(() => false);
-                
+
                 // 登録完了後のスクリーンショットを撮影（トースト表示を含む）
                 await page.screenshot({ path: 'test-results/merchant-registration-complete.png', fullPage: true });
 
@@ -200,7 +200,7 @@ test.describe('APIリクエストテスト', () => {
                     // レスポンスの検証
                     expect(response.status()).toBeGreaterThanOrEqual(200);
                     expect(response.status()).toBeLessThan(300);
-                    
+
                     console.log('[Merchant Registration] ✅ APIリクエストが正常に完了しました（ステータス: ' + response.status() + '）');
                 } else if (requests.length > 0) {
                     // リクエストが記録されている場合
@@ -216,12 +216,12 @@ test.describe('APIリクエストテスト', () => {
             await page.waitForLoadState('domcontentloaded');
             // テーブルが読み込まれるまで待機
             await page.waitForSelector('table tbody tr', { timeout: 30000 });
-            
+
             // seedデータ（【たまのみ】さいたま商事株式会社）を探す
             const seedMerchantName = '【たまのみ】さいたま商事株式会社';
             const merchantRow = page.locator('table tbody tr').filter({ hasText: seedMerchantName }).first();
             const merchantRowVisible = await merchantRow.isVisible({ timeout: 10000 }).catch(() => false);
-            
+
             if (!merchantRowVisible) {
                 // seedデータが見つからない場合、最初の行を使用
                 const firstRow = page.locator('table tbody tr').first();
@@ -235,7 +235,7 @@ test.describe('APIリクエストテスト', () => {
                 await expect(editLink).toBeVisible({ timeout: 10000 });
                 await editLink.click();
             }
-            
+
             await page.waitForURL(/\/merchants\/[^/]+\/edit/, { timeout: 30000 });
             await page.waitForLoadState('domcontentloaded');
             // フォームが完全に読み込まれるまで待機（「データを読み込み中...」が消えるまで）
@@ -399,10 +399,10 @@ test.describe('APIリクエストテスト', () => {
 
                 // バリデーションエラーがないことを確認
                 await page.waitForTimeout(500);
-                
+
                 // デバッグ: 現在のURL
                 console.log('[Merchant Update] 現在のURL:', page.url());
-                
+
                 // バリデーションエラーをチェック
                 const validationErrors = page.locator('[class*="text-red"], [class*="error"]');
                 const errorCount = await validationErrors.count();
@@ -419,14 +419,14 @@ test.describe('APIリクエストテスト', () => {
                 await expect(submitButton).toBeVisible({ timeout: 10000 });
                 await expect(submitButton).toBeEnabled({ timeout: 5000 });
                 console.log('[Merchant Update] 「更新内容を確認する」ボタンが見つかりました');
-                
+
                 // Reactのhydration完了を待機（ネットワークが安定するまで）
-                await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
-                
+                await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => { });
+
                 // APIリクエストを待機（送信ボタンをクリックする前に設定）
                 const responsePromise = page.waitForResponse(
-                    (response) => 
-                        response.url().includes(`/api/merchants/${merchantId}`) && 
+                    (response) =>
+                        response.url().includes(`/api/merchants/${merchantId}`) &&
                         (response.request().method() === 'PUT' || response.request().method() === 'PATCH'),
                     { timeout: 60000 }
                 ).catch((e) => {
@@ -437,29 +437,29 @@ test.describe('APIリクエストテスト', () => {
                 // クリック前のURL
                 const urlBeforeClick = page.url();
                 console.log('[Merchant Update] クリック前URL:', urlBeforeClick);
-                
+
                 // クリックとナビゲーションを同時に待機
                 await Promise.all([
                     page.waitForURL(/\/merchants\/[^/]+\/confirm/, { timeout: 15000 }).catch(() => null),
                     submitButton.click()
                 ]);
                 console.log('[Merchant Update] ボタンをクリックしました');
-                
+
                 // クリック後に少し待機
                 await page.waitForTimeout(1000);
-                
+
                 // クリック後のURL
                 const urlAfterClick = page.url();
                 console.log('[Merchant Update] クリック後URL:', urlAfterClick);
-                
+
                 // 確認画面への遷移を確認
                 const confirmPageReached = urlAfterClick.includes('/confirm');
                 console.log('[Merchant Update] 確認画面に到達:', confirmPageReached);
-                
+
                 // URLが変わっていない場合、フォームバリデーションエラーの可能性
                 if (!confirmPageReached) {
                     console.log('[Merchant Update] ⚠️ 確認画面に到達していません');
-                    
+
                     // バリデーションエラーメッセージを確認
                     const errorMessages = page.locator('p.text-sm.text-red-600');
                     const errorCount = await errorMessages.count();
@@ -470,10 +470,10 @@ test.describe('APIリクエストテスト', () => {
                             console.log(`  - ${errorText}`);
                         }
                     }
-                    
+
                     // スクリーンショットを撮影
                     await page.screenshot({ path: 'test-results/merchant-update-debug-validation-error.png', fullPage: true });
-                    
+
                     // 再度クリックを試行
                     console.log('[Merchant Update] 再度クリックを試行...');
                     await Promise.all([
@@ -483,7 +483,7 @@ test.describe('APIリクエストテスト', () => {
                     await page.waitForTimeout(1000);
                     console.log('[Merchant Update] 再クリック後URL:', page.url());
                 }
-                
+
                 await page.waitForLoadState('domcontentloaded');
 
                 // 確認画面にいる場合は「更新する」ボタンをクリック
@@ -505,7 +505,7 @@ test.describe('APIリクエストテスト', () => {
                 // APIリクエストのレスポンスを待機
                 const response = await responsePromise;
                 console.log('[Merchant Update] APIレスポンス:', response ? `ステータス ${response.status()}` : 'なし');
-                
+
                 // 409 Conflictエラーの場合、詳細を表示
                 if (response && response.status() === 409) {
                     try {
@@ -526,11 +526,11 @@ test.describe('APIリクエストテスト', () => {
                 // 更新完了トーストが表示されるまで待機（必須）
                 const toastSelector = 'div[class*="bg-green-50"], div[class*="toast"][class*="success"], [data-testid="toast-success"]';
                 const toastLocator = page.locator(toastSelector).first();
-                
+
                 // トーストが表示されるまで最大10秒待機
                 await page.waitForTimeout(1000); // トーストアニメーション開始を待機
                 const toastVisible = await toastLocator.isVisible({ timeout: 10000 }).catch(() => false);
-                
+
                 // 更新完了後のスクリーンショットを撮影（トースト表示を含む）
                 await page.screenshot({ path: 'test-results/merchant-update-complete.png', fullPage: true });
 
@@ -553,7 +553,7 @@ test.describe('APIリクエストテスト', () => {
                     // レスポンスの検証
                     expect(response.status()).toBeGreaterThanOrEqual(200);
                     expect(response.status()).toBeLessThan(300);
-                    
+
                     console.log('[Merchant Update] ✅ 事業者更新が正常に完了しました（ステータス: ' + response.status() + '）');
                 } else {
                     // リクエストが送信されなかった場合、バリデーションエラーを確認
@@ -590,12 +590,12 @@ test.describe('APIリクエストテスト', () => {
                 // 削除ボタンを探す（編集ページまたは詳細ページ）
                 const deleteButton = page.locator('button:has-text("削除"), button[title*="削除"], img[alt*="削除"]').first();
                 const deleteButtonVisible = await deleteButton.isVisible({ timeout: 5000 }).catch(() => false);
-                
+
                 if (deleteButtonVisible) {
                     // 削除ボタンをクリックする前に、リクエストを待機
                     const responsePromise = page.waitForResponse(
-                        (response) => 
-                            response.url().includes(`/api/merchants/${merchantId}`) && 
+                        (response) =>
+                            response.url().includes(`/api/merchants/${merchantId}`) &&
                             response.request().method() === 'DELETE',
                         { timeout: 30000 }
                     );
@@ -635,18 +635,18 @@ test.describe('APIリクエストテスト', () => {
         test('店舗の新規登録リクエストが正しく送信されること', async ({ page }) => {
             await page.goto('/shops/new');
             await page.waitForLoadState('domcontentloaded');
-            
+
             // ネットワークリクエストが落ち着くまで待機
             await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {
                 console.log('[Shop Registration] networkidle待機がタイムアウト、続行します');
             });
-            
+
             // ローディングが完了するまで待機（「データを読み込み中...」が消えるまで）
             await page.waitForFunction(() => {
                 const bodyText = document.body.textContent || '';
                 return !bodyText.includes('データを読み込み中');
             }, { timeout: 60000 });
-            
+
             // フォームが表示されるまで待機（タイムアウトを増加）
             await page.waitForSelector('button:has-text("事業者を選択")', { timeout: 30000 });
 
@@ -656,13 +656,13 @@ test.describe('APIリクエストテスト', () => {
             const merchantSelectButton = page.locator('button:has-text("事業者を選択")');
             await expect(merchantSelectButton).toBeVisible({ timeout: 10000 });
             await merchantSelectButton.click();
-            
+
             // 事業者リストが表示されるまで待機（ボタンリスト形式）
             // モーダル内の事業者ボタンをクリック（リスト内の最初の事業者を選択）
             // 「事業者選択」見出しが含まれるモーダルを待機
             const modalHeading = page.locator('h2:has-text("事業者選択")');
             await expect(modalHeading).toBeVisible({ timeout: 10000 });
-            
+
             // モーダル内の「読み込み中」が消えるまで待機
             await page.waitForFunction(() => {
                 const modal = document.querySelector('h2');
@@ -673,16 +673,16 @@ test.describe('APIリクエストテスト', () => {
                 return !loadingText.includes('読み込み中');
             }, { timeout: 30000 });
             console.log('[Shop Registration] モーダル内のローディングが完了しました');
-            
+
             await page.waitForTimeout(500); // レンダリング待機
-            
+
             // 事業者ボタンを探す（モーダル内のボタンで、UIボタンを除外）
             // モーダル内のボタン一覧を取得
             const modalContainer = page.locator('[class*="fixed"]').filter({ has: modalHeading });
             const allButtons = modalContainer.locator('button').filter({ hasNotText: /キャンセル|検索|chevron/ });
             const buttonCount = await allButtons.count();
             console.log('[Shop Registration] モーダル内のボタン数:', buttonCount);
-            
+
             let merchantButton = null;
             for (let i = 0; i < buttonCount; i++) {
                 const btn = allButtons.nth(i);
@@ -694,10 +694,10 @@ test.describe('APIリクエストテスト', () => {
                     break;
                 }
             }
-            
+
             if (merchantButton) {
                 await merchantButton.click();
-                
+
                 // モーダルが閉じるまで待機
                 await expect(modalHeading).not.toBeVisible({ timeout: 10000 });
                 console.log('[Shop Registration] ✅ モーダルが閉じました');
@@ -706,10 +706,10 @@ test.describe('APIリクエストテスト', () => {
                 await page.screenshot({ path: 'test-results/shop-merchant-modal-debug.png', fullPage: true });
                 throw new Error('事業者ボタンが見つかりませんでした。モーダル内のボタン数: ' + buttonCount);
             }
-            
+
             await page.waitForLoadState('domcontentloaded');
             await page.waitForTimeout(500);
-            
+
             // 事業者が選択されたことを確認
             const selectedMerchant = page.locator('button:has-text("事業者を選択")');
             const isStillUnselected = await selectedMerchant.isVisible({ timeout: 1000 }).catch(() => false);
@@ -802,7 +802,7 @@ test.describe('APIリクエストテスト', () => {
             const submitButton = page.getByRole('button', { name: /^登録する$/i });
             await expect(submitButton).toBeVisible({ timeout: 10000 });
             await expect(submitButton).toBeEnabled({ timeout: 5000 });
-            
+
             // APIリクエストを待機（送信ボタンをクリックする前に設定）
             const responsePromise = page.waitForResponse(
                 (response) => response.url().includes('/api/shops') && response.request().method() === 'POST',
@@ -821,7 +821,7 @@ test.describe('APIリクエストテスト', () => {
             // 登録完了トーストが表示されるまで待機（必須）
             const toastSelector = 'div[class*="bg-green-50"], div[class*="toast"][class*="success"], [data-testid="toast-success"]';
             const toastLocator = page.locator(toastSelector).first();
-            
+
             // トーストが表示されるまで最大10秒待機
             await page.waitForTimeout(1000);
             const toastVisible = await toastLocator.isVisible({ timeout: 10000 }).catch(() => false);
@@ -854,7 +854,7 @@ test.describe('APIリクエストテスト', () => {
                 // レスポンスの検証
                 expect(response.status()).toBeGreaterThanOrEqual(200);
                 expect(response.status()).toBeLessThan(300);
-                
+
                 console.log('[Shop Registration] ✅ APIリクエストが正常に完了しました（ステータス: ' + response.status() + '）');
             }
         });
@@ -863,12 +863,12 @@ test.describe('APIリクエストテスト', () => {
             await page.goto('/shops', { waitUntil: 'domcontentloaded', timeout: 60000 });
             await page.waitForLoadState('domcontentloaded');
             // ローディングが完了するまで待機
-            await page.waitForSelector('table, [class*="loading"]', { timeout: 30000 }).catch(() => {});
+            await page.waitForSelector('table, [class*="loading"]', { timeout: 30000 }).catch(() => { });
             // ローディングが消えるまで待機
             await page.waitForFunction(() => {
                 const loading = document.querySelector('[class*="loading"], [class*="spinner"]');
                 return !loading || (loading as HTMLElement).style.display === 'none';
-            }, { timeout: 30000 }).catch(() => {});
+            }, { timeout: 30000 }).catch(() => { });
             // テーブルが読み込まれるまで待機（複数の方法で確認）
             const tableVisible = await page.waitForSelector('table tbody tr', { timeout: 30000 }).catch(async () => {
                 // テーブルが見つからない場合、少し待機して再試行
@@ -884,7 +884,7 @@ test.describe('APIリクエストテスト', () => {
             const seedShopName = '【ノモカ】高松うどん 讃岐本舗';
             const shopRow = page.locator('table tbody tr').filter({ hasText: seedShopName }).first();
             const shopRowVisible = await shopRow.isVisible({ timeout: 10000 }).catch(() => false);
-            
+
             let editLink;
             if (shopRowVisible) {
                 // seedデータの編集リンクをクリック
@@ -905,7 +905,7 @@ test.describe('APIリクエストテスト', () => {
                 const isLoading = bodyText.includes('データを読み込み中') || bodyText.includes('読み込み中');
                 return !isLoading;
             }, { timeout: 60000 });
-            
+
             // フォームフィールドが表示されるまで待機（複数のセレクターを試す）
             const nameFieldSelector = 'input[name="name"], input[id="name"], input[placeholder*="店舗名"]';
             await page.waitForSelector(nameFieldSelector, { timeout: 30000 }).catch(async () => {
@@ -925,94 +925,94 @@ test.describe('APIリクエストテスト', () => {
             const shopId = shopIdMatch ? shopIdMatch[1] : null;
 
             if (shopId) {
-                    // 喫煙タイプを選択（必須フィールド - 既存データがない場合に備えて選択）
-                    const smokingTypeRadio = page.locator('input[type="radio"][name="smokingType"]').first();
-                    const isSmokingTypeChecked = await page.locator('input[type="radio"][name="smokingType"]:checked').count() > 0;
-                    if (!isSmokingTypeChecked) {
-                        await smokingTypeRadio.scrollIntoViewIfNeeded();
-                        await smokingTypeRadio.check();
-                        await page.waitForTimeout(200);
+                // 喫煙タイプを選択（必須フィールド - 既存データがない場合に備えて選択）
+                const smokingTypeRadio = page.locator('input[type="radio"][name="smokingType"]').first();
+                const isSmokingTypeChecked = await page.locator('input[type="radio"][name="smokingType"]:checked').count() > 0;
+                if (!isSmokingTypeChecked) {
+                    await smokingTypeRadio.scrollIntoViewIfNeeded();
+                    await smokingTypeRadio.check();
+                    await page.waitForTimeout(200);
+                }
+
+                // 店舗名フィールドを探す（name属性を使用）
+                const nameInput = page.locator('input[name="name"], input[id="name"]').first();
+                await expect(nameInput).toBeVisible({ timeout: 15000 });
+                const currentValue = await nameInput.inputValue();
+                const updatedValue = currentValue + '_更新';
+                await nameInput.fill(updatedValue);
+
+                // 「更新内容を確認する」ボタンをクリックして確認画面へ遷移
+                const confirmButton = page.locator('button:has-text("更新内容を確認する")').last();
+                await expect(confirmButton).toBeVisible({ timeout: 10000 });
+                await expect(confirmButton).toBeEnabled({ timeout: 5000 });
+                await confirmButton.click();
+
+                // 確認画面への遷移を待機
+                await page.waitForURL(/\/shops\/[^/]+\/confirm/, { timeout: 30000 });
+                await page.waitForLoadState('domcontentloaded');
+                await page.waitForTimeout(1000);
+
+                // 確認画面で「更新する」ボタンをクリック
+                const submitButton = page.getByRole('button', { name: '更新する' });
+                await expect(submitButton).toBeVisible({ timeout: 10000 });
+                await expect(submitButton).toBeEnabled({ timeout: 5000 });
+
+                // APIリクエストを待機（送信ボタンをクリックする前に設定）
+                const responsePromise = page.waitForResponse(
+                    (response) =>
+                        response.url().includes(`/api/shops/${shopId}`) &&
+                        (response.request().method() === 'PUT' || response.request().method() === 'PATCH'),
+                    { timeout: 30000 }
+                ).catch(() => null);
+
+                await submitButton.click();
+
+                // APIリクエストのレスポンスを待機
+                const response = await responsePromise;
+
+                // 店舗一覧画面への遷移を待機
+                await page.waitForURL(/\/shops(?!\/[^/]+\/confirm)/, { timeout: 30000 });
+                await page.waitForLoadState('domcontentloaded');
+
+                // 変更完了トーストが表示されるまで待機（必須）
+                const toastSelector = 'div[class*="bg-green-50"], div[class*="toast"][class*="success"], [data-testid="toast-success"]';
+                const toastLocator = page.locator(toastSelector).first();
+
+                // トーストが表示されるまで最大10秒待機
+                await page.waitForTimeout(1000);
+                const toastVisible = await toastLocator.isVisible({ timeout: 10000 }).catch(() => false);
+
+                // 変更完了後のスクリーンショットを撮影（トースト表示を含む）
+                await page.screenshot({ path: 'test-results/shop-update-complete.png', fullPage: true });
+
+                // トーストが表示されない場合はテストNG
+                if (!toastVisible) {
+                    throw new Error('変更完了トーストが表示されませんでした。テストNGです。');
+                }
+                console.log('[Shop Update] ✅ 変更完了トーストが表示されました');
+
+                // トーストが消えるまで動画を継続
+                await page.waitForTimeout(2000);
+
+                if (response) {
+                    // リクエストの検証
+                    const request = response.request();
+                    expect(request.method()).toMatch(/PUT|PATCH/);
+                    expect(request.url()).toContain(`/api/shops/${shopId}`);
+
+                    // リクエストボディの検証
+                    const requestBody = request.postDataJSON();
+                    expect(requestBody).toBeTruthy();
+                    if (requestBody.name) {
+                        expect(requestBody.name).toBe(updatedValue);
                     }
 
-                    // 店舗名フィールドを探す（name属性を使用）
-                    const nameInput = page.locator('input[name="name"], input[id="name"]').first();
-                    await expect(nameInput).toBeVisible({ timeout: 15000 });
-                    const currentValue = await nameInput.inputValue();
-                    const updatedValue = currentValue + '_更新';
-                    await nameInput.fill(updatedValue);
+                    // レスポンスの検証
+                    expect(response.status()).toBeGreaterThanOrEqual(200);
+                    expect(response.status()).toBeLessThan(300);
 
-                    // 「更新内容を確認する」ボタンをクリックして確認画面へ遷移
-                    const confirmButton = page.locator('button:has-text("更新内容を確認する")').last();
-                    await expect(confirmButton).toBeVisible({ timeout: 10000 });
-                    await expect(confirmButton).toBeEnabled({ timeout: 5000 });
-                    await confirmButton.click();
-
-                    // 確認画面への遷移を待機
-                    await page.waitForURL(/\/shops\/[^/]+\/confirm/, { timeout: 30000 });
-                    await page.waitForLoadState('domcontentloaded');
-                    await page.waitForTimeout(1000);
-
-                    // 確認画面で「更新する」ボタンをクリック
-                    const submitButton = page.getByRole('button', { name: '更新する' });
-                    await expect(submitButton).toBeVisible({ timeout: 10000 });
-                    await expect(submitButton).toBeEnabled({ timeout: 5000 });
-                    
-                    // APIリクエストを待機（送信ボタンをクリックする前に設定）
-                    const responsePromise = page.waitForResponse(
-                        (response) => 
-                            response.url().includes(`/api/shops/${shopId}`) && 
-                            (response.request().method() === 'PUT' || response.request().method() === 'PATCH'),
-                        { timeout: 30000 }
-                    ).catch(() => null);
-
-                    await submitButton.click();
-
-                    // APIリクエストのレスポンスを待機
-                    const response = await responsePromise;
-
-                    // 店舗一覧画面への遷移を待機
-                    await page.waitForURL(/\/shops(?!\/[^/]+\/confirm)/, { timeout: 30000 });
-                    await page.waitForLoadState('domcontentloaded');
-
-                    // 変更完了トーストが表示されるまで待機（必須）
-                    const toastSelector = 'div[class*="bg-green-50"], div[class*="toast"][class*="success"], [data-testid="toast-success"]';
-                    const toastLocator = page.locator(toastSelector).first();
-                    
-                    // トーストが表示されるまで最大10秒待機
-                    await page.waitForTimeout(1000);
-                    const toastVisible = await toastLocator.isVisible({ timeout: 10000 }).catch(() => false);
-
-                    // 変更完了後のスクリーンショットを撮影（トースト表示を含む）
-                    await page.screenshot({ path: 'test-results/shop-update-complete.png', fullPage: true });
-
-                    // トーストが表示されない場合はテストNG
-                    if (!toastVisible) {
-                        throw new Error('変更完了トーストが表示されませんでした。テストNGです。');
-                    }
-                    console.log('[Shop Update] ✅ 変更完了トーストが表示されました');
-
-                    // トーストが消えるまで動画を継続
-                    await page.waitForTimeout(2000);
-
-                    if (response) {
-                        // リクエストの検証
-                        const request = response.request();
-                        expect(request.method()).toMatch(/PUT|PATCH/);
-                        expect(request.url()).toContain(`/api/shops/${shopId}`);
-
-                        // リクエストボディの検証
-                        const requestBody = request.postDataJSON();
-                        expect(requestBody).toBeTruthy();
-                        if (requestBody.name) {
-                            expect(requestBody.name).toBe(updatedValue);
-                        }
-
-                        // レスポンスの検証
-                        expect(response.status()).toBeGreaterThanOrEqual(200);
-                        expect(response.status()).toBeLessThan(300);
-                        
-                        console.log('[Shop Update] ✅ 店舗更新が正常に完了しました（ステータス: ' + response.status() + '）');
-                    }
+                    console.log('[Shop Update] ✅ 店舗更新が正常に完了しました（ステータス: ' + response.status() + '）');
+                }
             }
         });
 
@@ -1020,12 +1020,12 @@ test.describe('APIリクエストテスト', () => {
             await page.goto('/shops', { waitUntil: 'domcontentloaded', timeout: 60000 });
             await page.waitForLoadState('domcontentloaded');
             // ローディングが完了するまで待機
-            await page.waitForSelector('table, [class*="loading"]', { timeout: 30000 }).catch(() => {});
+            await page.waitForSelector('table, [class*="loading"]', { timeout: 30000 }).catch(() => { });
             // ローディングが消えるまで待機
             await page.waitForFunction(() => {
                 const loading = document.querySelector('[class*="loading"], [class*="spinner"]');
                 return !loading || (loading as HTMLElement).style.display === 'none';
-            }, { timeout: 30000 }).catch(() => {});
+            }, { timeout: 30000 }).catch(() => { });
             // テーブルが読み込まれるまで待機（複数の方法で確認）
             const tableVisible = await page.waitForSelector('table tbody tr', { timeout: 30000 }).catch(async () => {
                 // テーブルが見つからない場合、少し待機して再試行
@@ -1041,7 +1041,7 @@ test.describe('APIリクエストテスト', () => {
             const seedShopName = '【ノモカ】瀬戸内居酒屋 骨付鳥';
             const shopRow = page.locator('table tbody tr').filter({ hasText: seedShopName }).first();
             const shopRowVisible = await shopRow.isVisible({ timeout: 10000 }).catch(() => false);
-            
+
             let targetRow;
             if (shopRowVisible) {
                 targetRow = shopRow;
@@ -1058,16 +1058,16 @@ test.describe('APIリクエストテスト', () => {
             // テーブル構造: 承認ステータス列にselect要素がある
             const statusSelect = targetRow.locator('td').filter({ has: page.locator('select') }).locator('select').first();
             const statusSelectVisible = await statusSelect.isVisible({ timeout: 10000 }).catch(() => false);
-            
+
             if (!statusSelectVisible) {
                 // フォールバック: 行内のselect要素を探す
                 const fallbackSelect = targetRow.locator('select').first();
                 await expect(fallbackSelect).toBeVisible({ timeout: 10000 });
                 await expect(fallbackSelect).toBeEnabled({ timeout: 5000 });
-                
+
                 // 現在のステータスを取得
                 const currentStatus = await fallbackSelect.inputValue();
-                
+
                 // 既に「終了」ステータスの場合はスキップ
                 if (currentStatus === 'terminated') {
                     test.skip();
@@ -1078,7 +1078,7 @@ test.describe('APIリクエストテスト', () => {
                 const editLink = targetRow.locator('a[href*="edit"]').first();
                 const editLinkVisible = await editLink.isVisible({ timeout: 5000 }).catch(() => false);
                 let shopId: string | null = null;
-                
+
                 if (editLinkVisible) {
                     const href = await editLink.getAttribute('href');
                     if (href) {
@@ -1088,14 +1088,14 @@ test.describe('APIリクエストテスト', () => {
                         shopId = match ? match[1] : null;
                     }
                 }
-                
+
                 if (shopId) {
                     // 注意: smokingType選択は不要 - ステータス変更は一覧ページのドロップダウンから直接行う
 
                     // APIリクエストを待機（ステータス変更の前に設定）
                     const responsePromise = page.waitForResponse(
-                        (response) => 
-                            response.url().includes(`/api/shops/${shopId}/status`) && 
+                        (response) =>
+                            response.url().includes(`/api/shops/${shopId}/status`) &&
                             response.request().method() === 'PATCH',
                         { timeout: 30000 }
                     ).catch(() => null);
@@ -1141,7 +1141,7 @@ test.describe('APIリクエストテスト', () => {
 
             // 現在のステータスを取得
             const currentStatus = await statusSelect.inputValue();
-            
+
             // 既に「終了」ステータスの場合はスキップ
             if (currentStatus === 'terminated') {
                 test.skip();
@@ -1152,7 +1152,7 @@ test.describe('APIリクエストテスト', () => {
             const editLink = targetRow.locator('a[href*="edit"]').first();
             const editLinkVisible = await editLink.isVisible({ timeout: 5000 }).catch(() => false);
             let shopId: string | null = null;
-            
+
             if (editLinkVisible) {
                 const href = await editLink.getAttribute('href');
                 if (href) {
@@ -1168,8 +1168,8 @@ test.describe('APIリクエストテスト', () => {
 
                 // APIリクエストを待機（ステータス変更の前に設定）
                 const responsePromise = page.waitForResponse(
-                    (response) => 
-                        response.url().includes(`/api/shops/${shopId}/status`) && 
+                    (response) =>
+                        response.url().includes(`/api/shops/${shopId}/status`) &&
                         response.request().method() === 'PATCH',
                     { timeout: 30000 }
                 ).catch(() => null);
@@ -1219,28 +1219,28 @@ test.describe('APIリクエストテスト', () => {
             await page.goto('/coupons/new', { waitUntil: 'domcontentloaded', timeout: 60000 });
             await page.waitForLoadState('domcontentloaded');
             console.log('[Coupon Registration] ページの読み込みが完了しました');
-            
+
             // ページの状態をログ出力
             const initialUrl = page.url();
             console.log('[Coupon Registration] 現在のURL:', initialUrl);
-            
+
             // ローディングが完了するまで待機
             await page.waitForTimeout(2000);
-            
+
             // ページの内容をデバッグ用にログ出力
             const pageContent = await page.locator('body').textContent();
             console.log('[Coupon Registration] ページの内容（最初の500文字）:', pageContent?.substring(0, 500));
-            
+
             // 「事業者を選択」ボタンがあるか確認
             const selectMerchantButton = page.locator('button:has-text("事業者を選択")');
             const selectMerchantButtonCount = await selectMerchantButton.count();
             console.log('[Coupon Registration] 「事業者を選択」ボタンの数:', selectMerchantButtonCount);
-            
+
             // 「事業者」ラベルがあるか確認
             const merchantLabel = page.locator('label:has-text("事業者")');
             const merchantLabelCount = await merchantLabel.count();
             console.log('[Coupon Registration] 「事業者」ラベルの数:', merchantLabelCount);
-            
+
             // isAdminAccount かどうかを確認するため、管理者用UIが表示されているか確認
             const adminUI = page.locator('button:has-text("事業者を選択"), div:has-text("先に事業者を選択してください")');
             const adminUICount = await adminUI.count();
@@ -1252,25 +1252,25 @@ test.describe('APIリクエストテスト', () => {
             // seedデータ（【たまのみ】さいたま商事株式会社）を選択（店舗が存在する事業者）
             // より確実なセレクターを使用：「事業者を選択」ボタンを優先的に探す
             console.log('[Merchant Selection] 事業者選択ボタンを探しています...');
-            
+
             // まず、ページが完全に読み込まれるまで待機
             await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {
                 console.log('[Merchant Selection] networkidle待機がタイムアウトしましたが、続行します');
             });
             await page.waitForTimeout(1000);
-            
+
             // 「事業者を選択」ボタンを探す（より具体的なセレクター）
             let merchantSelectButton = page.getByRole('button', { name: '事業者を選択' }).first();
             let merchantButtonVisible = await merchantSelectButton.isVisible({ timeout: 15000 }).catch(() => false);
             console.log('[Merchant Selection] 「事業者を選択」ボタンの表示状態:', merchantButtonVisible);
-            
+
             // 見つからない場合、別のセレクターを試す
             if (!merchantButtonVisible) {
                 console.log('[Merchant Selection] 「事業者を選択」ボタンが見つかりません。別のセレクターを試します...');
                 merchantSelectButton = page.locator('button:has-text("事業者を選択")').first();
                 merchantButtonVisible = await merchantSelectButton.isVisible({ timeout: 5000 }).catch(() => false);
                 console.log('[Merchant Selection] 代替セレクターでの表示状態:', merchantButtonVisible);
-                
+
                 if (!merchantButtonVisible) {
                     // それでも見つからない場合、ページの内容を確認
                     const allButtons = await page.locator('button').all();
@@ -1282,23 +1282,23 @@ test.describe('APIリクエストテスト', () => {
                     throw new Error('事業者選択ボタンが見つかりませんでした');
                 }
             }
-            
+
             if (merchantButtonVisible) {
                 await merchantSelectButton.click();
                 console.log('[Merchant Selection] 事業者選択ボタンをクリックしました');
-                
+
                 // モーダルが開くまで待機（モーダルはdiv.fixed.inset-0.z-50で実装されている）
                 await page.waitForSelector('div.fixed.inset-0.z-50', { timeout: 15000 });
                 console.log('[Merchant Selection] モーダルが開きました');
                 await page.waitForTimeout(1000);
-                
+
                 // モーダル内の検索フィールドを探す
                 // MerchantSelectModalの実装: placeholder="事業者名またはメールアドレスで検索..."
                 const searchInput = page.locator('div.fixed.inset-0.z-50 input[type="text"]').first();
                 await expect(searchInput).toBeVisible({ timeout: 10000 });
                 await expect(searchInput).toBeEnabled({ timeout: 5000 });
                 console.log('[Merchant Selection] 検索フィールドが表示されました');
-                
+
                 // adminアカウントの場合、初期表示で10件取得されるので、まず初期ローディングの完了を待機
                 await page.waitForFunction(() => {
                     const modal = document.querySelector('div.fixed.inset-0.z-50');
@@ -1308,23 +1308,23 @@ test.describe('APIリクエストテスト', () => {
                 }, { timeout: 15000 });
                 console.log('[Merchant Selection] 初期ローディングが完了しました');
                 await page.waitForTimeout(500);
-                
+
                 // 既に事業者リストが表示されているか確認
                 const initialMerchantButtons = page.locator('div.fixed.inset-0.z-50 button.border-2');
                 const initialCount = await initialMerchantButtons.count();
                 console.log('[Merchant Selection] 初期表示の事業者数:', initialCount);
-                
+
                 // seedデータ（【たまのみ】さいたま商事株式会社）を検索
                 // フィールドをクリックしてフォーカスを当てる
                 await searchInput.click();
                 await page.waitForTimeout(200);
-                
+
                 // 検索クエリを入力
                 const searchQuery = 'さいたま商事'; // 部分一致で検索
                 await searchInput.fill(searchQuery);
                 const inputValue = await searchInput.inputValue();
                 console.log('[Merchant Selection] 検索フィールドの値:', inputValue);
-                
+
                 if (inputValue !== searchQuery) {
                     console.log('[Merchant Selection] 検索フィールドへの入力に失敗。再試行します。');
                     await searchInput.clear();
@@ -1333,7 +1333,7 @@ test.describe('APIリクエストテスト', () => {
                     const retryValue = await searchInput.inputValue();
                     console.log('[Merchant Selection] 再試行後の検索フィールドの値:', retryValue);
                 }
-                
+
                 // 検索APIリクエストのレスポンスを待機（検索ボタンをクリックする前に設定）
                 const searchResponsePromise = page.waitForResponse(
                     (response) => response.url().includes('/api/merchants') && response.request().method() === 'GET',
@@ -1342,13 +1342,13 @@ test.describe('APIリクエストテスト', () => {
                     console.log('[Merchant Selection] 検索APIリクエストの待機中にエラー:', e.message);
                     return null;
                 });
-                
+
                 // 検索ボタンをクリック（検索アイコンが含まれるボタン）
                 // MerchantSelectModalの実装: title="検索" のボタン
                 const searchButton = page.locator('div.fixed.inset-0.z-50 button[title="検索"]').first();
                 const searchButtonVisible = await searchButton.isVisible({ timeout: 5000 }).catch(() => false);
                 console.log('[Merchant Selection] 検索ボタン（title="検索"）の表示状態:', searchButtonVisible);
-                
+
                 if (searchButtonVisible) {
                     await searchButton.click();
                     console.log('[Merchant Selection] 検索ボタンをクリックしました');
@@ -1366,7 +1366,7 @@ test.describe('APIリクエストテスト', () => {
                         console.log('[Merchant Selection] Enterキーで検索を実行しました');
                     }
                 }
-                
+
                 // 検索結果が表示されるまで待機（ローディングが完了するまで）
                 await page.waitForFunction(() => {
                     const modal = document.querySelector('div.fixed.inset-0.z-50');
@@ -1378,44 +1378,44 @@ test.describe('APIリクエストテスト', () => {
                     return !loading && (merchantButtons.length > 0 || noResultMessage);
                 }, { timeout: 15000 });
                 console.log('[Merchant Selection] 検索結果のローディングが完了しました');
-                
+
                 // APIリクエストの完了を待機
                 const searchResponse = await searchResponsePromise;
                 console.log('[Merchant Selection] 検索APIレスポンス:', searchResponse ? searchResponse.status() : 'なし');
                 await page.waitForTimeout(1000);
-                
+
                 // 検索結果からseedデータ（【たまのみ】さいたま商事株式会社）を探す
                 // 事業者ボタンは `button.border-2` クラスを持つ
                 const merchantButtons = page.locator('div.fixed.inset-0.z-50 button.border-2');
                 const buttonCount = await merchantButtons.count();
                 console.log('[Merchant Selection] 検索結果の事業者数:', buttonCount);
-                
+
                 if (buttonCount === 0) {
                     // 事業者が見つからない場合、モーダルの内容をログ出力
                     const modalContent = await page.locator('div.fixed.inset-0.z-50').textContent();
                     console.log('[Merchant Selection] モーダルの内容:', modalContent?.substring(0, 500));
                     throw new Error('事業者を選択できませんでした。検索結果に事業者が表示されていません。');
                 }
-                
+
                 // さいたま商事を含む事業者ボタンを探す
                 const targetMerchantButton = page.locator('div.fixed.inset-0.z-50 button.border-2:has-text("さいたま商事")').first();
                 const targetButtonVisible = await targetMerchantButton.isVisible({ timeout: 5000 }).catch(() => false);
                 console.log('[Merchant Selection] さいたま商事ボタンの表示状態:', targetButtonVisible);
-                
+
                 if (targetButtonVisible) {
                     await targetMerchantButton.click();
-                console.log('[Merchant Selection] モーダルが閉じるまで待機します...');
-                await page.waitForSelector('div.fixed.inset-0.z-50', { state: 'hidden', timeout: 10000 }).catch(() => {
-                    console.log('[Merchant Selection] モーダルが閉じるまで待機（div.fixed.inset-0.z-50）がタイムアウトしました');
-                });
-                await page.waitForFunction(() => {
-                    const modal = document.querySelector('div.fixed.inset-0.z-50');
-                    return !modal || window.getComputedStyle(modal as HTMLElement).display === 'none';
-                }, { timeout: 10000 }).catch(() => {
-                    console.log('[Merchant Selection] モーダルが閉じるまで待機（waitForFunction）がタイムアウトしました');
-                });
-                await page.waitForLoadState('domcontentloaded');
-                console.log('[Merchant Selection] モーダルが閉じました');
+                    console.log('[Merchant Selection] モーダルが閉じるまで待機します...');
+                    await page.waitForSelector('div.fixed.inset-0.z-50', { state: 'hidden', timeout: 10000 }).catch(() => {
+                        console.log('[Merchant Selection] モーダルが閉じるまで待機（div.fixed.inset-0.z-50）がタイムアウトしました');
+                    });
+                    await page.waitForFunction(() => {
+                        const modal = document.querySelector('div.fixed.inset-0.z-50');
+                        return !modal || window.getComputedStyle(modal as HTMLElement).display === 'none';
+                    }, { timeout: 10000 }).catch(() => {
+                        console.log('[Merchant Selection] モーダルが閉じるまで待機（waitForFunction）がタイムアウトしました');
+                    });
+                    await page.waitForLoadState('domcontentloaded');
+                    console.log('[Merchant Selection] モーダルが閉じました');
                     console.log('[Merchant Selection] さいたま商事ボタンをクリックしました');
                 } else {
                     // 最初の事業者ボタンをクリック
@@ -1423,21 +1423,21 @@ test.describe('APIリクエストテスト', () => {
                     const firstButtonText = await firstButton.textContent();
                     console.log('[Merchant Selection] 最初の事業者ボタンのテキスト:', firstButtonText?.substring(0, 100));
                     await firstButton.click();
-                console.log('[Merchant Selection] モーダルが閉じるまで待機します...');
-                await page.waitForSelector('div.fixed.inset-0.z-50', { state: 'hidden', timeout: 10000 }).catch(() => {
-                    console.log('[Merchant Selection] モーダルが閉じるまで待機（div.fixed.inset-0.z-50）がタイムアウトしました');
-                });
-                await page.waitForFunction(() => {
-                    const modal = document.querySelector('div.fixed.inset-0.z-50');
-                    return !modal || window.getComputedStyle(modal as HTMLElement).display === 'none';
-                }, { timeout: 10000 }).catch(() => {
-                    console.log('[Merchant Selection] モーダルが閉じるまで待機（waitForFunction）がタイムアウトしました');
-                });
-                await page.waitForLoadState('domcontentloaded');
-                console.log('[Merchant Selection] モーダルが閉じました');
+                    console.log('[Merchant Selection] モーダルが閉じるまで待機します...');
+                    await page.waitForSelector('div.fixed.inset-0.z-50', { state: 'hidden', timeout: 10000 }).catch(() => {
+                        console.log('[Merchant Selection] モーダルが閉じるまで待機（div.fixed.inset-0.z-50）がタイムアウトしました');
+                    });
+                    await page.waitForFunction(() => {
+                        const modal = document.querySelector('div.fixed.inset-0.z-50');
+                        return !modal || window.getComputedStyle(modal as HTMLElement).display === 'none';
+                    }, { timeout: 10000 }).catch(() => {
+                        console.log('[Merchant Selection] モーダルが閉じるまで待機（waitForFunction）がタイムアウトしました');
+                    });
+                    await page.waitForLoadState('domcontentloaded');
+                    console.log('[Merchant Selection] モーダルが閉じました');
                     console.log('[Merchant Selection] 最初の事業者ボタンをクリックしました');
                 }
-                
+
                 // モーダルが閉じるまで待機
                 console.log('[Merchant Selection] モーダルが閉じるのを待機中...');
                 await page.waitForFunction(() => {
@@ -1450,7 +1450,7 @@ test.describe('APIリクエストテスト', () => {
                 await page.waitForLoadState('domcontentloaded');
                 // 事業者選択後、店舗選択ボタンが有効になるまで待機
                 await page.waitForTimeout(2000); // 店舗データが読み込まれるまで待機
-                
+
                 // 事業者が選択されたことを確認（事業者名が表示されているか確認）
                 // 複数のセレクターで事業者名を探す
                 const merchantNameSelectors = [
@@ -1468,7 +1468,7 @@ test.describe('APIリクエストテスト', () => {
                         break;
                     }
                 }
-                
+
                 if (!merchantNameVisible) {
                     // 事業者名が表示されていない場合、少し待機して再確認
                     await page.waitForTimeout(2000);
@@ -1492,7 +1492,7 @@ test.describe('APIリクエストテスト', () => {
             const shopSelectButton = page.locator('button:has-text("店舗を選択")').first();
             const shopButtonVisible = await shopSelectButton.isVisible({ timeout: 15000 }).catch(() => false);
             console.log('[Shop Selection] 「店舗を選択」ボタンの表示状態:', shopButtonVisible);
-            
+
             if (shopButtonVisible) {
                 // ボタンが有効になるまで明示的に待機（事業者選択後に有効になる）
                 await page.waitForFunction(() => {
@@ -1502,17 +1502,17 @@ test.describe('APIリクエストテスト', () => {
                     return shopButton && !shopButton.hasAttribute('disabled');
                 }, { timeout: 20000 });
                 console.log('[Shop Selection] 店舗選択ボタンが有効になりました');
-                
+
                 // ボタンが有効であることを確認
                 await expect(shopSelectButton).toBeEnabled({ timeout: 10000 });
                 await shopSelectButton.click();
                 console.log('[Shop Selection] 店舗選択ボタンをクリックしました');
-                
+
                 // モーダルが開くまで待機
                 await page.waitForSelector('div.fixed.inset-0.z-50', { timeout: 15000 });
                 console.log('[Shop Selection] 店舗選択モーダルが開きました');
                 await page.waitForTimeout(1000);
-                
+
                 // 初期ローディングの完了を待機
                 await page.waitForFunction(() => {
                     const modal = document.querySelector('div.fixed.inset-0.z-50');
@@ -1522,25 +1522,25 @@ test.describe('APIリクエストテスト', () => {
                 }, { timeout: 15000 });
                 console.log('[Shop Selection] 初期ローディングが完了しました');
                 await page.waitForTimeout(500);
-                
+
                 // 店舗ボタン（button.border-2）を確認
                 const shopButtons = page.locator('div.fixed.inset-0.z-50 button.border-2');
                 const shopButtonCount = await shopButtons.count();
                 console.log('[Shop Selection] 店舗数:', shopButtonCount);
-                
+
                 if (shopButtonCount === 0) {
                     // 店舗が見つからない場合、モーダルの内容をログ出力
                     const modalContent = await page.locator('div.fixed.inset-0.z-50').textContent();
                     console.log('[Shop Selection] モーダルの内容:', modalContent?.substring(0, 500));
                     throw new Error('店舗を選択できませんでした。店舗が表示されていません。');
                 }
-                
+
                 // seedデータ（【ノモカ】高松うどん 讃岐本舗）を探す
                 const seedShopName = '高松うどん';
                 const targetShopButton = page.locator('div.fixed.inset-0.z-50 button.border-2:has-text("' + seedShopName + '")').first();
                 const targetButtonVisible = await targetShopButton.isVisible({ timeout: 5000 }).catch(() => false);
                 console.log('[Shop Selection] 「高松うどん」ボタンの表示状態:', targetButtonVisible);
-                
+
                 if (targetButtonVisible) {
                     await targetShopButton.click();
                     console.log('[Shop Selection] 「高松うどん」ボタンをクリックしました');
@@ -1550,21 +1550,21 @@ test.describe('APIリクエストテスト', () => {
                     const firstButtonText = await firstButton.textContent();
                     console.log('[Shop Selection] 最初の店舗ボタンのテキスト:', firstButtonText?.substring(0, 100));
                     await firstButton.click();
-                console.log('[Merchant Selection] モーダルが閉じるまで待機します...');
-                await page.waitForSelector('div.fixed.inset-0.z-50', { state: 'hidden', timeout: 10000 }).catch(() => {
-                    console.log('[Merchant Selection] モーダルが閉じるまで待機（div.fixed.inset-0.z-50）がタイムアウトしました');
-                });
-                await page.waitForFunction(() => {
-                    const modal = document.querySelector('div.fixed.inset-0.z-50');
-                    return !modal || window.getComputedStyle(modal as HTMLElement).display === 'none';
-                }, { timeout: 10000 }).catch(() => {
-                    console.log('[Merchant Selection] モーダルが閉じるまで待機（waitForFunction）がタイムアウトしました');
-                });
-                await page.waitForLoadState('domcontentloaded');
-                console.log('[Merchant Selection] モーダルが閉じました');
+                    console.log('[Merchant Selection] モーダルが閉じるまで待機します...');
+                    await page.waitForSelector('div.fixed.inset-0.z-50', { state: 'hidden', timeout: 10000 }).catch(() => {
+                        console.log('[Merchant Selection] モーダルが閉じるまで待機（div.fixed.inset-0.z-50）がタイムアウトしました');
+                    });
+                    await page.waitForFunction(() => {
+                        const modal = document.querySelector('div.fixed.inset-0.z-50');
+                        return !modal || window.getComputedStyle(modal as HTMLElement).display === 'none';
+                    }, { timeout: 10000 }).catch(() => {
+                        console.log('[Merchant Selection] モーダルが閉じるまで待機（waitForFunction）がタイムアウトしました');
+                    });
+                    await page.waitForLoadState('domcontentloaded');
+                    console.log('[Merchant Selection] モーダルが閉じました');
                     console.log('[Shop Selection] 最初の店舗ボタンをクリックしました');
                 }
-                
+
                 // モーダルが閉じるまで待機
                 console.log('[Shop Selection] モーダルが閉じるのを待機中...');
                 await page.waitForFunction(() => {
@@ -1574,10 +1574,10 @@ test.describe('APIリクエストテスト', () => {
                     console.log('[Shop Selection] モーダルが閉じるのを待機中にタイムアウト');
                 });
                 console.log('[Shop Selection] モーダルが閉じました');
-                
+
                 await page.waitForLoadState('domcontentloaded');
                 await page.waitForTimeout(2000); // 店舗選択が反映されるまで待機
-                
+
                 // 店舗が選択されたことを確認
                 const shopNameDisplayed = await page.locator('[data-field="shopId"] div.text-base, [data-field="shopId"] div:has-text("高松うどん"), [data-field="shopId"] div:has-text("讃岐本舗")').first().isVisible({ timeout: 5000 }).catch(() => false);
                 console.log('[Shop Selection] 店舗名の表示状態:', shopNameDisplayed);
@@ -1695,7 +1695,7 @@ test.describe('APIリクエストテスト', () => {
 
             // バリデーションエラーがないことを確認（すべての必須フィールドが入力されていることを確認）
             await page.waitForTimeout(1000); // バリデーションが処理されるまで待機
-            
+
             // 事業者が選択されていることを確認
             const merchantNameDisplayed = await page.locator('div:has-text("さいたま商事"), div:has-text("ノモカ")').first().isVisible({ timeout: 3000 }).catch(() => false);
             if (!merchantNameDisplayed) {
@@ -1722,7 +1722,7 @@ test.describe('APIリクエストテスト', () => {
                     }
                 }
             }
-            
+
             // 店舗が選択されていることを確認（店舗名が表示されているか確認）
             const shopNameDisplayed = await page.locator('[data-field="shopId"] div:has-text("高松うどん"), [data-field="shopId"] div:has-text("讃岐本舗"), [data-field="shopId"] div.text-base, [data-field="shopId"] div.text-sm').first().isVisible({ timeout: 3000 }).catch(() => false);
             if (!shopNameDisplayed) {
@@ -1750,10 +1750,10 @@ test.describe('APIリクエストテスト', () => {
                     }
                 }
             }
-            
+
             // すべての必須フィールドが入力されていることを最終確認
             await page.waitForTimeout(1000); // バリデーションが処理されるまで待機
-            
+
             // モーダルが閉じていることを確認（モーダルが開いているとボタンがクリックできない）
             // モーダルのオーバーレイが消えるまで待機
             await page.waitForFunction(() => {
@@ -1767,14 +1767,14 @@ test.describe('APIリクエストテスト', () => {
                     return style.display === 'none' || style.pointerEvents === 'none' || !overlay.classList.contains('z-50');
                 });
                 return modalHidden && overlaysHidden;
-            }, { timeout: 15000 }).catch(() => {});
+            }, { timeout: 15000 }).catch(() => { });
             await page.waitForTimeout(1000); // モーダルが完全に閉じるまで待機
 
             // 「登録内容を確認する」ボタンをクリック（確認画面に遷移）
             const proceedButton = page.getByRole('button', { name: /登録内容を確認する|確認|次へ|進む/i });
             await expect(proceedButton).toBeVisible({ timeout: 10000 });
             await expect(proceedButton).toBeEnabled({ timeout: 5000 });
-            
+
             // 確認画面への遷移を待機（クリック前に設定）
             const navigationPromise = page.waitForURL(/\/coupons\/confirm/, { timeout: 30000 }).catch(() => null);
             // ボタンがクリック可能であることを確認してからクリック
@@ -1783,15 +1783,15 @@ test.describe('APIリクエストテスト', () => {
                 const modal = document.querySelector('[role="dialog"]');
                 const overlays = document.querySelectorAll('div.fixed.inset-0.z-50');
                 return (!modal || window.getComputedStyle(modal as HTMLElement).display === 'none') &&
-                       Array.from(overlays).every(overlay => window.getComputedStyle(overlay as HTMLElement).display === 'none');
-            }, { timeout: 10000 }).catch(() => {});
+                    Array.from(overlays).every(overlay => window.getComputedStyle(overlay as HTMLElement).display === 'none');
+            }, { timeout: 10000 }).catch(() => { });
             // ボタンをクリック（forceオプションを使用してモーダルが開いていてもクリックを試みる）
             await proceedButton.click({ force: true });
-            
+
             // 確認画面に遷移するまで待機
             const _urlChanged = await navigationPromise;
             await page.waitForLoadState('domcontentloaded');
-            
+
             // 現在のURLを確認
             const confirmUrl = page.url();
             if (!confirmUrl.includes('/coupons/confirm')) {
@@ -1843,7 +1843,7 @@ test.describe('APIリクエストテスト', () => {
             const submitButton = page.getByRole('button', { name: /登録する/i }).first();
             await expect(submitButton).toBeVisible({ timeout: 10000 });
             await expect(submitButton).toBeEnabled({ timeout: 5000 });
-            
+
             // APIリクエストを待機（送信ボタンをクリックする前に設定）
             const responsePromise = page.waitForResponse(
                 (response) => response.url().includes('/api/coupons') && response.request().method() === 'POST',
@@ -1860,7 +1860,7 @@ test.describe('APIリクエストテスト', () => {
             await page.waitForURL(/\/coupons(?!\/)/, { timeout: 30000 });
             await page.waitForLoadState('domcontentloaded');
             console.log('[Coupon Registration] クーポン一覧ページに遷移しました:', page.url());
-            
+
             // クーポン一覧テーブルが表示されるまで待機
             await page.waitForSelector('table, [data-testid*="coupon"]', { timeout: 15000 }).catch(() => {
                 console.log('[Coupon Registration] クーポン一覧テーブルの表示を待機中...');
@@ -1872,7 +1872,7 @@ test.describe('APIリクエストテスト', () => {
             // トーストコンテナは fixed top-4 right-4 の位置に表示され、成功トーストは bg-green-50 クラスを持つ
             console.log('[Coupon Registration] 登録完了トーストを確認中...');
             const toastSelector = 'div[class*="fixed"][class*="top-4"] div[class*="bg-green-50"], div[class*="bg-green-50"]:has-text("登録"), div[class*="bg-green-50"]:has-text("成功"), div[class*="bg-green-50"]:has-text("完了")';
-            
+
             // トーストが表示されるまで待機（最大10秒）
             let toastVisible = false;
             let toastText: string | null = '';
@@ -1886,7 +1886,7 @@ test.describe('APIリクエストテスト', () => {
                 }
                 await page.waitForTimeout(500);
             }
-            
+
             if (!toastVisible) {
                 console.log('[Coupon Registration] 警告: トーストが表示されませんでした');
             }
@@ -1895,7 +1895,7 @@ test.describe('APIリクエストテスト', () => {
             await page.waitForTimeout(500); // アニメーション完了を待つ
             await page.screenshot({ path: 'test-results/coupon-registration-complete.png', fullPage: true });
             console.log('[Coupon Registration] スクリーンショットを保存しました: test-results/coupon-registration-complete.png');
-            
+
             // トーストが消えるまで動画を継続（トーストのアニメーション完了を待つ）
             await page.waitForTimeout(2000);
 
@@ -1920,13 +1920,13 @@ test.describe('APIリクエストテスト', () => {
                 // レスポンスの検証
                 expect(response.status()).toBeGreaterThanOrEqual(200);
                 expect(response.status()).toBeLessThan(300);
-                
+
                 console.log('[Coupon Registration] ✅ APIリクエストが正常に完了しました（ステータス: ' + response.status() + '）');
             } else {
                 // リクエストが送信されなかった場合でも、トースト表示で成功を判断
                 console.log('[Coupon Registration] APIレスポンスは取得できませんでしたが、トースト表示で成功を確認しました');
             }
-            
+
             // 最終確認：クーポン一覧ページにいることを確認
             const finalUrl = page.url();
             expect(finalUrl).toContain('/coupons');
@@ -1936,21 +1936,21 @@ test.describe('APIリクエストテスト', () => {
         test('クーポンの更新リクエストが正しく送信されること', async ({ page }) => {
             await page.goto('/coupons', { waitUntil: 'domcontentloaded', timeout: 60000 });
             await page.waitForLoadState('domcontentloaded');
-            
+
             // ローディングが完了するまで待機
             await page.waitForFunction(() => {
                 const loading = document.querySelector('[class*="loading"], [class*="spinner"]');
                 const loadingText = document.querySelector('p:has-text("データを読み込み中")');
                 return (!loading || (loading as HTMLElement).style.display === 'none') && !loadingText;
-            }, { timeout: 30000 }).catch(() => {});
-            
+            }, { timeout: 30000 }).catch(() => { });
+
             // テーブルが読み込まれるまで待機（複数の方法で確認）
             const tableExists = await page.waitForSelector('table tbody tr', { timeout: 30000 }).catch(async () => {
                 // テーブルが見つからない場合、少し待機して再試行
                 await page.waitForTimeout(1500); // パフォーマンス改善後は短縮
                 return page.waitForSelector('table tbody tr', { timeout: 30000 }).catch(() => null);
             });
-            
+
             if (!tableExists) {
                 // テーブルにデータが存在しない場合、テストをスキップ
                 test.skip();
@@ -1961,7 +1961,7 @@ test.describe('APIリクエストテスト', () => {
             const seedCouponName = '【ノモカ】ビール無料';
             const couponRow = page.locator('table tbody tr').filter({ hasText: seedCouponName }).first();
             const couponRowVisible = await couponRow.isVisible({ timeout: 10000 }).catch(() => false);
-            
+
             let targetRow;
             if (couponRowVisible) {
                 targetRow = couponRow;
@@ -1975,7 +1975,7 @@ test.describe('APIリクエストテスト', () => {
                     return;
                 }
             }
-            
+
             // 編集リンクまたは行内のリンクを探す
             let editLink = targetRow.locator('a[href*="edit"]').first();
             const editLinkVisible = await editLink.isVisible({ timeout: 5000 }).catch(() => false);
@@ -2003,29 +2003,29 @@ test.describe('APIリクエストテスト', () => {
                     // フォームフィールドが表示されるまで待機
                     await page.waitForSelector('input[name="couponName"], input[name*="couponName"], input[id*="couponName"]', { timeout: 15000 });
                     await page.waitForTimeout(1000);
-                    
+
                     // URLからIDを取得して処理を続行
                     const url = page.url();
                     const couponIdMatch = url.match(/\/coupons\/([^/]+)\/edit/);
                     const couponId = couponIdMatch ? couponIdMatch[1] : null;
-                    
+
                     if (couponId) {
-                    // クーポン名フィールドを探す（クーポンフォームはname="couponName"を使用）
-                    const titleInput = page.locator('input[name="couponName"], input[name*="couponName"], input[id*="couponName"]').first();
-                    await expect(titleInput).toBeVisible({ timeout: 15000 });
-                    // フィールドが有効になるまで待機（タイムアウトを延長し、より堅牢に）
-                    await page.waitForFunction((selector) => {
-                        const inputs = document.querySelectorAll(selector);
-                        for (const input of Array.from(inputs)) {
-                            const htmlInput = input as HTMLInputElement;
-                            if (htmlInput && !htmlInput.disabled && htmlInput.offsetParent !== null) {
-                                return true;
+                        // クーポン名フィールドを探す（クーポンフォームはname="couponName"を使用）
+                        const titleInput = page.locator('input[name="couponName"], input[name*="couponName"], input[id*="couponName"]').first();
+                        await expect(titleInput).toBeVisible({ timeout: 15000 });
+                        // フィールドが有効になるまで待機（タイムアウトを延長し、より堅牢に）
+                        await page.waitForFunction((selector) => {
+                            const inputs = document.querySelectorAll(selector);
+                            for (const input of Array.from(inputs)) {
+                                const htmlInput = input as HTMLInputElement;
+                                if (htmlInput && !htmlInput.disabled && htmlInput.offsetParent !== null) {
+                                    return true;
+                                }
                             }
-                        }
-                        return false;
-                    }, 'input[name="couponName"], input[name*="couponName"], input[id*="couponName"]', { timeout: 20000 }).catch(() => {
-                        // タイムアウトしても続行（フィールドが既に有効な可能性）
-                    });
+                            return false;
+                        }, 'input[name="couponName"], input[name*="couponName"], input[id*="couponName"]', { timeout: 20000 }).catch(() => {
+                            // タイムアウトしても続行（フィールドが既に有効な可能性）
+                        });
                         const currentValue = await titleInput.inputValue();
                         const updatedValue = (currentValue || '') + '_更新';
                         // フィールドをクリアしてから新しい値を入力
@@ -2058,11 +2058,11 @@ test.describe('APIリクエストテスト', () => {
                         const submitButton = page.getByRole('button', { name: /^変更する$|^更新する$/i }).first();
                         await expect(submitButton).toBeVisible({ timeout: 10000 });
                         await expect(submitButton).toBeEnabled({ timeout: 5000 });
-                        
+
                         // APIリクエストを待機（送信ボタンをクリックする前に設定）
                         const responsePromise = page.waitForResponse(
-                            (response) => 
-                                response.url().includes(`/api/coupons/${couponId}`) && 
+                            (response) =>
+                                response.url().includes(`/api/coupons/${couponId}`) &&
                                 (response.request().method() === 'PUT' || response.request().method() === 'PATCH'),
                             { timeout: 30000 }
                         ).catch(() => null);
@@ -2079,7 +2079,7 @@ test.describe('APIリクエストテスト', () => {
                         // 変更完了トーストが表示されるまで待機（必須）
                         const toastSelector = 'div[class*="bg-green-50"], div[class*="toast"][class*="success"], [data-testid="toast-success"]';
                         const toastLocator = page.locator(toastSelector).first();
-                        
+
                         // トーストが表示されるまで最大10秒待機
                         await page.waitForTimeout(1000);
                         const toastVisible = await toastLocator.isVisible({ timeout: 10000 }).catch(() => false);
@@ -2115,7 +2115,7 @@ test.describe('APIリクエストテスト', () => {
                             // レスポンスの検証
                             expect(response.status()).toBeGreaterThanOrEqual(200);
                             expect(response.status()).toBeLessThan(300);
-                            
+
                             console.log('[Coupon Update] ✅ クーポン更新が正常に完了しました（ステータス: ' + response.status() + '）');
                         }
                     }
@@ -2143,159 +2143,159 @@ test.describe('APIリクエストテスト', () => {
             const couponId = couponIdMatch ? couponIdMatch[1] : null;
 
             if (couponId) {
-                    // クーポン名フィールドを探す（クーポンフォームはname="couponName"を使用）
-                    const titleInput = page.locator('input[name="couponName"], input[name*="couponName"], input[id*="couponName"]').first();
-                    await expect(titleInput).toBeVisible({ timeout: 15000 });
-                    // フィールドが有効になるまで待機（タイムアウトを延長し、より堅牢に）
-                    await page.waitForFunction((selector) => {
-                        const inputs = document.querySelectorAll(selector);
-                        for (const input of Array.from(inputs)) {
-                            const htmlInput = input as HTMLInputElement;
-                            if (htmlInput && !htmlInput.disabled && htmlInput.offsetParent !== null) {
-                                return true;
-                            }
+                // クーポン名フィールドを探す（クーポンフォームはname="couponName"を使用）
+                const titleInput = page.locator('input[name="couponName"], input[name*="couponName"], input[id*="couponName"]').first();
+                await expect(titleInput).toBeVisible({ timeout: 15000 });
+                // フィールドが有効になるまで待機（タイムアウトを延長し、より堅牢に）
+                await page.waitForFunction((selector) => {
+                    const inputs = document.querySelectorAll(selector);
+                    for (const input of Array.from(inputs)) {
+                        const htmlInput = input as HTMLInputElement;
+                        if (htmlInput && !htmlInput.disabled && htmlInput.offsetParent !== null) {
+                            return true;
                         }
-                        return false;
-                    }, 'input[name="couponName"], input[name*="couponName"], input[id*="couponName"]', { timeout: 20000 }).catch(() => {
-                        // タイムアウトしても続行（フィールドが既に有効な可能性）
-                    });
-                    const currentValue = await titleInput.inputValue();
-                    const updatedValue = (currentValue || '') + '_更新';
-                    // フィールドをクリアしてから新しい値を入力
+                    }
+                    return false;
+                }, 'input[name="couponName"], input[name*="couponName"], input[id*="couponName"]', { timeout: 20000 }).catch(() => {
+                    // タイムアウトしても続行（フィールドが既に有効な可能性）
+                });
+                const currentValue = await titleInput.inputValue();
+                const updatedValue = (currentValue || '') + '_更新';
+                // フィールドをクリアしてから新しい値を入力
+                await titleInput.clear();
+                await titleInput.fill(updatedValue);
+                await titleInput.blur();
+                await page.waitForTimeout(500); // 値が反映されるまで待機
+                // 入力値が正しく設定されたか確認
+                const actualValue = await titleInput.inputValue();
+                if (actualValue !== updatedValue) {
+                    // 値が正しく設定されていない場合、再度入力
                     await titleInput.clear();
                     await titleInput.fill(updatedValue);
                     await titleInput.blur();
-                    await page.waitForTimeout(500); // 値が反映されるまで待機
-                    // 入力値が正しく設定されたか確認
-                    const actualValue = await titleInput.inputValue();
-                    if (actualValue !== updatedValue) {
-                        // 値が正しく設定されていない場合、再度入力
-                        await titleInput.clear();
-                        await titleInput.fill(updatedValue);
-                        await titleInput.blur();
-                        await page.waitForTimeout(500);
-                    }
+                    await page.waitForTimeout(500);
+                }
 
-                    // 「変更内容を確認する」ボタンをクリックして確認画面へ遷移
-                    const proceedButton = page.getByRole('button', { name: /変更内容を確認する|更新内容を確認する|確認/i });
-                    await expect(proceedButton).toBeVisible({ timeout: 10000 });
-                    await expect(proceedButton).toBeEnabled({ timeout: 5000 });
-                    await proceedButton.click();
+                // 「変更内容を確認する」ボタンをクリックして確認画面へ遷移
+                const proceedButton = page.getByRole('button', { name: /変更内容を確認する|更新内容を確認する|確認/i });
+                await expect(proceedButton).toBeVisible({ timeout: 10000 });
+                await expect(proceedButton).toBeEnabled({ timeout: 5000 });
+                await proceedButton.click();
 
-                    // 確認画面への遷移を待機
-                    await page.waitForURL(/\/coupons\/[^/]+\/confirm/, { timeout: 30000 });
-                    await page.waitForLoadState('domcontentloaded');
-                    await page.waitForTimeout(1000);
+                // 確認画面への遷移を待機
+                await page.waitForURL(/\/coupons\/[^/]+\/confirm/, { timeout: 30000 });
+                await page.waitForLoadState('domcontentloaded');
+                await page.waitForTimeout(1000);
 
-                    // 確認画面で「変更する」ボタンをクリック
-                    const submitButton = page.getByRole('button', { name: '変更する' });
-                    await expect(submitButton).toBeVisible({ timeout: 10000 });
-                    await expect(submitButton).toBeEnabled({ timeout: 5000 });
-                    console.log('[Coupon Update] 「変更する」ボタンが見つかりました');
-                    
-                    // APIリクエストを待機（送信ボタンをクリックする前に設定）
-                    const responsePromise = page.waitForResponse(
-                        (response) => 
-                            response.url().includes(`/api/coupons/${couponId}`) && 
-                            (response.request().method() === 'PUT' || response.request().method() === 'PATCH'),
-                        { timeout: 30000 }
-                    ).catch(() => null);
+                // 確認画面で「変更する」ボタンをクリック
+                const submitButton = page.getByRole('button', { name: '変更する' });
+                await expect(submitButton).toBeVisible({ timeout: 10000 });
+                await expect(submitButton).toBeEnabled({ timeout: 5000 });
+                console.log('[Coupon Update] 「変更する」ボタンが見つかりました');
 
-                    const urlBeforeSubmit = page.url();
-                    console.log('[Coupon Update] クリック前URL:', urlBeforeSubmit);
-                    
-                    // APIレスポンスをキャプチャ
-                    page.on('response', async (response) => {
-                        if (response.url().includes('/api/coupons')) {
-                            console.log('[Coupon Update] API Response:', response.url(), response.status());
-                            if (response.status() >= 400) {
-                                try {
-                                    const body = await response.json();
-                                    console.log('[Coupon Update] API Error Body:', JSON.stringify(body));
-                                } catch {}
-                            }
+                // APIリクエストを待機（送信ボタンをクリックする前に設定）
+                const responsePromise = page.waitForResponse(
+                    (response) =>
+                        response.url().includes(`/api/coupons/${couponId}`) &&
+                        (response.request().method() === 'PUT' || response.request().method() === 'PATCH'),
+                    { timeout: 30000 }
+                ).catch(() => null);
+
+                const urlBeforeSubmit = page.url();
+                console.log('[Coupon Update] クリック前URL:', urlBeforeSubmit);
+
+                // APIレスポンスをキャプチャ
+                page.on('response', async (response) => {
+                    if (response.url().includes('/api/coupons')) {
+                        console.log('[Coupon Update] API Response:', response.url(), response.status());
+                        if (response.status() >= 400) {
+                            try {
+                                const body = await response.json();
+                                console.log('[Coupon Update] API Error Body:', JSON.stringify(body));
+                            } catch { }
                         }
-                    });
-                    
-                    // ボタンをクリック
-                    await submitButton.click();
-                    console.log('[Coupon Update] ボタンをクリックしました');
-                    
-                    // ナビゲーションを待機
-                    await page.waitForTimeout(3000);
-                    const urlAfterSubmit = page.url();
-                    console.log('[Coupon Update] クリック後URL:', urlAfterSubmit);
-                    
-                    // URLが変わっていない場合、エラートーストを確認
-                    if (urlAfterSubmit.includes('/confirm')) {
-                        console.log('[Coupon Update] ⚠️ まだ確認画面にいます');
-                        // エラートーストがあるか確認
-                        const errorToast = page.locator('div[class*="bg-red"], div[class*="error"], [data-testid="toast-error"]');
-                        const hasError = await errorToast.isVisible({ timeout: 3000 }).catch(() => false);
-                        if (hasError) {
-                            const errorText = await errorToast.textContent();
-                            console.log('[Coupon Update] ⚠️ エラートースト:', errorText);
-                        }
-                        
-                        // 再度クリックを試行（force: true）
-                        console.log('[Coupon Update] 再度クリックを試行...');
-                        await submitButton.click({ force: true });
-                        await page.waitForTimeout(5000);
-                        console.log('[Coupon Update] 再クリック後URL:', page.url());
                     }
-                    
-                    // 一覧画面への遷移を待機（タイムアウトしても続行）
-                    await page.waitForURL(/\/coupons(?!\/[^/]+\/confirm)/, { timeout: 15000 }).catch(() => {
-                        console.log('[Coupon Update] ⚠️ 一覧画面への遷移がタイムアウト');
-                    });
+                });
 
-                    // APIリクエストのレスポンスを待機
-                    const response = await responsePromise;
-                    await page.waitForLoadState('domcontentloaded');
+                // ボタンをクリック
+                await submitButton.click();
+                console.log('[Coupon Update] ボタンをクリックしました');
 
-                    // 変更完了トーストが表示されるまで待機（必須）
-                    const toastSelector2 = 'div[class*="bg-green-50"], div[class*="toast"][class*="success"], [data-testid="toast-success"]';
-                    const toastLocator2 = page.locator(toastSelector2).first();
-                    
-                    // トーストが表示されるまで最大10秒待機
-                    await page.waitForTimeout(1000);
-                    const toastVisible2 = await toastLocator2.isVisible({ timeout: 10000 }).catch(() => false);
+                // ナビゲーションを待機
+                await page.waitForTimeout(3000);
+                const urlAfterSubmit = page.url();
+                console.log('[Coupon Update] クリック後URL:', urlAfterSubmit);
 
-                    // 変更完了後のスクリーンショットを撮影（トースト表示を含む）
-                    await page.screenshot({ path: 'test-results/coupon-update-complete2.png', fullPage: true });
-
-                    // トーストが表示されない場合はテストNG
-                    if (!toastVisible2) {
-                        throw new Error('変更完了トーストが表示されませんでした。テストNGです。');
+                // URLが変わっていない場合、エラートーストを確認
+                if (urlAfterSubmit.includes('/confirm')) {
+                    console.log('[Coupon Update] ⚠️ まだ確認画面にいます');
+                    // エラートーストがあるか確認
+                    const errorToast = page.locator('div[class*="bg-red"], div[class*="error"], [data-testid="toast-error"]');
+                    const hasError = await errorToast.isVisible({ timeout: 3000 }).catch(() => false);
+                    if (hasError) {
+                        const errorText = await errorToast.textContent();
+                        console.log('[Coupon Update] ⚠️ エラートースト:', errorText);
                     }
-                    console.log('[Coupon Update] ✅ 変更完了トーストが表示されました');
 
-                    // トーストが消えるまで動画を継続
-                    await page.waitForTimeout(2000);
+                    // 再度クリックを試行（force: true）
+                    console.log('[Coupon Update] 再度クリックを試行...');
+                    await submitButton.click({ force: true });
+                    await page.waitForTimeout(5000);
+                    console.log('[Coupon Update] 再クリック後URL:', page.url());
+                }
 
-                    if (response) {
-                        // リクエストの検証
-                        const request = response.request();
-                        expect(request.method()).toMatch(/PUT|PATCH/);
-                        expect(request.url()).toContain(`/api/coupons/${couponId}`);
+                // 一覧画面への遷移を待機（タイムアウトしても続行）
+                await page.waitForURL(/\/coupons(?!\/[^/]+\/confirm)/, { timeout: 15000 }).catch(() => {
+                    console.log('[Coupon Update] ⚠️ 一覧画面への遷移がタイムアウト');
+                });
 
-                        // リクエストボディの検証
-                        const requestBody = request.postDataJSON();
-                        expect(requestBody).toBeTruthy();
-                        // クーポンフォームはcouponNameフィールドを使用
-                        if (requestBody.couponName || requestBody.title) {
-                            const name = requestBody.couponName || requestBody.title;
-                            // クーポン名が存在することを確認（_更新は省略可）
-                            expect(name).toBeTruthy();
-                            console.log('[Coupon Update] 送信されたクーポン名:', name);
-                        }
+                // APIリクエストのレスポンスを待機
+                const response = await responsePromise;
+                await page.waitForLoadState('domcontentloaded');
 
-                        // レスポンスの検証
-                        expect(response.status()).toBeGreaterThanOrEqual(200);
-                        expect(response.status()).toBeLessThan(300);
-                        
-                        console.log('[Coupon Update] ✅ クーポン更新が正常に完了しました（ステータス: ' + response.status() + '）');
+                // 変更完了トーストが表示されるまで待機（必須）
+                const toastSelector2 = 'div[class*="bg-green-50"], div[class*="toast"][class*="success"], [data-testid="toast-success"]';
+                const toastLocator2 = page.locator(toastSelector2).first();
+
+                // トーストが表示されるまで最大10秒待機
+                await page.waitForTimeout(1000);
+                const toastVisible2 = await toastLocator2.isVisible({ timeout: 10000 }).catch(() => false);
+
+                // 変更完了後のスクリーンショットを撮影（トースト表示を含む）
+                await page.screenshot({ path: 'test-results/coupon-update-complete2.png', fullPage: true });
+
+                // トーストが表示されない場合はテストNG
+                if (!toastVisible2) {
+                    throw new Error('変更完了トーストが表示されませんでした。テストNGです。');
+                }
+                console.log('[Coupon Update] ✅ 変更完了トーストが表示されました');
+
+                // トーストが消えるまで動画を継続
+                await page.waitForTimeout(2000);
+
+                if (response) {
+                    // リクエストの検証
+                    const request = response.request();
+                    expect(request.method()).toMatch(/PUT|PATCH/);
+                    expect(request.url()).toContain(`/api/coupons/${couponId}`);
+
+                    // リクエストボディの検証
+                    const requestBody = request.postDataJSON();
+                    expect(requestBody).toBeTruthy();
+                    // クーポンフォームはcouponNameフィールドを使用
+                    if (requestBody.couponName || requestBody.title) {
+                        const name = requestBody.couponName || requestBody.title;
+                        // クーポン名が存在することを確認（_更新は省略可）
+                        expect(name).toBeTruthy();
+                        console.log('[Coupon Update] 送信されたクーポン名:', name);
                     }
+
+                    // レスポンスの検証
+                    expect(response.status()).toBeGreaterThanOrEqual(200);
+                    expect(response.status()).toBeLessThan(300);
+
+                    console.log('[Coupon Update] ✅ クーポン更新が正常に完了しました（ステータス: ' + response.status() + '）');
+                }
             }
         });
     });
@@ -2313,16 +2313,16 @@ test.describe('APIリクエストテスト', () => {
             // フォームフィールドを取得
             const lastNameInput = page.locator('input[placeholder*="姓を入力"]');
             const firstNameInput = page.locator('input[placeholder*="名を入力"]').last(); // 「姓を入力」と区別するためlast()を使用
-            
+
             await expect(lastNameInput).toBeVisible({ timeout: 10000 });
             await expect(firstNameInput).toBeVisible({ timeout: 10000 });
-            
+
             // 姓を入力（入力後にblur()で確定）
             await lastNameInput.click();
             await lastNameInput.fill('テスト');
             await lastNameInput.blur();
             await page.waitForTimeout(300);
-            
+
             // 姓の値を確認
             let lastNameValue = await lastNameInput.inputValue();
             console.log('[Admin Registration] 姓フィールドの値:', lastNameValue);
@@ -2334,13 +2334,13 @@ test.describe('APIリクエストテスト', () => {
                 await page.waitForTimeout(300);
                 lastNameValue = await lastNameInput.inputValue();
             }
-            
+
             // 名を入力（入力後にblur()で確定）
             await firstNameInput.click();
             await firstNameInput.fill('管理者');
             await firstNameInput.blur();
             await page.waitForTimeout(300);
-            
+
             // 名の値を確認
             let firstNameValue = await firstNameInput.inputValue();
             console.log('[Admin Registration] 名フィールドの値:', firstNameValue);
@@ -2352,7 +2352,7 @@ test.describe('APIリクエストテスト', () => {
                 await page.waitForTimeout(300);
                 firstNameValue = await firstNameInput.inputValue();
             }
-            
+
             // 最終確認（両方のフィールドを再確認）
             await expect(lastNameInput).toHaveValue('テスト', { timeout: 5000 });
             await expect(firstNameInput).toHaveValue('管理者', { timeout: 5000 });
@@ -2392,7 +2392,7 @@ test.describe('APIリクエストテスト', () => {
             const submitButton = page.getByRole('button', { name: /登録内容を確認する|登録|作成/i }).first();
             await expect(submitButton).toBeVisible({ timeout: 10000 });
             await expect(submitButton).toBeEnabled({ timeout: 5000 });
-            
+
             // APIリクエストを待機（送信ボタンをクリックする前に設定）
             const responsePromise = page.waitForResponse(
                 (response) => response.url().includes('/api/admin') && response.request().method() === 'POST',
@@ -2401,7 +2401,7 @@ test.describe('APIリクエストテスト', () => {
 
             console.log('[Admin Registration] 「登録内容を確認する」ボタンをクリックします');
             await submitButton.click();
-            
+
             // 確認画面への遷移を待機（URLまたはボタンテキストで判定）
             // 確認画面に遷移するか、直接登録されるかを待機
             const confirmPageOrApiResponse = await Promise.race([
@@ -2409,9 +2409,9 @@ test.describe('APIリクエストテスト', () => {
                 page.waitForSelector('button:has-text("登録する")', { timeout: 10000 }).then(() => 'button'),
                 page.waitForURL(/\/admins(?!\/(new|confirm))/, { timeout: 15000 }).then(() => 'list')
             ]).catch(() => 'timeout');
-            
+
             console.log('[Admin Registration] 遷移結果:', confirmPageOrApiResponse);
-            
+
             if (confirmPageOrApiResponse === 'confirm' || confirmPageOrApiResponse === 'button') {
                 // 確認画面の「登録する」ボタンを探してクリック
                 const finalSubmitButton = page.getByRole('button', { name: /^登録する$/i });
@@ -2432,7 +2432,7 @@ test.describe('APIリクエストテスト', () => {
 
             // 登録完了を確認（一覧画面に遷移し、登録したユーザーが表示されていればOK）
             await page.waitForSelector('table tbody tr', { timeout: 10000 });
-            
+
             // 登録完了トーストが表示されるまで待機（表示されない場合でもテスト続行）
             const toastSelector = 'div[class*="bg-green-50"], div[class*="toast"][class*="success"], [data-testid="toast-success"]';
             const toastLocator = page.locator(toastSelector).first();
@@ -2444,7 +2444,7 @@ test.describe('APIリクエストテスト', () => {
             // トーストが表示されなくても、テーブルに新規ユーザーが表示されていれば成功とみなす
             const newUserRow = page.locator('table tbody tr').filter({ hasText: testEmail }).first();
             const newUserVisible = await newUserRow.isVisible({ timeout: 5000 }).catch(() => false);
-            
+
             if (!toastVisible && !newUserVisible) {
                 throw new Error('登録完了トーストが表示されず、新規ユーザーも一覧に表示されませんでした。テストNGです。');
             }
@@ -2469,7 +2469,7 @@ test.describe('APIリクエストテスト', () => {
                 // レスポンスの検証
                 expect(response.status()).toBeGreaterThanOrEqual(200);
                 expect(response.status()).toBeLessThan(300);
-                
+
                 console.log('[Admin Registration] ✅ APIリクエストが正常に完了しました（ステータス: ' + response.status() + '）');
             }
         });
@@ -2483,7 +2483,7 @@ test.describe('APIリクエストテスト', () => {
             const seedAdminName = 'ノモカ';
             const adminRow = page.locator('table tbody tr').filter({ hasText: seedAdminName }).first();
             const adminRowVisible = await adminRow.isVisible({ timeout: 10000 }).catch(() => false);
-            
+
             let editLink;
             if (adminRowVisible) {
                 // seedデータの編集リンクをクリック
@@ -2514,119 +2514,119 @@ test.describe('APIリクエストテスト', () => {
             const adminId = adminIdMatch ? adminIdMatch[1] : null;
 
             if (adminId) {
-                    // 管理者フォームはid属性を使用している
-                    const firstNameInput = page.locator('#firstName, input[name*="firstName"], input[name*="first_name"]').first();
-                    await expect(firstNameInput).toBeVisible({ timeout: 15000 });
-                    const currentValue = await firstNameInput.inputValue();
-                    const updatedValue = currentValue + '_更新';
-                    await firstNameInput.fill(updatedValue);
-                    await firstNameInput.blur();
-                    await page.waitForTimeout(200);
+                // 管理者フォームはid属性を使用している
+                const firstNameInput = page.locator('#firstName, input[name*="firstName"], input[name*="first_name"]').first();
+                await expect(firstNameInput).toBeVisible({ timeout: 15000 });
+                const currentValue = await firstNameInput.inputValue();
+                const updatedValue = currentValue + '_更新';
+                await firstNameInput.fill(updatedValue);
+                await firstNameInput.blur();
+                await page.waitForTimeout(200);
 
-                    // 更新ボタンをクリック
-                    const submitButton = page.getByRole('button', { name: /更新|保存|変更|登録|Submit/i }).first();
-                    await expect(submitButton).toBeVisible({ timeout: 10000 });
-                    await expect(submitButton).toBeEnabled({ timeout: 5000 });
-                    
-                    // APIリクエストを待機（送信ボタンをクリックする前に設定）
-                    const responsePromise = page.waitForResponse(
-                        (response) => 
-                            response.url().includes(`/api/admin/${adminId}`) && 
-                            (response.request().method() === 'PUT' || response.request().method() === 'PATCH'),
+                // 更新ボタンをクリック
+                const submitButton = page.getByRole('button', { name: /更新|保存|変更|登録|Submit/i }).first();
+                await expect(submitButton).toBeVisible({ timeout: 10000 });
+                await expect(submitButton).toBeEnabled({ timeout: 5000 });
+
+                // APIリクエストを待機（送信ボタンをクリックする前に設定）
+                const responsePromise = page.waitForResponse(
+                    (response) =>
+                        response.url().includes(`/api/admin/${adminId}`) &&
+                        (response.request().method() === 'PUT' || response.request().method() === 'PATCH'),
+                    { timeout: 30000 }
+                ).catch(() => null);
+
+                console.log('[Admin Update] 入力画面のボタンをクリック');
+                await submitButton.click();
+
+                // 確認画面に遷移した場合は「更新する」ボタンをクリック
+                await page.waitForTimeout(1000);
+                const pageTitle = await page.locator('h1').textContent().catch(() => 'unknown');
+                console.log('[Admin Update] ページタイトル:', pageTitle);
+
+                const confirmPageSubmit = page.getByRole('button', { name: '更新する' });
+                const confirmPageVisible = await confirmPageSubmit.isVisible({ timeout: 3000 }).catch(() => false);
+                console.log('[Admin Update] 確認画面の「更新する」ボタン表示:', confirmPageVisible);
+
+                if (confirmPageVisible) {
+                    console.log('[Admin Update] 確認画面の「更新する」ボタンをクリック');
+
+                    // APIレスポンスをキャプチャ
+                    const apiResponsePromise = page.waitForResponse(
+                        resp => resp.url().includes('/api/admin/'),
                         { timeout: 30000 }
-                    ).catch(() => null);
+                    ).catch(e => {
+                        console.log('[Admin Update] ⚠️ APIレスポンス待機エラー:', e.message);
+                        return null;
+                    });
 
-                    console.log('[Admin Update] 入力画面のボタンをクリック');
-                    await submitButton.click();
+                    await confirmPageSubmit.click();
 
-                    // 確認画面に遷移した場合は「更新する」ボタンをクリック
-                    await page.waitForTimeout(1000);
-                    const pageTitle = await page.locator('h1').textContent().catch(() => 'unknown');
-                    console.log('[Admin Update] ページタイトル:', pageTitle);
-                    
-                    const confirmPageSubmit = page.getByRole('button', { name: '更新する' });
-                    const confirmPageVisible = await confirmPageSubmit.isVisible({ timeout: 3000 }).catch(() => false);
-                    console.log('[Admin Update] 確認画面の「更新する」ボタン表示:', confirmPageVisible);
-                    
-                    if (confirmPageVisible) {
-                        console.log('[Admin Update] 確認画面の「更新する」ボタンをクリック');
-                        
-                        // APIレスポンスをキャプチャ
-                        const apiResponsePromise = page.waitForResponse(
-                            resp => resp.url().includes('/api/admin/'),
-                            { timeout: 30000 }
-                        ).catch(e => {
-                            console.log('[Admin Update] ⚠️ APIレスポンス待機エラー:', e.message);
-                            return null;
-                        });
-                        
-                        await confirmPageSubmit.click();
-                        
-                        const apiResponse = await apiResponsePromise;
-                        if (apiResponse) {
-                            console.log('[Admin Update] APIレスポンス:', apiResponse.status(), apiResponse.url());
-                        }
-                        
-                        console.log('[Admin Update] クリック後URL:', page.url());
+                    const apiResponse = await apiResponsePromise;
+                    if (apiResponse) {
+                        console.log('[Admin Update] APIレスポンス:', apiResponse.status(), apiResponse.url());
                     }
 
-                    // 変更完了トーストが表示されるまで待機（必須）
-                    // トーストは5秒で自動消去されるため、早めに確認する
-                    const toastSelector = 'div[class*="bg-green-50"], div[class*="toast"][class*="success"], [data-testid="toast-success"]';
-                    const toastLocator = page.locator(toastSelector).first();
-                    
-                    // トーストが表示されるまで待機（ナビゲーション完了を待つため少し長めに）
-                    await page.waitForTimeout(500);  // ナビゲーション開始を待つ
-                    const toastVisible = await toastLocator.isVisible({ timeout: 5000 }).catch(() => false);
-                    
-                    console.log('[Admin Update] トースト表示:', toastVisible);
-                    
-                    // APIリクエストのレスポンスを待機
-                    const response = await responsePromise.catch(() => null);
+                    console.log('[Admin Update] クリック後URL:', page.url());
+                }
 
-                    // 管理者一覧画面への遷移を待機
-                    try {
-                        await page.waitForURL(/\/admins(?!\/(new|[^/]+\/(edit|confirm)))/, { timeout: 10000 });
-                    } catch {
-                        console.log('[Admin Update] URL遷移タイムアウト（既に遷移済みの可能性）');
+                // 変更完了トーストが表示されるまで待機（必須）
+                // トーストは5秒で自動消去されるため、早めに確認する
+                const toastSelector = 'div[class*="bg-green-50"], div[class*="toast"][class*="success"], [data-testid="toast-success"]';
+                const toastLocator = page.locator(toastSelector).first();
+
+                // トーストが表示されるまで待機（ナビゲーション完了を待つため少し長めに）
+                await page.waitForTimeout(500);  // ナビゲーション開始を待つ
+                const toastVisible = await toastLocator.isVisible({ timeout: 5000 }).catch(() => false);
+
+                console.log('[Admin Update] トースト表示:', toastVisible);
+
+                // APIリクエストのレスポンスを待機
+                const response = await responsePromise.catch(() => null);
+
+                // 管理者一覧画面への遷移を待機
+                try {
+                    await page.waitForURL(/\/admins(?!\/(new|[^/]+\/(edit|confirm)))/, { timeout: 10000 });
+                } catch {
+                    console.log('[Admin Update] URL遷移タイムアウト（既に遷移済みの可能性）');
+                }
+
+                const currentUrl = page.url();
+                console.log('[Admin Update] 遷移後URL:', currentUrl);
+
+                // 変更完了後のスクリーンショットを撮影（トースト表示を含む）
+                await page.screenshot({ path: 'test-results/admin-update-complete.png', fullPage: true });
+
+                // トーストまたはAPIの成功で判定（トーストは表示時間が短い場合がある）
+                if (toastVisible) {
+                    console.log('[Admin Update] ✅ 変更完了トーストが表示されました');
+                } else {
+                    // トーストが見つからなくても、APIが成功していれば続行
+                    console.log('[Admin Update] ⚠️ トーストは確認できませんでしたが、続行します');
+                }
+
+                // トーストが消えるまで動画を継続
+                await page.waitForTimeout(2000);
+
+                if (response) {
+                    // リクエストの検証
+                    const request = response.request();
+                    expect(request.method()).toMatch(/PUT|PATCH/);
+                    expect(request.url()).toContain(`/api/admin/${adminId}`);
+
+                    // リクエストボディの検証
+                    const requestBody = request.postDataJSON();
+                    expect(requestBody).toBeTruthy();
+                    if (requestBody.firstName) {
+                        expect(requestBody.firstName).toBe(updatedValue);
                     }
-                    
-                    const currentUrl = page.url();
-                    console.log('[Admin Update] 遷移後URL:', currentUrl);
 
-                    // 変更完了後のスクリーンショットを撮影（トースト表示を含む）
-                    await page.screenshot({ path: 'test-results/admin-update-complete.png', fullPage: true });
+                    // レスポンスの検証
+                    expect(response.status()).toBeGreaterThanOrEqual(200);
+                    expect(response.status()).toBeLessThan(300);
 
-                    // トーストまたはAPIの成功で判定（トーストは表示時間が短い場合がある）
-                    if (toastVisible) {
-                        console.log('[Admin Update] ✅ 変更完了トーストが表示されました');
-                    } else {
-                        // トーストが見つからなくても、APIが成功していれば続行
-                        console.log('[Admin Update] ⚠️ トーストは確認できませんでしたが、続行します');
-                    }
-
-                    // トーストが消えるまで動画を継続
-                    await page.waitForTimeout(2000);
-
-                    if (response) {
-                        // リクエストの検証
-                        const request = response.request();
-                        expect(request.method()).toMatch(/PUT|PATCH/);
-                        expect(request.url()).toContain(`/api/admin/${adminId}`);
-
-                        // リクエストボディの検証
-                        const requestBody = request.postDataJSON();
-                        expect(requestBody).toBeTruthy();
-                        if (requestBody.firstName) {
-                            expect(requestBody.firstName).toBe(updatedValue);
-                        }
-
-                        // レスポンスの検証
-                        expect(response.status()).toBeGreaterThanOrEqual(200);
-                        expect(response.status()).toBeLessThan(300);
-                        
-                        console.log('[Admin Update] ✅ 管理者更新が正常に完了しました（ステータス: ' + response.status() + '）');
-                    }
+                    console.log('[Admin Update] ✅ 管理者更新が正常に完了しました（ステータス: ' + response.status() + '）');
+                }
             }
         });
 
@@ -2638,19 +2638,19 @@ test.describe('APIリクエストテスト', () => {
             // 削除ボタンを探す
             const deleteButton = page.locator('button:has-text("削除"), button[title*="削除"]').first();
             await expect(deleteButton).toBeVisible({ timeout: 10000 });
-            
+
             // 削除ボタンをクリック
             await deleteButton.click();
 
             // 確認ダイアログがある場合は確認
             const confirmDialogButton = page.getByRole('button', { name: /確認|はい|OK|削除/i });
             const confirmDialogButtonVisible = await confirmDialogButton.isVisible({ timeout: 5000 }).catch(() => false);
-            
+
             if (confirmDialogButtonVisible) {
                 // 確認ボタンをクリックする前に、リクエストを待機
                 const responsePromise = page.waitForResponse(
-                    (response) => 
-                        response.url().includes('/api/admin/') && 
+                    (response) =>
+                        response.url().includes('/api/admin/') &&
                         response.request().method() === 'DELETE',
                     { timeout: 30000 }
                 );
@@ -2672,7 +2672,7 @@ test.describe('APIリクエストテスト', () => {
                 // 削除完了トーストが表示されるまで待機（必須）
                 const toastSelector = 'div[class*="bg-green-50"], div[class*="toast"][class*="success"], [data-testid="toast-success"]';
                 const toastLocator = page.locator(toastSelector).first();
-                
+
                 // トーストが表示されるまで最大10秒待機
                 await page.waitForTimeout(1000);
                 const toastVisible = await toastLocator.isVisible({ timeout: 10000 }).catch(() => false);

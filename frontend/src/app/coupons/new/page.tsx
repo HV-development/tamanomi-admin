@@ -19,6 +19,7 @@ import { useAuth } from '@/components/contexts/auth-context';
 import ErrorMessage from '@/components/atoms/ErrorMessage';
 import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
+import { compressImageFile } from '@/utils/imageUtils';
 
 const MerchantSelectModal = dynamicImport(() => import('@/components/molecules/MerchantSelectModal'), {
   loading: () => null,
@@ -364,6 +365,34 @@ function CouponNewPageContent() {
     if (validateAllFields()) {
       // 管理者アカウントの場合は確認画面に遷移
       if (!isMerchantAccount) {
+        // 画像を圧縮してからdata:URLに変換（sessionStorageの容量を節約）
+        let compressedImagePreview = formData.imagePreview || '';
+        if (formData.couponImage && formData.imagePreview) {
+          try {
+            // 画像を圧縮（sessionStorageの容量を節約するため、小さめに圧縮）
+            const compressedFile = await compressImageFile(formData.couponImage, {
+              maxBytes: 500 * 1024, // 500KB以下に圧縮（sessionStorage用）
+              maxWidth: 1280,
+              maxHeight: 1280,
+              initialQuality: 0.7,
+              minQuality: 0.5,
+              qualityStep: 0.1,
+            });
+            
+            // 圧縮した画像をdata:URLに変換
+            compressedImagePreview = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(compressedFile);
+            });
+          } catch (error) {
+            console.error('画像の圧縮に失敗しました:', error);
+            // 圧縮に失敗した場合は元のimagePreviewを使用
+            compressedImagePreview = formData.imagePreview;
+          }
+        }
+        
         // 画像プレビュー（base64データ）はURLパラメータが長くなりすぎるため、sessionStorageに保存
         const confirmData = {
           shopId: formData.shopId,
@@ -372,7 +401,7 @@ function CouponNewPageContent() {
           couponConditions: formData.couponConditions || '',
           drinkType: formData.drinkType || '',
           publishStatus: formData.publishStatus === 'active' ? '1' : '2',
-          imagePreview: formData.imagePreview || '',
+          imagePreview: compressedImagePreview,
           imageUrl: formData.imageUrl || '',
         };
         

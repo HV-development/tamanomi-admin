@@ -66,10 +66,14 @@ const eslintConfig = [
       'no-restricted-syntax': ['error', ...sessionStorageRestrictions],
     },
   },
-  // ページコンポーネントでは一時データ保存用のsessionStorage使用を許可
-  // 注意: 認証トークンの保存には絶対に使用しないこと（トーストやフォームデータの一時保存のみ）
+  // ページコンポーネントおよびフォーム関連ファイルでは一時データ保存用のsessionStorage使用を許可
+  // 注意: 認証トークンの保存には絶対に使用しないこと（トースト、フォームデータ、画像データの一時保存のみ）
   {
-    files: ['src/app/**/page.tsx', 'src/components/organisms/ShopForm.tsx'],
+    files: [
+      'src/app/**/page.tsx',
+      'src/components/organisms/ShopForm.tsx',
+      'src/hooks/useShopForm.ts',
+    ],
     rules: {
       'no-restricted-globals': 'off',
       'no-restricted-syntax': 'off',

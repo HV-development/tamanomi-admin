@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
 import { apiClient } from '@/lib/api';
 import { SMOKING_OPTIONS } from '@/lib/constants/shop';
+import { compressImageFile } from '@/utils/imageUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,7 +36,8 @@ interface ShopConfirmData {
   couponUsageStart: string;
   couponUsageEnd: string;
   couponUsageDays: string;
-  paymentMydigi: boolean;
+  paymentSaicoin: boolean;
+  paymentTamapon: boolean;
   paymentCash: boolean;
   area: string;
   status: string;
@@ -62,6 +64,9 @@ interface ShopConfirmData {
   hasExistingAccount: boolean;
   fallbackRedirect: string;
   sceneNames: Record<string, string>;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
 }
 
 function ShopEditConfirmContent() {
@@ -125,6 +130,13 @@ function ShopEditConfirmContent() {
   const handleUpdate = async () => {
     if (!shopData) return;
     
+    console.log('編集確認画面のshopData:', shopData);
+    console.log('担当者情報:', {
+      contactName: shopData.contactName,
+      contactPhone: shopData.contactPhone,
+      contactEmail: shopData.contactEmail,
+    });
+    
     setIsSubmitting(true);
     try {
       // 住所フィールドを結合
@@ -142,6 +154,91 @@ function ShopEditConfirmContent() {
       } else {
         accountEmail = null;
       }
+
+      // 新しく追加された画像をアップロード
+      const uploadedImageUrls: string[] = [];
+      if (shopData.imagePreviews && shopData.imagePreviews.length > 0) {
+        try {
+          const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '').split('.')[0];
+          
+          for (let index = 0; index < shopData.imagePreviews.length; index++) {
+            const imageUrl = shopData.imagePreviews[index];
+            
+            // data:URLまたはblob:URLから画像を取得してFileオブジェクトに変換
+            let file: File;
+            if (imageUrl.startsWith('data:')) {
+              // data:URLの場合 - fetchを使わずに直接Blobに変換
+              const base64Data = imageUrl.split(',')[1];
+              const mimeType = imageUrl.match(/data:([^;]+);/)?.[1] || 'image/jpeg';
+              const binaryString = atob(base64Data);
+              const bytes = new Uint8Array(binaryString.length);
+              for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+              }
+              const blob = new Blob([bytes], { type: mimeType });
+              file = new File([blob], `image-${index}.jpg`, { type: mimeType });
+            } else if (imageUrl.startsWith('blob:')) {
+              // blob:URLの場合（フォールバック）
+              try {
+                const response = await fetch(imageUrl);
+                const blob = await response.blob();
+                file = new File([blob], `image-${index}.jpg`, { type: blob.type || 'image/jpeg' });
+              } catch (error) {
+                console.error(`blob:URLからの画像取得に失敗しました (${index + 1}):`, error);
+                throw new Error(`画像 ${index + 1} の読み込みに失敗しました`);
+              }
+            } else {
+              // 通常のURLの場合
+              const response = await fetch(imageUrl);
+              const blob = await response.blob();
+              file = new File([blob], `image-${index}.jpg`, { type: blob.type || 'image/jpeg' });
+            }
+            
+            // 画像を圧縮
+            const fileForUpload = await compressImageFile(file, {
+              maxBytes: 9.5 * 1024 * 1024,
+              maxWidth: 2560,
+              maxHeight: 2560,
+              initialQuality: 0.9,
+              minQuality: 0.6,
+              qualityStep: 0.1,
+            });
+            
+            // FormDataを作成
+            const uploadFormData = new FormData();
+            uploadFormData.append('image', fileForUpload);
+            uploadFormData.append('type', 'shop');
+            uploadFormData.append('merchantId', shopData.merchantId);
+            uploadFormData.append('shopId', shopId);
+            uploadFormData.append('timestamp', timestamp);
+            
+            // 画像をアップロード
+            const uploadResponse = await fetch('/api/upload', {
+              method: 'POST',
+              body: uploadFormData,
+              credentials: 'include',
+            });
+            
+            if (!uploadResponse.ok) {
+              const errorData = await uploadResponse.json().catch(() => ({}));
+              const message = errorData?.error || errorData?.message || '画像のアップロードに失敗しました';
+              console.error(`❌ Upload failed for image ${index + 1}:`, uploadResponse.status, errorData);
+              throw new Error(message);
+            }
+            
+            const uploadData = await uploadResponse.json();
+            uploadedImageUrls.push(uploadData.url);
+          }
+        } catch (uploadError) {
+          console.error('画像のアップロードに失敗しました:', uploadError);
+          // 画像アップロードが失敗しても店舗更新は続行
+          const errorMessage = uploadError instanceof Error ? uploadError.message : '画像のアップロードに失敗しました';
+          showError(`一部の画像のアップロードに失敗しました: ${errorMessage}`);
+        }
+      }
+
+      // 既存画像と新しくアップロードした画像を結合
+      const allImages = [...shopData.existingImages, ...uploadedImageUrls];
 
       const submitData = {
         merchantId: shopData.merchantId,
@@ -166,17 +263,28 @@ function ShopEditConfirmContent() {
         couponUsageStart: shopData.couponUsageStart || null,
         couponUsageEnd: shopData.couponUsageEnd || null,
         couponUsageDays: shopData.couponUsageDays || null,
-        paymentMydigi: shopData.paymentMydigi,
+        paymentSaicoin: shopData.paymentSaicoin,
+        paymentTamapon: shopData.paymentTamapon,
         paymentCash: shopData.paymentCash,
         paymentCredit: shopData.paymentCreditJson,
         paymentCode: shopData.paymentCodeJson,
-        paymentApps: { mydigi: shopData.paymentMydigi ?? false },
+        paymentApps: { saicoin: shopData.paymentSaicoin ?? false, tamapon: shopData.paymentTamapon ?? false },
         area: shopData.area || undefined,
         status: shopData.status as 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
-        images: shopData.existingImages,
+        images: allImages,
         sceneIds: shopData.selectedScenes,
         customSceneText: shopData.customSceneText || undefined,
+        contactName: shopData.contactName || null,
+        contactPhone: shopData.contactPhone || null,
+        contactEmail: shopData.contactEmail || null,
       };
+
+      console.log('送信するsubmitData:', submitData);
+      console.log('送信する担当者情報:', {
+        contactName: submitData.contactName,
+        contactPhone: submitData.contactPhone,
+        contactEmail: submitData.contactEmail,
+      });
 
       // 店舗を更新
       await apiClient.updateShop(shopId, submitData);
@@ -401,8 +509,12 @@ function ShopEditConfirmContent() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">マイディジ</label>
-              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.paymentMydigi ? '対応' : '非対応'}</p>
+              <label className="block text-sm font-medium text-gray-700 mb-1">サイコイン</label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.paymentSaicoin ? '対応' : '非対応'}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">タマポン</label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.paymentTamapon ? '対応' : '非対応'}</p>
             </div>
 
             {shopData.selectedCreditBrands.length > 0 && (
@@ -454,6 +566,36 @@ function ShopEditConfirmContent() {
                   />
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* 担当者情報 */}
+        {(shopData.contactName || shopData.contactPhone || shopData.contactEmail) && (
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 mb-6">担当者情報</h3>
+            
+            <div className="space-y-4">
+              {shopData.contactName && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">担当者名</label>
+                  <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.contactName}</p>
+                </div>
+              )}
+
+              {shopData.contactPhone && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">担当者電話番号</label>
+                  <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.contactPhone}</p>
+                </div>
+              )}
+
+              {shopData.contactEmail && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">担当者メールアドレス</label>
+                  <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.contactEmail}</p>
+                </div>
+              )}
             </div>
           </div>
         )}
