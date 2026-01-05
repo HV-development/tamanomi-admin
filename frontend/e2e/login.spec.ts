@@ -119,7 +119,7 @@ test.describe('Admin ログインページのテスト', () => {
             const emailInput = page.locator('input[type="email"], input[id="email"]').first();
             const passwordInput = page.locator('input[type="password"], input[id="password"]').first();
 
-            await emailInput.fill('tamanomi-admin@example.com');
+            await emailInput.fill('nomoca-admin@example.com');
             await passwordInput.fill('wrongpassword123');
 
             await page.getByRole('button', { name: /ログイン/i }).click();
@@ -141,8 +141,8 @@ test.describe('Admin ログインページのテスト', () => {
             const emailInput = page.locator('input[type="email"], input[id="email"]').first();
             const passwordInput = page.locator('input[type="password"], input[id="password"]').first();
 
-            await emailInput.fill('tamanomi-admin@example.com');
-            await passwordInput.fill('tamanomi-admin123');
+            await emailInput.fill('nomoca-admin@example.com');
+            await passwordInput.fill('nomoca-admin123');
 
             await page.getByRole('button', { name: /ログイン/i }).click();
 
@@ -150,6 +150,12 @@ test.describe('Admin ログインページのテスト', () => {
             await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
 
             expect(page.url()).not.toContain('/login');
+            
+            // ログイン成功後の画面に適切なテキストが表示されることを確認
+            // 事業者管理ページまたは他の管理ページに遷移しているはず
+            await page.waitForLoadState('networkidle');
+            const pageHeading = page.getByRole('heading', { name: /事業者管理|店舗管理|クーポン管理|管理者|会員/i });
+            await expect(pageHeading.first()).toBeVisible({ timeout: 10000 });
         });
     });
 });

@@ -89,6 +89,7 @@ export default defineConfig({
         'users.spec.ts',
         'headers.spec.ts',
         'role_based_display.spec.ts',
+        'api-requests.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],

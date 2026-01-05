@@ -191,7 +191,7 @@ test.describe('ロールベースの表示制御', () => {
             const hasLogout = await logoutButton.isVisible().catch(() => false);
             // ドロップダウン内にある場合もあるため、メニューを開く
             if (!hasLogout) {
-                const userMenu = page.locator('[aria-label*="user"], [aria-label*="menu"], button:has-text("tamanomi")');
+                const userMenu = page.locator('[aria-label*="user"], [aria-label*="menu"], button:has-text("nomoca")');
                 if (await userMenu.first().isVisible().catch(() => false)) {
                     await userMenu.first().click();
                     await page.waitForTimeout(500);
@@ -204,7 +204,7 @@ test.describe('ロールベースの表示制御', () => {
             await page.waitForTimeout(2000);
 
             // ヘッダーまたはサイドバーにユーザー情報が表示されることを確認
-            const userInfo = page.getByText(/tamanomi|admin|管理者/i);
+            const userInfo = page.getByText(/nomoca|admin|管理者/i);
             const hasUserInfo = await userInfo.first().isVisible().catch(() => false);
             // 表示されていればOK
             if (hasUserInfo) {

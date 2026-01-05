@@ -10,6 +10,7 @@ const API_BASE_URL = process.env.API_BASE_URL
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
+    
     // 入力検証: 画像のみ、サイズ上限（10MB/ファイル）、最大ファイル数（5）
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     const allowedTypes = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);

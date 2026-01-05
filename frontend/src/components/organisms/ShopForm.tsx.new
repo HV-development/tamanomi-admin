@@ -272,6 +272,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     handleImageSelect,
     handleRemoveImage,
     handleRemoveExistingImage,
+    uploadImages,
   } = useImageUpload({ maxImages: 3 });
 
   // 定休日チェックボックス用

@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import { secureFetchWithCommonHeaders } from '@/lib/fetch-utils';
 import { createNoCacheResponse } from '@/lib/response-utils';
+import { getRefreshToken } from '@/lib/header-utils';
+import { COOKIE_MAX_AGE } from '@/lib/cookie-config';
 
 // 簡易レート制限（同一IPあたり1分間に20回まで）
 const ipCounters = new Map<string, { count: number; resetAt: number }>();
@@ -31,9 +33,8 @@ export async function POST(request: NextRequest) {
     return createNoCacheResponse({ message: 'Too Many Requests' }, { status: 429 });
   }
   try {
-    const cookieHeader = request.headers.get('cookie') || '';
-    const refreshPair = cookieHeader.split(';').map(v => v.trim()).find(v => v.startsWith('refreshToken='));
-    const refreshToken = refreshPair ? decodeURIComponent(refreshPair.split('=')[1] || '') : '';
+    // __Host-refreshToken と refreshToken の両方を探す
+    const refreshToken = getRefreshToken(request);
     if (!refreshToken) {
       console.warn('🔄 No refresh token cookie');
       return createNoCacheResponse({ message: 'No refresh token' }, { status: 401 });
@@ -60,36 +61,44 @@ export async function POST(request: NextRequest) {
 
     const res = createNoCacheResponse({ ok: true });
     if (data.accessToken) {
+      // アクセストークン: 2時間（バックエンドのJWT_ACCESS_TOKEN_EXPIRES_INと一致）
       res.cookies.set('accessToken', data.accessToken, {
         httpOnly: true,
         secure: isSecure,
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 15,
+        maxAge: COOKIE_MAX_AGE.ACCESS_TOKEN,
       });
-      res.cookies.set('__Host-accessToken', data.accessToken, {
-        httpOnly: true,
-        secure: isSecure,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 15,
-      });
+      // __Host- prefix for hardened cookie - HTTPS環境でのみ設定
+      if (isSecure) {
+        res.cookies.set('__Host-accessToken', data.accessToken, {
+          httpOnly: true,
+          secure: true, // __Host-プレフィックスは必ずsecure: true
+          sameSite: 'lax',
+          path: '/',
+          maxAge: COOKIE_MAX_AGE.ACCESS_TOKEN,
+        });
+      }
     }
     if (data.refreshToken) {
+      // リフレッシュトークン: 7日間（バックエンドのJWT_REFRESH_TOKEN_EXPIRES_INと一致）
       res.cookies.set('refreshToken', data.refreshToken, {
         httpOnly: true,
         secure: isSecure,
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 60 * 24 * 30,
+        maxAge: COOKIE_MAX_AGE.REFRESH_TOKEN,
       });
-      res.cookies.set('__Host-refreshToken', data.refreshToken, {
-        httpOnly: true,
-        secure: isSecure,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 30,
-      });
+      // __Host- prefix for hardened cookie - HTTPS環境でのみ設定
+      if (isSecure) {
+        res.cookies.set('__Host-refreshToken', data.refreshToken, {
+          httpOnly: true,
+          secure: true, // __Host-プレフィックスは必ずsecure: true
+          sameSite: 'lax',
+          path: '/',
+          maxAge: COOKIE_MAX_AGE.REFRESH_TOKEN,
+        });
+      }
     }
     return res;
   } catch (error: unknown) {
