@@ -285,6 +285,54 @@ function validateShopFieldInternal(
         return '有効なIDを指定してください';
       }
       return null;
+    case 'contactName':
+      // 空文字列、null、undefinedの場合はバリデーションを実行しない（任意項目のため）
+      if (value === null || value === undefined) {
+        return null;
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed.length === 0) {
+          return null;
+        }
+        if (trimmed.length > 100) {
+          return '担当者名は100文字以内で入力してください';
+        }
+      }
+      return null;
+    case 'contactPhone':
+      // 空文字列、null、undefinedの場合はバリデーションを実行しない（任意項目のため）
+      if (value === null || value === undefined) {
+        return null;
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed.length === 0) {
+          return null;
+        }
+        if (!isValidPhone(trimmed)) {
+          return '有効な電話番号を入力してください（10-11桁の数字）';
+        }
+      }
+      return null;
+    case 'contactEmail':
+      // 空文字列、null、undefinedの場合はバリデーションを実行しない（任意項目のため）
+      if (value === null || value === undefined) {
+        return null;
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed.length === 0) {
+          return null;
+        }
+        if (!isValidEmail(trimmed)) {
+          return '有効なメールアドレスを入力してください';
+        }
+        if (trimmed.length > 255) {
+          return 'メールアドレスは255文字以内で入力してください';
+        }
+      }
+      return null;
     default:
       return null;
   }

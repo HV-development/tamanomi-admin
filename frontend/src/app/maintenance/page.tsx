@@ -9,8 +9,8 @@ export default function MaintenancePage() {
       <div className="absolute inset-0 bg-gradient-to-br from-[#faf8f4] via-[#f5f2eb] to-[#eae5d9]" />
       
       {/* 装飾的な円形グラデーション */}
-      <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-[#007D4F]/10 to-transparent blur-3xl" />
-      <div className="absolute bottom-[-20%] left-[-10%] w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-[#7FBE26]/8 to-transparent blur-3xl" />
+      <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-[#2b7a78]/10 to-transparent blur-3xl" />
+      <div className="absolute bottom-[-20%] left-[-10%] w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-[#2b7a78]/8 to-transparent blur-3xl" />
       
       {/* コンテンツ */}
       <div className="relative z-10 flex flex-col items-center px-6 text-center">
@@ -20,8 +20,8 @@ export default function MaintenancePage() {
           style={{ animationDelay: '0.2s' }}
         >
           <Image
-            src="/tamanomi_logo.svg"
-            alt="たまのみ 管理画面"
+            src="/nomoca_logo.svg"
+            alt="nomoca kagawa 管理画面"
             width={280}
             height={280}
             priority
@@ -34,26 +34,26 @@ export default function MaintenancePage() {
           className="opacity-0 animate-fade-in"
           style={{ animationDelay: '0.5s' }}
         >
-          <h1 className="text-2xl md:text-3xl font-medium text-[#007D4F] mb-4 tracking-wide">
+          <h1 className="text-2xl md:text-3xl font-medium text-[#2b7a78] mb-4 tracking-wide">
             ただいまメンテナンス中です
           </h1>
           
-          <p className="text-base md:text-lg text-[#007D4F]/70 mt-6 leading-relaxed">
+          <p className="text-base md:text-lg text-[#2b7a78]/70 mt-6 leading-relaxed">
             ご不便をおかけして申し訳ございません。<br />
             しばらくお待ちください。
           </p>
           
           {/* 装飾的なライン */}
           <div className="flex items-center justify-center gap-4 mt-8">
-            <div className="h-[1px] w-16 bg-gradient-to-r from-transparent to-[#007D4F]/40" />
-            <div className="w-2 h-2 rounded-full bg-[#7FBE26]/50 animate-pulse" />
-            <div className="h-[1px] w-16 bg-gradient-to-l from-transparent to-[#007D4F]/40" />
+            <div className="h-[1px] w-16 bg-gradient-to-r from-transparent to-[#2b7a78]/40" />
+            <div className="w-2 h-2 rounded-full bg-[#2b7a78]/30 animate-pulse" />
+            <div className="h-[1px] w-16 bg-gradient-to-l from-transparent to-[#2b7a78]/40" />
           </div>
         </div>
         
         {/* サブテキスト */}
         <p 
-          className="mt-8 text-sm text-[#007D4F]/60 opacity-0 animate-fade-in"
+          className="mt-8 text-sm text-[#2b7a78]/60 opacity-0 animate-fade-in"
           style={{ animationDelay: '0.8s' }}
         >
           Under Maintenance
@@ -62,10 +62,10 @@ export default function MaintenancePage() {
       
       {/* フッター */}
       <footer 
-        className="absolute bottom-8 text-xs text-[#007D4F]/40 opacity-0 animate-fade-in"
+        className="absolute bottom-8 text-xs text-[#2b7a78]/40 opacity-0 animate-fade-in"
         style={{ animationDelay: '1s' }}
       >
-        © {new Date().getFullYear()} たまのみ
+        © {new Date().getFullYear()} nomoca kagawa
       </footer>
       
       {/* アニメーション用スタイル */}
@@ -87,4 +87,7 @@ export default function MaintenancePage() {
     </main>
   )
 }
+
+
+
 

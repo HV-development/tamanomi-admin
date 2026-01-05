@@ -16,6 +16,7 @@ import {
 import { useAuth } from '@/components/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import ToastContainer from '@/components/molecules/toast-container';
+import { compressImageFile } from '@/utils/imageUtils';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -112,6 +113,30 @@ function CouponEditPageContent() {
       }
     };
     
+    // sessionStorageからデータを復元（確認画面から戻った場合）
+    const restoreFromSessionStorage = async () => {
+      try {
+        const storedData = sessionStorage.getItem('couponEditConfirmData');
+        if (storedData) {
+          const parsedData = JSON.parse(storedData);
+          
+          // フォームデータを復元
+          setFormData(prev => ({
+            ...prev,
+            couponName: parsedData.couponName || prev.couponName,
+            couponContent: parsedData.couponContent || prev.couponContent,
+            couponConditions: parsedData.couponConditions || prev.couponConditions,
+            drinkType: parsedData.drinkType || prev.drinkType,
+            imagePreview: parsedData.imagePreview || prev.imagePreview,
+            imageUrl: parsedData.imageUrl || prev.imageUrl,
+            couponImage: null, // ファイルは復元できない
+          }));
+        }
+      } catch (error) {
+        console.error('sessionStorageからのデータ復元に失敗しました:', error);
+      }
+    };
+    
     // URLパラメータから値を取得してフォームに設定（修正ボタンからの遷移時）
     if (searchParams && searchParams.get('couponName')) {
       const urlData = {
@@ -130,6 +155,9 @@ function CouponEditPageContent() {
     } else {
       fetchCoupon();
     }
+    
+    // sessionStorageからデータを復元
+    restoreFromSessionStorage();
   }, [couponId, searchParams]);
 
   const handleInputChange = (field: keyof CouponFormData, value: string) => {
@@ -223,6 +251,64 @@ function CouponEditPageContent() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     if (validateAllFields()) {
+      // 管理者アカウントの場合は確認画面に遷移
+      if (!isMerchantAccount) {
+        // 画像を圧縮してからdata:URLに変換（sessionStorageの容量を節約）
+        let compressedImagePreview = formData.imagePreview || '';
+        if (formData.couponImage && formData.imagePreview) {
+          try {
+            // 画像を圧縮（sessionStorageの容量を節約するため、小さめに圧縮）
+            const compressedFile = await compressImageFile(formData.couponImage, {
+              maxBytes: 500 * 1024, // 500KB以下に圧縮（sessionStorage用）
+              maxWidth: 1280,
+              maxHeight: 1280,
+              initialQuality: 0.7,
+              minQuality: 0.5,
+              qualityStep: 0.1,
+            });
+            
+            // 圧縮した画像をdata:URLに変換
+            compressedImagePreview = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(compressedFile);
+            });
+          } catch (error) {
+            console.error('画像の圧縮に失敗しました:', error);
+            // 圧縮に失敗した場合は元のimagePreviewを使用
+            compressedImagePreview = formData.imagePreview;
+          }
+        }
+        
+        // 画像プレビュー（base64データ）はURLパラメータが長くなりすぎるため、sessionStorageに保存
+        const confirmData = {
+          couponId: couponId,
+          couponName: formData.couponName,
+          couponContent: formData.couponContent,
+          couponConditions: formData.couponConditions || '',
+          drinkType: formData.drinkType || '',
+          imagePreview: compressedImagePreview,
+          imageUrl: formData.imageUrl || '',
+        };
+        
+        // sessionStorageに保存（画像データを含む）
+        try {
+          sessionStorage.setItem('couponEditConfirmData', JSON.stringify(confirmData));
+        } catch (error) {
+          console.error('sessionStorageへの保存に失敗しました:', error);
+          showError('データの保存に失敗しました。もう一度お試しください。');
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // 確認画面に遷移
+        router.push(`/coupons/${couponId}/confirm`);
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // 事業者アカウントの場合は直接更新
       try {
         // couponIdのバリデーション
         if (!couponId) {
@@ -294,7 +380,7 @@ function CouponEditPageContent() {
         };
         
         await apiClient.updateCoupon(couponId, updateData);
-        router.push('/coupons');
+        router.push('/coupons?toast=' + encodeURIComponent('クーポン情報を更新しました'));
       } catch (error) {
         console.error('❌ Coupon update failed:', error);
         let errorMessage = 'クーポンの更新に失敗しました。もう一度お試しください。';
@@ -317,6 +403,13 @@ function CouponEditPageContent() {
   };
 
   const handleCancel = () => {
+    // sessionStorageをクリア
+    try {
+      sessionStorage.removeItem('couponEditConfirmData');
+    } catch (error) {
+      console.error('sessionStorageのクリアに失敗しました:', error);
+    }
+    
     router.push('/coupons');
   };
 
@@ -547,7 +640,7 @@ function CouponEditPageContent() {
                 onClick={handleSubmit}
                 disabled={isSubmitting || isUploading}
               >
-                {isSubmitting ? '更新中...' : (isMerchantAccount ? '申請する' : '更新する')}
+                {isSubmitting ? '処理中...' : (isMerchantAccount ? '申請する' : '更新内容を確認する')}
               </Button>
             </div>
           </div>

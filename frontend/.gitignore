@@ -1,1 +1,6 @@
 .npmrc
+
+# Playwright
+.auth/
+test-results/
+playwright-report/

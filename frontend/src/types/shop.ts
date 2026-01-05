@@ -43,6 +43,15 @@ export interface ShopDataResponse extends Omit<ShopCreateRequest, 'area'> {
   merchant?: {
     id: string;
     name: string;
+    nameKana?: string;
+    postalCode?: string;
+    prefecture?: string;
+    city?: string;
+    address1?: string;
+    address2?: string | null;
+    account?: {
+      email: string;
+    };
   };
   images?: string[];
   latitude?: string | number;
@@ -51,6 +60,9 @@ export interface ShopDataResponse extends Omit<ShopCreateRequest, 'area'> {
   paymentTamapon?: boolean;
   paymentApps?: Record<string, boolean>;
   area?: string | null;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
 }
 
 export interface Genre {

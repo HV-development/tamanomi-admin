@@ -1,0 +1,629 @@
+'use client';
+
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import AdminLayout from '@/components/templates/admin-layout';
+import Button from '@/components/atoms/Button';
+import Icon from '@/components/atoms/Icon';
+import { useToast } from '@/hooks/use-toast';
+import ToastContainer from '@/components/molecules/toast-container';
+import { apiClient } from '@/lib/api';
+import type { ShopCreateRequest } from '@hv-development/schemas';
+import { SMOKING_OPTIONS } from '@/lib/constants/shop';
+import { compressImageFile } from '@/utils/imageUtils';
+
+export const dynamic = 'force-dynamic';
+
+interface ShopConfirmData {
+  merchantId: string;
+  genreId: string;
+  accountEmail: string;
+  name: string;
+  nameKana: string;
+  phone: string;
+  postalCode: string;
+  prefecture: string;
+  city: string;
+  address1: string;
+  address2: string;
+  latitude: string;
+  longitude: string;
+  description: string;
+  details: string;
+  holidays: string;
+  smokingType: string;
+  homepageUrl: string;
+  couponUsageStart: string;
+  couponUsageEnd: string;
+  couponUsageDays: string;
+  paymentSaicoin: boolean;
+  paymentTamapon: boolean;
+  paymentCash: boolean;
+  area: string;
+  status: string;
+  createAccount: boolean;
+  password: string;
+  // 追加データ
+  shopId: string | null;
+  isEdit: boolean;
+  merchantName: string;
+  genreName: string;
+  selectedScenes: string[];
+  customSceneText: string;
+  selectedHolidays: string[];
+  customHolidayText: string;
+  selectedCreditBrands: string[];
+  customCreditText: string;
+  selectedQrBrands: string[];
+  customQrText: string;
+  holidaysForSubmit: string;
+  paymentCreditJson: { brands: string[]; other?: string } | null;
+  paymentCodeJson: { services: string[]; other?: string } | null;
+  existingImages: string[];
+  imagePreviews: string[];
+  hasExistingAccount: boolean;
+  fallbackRedirect: string;
+  sceneNames: Record<string, string>;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+}
+
+function ShopConfirmContent() {
+  const router = useRouter();
+  const { toasts, removeToast, showError } = useToast();
+  const [shopData, setShopData] = useState<ShopConfirmData | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    // sessionStorageからデータを取得
+    try {
+      const storedData = sessionStorage.getItem('shopConfirmData');
+      if (storedData) {
+        const parsedData = JSON.parse(storedData) as ShopConfirmData;
+        // 新規登録確認画面なのでisEditがfalseであることを確認
+        if (!parsedData.isEdit) {
+          setShopData(parsedData);
+        } else {
+          // 編集モードの場合は編集確認画面に遷移
+          router.push(`/shops/${parsedData.shopId}/confirm`);
+        }
+      } else {
+        // データがない場合は登録画面に戻る
+        router.push('/shops/new');
+      }
+    } catch (error) {
+      console.error('データの取得に失敗しました:', error);
+      router.push('/shops/new');
+    }
+  }, [router]);
+
+  const handleModify = () => {
+    // sessionStorageのデータは保持したまま戻る
+    router.back();
+  };
+
+  const getSmokingTypeLabel = (smokingType: string) => {
+    const option = SMOKING_OPTIONS.find(opt => opt.value === smokingType);
+    return option?.label || smokingType;
+  };
+
+  const handleRegister = async () => {
+    if (!shopData) return;
+    
+    setIsSubmitting(true);
+    try {
+      // 住所フィールドを結合
+      const fullAddress = [
+        shopData.prefecture,
+        shopData.city,
+        shopData.address1,
+        shopData.address2
+      ].filter(Boolean).join('');
+      
+      // アカウントメールの設定
+      let accountEmail: string | null = null;
+      if (shopData.createAccount) {
+        accountEmail = shopData.accountEmail || null;
+      }
+
+      const submitData: ShopCreateRequest = {
+        merchantId: shopData.merchantId,
+        genreId: shopData.genreId,
+        accountEmail,
+        name: shopData.name,
+        nameKana: shopData.nameKana || undefined,
+        phone: shopData.phone,
+        postalCode: shopData.postalCode,
+        prefecture: shopData.prefecture,
+        city: shopData.city,
+        address1: shopData.address1,
+        address2: shopData.address2 || undefined,
+        address: fullAddress,
+        latitude: shopData.latitude,
+        longitude: shopData.longitude,
+        description: shopData.description || undefined,
+        details: shopData.details || undefined,
+        holidays: shopData.holidaysForSubmit || undefined,
+        smokingType: (shopData.smokingType as 'non_smoking' | 'separated' | 'smoking_allowed' | 'electronic_only' | '禁煙' | '分煙' | '喫煙可' | '電子タバコのみ') || undefined,
+        homepageUrl: shopData.homepageUrl || undefined,
+        couponUsageStart: shopData.couponUsageStart || undefined,
+        couponUsageEnd: shopData.couponUsageEnd || undefined,
+        couponUsageDays: shopData.couponUsageDays || undefined,
+        paymentSaicoin: shopData.paymentSaicoin,
+        paymentTamapon: shopData.paymentTamapon,
+        paymentCash: shopData.paymentCash,
+        paymentCredit: shopData.paymentCreditJson as unknown as string,
+        paymentCode: shopData.paymentCodeJson as unknown as string,
+        area: shopData.area || undefined,
+        status: (shopData.status as 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated') || 'registering',
+        sceneIds: shopData.selectedScenes,
+        customSceneText: shopData.customSceneText || undefined,
+        password: shopData.createAccount ? shopData.password : undefined,
+        contactName: shopData.contactName || null,
+        contactPhone: shopData.contactPhone || null,
+        contactEmail: shopData.contactEmail || null,
+      };
+
+      // 店舗を作成
+      const createdShop = await apiClient.createShop(submitData) as { id: string; merchantId: string };
+      
+      // 画像をアップロード
+      if (shopData.imagePreviews && shopData.imagePreviews.length > 0) {
+        try {
+          const uploadedImageUrls: string[] = [];
+          const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '').split('.')[0];
+          
+          for (let index = 0; index < shopData.imagePreviews.length; index++) {
+            const imageUrl = shopData.imagePreviews[index];
+            
+            // data:URLまたはblob:URLから画像を取得してFileオブジェクトに変換
+            let file: File;
+            if (imageUrl.startsWith('data:')) {
+              // data:URLの場合 - fetchを使わずに直接Blobに変換
+              const base64Data = imageUrl.split(',')[1];
+              const mimeType = imageUrl.match(/data:([^;]+);/)?.[1] || 'image/jpeg';
+              const binaryString = atob(base64Data);
+              const bytes = new Uint8Array(binaryString.length);
+              for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+              }
+              const blob = new Blob([bytes], { type: mimeType });
+              file = new File([blob], `image-${index}.jpg`, { type: mimeType });
+            } else if (imageUrl.startsWith('blob:')) {
+              // blob:URLの場合（フォールバック）
+              try {
+                const response = await fetch(imageUrl);
+                const blob = await response.blob();
+                file = new File([blob], `image-${index}.jpg`, { type: blob.type || 'image/jpeg' });
+              } catch (error) {
+                console.error(`blob:URLからの画像取得に失敗しました (${index + 1}):`, error);
+                throw new Error(`画像 ${index + 1} の読み込みに失敗しました`);
+              }
+            } else {
+              // 通常のURLの場合
+              const response = await fetch(imageUrl);
+              const blob = await response.blob();
+              file = new File([blob], `image-${index}.jpg`, { type: blob.type || 'image/jpeg' });
+            }
+            
+            // 画像を圧縮
+            const fileForUpload = await compressImageFile(file, {
+              maxBytes: 9.5 * 1024 * 1024,
+              maxWidth: 2560,
+              maxHeight: 2560,
+              initialQuality: 0.9,
+              minQuality: 0.6,
+              qualityStep: 0.1,
+            });
+            
+            // FormDataを作成
+            const uploadFormData = new FormData();
+            uploadFormData.append('image', fileForUpload);
+            uploadFormData.append('type', 'shop');
+            uploadFormData.append('merchantId', createdShop.merchantId);
+            uploadFormData.append('shopId', createdShop.id);
+            uploadFormData.append('timestamp', timestamp);
+            
+            // 画像をアップロード
+            const uploadResponse = await fetch('/api/upload', {
+              method: 'POST',
+              body: uploadFormData,
+              credentials: 'include',
+            });
+            
+            if (!uploadResponse.ok) {
+              const errorData = await uploadResponse.json().catch(() => ({}));
+              const message = errorData?.error || errorData?.message || '画像のアップロードに失敗しました';
+              console.error(`❌ Upload failed for image ${index + 1}:`, uploadResponse.status, errorData);
+              throw new Error(message);
+            }
+            
+            const uploadData = await uploadResponse.json();
+            uploadedImageUrls.push(uploadData.url);
+          }
+          
+          // アップロードされた画像URLを店舗データに含めて更新
+          if (uploadedImageUrls.length > 0) {
+            const allImages = [...shopData.existingImages, ...uploadedImageUrls];
+            try {
+              await apiClient.updateShop(createdShop.id, {
+                images: allImages,
+              });
+              console.log('✅ 店舗画像を更新しました:', allImages);
+            } catch (updateError) {
+              console.error('❌ 店舗画像の更新に失敗しました:', updateError);
+              // 画像アップロードは成功しているが、店舗データの更新に失敗した場合
+              showError('画像のアップロードは完了しましたが、店舗データの更新に失敗しました。管理者にお問い合わせください。');
+            }
+          }
+        } catch (uploadError) {
+          console.error('画像のアップロードに失敗しました:', uploadError);
+          // 画像アップロードが失敗しても店舗作成は成功しているので、エラーを表示して続行
+          const errorMessage = uploadError instanceof Error ? uploadError.message : '画像のアップロードに失敗しました';
+          showError(`店舗は作成されましたが、${errorMessage}`);
+        }
+      }
+      
+      // 登録成功後、sessionStorageをクリア
+      try {
+        sessionStorage.removeItem('shopConfirmData');
+      } catch (error) {
+        console.error('sessionStorageのクリアに失敗しました:', error);
+      }
+      
+      // リダイレクト先を決定
+      const fallbackRedirect = shopData.fallbackRedirect || '/shops';
+      const separator = fallbackRedirect.includes('?') ? '&' : '?';
+      router.push(`${fallbackRedirect}${separator}toast=${encodeURIComponent('店舗を作成しました')}`);
+    } catch (error) {
+      console.error('店舗の登録に失敗しました:', error);
+      
+      // エラーメッセージを取得
+      let errorMessage = '店舗の登録に失敗しました。もう一度お試しください。';
+      if (error && typeof error === 'object' && 'response' in error) {
+        const apiError = error as { response?: { status?: number; data?: { message?: string; error?: { message?: string } } } };
+        if (apiError.response?.status === 409) {
+          errorMessage = 'このメールアドレスは既に使用されています';
+        } else if (apiError.response?.data?.error?.message) {
+          errorMessage = apiError.response.data.error.message;
+        } else if (apiError.response?.data?.message) {
+          errorMessage = apiError.response.data.message;
+        }
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = (error as { message: string }).message;
+      }
+      
+      showError(errorMessage);
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!shopData) {
+    return (
+      <AdminLayout>
+        <div className="text-center py-12">
+          <p className="text-gray-500">データを読み込んでいます...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  return (
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* ヘッダー */}
+        <div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-2xl font-bold text-gray-900">店舗登録内容確認</h1>
+              <p className="text-gray-600">
+                入力内容を確認してください
+              </p>
+            </div>
+            <div className="text-sm text-gray-600">
+              <div className="flex items-center space-x-2">
+                <Icon name="admin" size="sm" className="text-gray-600" />
+                <span className="font-medium text-gray-900">管理者太郎</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 基本情報 */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900 mb-6">基本情報</h3>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">事業者</label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.merchantName}</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">店舗名</label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.name}</p>
+            </div>
+
+            {shopData.nameKana && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">店舗名（カナ）</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.nameKana}</p>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">電話番号</label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.phone}</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">郵便番号</label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.postalCode}</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">住所</label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">
+                {shopData.prefecture}{shopData.city}{shopData.address1}{shopData.address2}
+              </p>
+            </div>
+
+            {shopData.area && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">対象エリア</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.area}</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">緯度</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.latitude}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">経度</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.longitude}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ジャンル・利用シーン */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900 mb-6">ジャンル・利用シーン</h3>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">ジャンル</label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.genreName}</p>
+            </div>
+
+            {shopData.selectedScenes.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">利用シーン</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">
+                  {shopData.selectedScenes.map(id => shopData.sceneNames[id] || id).join('、')}
+                  {shopData.customSceneText && ` (${shopData.customSceneText})`}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 店舗紹介・詳細情報 */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900 mb-6">店舗紹介・詳細情報</h3>
+          
+          <div className="space-y-4">
+            {shopData.description && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">店舗紹介説明</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded whitespace-pre-wrap">{shopData.description}</p>
+              </div>
+            )}
+
+            {shopData.details && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">詳細情報</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded whitespace-pre-wrap">{shopData.details}</p>
+              </div>
+            )}
+
+            {shopData.selectedHolidays.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">定休日</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">
+                  {shopData.selectedHolidays.map(h => h === '祝日' ? h : h === 'その他' ? `その他: ${shopData.customHolidayText}` : `${h}曜日`).join('、')}
+                </p>
+              </div>
+            )}
+
+            {shopData.homepageUrl && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">ホームページURL</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.homepageUrl}</p>
+              </div>
+            )}
+
+            {(shopData.couponUsageStart || shopData.couponUsageEnd) && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">クーポン利用時間</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">
+                  {shopData.couponUsageStart} 〜 {shopData.couponUsageEnd}
+                </p>
+              </div>
+            )}
+
+            {shopData.couponUsageDays && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">クーポン利用可能曜日</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.couponUsageDays}</p>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">喫煙タイプ</label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{getSmokingTypeLabel(shopData.smokingType)}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 決済情報 */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900 mb-6">決済情報</h3>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">現金</label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.paymentCash ? '対応' : '非対応'}</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">さいコイン</label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.paymentSaicoin ? '対応' : '非対応'}</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">たまポン</label>
+              <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.paymentTamapon ? '対応' : '非対応'}</p>
+            </div>
+
+            {shopData.selectedCreditBrands.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">クレジットカード</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">
+                  {shopData.selectedCreditBrands.filter(b => b !== 'その他').join('、')}
+                  {shopData.customCreditText && ` / その他: ${shopData.customCreditText}`}
+                </p>
+              </div>
+            )}
+
+            {shopData.selectedQrBrands.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">QRコード決済</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">
+                  {shopData.selectedQrBrands.filter(s => s !== 'その他').join('、')}
+                  {shopData.customQrText && ` / その他: ${shopData.customQrText}`}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 画像 */}
+        {(shopData.existingImages.length > 0 || shopData.imagePreviews.length > 0) && (
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 mb-6">店舗画像</h3>
+            
+            <div className="flex flex-wrap gap-4">
+              {shopData.existingImages.map((url, index) => (
+                <div key={`existing-${index}`} className="relative w-32 h-24">
+                  <Image
+                    src={url}
+                    alt={`店舗画像 ${index + 1}`}
+                    fill
+                    className="object-cover rounded-lg"
+                  />
+                </div>
+              ))}
+              {shopData.imagePreviews.map((url, index) => (
+                <div key={`preview-${index}`} className="relative w-32 h-24">
+                  <Image
+                    src={url}
+                    alt={`新規画像 ${index + 1}`}
+                    fill
+                    className="object-cover rounded-lg"
+                    unoptimized
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 担当者情報 */}
+        {(shopData.contactName || shopData.contactPhone || shopData.contactEmail) && (
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 mb-6">担当者情報</h3>
+            
+            <div className="space-y-4">
+              {shopData.contactName && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">担当者名</label>
+                  <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.contactName}</p>
+                </div>
+              )}
+
+              {shopData.contactPhone && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">担当者電話番号</label>
+                  <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.contactPhone}</p>
+                </div>
+              )}
+
+              {shopData.contactEmail && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">担当者メールアドレス</label>
+                  <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.contactEmail}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* アカウント情報 */}
+        {shopData.createAccount && (
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 mb-6">アカウント情報</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.accountEmail}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">{'*'.repeat(8)}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* アクションボタン */}
+        <div className="flex justify-center space-x-4">
+          <Button
+            variant="outline"
+            onClick={handleModify}
+          >
+            登録内容を修正する
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleRegister}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? '登録中...' : '登録する'}
+          </Button>
+        </div>
+      </div>
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+    </AdminLayout>
+  );
+}
+
+export default function ShopConfirmPage() {
+  return (
+    <Suspense fallback={
+      <AdminLayout>
+        <div className="flex justify-center items-center h-64">
+          <div className="text-gray-500">読み込み中...</div>
+        </div>
+      </AdminLayout>
+    }>
+      <ShopConfirmContent />
+    </Suspense>
+  );
+}
+
