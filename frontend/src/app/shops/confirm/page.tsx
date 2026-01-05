@@ -72,6 +72,7 @@ function ShopConfirmContent() {
   const [shopData, setShopData] = useState<ShopConfirmData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+
   useEffect(() => {
     // sessionStorageからデータを取得
     try {
@@ -160,7 +161,7 @@ function ShopConfirmContent() {
       };
 
       // 店舗を作成
-      await await apiClient.createShop(submitData) as { id: string; merchantId: string };
+      await apiClient.createShop(submitData) as { id: string; merchantId: string };
       
       // 登録成功後、sessionStorageをクリア
       try {

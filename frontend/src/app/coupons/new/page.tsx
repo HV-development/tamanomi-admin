@@ -43,6 +43,7 @@ interface Merchant {
 
 interface CouponFormData {
   shopId: string;
+  merchantId: string;
   couponName: string;
   couponContent: string;
   couponConditions: string;
@@ -68,6 +69,7 @@ function CouponNewPageContent() {
   
   const [formData, setFormData] = useState<CouponFormData>({
     shopId: '',
+    merchantId: '',
     couponName: '',
     couponContent: '',
     couponConditions: '',
@@ -100,6 +102,7 @@ function CouponNewPageContent() {
           setFormData(prev => ({
             ...prev,
             shopId: parsedData.shopId || prev.shopId,
+            merchantId: parsedData.merchantId || prev.merchantId || '',
             couponName: parsedData.couponName || prev.couponName,
             couponContent: parsedData.couponContent || prev.couponContent,
             couponConditions: parsedData.couponConditions || prev.couponConditions,
@@ -164,7 +167,8 @@ function CouponNewPageContent() {
         try {
           const shopData = await apiClient.getShop(auth.user.shopId) as Shop;
           setSelectedShop(shopData);
-          setFormData(prev => ({ ...prev, shopId: shopData.id }));
+          const merchantId = shopData.merchantId || shopData.merchant?.id || '';
+          setFormData(prev => ({ ...prev, shopId: shopData.id, merchantId }));
           
           if (shopData.merchant) {
             setSelectedMerchant({
@@ -184,6 +188,7 @@ function CouponNewPageContent() {
           const merchantData = await apiClient.getMyMerchant() as { data: Merchant };
           if (merchantData && merchantData.data) {
             setSelectedMerchant(merchantData.data);
+            setFormData(prev => ({ ...prev, merchantId: merchantData.data.id }));
           }
         } catch (error) {
           console.error('事業者情報の取得に失敗しました:', error);
@@ -236,13 +241,14 @@ function CouponNewPageContent() {
     setSelectedMerchant(merchant);
     // 事業者を変更した場合、店舗選択をリセット
     setSelectedShop(null);
-    setFormData(prev => ({ ...prev, shopId: '' }));
+    setFormData(prev => ({ ...prev, shopId: '', merchantId: merchant.id }));
   };
   
   // 店舗選択ハンドラー
   const handleShopSelect = (shop: Shop) => {
     setSelectedShop(shop);
-    setFormData(prev => ({ ...prev, shopId: shop.id }));
+    const merchantId = shop.merchantId || selectedMerchant?.id || '';
+    setFormData(prev => ({ ...prev, shopId: shop.id, merchantId }));
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -367,6 +373,7 @@ function CouponNewPageContent() {
         // 画像プレビュー（base64データ）はURLパラメータが長くなりすぎるため、sessionStorageに保存
         const confirmData = {
           shopId: formData.shopId,
+          merchantId: formData.merchantId || selectedMerchant?.id || selectedShop?.merchantId || '',
           couponName: formData.couponName,
           couponContent: formData.couponContent,
           couponConditions: formData.couponConditions || '',
@@ -499,6 +506,7 @@ function CouponNewPageContent() {
     // フォームデータをリセット
     setFormData({
       shopId: '',
+      merchantId: '',
       couponName: '',
       couponContent: '',
       couponConditions: '',

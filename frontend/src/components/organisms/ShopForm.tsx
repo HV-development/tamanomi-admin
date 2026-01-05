@@ -1063,6 +1063,19 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
       // ジャンル名を取得
       const selectedGenre = genres.find(g => g.id === formData.genreId);
       
+      // imagePreviews を base64 データURI に変換
+      const imagePreviewsBase64: string[] = await Promise.all(
+        imagePreviews.map(async (preview) => {
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              resolve(reader.result as string);
+            };
+            reader.readAsDataURL(preview.file);
+          });
+        })
+      );
+
       // 確認画面用のデータを準備
       const confirmData = {
         // 基本データ
@@ -1084,7 +1097,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
         paymentCreditJson,
         paymentCodeJson,
         existingImages,
-        imagePreviews,
+        imagePreviews: imagePreviewsBase64,
         hasExistingAccount,
         fallbackRedirect,
         // シーン名のマッピング用

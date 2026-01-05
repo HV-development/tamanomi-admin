@@ -16,6 +16,7 @@ export const dynamicParams = true;
 
 interface CouponData {
   shopId: string;
+  merchantId: string;
   couponName: string;
   couponContent: string;
   couponConditions: string;
@@ -43,6 +44,7 @@ function CouponConfirmPageContent() {
         // sessionStorageにデータがない場合、URLパラメータから取得（後方互換性のため）
         const data: CouponData = {
           shopId: searchParams.get('shopId') || '',
+          merchantId: searchParams.get('merchantId') || '',
           couponName: searchParams.get('couponName') || '',
           couponContent: searchParams.get('couponContent') || '',
           couponConditions: searchParams.get('couponConditions') || '',
@@ -58,6 +60,7 @@ function CouponConfirmPageContent() {
       // エラー時は空のデータを設定
       setCouponData({
         shopId: '',
+        merchantId: '',
         couponName: '',
         couponContent: '',
         couponConditions: '',

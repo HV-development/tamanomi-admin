@@ -72,6 +72,7 @@ function ShopEditConfirmContent() {
   const [shopData, setShopData] = useState<ShopConfirmData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+
   useEffect(() => {
     // sessionStorageからデータを取得
     try {
@@ -173,7 +174,6 @@ function ShopEditConfirmContent() {
         paymentApps: { mydigi: shopData.paymentMydigi ?? false },
         area: shopData.area || undefined,
         status: shopData.status as 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
-        images: shopData.existingImages,
         sceneIds: shopData.selectedScenes,
         customSceneText: shopData.customSceneText || undefined,
       };
