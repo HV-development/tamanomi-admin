@@ -259,8 +259,9 @@ function CouponsPageContent() {
 
   // ページ変更ハンドラー
   const handlePageChange = useCallback((page: number) => {
+    if (loading) return;
     setPagination(prev => ({ ...prev, page }));
-  }, []);
+  }, [loading]);
 
   const handleStatusChange = useCallback(async (couponId: string, status: string) => {
     // adminアカウントのみ承認ステータスの変更を許可
@@ -699,6 +700,7 @@ function CouponsPageContent() {
             currentPage={pagination.page}
             totalPages={pagination.totalPages}
             onPageChange={handlePageChange}
+            disabled={loading}
           />
         )}
 
