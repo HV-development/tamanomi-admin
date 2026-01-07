@@ -130,22 +130,13 @@ export function buildCommonHeaders(
   // 環境変数 APP_DOMAIN が設定されている場合はそれを優先使用
   // 注意: X-Forwarded-Host は Railway プロキシに上書きされるため、X-App-Domain を使用
   const appDomain = process.env.APP_DOMAIN
-  const hostHeader = request.headers.get('host')
-  
-  // デバッグログ
-  console.log('🔍 [buildCommonHeaders] Debug:', {
-    'APP_DOMAIN env': appDomain,
-    'host header': hostHeader,
-  })
-  
   if (appDomain) {
     headers['X-App-Domain'] = appDomain
-    console.log('🔍 [buildCommonHeaders] Using APP_DOMAIN:', appDomain)
   } else {
     // フォールバック: 実際のリクエストのHostヘッダーを転送
-    if (hostHeader) {
-      headers['X-App-Domain'] = hostHeader
-      console.log('🔍 [buildCommonHeaders] Using host header:', hostHeader)
+    const host = request.headers.get('host')
+    if (host) {
+      headers['X-App-Domain'] = host
     }
   }
 
