@@ -57,6 +57,9 @@ interface ShopConfirmData {
   customCreditText: string;
   selectedQrBrands: string[];
   customQrText: string;
+  selectedServices: string[];
+  customServicesText: string;
+  servicesJson: { services: string[]; other?: string } | null;
   holidaysForSubmit: string;
   paymentCreditJson: { brands: string[]; other?: string } | null;
   paymentCodeJson: { services: string[]; other?: string } | null;
@@ -156,6 +159,7 @@ function ShopConfirmContent() {
         paymentCash: shopData.paymentCash,
         paymentCredit: shopData.paymentCreditJson as unknown as string,
         paymentCode: shopData.paymentCodeJson as unknown as string,
+        services: shopData.servicesJson || undefined,
         area: shopData.area || undefined,
         status: (shopData.status as 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated') || 'registering',
         sceneIds: shopData.selectedScenes,
@@ -467,6 +471,18 @@ function ShopConfirmContent() {
               <label className="block text-sm font-medium text-gray-700 mb-1">喫煙タイプ</label>
               <p className="text-gray-900 bg-gray-50 p-2 rounded">{getSmokingTypeLabel(shopData.smokingType)}</p>
             </div>
+
+            {shopData.selectedServices && Array.isArray(shopData.selectedServices) && shopData.selectedServices.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">サービス情報</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">
+                  {shopData.selectedServices.join('、')}
+                  {shopData.customServicesText && (
+                    <span className="ml-2 text-gray-600">（{shopData.customServicesText}）</span>
+                  )}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

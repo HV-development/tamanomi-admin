@@ -38,7 +38,7 @@ export interface Merchant {
   }>;
 }
 
-export interface ShopDataResponse extends Omit<ShopCreateRequest, 'area'> {
+export interface ShopDataResponse extends Omit<ShopCreateRequest, 'area' | 'services'> {
   accountEmail?: string;
   merchant?: {
     id: string;
@@ -63,6 +63,7 @@ export interface ShopDataResponse extends Omit<ShopCreateRequest, 'area'> {
   contactName?: string | null;
   contactPhone?: string | null;
   contactEmail?: string | null;
+  services?: { services: string[]; other?: string } | null; // サービス情報（paymentCreditと同じ形式）
 }
 
 export interface Genre {
@@ -82,7 +83,7 @@ export interface ImagePreview {
   url: string;
 }
 
-export type ExtendedShopCreateRequest = ShopCreateRequest & {
+export type ExtendedShopCreateRequest = Omit<ShopCreateRequest, 'services'> & {
   homepageUrl?: string | null;
   couponUsageStart?: string | null;
   couponUsageEnd?: string | null;
@@ -91,6 +92,7 @@ export type ExtendedShopCreateRequest = ShopCreateRequest & {
   paymentTamapon?: boolean;
   paymentApps?: Record<string, boolean>;
   area?: string;
+  services?: Record<string, boolean> | null; // サービス情報（オブジェクト形式、nullも許可）
 };
 
 
