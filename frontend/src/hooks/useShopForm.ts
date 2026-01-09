@@ -190,7 +190,6 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
     handleImageSelect,
     handleRemoveImage,
     handleRemoveExistingImage,
-    uploadImages,
   } = useImageUpload({ maxImages: 3 });
 
   const [selectedHolidays, setSelectedHolidays] = useState<string[]>([]);
@@ -364,28 +363,9 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
             const paymentSaicoinValue = paymentAppsData?.saicoin ?? shopData.paymentSaicoin ?? false;
             const paymentTamaponValue = paymentAppsData?.tamapon ?? shopData.paymentTamapon ?? false;
 
-            // 担当者情報を明示的に取得（APIレスポンスに含まれているか確認）
-            // APIレスポンスの構造を確認（dataプロパティがある場合とない場合がある）
-            const actualShopData = (rawShopData && typeof rawShopData === 'object' && 'data' in rawShopData && rawShopData.data)
-              ? rawShopData.data
-              : rawShopData;
-
-            // 複数のソースから担当者情報を取得を試みる
-            const contactName = (rawShopData as any)?.contactName
-              ?? (shopData as { contactName?: string | null }).contactName
-              ?? (shopData as any).contactName
-              ?? (actualShopData as any)?.contactName
-              ?? '';
-            const contactPhone = (rawShopData as any)?.contactPhone
-              ?? (shopData as { contactPhone?: string | null }).contactPhone
-              ?? (shopData as any).contactPhone
-              ?? (actualShopData as any)?.contactPhone
-              ?? '';
-            const contactEmail = (rawShopData as any)?.contactEmail
-              ?? (shopData as { contactEmail?: string | null }).contactEmail
-              ?? (shopData as any).contactEmail
-              ?? (actualShopData as any)?.contactEmail
-              ?? '';
+            const contactName = shopData.contactName ?? '';
+            const contactPhone = shopData.contactPhone ?? '';
+            const contactEmail = shopData.contactEmail ?? '';
 
             // shopDataをスプレッドした後、明示的に担当者情報を設定（上書きを防ぐため）
             const formDataToSet = {
@@ -401,7 +381,7 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
               description: shopData.description ?? '',
               details: shopData.details ?? '',
               // servicesがnullの場合はundefinedに変換（型の互換性のため）
-              services: (shopData as any).services ?? undefined,
+              services: shopData.services ?? undefined,
             };
 
             // 担当者情報を明示的に設定（shopDataに含まれていても上書き）
