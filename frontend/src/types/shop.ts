@@ -63,7 +63,7 @@ export interface ShopDataResponse extends Omit<ShopCreateRequest, 'area' | 'serv
   contactName?: string | null;
   contactPhone?: string | null;
   contactEmail?: string | null;
-  services?: { services: string[]; other?: string } | null; // サービス情報（paymentCreditと同じ形式）
+  services?: Record<string, boolean> | null; // サービス情報（paymentAppsと同じ形式）
 }
 
 export interface Genre {
@@ -92,7 +92,7 @@ export type ExtendedShopCreateRequest = Omit<ShopCreateRequest, 'services'> & {
   paymentTamapon?: boolean;
   paymentApps?: Record<string, boolean>;
   area?: string;
-  services?: Record<string, boolean> | null; // サービス情報（オブジェクト形式、nullも許可）
+  services?: Record<string, boolean> | null; // サービス情報（paymentAppsと同じ形式）
 };
 
 

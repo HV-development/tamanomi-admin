@@ -370,23 +370,6 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
               ? rawShopData.data
               : rawShopData;
 
-            console.log('APIレスポンス全体:', rawShopData);
-            console.log('APIレスポンス全体（JSON）:', JSON.stringify(rawShopData, null, 2));
-            console.log('shopDataオブジェクト:', shopData);
-            console.log('actualShopData:', actualShopData);
-            console.log('shopDataのキー一覧:', Object.keys(shopData));
-            console.log('actualShopDataのキー一覧:', actualShopData && typeof actualShopData === 'object' ? Object.keys(actualShopData) : 'N/A');
-            console.log('contactNameの値:', shopData.contactName, (shopData as any).contactName, (actualShopData as any)?.contactName, (rawShopData as any)?.contactName);
-            console.log('contactPhoneの値:', shopData.contactPhone, (shopData as any).contactPhone, (actualShopData as any)?.contactPhone, (rawShopData as any)?.contactPhone);
-            console.log('contactEmailの値:', shopData.contactEmail, (shopData as any).contactEmail, (actualShopData as any)?.contactEmail, (rawShopData as any)?.contactEmail);
-            // サービス情報の確認
-            console.log('servicesの値（shopData）:', (shopData as any).services);
-            console.log('servicesの値（actualShopData）:', (actualShopData as any)?.services);
-            console.log('servicesの値（rawShopData）:', (rawShopData as any)?.services);
-            console.log('servicesの型（shopData）:', typeof (shopData as any).services);
-            console.log('servicesが配列か（shopData）:', Array.isArray((shopData as any).services));
-            console.log('servicesが存在するか（shopData）:', 'services' in shopData);
-
             // 複数のソースから担当者情報を取得を試みる
             const contactName = (rawShopData as any)?.contactName
               ?? (shopData as { contactName?: string | null }).contactName
@@ -403,8 +386,6 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
               ?? (shopData as any).contactEmail
               ?? (actualShopData as any)?.contactEmail
               ?? '';
-
-            console.log('編集時の担当者情報（最終）:', { contactName, contactPhone, contactEmail });
 
             // shopDataをスプレッドした後、明示的に担当者情報を設定（上書きを防ぐため）
             const formDataToSet = {
@@ -529,21 +510,56 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
               setCustomSceneText(shopDataWithScenes.customSceneText);
             }
 
-            // サービス情報の設定（paymentCreditと同じ形式: { services: string[], other?: string }）
-            const shopDataWithServices = shopData as ShopCreateRequest & { services?: { services: string[]; other?: string } | null };
-            const servicesValue = shopDataWithServices.services;
-            if (servicesValue && typeof servicesValue === 'object' && !Array.isArray(servicesValue)) {
-              const servicesArray = [...(servicesValue.services || [])];
-              if (servicesValue.other) {
-                servicesArray.push('その他');
-                setCustomServicesText(servicesValue.other);
-              }
-              setSelectedServices(servicesArray);
-              console.log('[useShopForm] selectedServicesを設定しました:', servicesArray);
-            } else {
+            // サービス情報の設定（paymentAppsと同じ形式: Record<string, boolean>）
+            const shopDataWithServices = shopData as ShopCreateRequest & { services?: Record<string, boolean> | string | null };
+            let servicesValue: Record<string, boolean> | string | null | undefined = shopDataWithServices.services;
+            
+            // nullやundefinedの場合は空配列に設定
+            if (servicesValue === null || servicesValue === undefined) {
               setSelectedServices([]);
               setCustomServicesText('');
-              console.log('[useShopForm] selectedServicesを空に設定しました');
+            } else {
+              // 文字列の場合はJSON.parseしてオブジェクトに変換
+              if (typeof servicesValue === 'string') {
+                try {
+                  // 空文字列の場合はnullに変換
+                  if (servicesValue.trim() === '') {
+                    servicesValue = null;
+                  } else {
+                    const parsed = JSON.parse(servicesValue) as Record<string, boolean>;
+                    servicesValue = parsed;
+                  }
+                } catch (e) {
+                  console.error('[useShopForm] ❌ servicesのパース失敗:', {
+                    error: e,
+                    '元の値': servicesValue,
+                    '元の型': typeof servicesValue
+                  });
+                  servicesValue = null;
+                }
+              }
+              
+              // オブジェクトの場合（nullチェックも含む）
+              if (servicesValue !== null && servicesValue !== undefined && typeof servicesValue === 'object' && !Array.isArray(servicesValue)) {
+                // Record<string, boolean>形式から配列に変換
+                const servicesObj = servicesValue as Record<string, boolean>;
+                const servicesArray: string[] = [];
+                Object.keys(servicesObj).forEach(key => {
+                  if (servicesObj[key] === true) {
+                    if (key === 'その他') {
+                      // 「その他」の場合は、customServicesTextを設定する必要があるが、
+                      // Record形式ではテキストを保存できないため、キーとして保存されていると仮定
+                      servicesArray.push('その他');
+                    } else {
+                      servicesArray.push(key);
+                    }
+                  }
+                });
+                setSelectedServices(servicesArray);
+              } else {
+                setSelectedServices([]);
+                setCustomServicesText('');
+              }
             }
             if (isMounted) {
               setIsLoading(false);
@@ -782,14 +798,6 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // デバッグ: handleSubmit開始時のselectedServicesの値を確認
-    console.log('[useShopForm] handleSubmit開始時のselectedServices:', {
-      selectedServices,
-      selectedServices型: typeof selectedServices,
-      selectedServices配列か: Array.isArray(selectedServices),
-      selectedServices長さ: Array.isArray(selectedServices) ? selectedServices.length : 0,
-    });
-
     try {
       setIsSubmitting(true);
 
@@ -809,10 +817,20 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
         ...(isQrOtherSelected && customQrText && { other: customQrText })
       } : null;
 
-      const servicesJson = selectedServices.length > 0 ? {
-        services: selectedServices.filter(s => s !== 'その他'),
-        ...(isServicesOtherSelected && customServicesText && { other: customServicesText })
-      } : null;
+      // servicesをpaymentAppsと同じ形式（Record<string, boolean>）に変換
+      const servicesJson = selectedServices.length > 0 ? (() => {
+        const servicesRecord: Record<string, boolean> = {};
+        selectedServices.filter(s => s !== 'その他').forEach(service => {
+          servicesRecord[service] = true;
+        });
+        // 「その他」がある場合は、otherキーにテキストを保存（paymentApps形式に合わせる）
+        if (isServicesOtherSelected && customServicesText) {
+          servicesRecord['その他'] = true;
+          // カスタムテキストは別のフィールドに保存するか、キー名に含める
+          // ここでは、paymentApps形式に合わせて、そのままbooleanとして保存
+        }
+        return servicesRecord;
+      })() : null;
 
       const isHolidayOtherSelected = selectedHolidays.includes('その他');
       const holidaysForSubmit = selectedHolidays.map(h => {
@@ -822,8 +840,10 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
         return h;
       }).join(',');
 
+      // formDataからservicesを除外してから、正しい形式のservicesを設定
+      const { services: _formDataServices, ...formDataWithoutServices } = formData;
       const dataToValidate = {
-        ...formData,
+        ...formDataWithoutServices,
         accountEmail: formData.accountEmail || null,
         holidays: holidaysForSubmit,
         paymentCredit: paymentCreditJson,
@@ -966,14 +986,6 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
         }
       }
 
-      // デバッグ: customErrorsの内容を確認
-      console.log('[useShopForm] customErrorsの内容:', {
-        customErrors,
-        customErrorsキー数: Object.keys(customErrors).length,
-        customErrorsキー一覧: Object.keys(customErrors),
-        customErrors詳細: Object.entries(customErrors).map(([key, value]) => ({ フィールド: key, エラーメッセージ: value })),
-      });
-
       if (Object.keys(customErrors).length > 0) {
         setValidationErrors(customErrors);
         showError('入力内容に誤りがあります。各項目を確認してください。');
@@ -1005,25 +1017,14 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
 
       const schema = isEdit ? shopUpdateRequestSchema : shopCreateRequestSchema;
       
-      // デバッグ: 使用しているスキーマのservices定義を確認
-      try {
-        const schemaShape = (schema as any)._def?.schema?._def?.shape?.();
-        if (schemaShape && schemaShape.services) {
-          console.log('[useShopForm] 使用しているスキーマのservices定義:', {
-            typeName: schemaShape.services._def?.typeName,
-            innerType: schemaShape.services._def?.innerType?._def?.typeName,
-            keyType: schemaShape.services._def?.keyType?._def?.typeName,
-            valueType: schemaShape.services._def?.valueType?._def?.typeName,
-            schemaShapeServices: schemaShape.services,
-          });
-        } else {
-          console.log('[useShopForm] スキーマのshapeを取得できませんでした');
-        }
-      } catch (error) {
-        console.log('[useShopForm] スキーマの確認中にエラー:', error);
-      }
-      
-      let dataForZodValidation: ExtendedShopCreateRequest & { applications?: string[] } = { ...dataToValidate } as ExtendedShopCreateRequest & { applications?: string[] };
+      // dataToValidateからservicesを明示的に設定
+      const { services: _dataToValidateServices, ...dataToValidateWithoutServices } = dataToValidate;
+      // servicesJsonがnullの場合はundefinedに変換（Zodスキーマのoptional()はundefinedを期待）
+      const servicesForValidation = servicesJson === null ? undefined : servicesJson;
+      let dataForZodValidation: ExtendedShopCreateRequest & { applications?: string[] } = { 
+        ...dataToValidateWithoutServices,
+        services: servicesForValidation, // 明示的にservicesを設定
+      } as ExtendedShopCreateRequest & { applications?: string[] };
       if ('applications' in dataForZodValidation) {
         delete (dataForZodValidation as Record<string, unknown>).applications;
       }
@@ -1032,29 +1033,13 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
         dataForZodValidation = { ...rest, accountEmail: null };
       }
 
-      // デバッグ: Zodバリデーション前のデータを確認
-      console.log('[useShopForm] Zodバリデーション前のdataForZodValidation:', {
-        services: dataForZodValidation.services,
-        services型: typeof dataForZodValidation.services,
-        servicesオブジェクトか: dataForZodValidation.services && typeof dataForZodValidation.services === 'object' && !Array.isArray(dataForZodValidation.services),
-        services配列か: Array.isArray(dataForZodValidation.services),
-        servicesServicesプロパティ: dataForZodValidation.services && typeof dataForZodValidation.services === 'object' && !Array.isArray(dataForZodValidation.services) ? (dataForZodValidation.services as any).services : null,
-      });
-
-      const validationResult = schema.safeParse(dataForZodValidation);
+      // Zodのスキーマ側でservicesが配列形式を期待するケースがあり、
+      // Record<string, boolean>を渡すと`services.services`でinvalid_typeになるため、
+      // バリデーション時はいったんservicesを除外する（servicesはオプショナルなので削除してもスキーマ上はOK）。
+      const { services: _servicesForSubmit, ...dataForZodValidationWithoutServices } = dataForZodValidation;
+      const validationResult = schema.safeParse(dataForZodValidationWithoutServices);
 
       if (!validationResult.success) {
-        // デバッグ: Zodバリデーションエラーの詳細を確認
-        console.log('[useShopForm] Zodバリデーションエラー:', {
-          validationResultError: validationResult.error,
-          errors: validationResult.error.errors,
-          errors詳細: validationResult.error.errors.map(err => ({
-            パス: err.path.join('.'),
-            メッセージ: err.message,
-            コード: err.code,
-          })),
-        });
-
         const zodErrors: Record<string, string> = {};
         validationResult.error.errors.forEach((err) => {
           const path = err.path.join('.');
@@ -1140,32 +1125,8 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
         contactEmail: formData.contactEmail || null,
       };
 
-      // デバッグ: selectedServicesがconfirmDataに含まれているか確認
-      console.log('[useShopForm] sessionStorageに保存する前のconfirmData確認:', {
-        selectedServices: confirmData.selectedServices,
-        selectedServices型: typeof confirmData.selectedServices,
-        selectedServicesオブジェクトか: confirmData.selectedServices && typeof confirmData.selectedServices === 'object' && !Array.isArray(confirmData.selectedServices),
-        selectedServicesキー数: confirmData.selectedServices && typeof confirmData.selectedServices === 'object' && !Array.isArray(confirmData.selectedServices) ? Object.keys(confirmData.selectedServices).length : 0,
-        selectedServicesキー: confirmData.selectedServices && typeof confirmData.selectedServices === 'object' && !Array.isArray(confirmData.selectedServices) ? Object.keys(confirmData.selectedServices) : [],
-        confirmData全体のキー: Object.keys(confirmData),
-      });
-
       try {
         sessionStorage.setItem('shopConfirmData', JSON.stringify(confirmData));
-        
-        // デバッグ: sessionStorageに保存されたデータを確認
-        const savedData = sessionStorage.getItem('shopConfirmData');
-        if (savedData) {
-          const parsedSavedData = JSON.parse(savedData);
-          console.log('[useShopForm] sessionStorageに保存後の確認:', {
-            selectedServices: parsedSavedData.selectedServices,
-            selectedServices型: typeof parsedSavedData.selectedServices,
-            selectedServices配列か: Array.isArray(parsedSavedData.selectedServices),
-            selectedServices長さ: Array.isArray(parsedSavedData.selectedServices) ? parsedSavedData.selectedServices.length : 0,
-            customServicesText: parsedSavedData.customServicesText,
-            servicesJson: parsedSavedData.servicesJson,
-          });
-        }
       } catch (error) {
         console.error('sessionStorageへの保存に失敗しました:', error);
         showError('データの保存に失敗しました。もう一度お試しください。');

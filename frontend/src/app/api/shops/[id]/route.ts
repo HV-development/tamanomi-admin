@@ -37,6 +37,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     console.log('Next.js API Route: レスポンステキストにcontactNameが含まれているか:', responseText.includes('"contactName"'));
     console.log('Next.js API Route: レスポンステキストにcontactPhoneが含まれているか:', responseText.includes('"contactPhone"'));
     console.log('Next.js API Route: レスポンステキストにcontactEmailが含まれているか:', responseText.includes('"contactEmail"'));
+    console.log('Next.js API Route: レスポンステキストにservicesが含まれているか:', responseText.includes('"services"'));
 
     // contactNameの位置を確認
     const contactNameIndex = responseText.indexOf('"contactName"');
@@ -47,17 +48,23 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const data = JSON.parse(responseText);
 
-    // デバッグログ: レスポンスに担当者情報が含まれているか確認
+    // デバッグログ: レスポンスに担当者情報とservicesが含まれているか確認
     console.log('Next.js API Route: レスポンスデータ:', JSON.stringify(data, null, 2).substring(0, 1000));
     console.log('Next.js API Route: 担当者情報:', {
       contactName: (data as any)?.contactName,
       contactPhone: (data as any)?.contactPhone,
       contactEmail: (data as any)?.contactEmail,
     });
+    console.log('Next.js API Route: services情報:', {
+      services: (data as any)?.services,
+      'servicesの型': typeof (data as any)?.services,
+      'servicesが存在するか': 'services' in (data || {}),
+    });
     console.log('Next.js API Route: レスポンスデータのキー一覧:', Object.keys(data || {}));
     console.log('Next.js API Route: contactNameが含まれているか:', 'contactName' in (data || {}));
     console.log('Next.js API Route: contactPhoneが含まれているか:', 'contactPhone' in (data || {}));
     console.log('Next.js API Route: contactEmailが含まれているか:', 'contactEmail' in (data || {}));
+    console.log('Next.js API Route: servicesが含まれているか:', 'services' in (data || {}));
 
     return createNoCacheResponse(data);
   } catch (error: unknown) {
