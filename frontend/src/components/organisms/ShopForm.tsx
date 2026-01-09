@@ -7,7 +7,7 @@ import ToastContainer from '@/components/molecules/toast-container';
 import ErrorMessage from '@/components/atoms/ErrorMessage';
 import { useShopForm } from '@/hooks/useShopForm';
 import { PREFECTURES, WEEKDAYS, HOLIDAY_SPECIAL_OPTIONS, SAITAMA_WARDS } from '@/lib/constants/japan';
-import { SMOKING_OPTIONS } from '@/lib/constants/shop';
+import { SMOKING_OPTIONS, SERVICE_OPTIONS } from '@/lib/constants/shop';
 import type { ExtendedShopCreateRequest } from '@/types/shop';
 
 const MerchantSelectModal = dynamicImport(() => import('@/components/molecules/MerchantSelectModal'), {
@@ -58,6 +58,9 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     customQrText,
     selectedHolidays,
     customHolidayText,
+    selectedServices,
+    customServicesText,
+    setCustomServicesText,
     genres,
     scenes,
     merchantName,
@@ -96,6 +99,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
     setCustomQrText,
     setSelectedHolidays,
     setCustomHolidayText,
+    setSelectedServices,
     handleImageSelect,
     handleRemoveImage,
     handleRemoveExistingImage,
@@ -212,11 +216,11 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                           type="button"
                           onClick={() => {
                             setIsMerchantModalOpen(true);
-                            setTouchedFields(prev => ({
+                            setTouchedFields((prev: Record<string, boolean>) => ({
                               ...prev,
                               merchantId: true,
                             }));
-                            setValidationErrors(prev => {
+                            setValidationErrors((prev: Record<string, string>) => {
                               const newErrors = { ...prev };
                               delete newErrors.merchantId;
                               return newErrors;
@@ -614,7 +618,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 </label>
                 <textarea
                   name="description"
-                  value={formData.description}
+                  value={formData.description ?? ''}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   rows={4}
                   maxLength={500}
@@ -637,7 +641,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                 </label>
                 <textarea
                   name="details"
-                  value={formData.details}
+                  value={formData.details ?? ''}
                   onChange={(e) => handleInputChange('details', e.target.value)}
                   rows={6}
                   maxLength={1000}
@@ -844,6 +848,33 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
                   ))}
                 </div>
                 <ErrorMessage message={validationErrors.smokingType} field="smokingType" />
+              </div>
+
+              {/* サービス情報 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  サービス情報
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  {SERVICE_OPTIONS.map((service) => (
+                    <label key={service} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        value={service}
+                        checked={selectedServices.includes(service)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedServices([...selectedServices, service]);
+                          } else {
+                            setSelectedServices(selectedServices.filter(s => s !== service));
+                          }
+                        }}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">{service}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
