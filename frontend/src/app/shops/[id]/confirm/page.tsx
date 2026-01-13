@@ -56,6 +56,9 @@ interface ShopConfirmData {
   customCreditText: string;
   selectedQrBrands: string[];
   customQrText: string;
+  selectedServices: string[];
+  customServicesText: string;
+  servicesJson: { services: string[]; other?: string } | null;
   holidaysForSubmit: string;
   paymentCreditJson: { brands: string[]; other?: string } | null;
   paymentCodeJson: { services: string[]; other?: string } | null;
@@ -86,6 +89,11 @@ function ShopEditConfirmContent() {
         // 編集確認画面なのでisEditがtrueかつshopIdが一致することを確認
         if (parsedData.isEdit && parsedData.shopId === shopId) {
           setShopData(parsedData);
+          
+          // デバッグ: 設定後の確認
+          console.log('[編集確認画面] shopDataに設定完了:', {
+            selectedServices: parsedData.selectedServices,
+          });
         } else if (!parsedData.isEdit) {
           // 新規登録の場合は登録確認画面に遷移
           router.push('/shops/confirm');
@@ -269,6 +277,7 @@ function ShopEditConfirmContent() {
         paymentCredit: shopData.paymentCreditJson,
         paymentCode: shopData.paymentCodeJson,
         paymentApps: { saicoin: shopData.paymentSaicoin ?? false, tamapon: shopData.paymentTamapon ?? false },
+        services: shopData.servicesJson || undefined,
         area: shopData.area || undefined,
         status: shopData.status as 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
         images: allImages,
@@ -495,6 +504,23 @@ function ShopEditConfirmContent() {
               <label className="block text-sm font-medium text-gray-700 mb-1">喫煙タイプ</label>
               <p className="text-gray-900 bg-gray-50 p-2 rounded">{getSmokingTypeLabel(shopData.smokingType)}</p>
             </div>
+
+            {shopData.selectedServices && Array.isArray(shopData.selectedServices) && shopData.selectedServices.length > 0 ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">サービス情報</label>
+                <p className="text-gray-900 bg-gray-50 p-2 rounded">
+                  {shopData.selectedServices.join('、')}
+                  {shopData.customServicesText && (
+                    <span className="ml-2 text-gray-600">（{shopData.customServicesText}）</span>
+                  )}
+                </p>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">サービス情報</label>
+                <p className="text-gray-500 bg-gray-50 p-2 rounded italic">未設定</p>
+              </div>
+            )}
           </div>
         </div>
 

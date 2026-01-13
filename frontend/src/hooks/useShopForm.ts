@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/contexts/auth-context';
-import type { ShopCreateRequest } from '@hv-development/schemas';
+import type { ShopCreateRequest, UseShopFormOptions, UseShopFormReturn } from '@hv-development/schemas';
 import { shopCreateRequestSchema, shopUpdateRequestSchema, isValidEmail, isValidPhone, isValidPostalCode, isValidKana } from '@hv-development/schemas';
 import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-search';
 import { useShopValidation } from '@/hooks/useShopValidation';
@@ -14,74 +14,14 @@ import { compressImageFile } from '@/utils/imageUtils';
 import type { Merchant, ShopDataResponse, Genre, Scene, ExtendedShopCreateRequest } from '@/types/shop';
 import type { ToastData } from '@/components/molecules/toast-container';
 
-export interface UseShopFormOptions {
-  merchantId?: string;
-}
-
-export interface UseShopFormReturn {
-  // 状態
-  formData: ExtendedShopCreateRequest;
-  selectedScenes: string[];
-  customSceneText: string;
-  selectedCreditBrands: string[];
-  customCreditText: string;
-  selectedQrBrands: string[];
-  customQrText: string;
-  selectedHolidays: string[];
-  customHolidayText: string;
-  merchants: Merchant[];
-  selectedMerchantDetails: Merchant | null;
-  genres: Genre[];
-  scenes: Scene[];
-  merchantName: string;
-  isLoading: boolean;
-  isSubmitting: boolean;
-  isMerchantModalOpen: boolean;
-  error: string | null;
-  validationErrors: Record<string, string>;
-  touchedFields: Record<string, boolean>;
-  hasExistingAccount: boolean;
-  existingImages: string[];
-  imagePreviews: Array<{ file: File; url: string }>;
-  qrCodeUrl: string | null;
-  qrCodeLoading: boolean;
-  isEdit: boolean;
-  shopId: string | undefined;
-  isMerchantAccount: boolean;
-  isAdminAccount: boolean;
-  isShopAccount: boolean;
-  fallbackRedirect: string;
-  isSearchingAddress: boolean;
-
-  // ハンドラー
-  handleInputChange: (field: keyof ExtendedShopCreateRequest, value: string | number | boolean) => void;
-  handleFieldBlur: (field: keyof ExtendedShopCreateRequest, value: string | boolean | number | undefined) => void;
-  handleMerchantSelect: (merchant: Merchant) => Promise<void>;
-  handleCopyFromMerchant: () => void;
-  handleZipcodeSearch: () => Promise<void>;
-  handleCoordinatesPaste: (e: React.ClipboardEvent<HTMLInputElement>) => void;
-  openGoogleMapsForAddress: () => void;
-  handleSubmit: (e: React.FormEvent) => Promise<void>;
-  handleCancel: () => void;
-  handleLoadQrCode: () => Promise<void>;
-  setIsMerchantModalOpen: (open: boolean) => void;
-  setSelectedScenes: (scenes: string[]) => void;
-  setCustomSceneText: (text: string) => void;
-  setSelectedCreditBrands: (brands: string[]) => void;
-  setCustomCreditText: (text: string) => void;
-  setSelectedQrBrands: (brands: string[]) => void;
-  setCustomQrText: (text: string) => void;
-  setSelectedHolidays: (holidays: string[]) => void;
-  setCustomHolidayText: (text: string) => void;
-  handleImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleRemoveImage: (index: number) => void;
-  handleRemoveExistingImage: (index: number) => void;
-  setValidationErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  setTouchedFields: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
-  toasts: ToastData[];
-  removeToast: (id: string) => void;
-  showSuccess: (message: string) => void;
-}
+// 具体的な型パラメータを使用した型エイリアス
+export type UseShopFormReturnTyped = UseShopFormReturn<
+  ExtendedShopCreateRequest,
+  Merchant,
+  Genre,
+  Scene,
+  ToastData
+>;
 
 const collectAccountEmailEntries = (data: unknown): Array<{ shopId: string; email: string }> => {
   const entries: Array<{ shopId: string; email: string }> = [];
@@ -118,7 +58,7 @@ const collectAccountEmailEntries = (data: unknown): Array<{ shopId: string; emai
   return entries;
 };
 
-export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions = {}): UseShopFormReturn {
+export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions = {}): UseShopFormReturnTyped {
   const params = useParams();
   const router = useRouter();
   const searchParamsHook = useSearchParams();
@@ -223,6 +163,8 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
   const [customCreditText, setCustomCreditText] = useState<string>('');
   const [selectedQrBrands, setSelectedQrBrands] = useState<string[]>([]);
   const [customQrText, setCustomQrText] = useState<string>('');
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [customServicesText, setCustomServicesText] = useState<string>('');
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [selectedMerchantDetails, setSelectedMerchantDetails] = useState<Merchant | null>(null);
   const [genres, setGenres] = useState<Genre[]>([]);
@@ -248,7 +190,6 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
     handleImageSelect,
     handleRemoveImage,
     handleRemoveExistingImage,
-    uploadImages,
   } = useImageUpload({ maxImages: 3 });
 
   const [selectedHolidays, setSelectedHolidays] = useState<string[]>([]);
@@ -422,40 +363,9 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
             const paymentSaicoinValue = paymentAppsData?.saicoin ?? shopData.paymentSaicoin ?? false;
             const paymentTamaponValue = paymentAppsData?.tamapon ?? shopData.paymentTamapon ?? false;
 
-            // 担当者情報を明示的に取得（APIレスポンスに含まれているか確認）
-            // APIレスポンスの構造を確認（dataプロパティがある場合とない場合がある）
-            const actualShopData = (rawShopData && typeof rawShopData === 'object' && 'data' in rawShopData && rawShopData.data)
-              ? rawShopData.data
-              : rawShopData;
-
-            console.log('APIレスポンス全体:', rawShopData);
-            console.log('APIレスポンス全体（JSON）:', JSON.stringify(rawShopData, null, 2));
-            console.log('shopDataオブジェクト:', shopData);
-            console.log('actualShopData:', actualShopData);
-            console.log('shopDataのキー一覧:', Object.keys(shopData));
-            console.log('actualShopDataのキー一覧:', actualShopData && typeof actualShopData === 'object' ? Object.keys(actualShopData) : 'N/A');
-            console.log('contactNameの値:', shopData.contactName, (shopData as any).contactName, (actualShopData as any)?.contactName, (rawShopData as any)?.contactName);
-            console.log('contactPhoneの値:', shopData.contactPhone, (shopData as any).contactPhone, (actualShopData as any)?.contactPhone, (rawShopData as any)?.contactPhone);
-            console.log('contactEmailの値:', shopData.contactEmail, (shopData as any).contactEmail, (actualShopData as any)?.contactEmail, (rawShopData as any)?.contactEmail);
-
-            // 複数のソースから担当者情報を取得を試みる
-            const contactName = (rawShopData as any)?.contactName
-              ?? (shopData as { contactName?: string | null }).contactName
-              ?? (shopData as any).contactName
-              ?? (actualShopData as any)?.contactName
-              ?? '';
-            const contactPhone = (rawShopData as any)?.contactPhone
-              ?? (shopData as { contactPhone?: string | null }).contactPhone
-              ?? (shopData as any).contactPhone
-              ?? (actualShopData as any)?.contactPhone
-              ?? '';
-            const contactEmail = (rawShopData as any)?.contactEmail
-              ?? (shopData as { contactEmail?: string | null }).contactEmail
-              ?? (shopData as any).contactEmail
-              ?? (actualShopData as any)?.contactEmail
-              ?? '';
-
-            console.log('編集時の担当者情報（最終）:', { contactName, contactPhone, contactEmail });
+            const contactName = shopData.contactName ?? '';
+            const contactPhone = shopData.contactPhone ?? '';
+            const contactEmail = shopData.contactEmail ?? '';
 
             // shopDataをスプレッドした後、明示的に担当者情報を設定（上書きを防ぐため）
             const formDataToSet = {
@@ -467,6 +377,11 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
               paymentSaicoin: paymentSaicoinValue,
               paymentTamapon: paymentTamaponValue,
               area: shopData.area ?? '',
+              // descriptionとdetailsがnullの場合は空文字列に変換
+              description: shopData.description ?? '',
+              details: shopData.details ?? '',
+              // servicesがnullの場合はundefinedに変換（型の互換性のため）
+              services: shopData.services ?? undefined,
             };
 
             // 担当者情報を明示的に設定（shopDataに含まれていても上書き）
@@ -575,6 +490,57 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
               setCustomSceneText(shopDataWithScenes.customSceneText);
             }
 
+            // サービス情報の設定（paymentAppsと同じ形式: Record<string, boolean>）
+            const shopDataWithServices = shopData as ShopCreateRequest & { services?: Record<string, boolean> | string | null };
+            let servicesValue: Record<string, boolean> | string | null | undefined = shopDataWithServices.services;
+            
+            // nullやundefinedの場合は空配列に設定
+            if (servicesValue === null || servicesValue === undefined) {
+              setSelectedServices([]);
+              setCustomServicesText('');
+            } else {
+              // 文字列の場合はJSON.parseしてオブジェクトに変換
+              if (typeof servicesValue === 'string') {
+                try {
+                  // 空文字列の場合はnullに変換
+                  if (servicesValue.trim() === '') {
+                    servicesValue = null;
+                  } else {
+                    const parsed = JSON.parse(servicesValue) as Record<string, boolean>;
+                    servicesValue = parsed;
+                  }
+                } catch (e) {
+                  console.error('[useShopForm] ❌ servicesのパース失敗:', {
+                    error: e,
+                    '元の値': servicesValue,
+                    '元の型': typeof servicesValue
+                  });
+                  servicesValue = null;
+                }
+              }
+              
+              // オブジェクトの場合（nullチェックも含む）
+              if (servicesValue !== null && servicesValue !== undefined && typeof servicesValue === 'object' && !Array.isArray(servicesValue)) {
+                // Record<string, boolean>形式から配列に変換
+                const servicesObj = servicesValue as Record<string, boolean>;
+                const servicesArray: string[] = [];
+                Object.keys(servicesObj).forEach(key => {
+                  if (servicesObj[key] === true) {
+                    if (key === 'その他') {
+                      // 「その他」の場合は、customServicesTextを設定する必要があるが、
+                      // Record形式ではテキストを保存できないため、キーとして保存されていると仮定
+                      servicesArray.push('その他');
+                    } else {
+                      servicesArray.push(key);
+                    }
+                  }
+                });
+                setSelectedServices(servicesArray);
+              } else {
+                setSelectedServices([]);
+                setCustomServicesText('');
+              }
+            }
             if (isMounted) {
               setIsLoading(false);
             }
@@ -690,30 +656,40 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
   }, [selectedMerchantDetails, formData.merchantId, merchants]);
 
   const handleInputChange = useCallback((field: keyof ExtendedShopCreateRequest, value: string | number | boolean) => {
-    const updatedFormData = {
-      ...formData,
-      [field]: value,
-    };
-    const updatedTouchedFields = {
-      ...touchedFields,
-      [field]: true,
-    };
-    setFormData(updatedFormData);
-    setTouchedFields(updatedTouchedFields);
+    let updatedFormData: ExtendedShopCreateRequest;
+    let updatedTouchedFields: Record<string, boolean>;
+    
+    setFormData((prevFormData) => {
+      updatedFormData = {
+        ...prevFormData,
+        [field]: value,
+      };
+      return updatedFormData;
+    });
+    
+    setTouchedFields((prevTouchedFields) => {
+      updatedTouchedFields = {
+        ...prevTouchedFields,
+        [field]: true,
+      };
 
-    // 担当者情報フィールドが空文字列の場合は、エラーを明示的に削除
-    if ((field === 'contactName' || field === 'contactPhone' || field === 'contactEmail') &&
-      (value === '' || value === null || value === undefined || (typeof value === 'string' && value.trim().length === 0))) {
-      setValidationErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
-      return;
-    }
+      // 担当者情報フィールドが空文字列の場合は、エラーを明示的に削除
+      if ((field === 'contactName' || field === 'contactPhone' || field === 'contactEmail') &&
+        (value === '' || value === null || value === undefined || (typeof value === 'string' && value.trim().length === 0))) {
+        setValidationErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[field];
+          return newErrors;
+        });
+        return updatedTouchedFields;
+      }
 
-    validateField(field, value, updatedFormData, updatedTouchedFields);
-  }, [formData, touchedFields, validateField, setValidationErrors]);
+      // validateField を呼び出す（updatedFormData と updatedTouchedFields を渡す）
+      validateField(field, value, updatedFormData, updatedTouchedFields);
+
+      return updatedTouchedFields;
+    });
+  }, [validateField]);
 
   const handleFieldBlur = useCallback((field: keyof ExtendedShopCreateRequest, value: string | boolean | number | undefined) => {
     const updatedTouchedFields = {
@@ -807,6 +783,7 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
 
       const isCreditOtherSelected = selectedCreditBrands.includes('その他');
       const isQrOtherSelected = selectedQrBrands.includes('その他');
+      const isServicesOtherSelected = selectedServices.includes('その他');
       const otherScene = scenes.find(s => s.name === 'その他');
       const isOtherSceneSelected = otherScene && selectedScenes.includes(otherScene.id);
 
@@ -820,6 +797,21 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
         ...(isQrOtherSelected && customQrText && { other: customQrText })
       } : null;
 
+      // servicesをpaymentAppsと同じ形式（Record<string, boolean>）に変換
+      const servicesJson = selectedServices.length > 0 ? (() => {
+        const servicesRecord: Record<string, boolean> = {};
+        selectedServices.filter(s => s !== 'その他').forEach(service => {
+          servicesRecord[service] = true;
+        });
+        // 「その他」がある場合は、otherキーにテキストを保存（paymentApps形式に合わせる）
+        if (isServicesOtherSelected && customServicesText) {
+          servicesRecord['その他'] = true;
+          // カスタムテキストは別のフィールドに保存するか、キー名に含める
+          // ここでは、paymentApps形式に合わせて、そのままbooleanとして保存
+        }
+        return servicesRecord;
+      })() : null;
+
       const isHolidayOtherSelected = selectedHolidays.includes('その他');
       const holidaysForSubmit = selectedHolidays.map(h => {
         if (h === 'その他' && customHolidayText.trim()) {
@@ -828,12 +820,16 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
         return h;
       }).join(',');
 
+      // formDataからservicesを除外してから、正しい形式のservicesを設定
+      const { services: _formDataServices, ...formDataWithoutServices } = formData;
       const dataToValidate = {
-        ...formData,
+        ...formDataWithoutServices,
         accountEmail: formData.accountEmail || null,
         holidays: holidaysForSubmit,
         paymentCredit: paymentCreditJson,
         paymentCode: paymentCodeJson,
+        // サービス情報をpaymentCreditと同じ形式で送信
+        services: servicesJson,
         couponUsageStart: formData.couponUsageStart && formData.couponUsageStart.trim() !== '' ? formData.couponUsageStart : null,
         couponUsageEnd: formData.couponUsageEnd && formData.couponUsageEnd.trim() !== '' ? formData.couponUsageEnd : null,
       };
@@ -1000,7 +996,15 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
       }
 
       const schema = isEdit ? shopUpdateRequestSchema : shopCreateRequestSchema;
-      let dataForZodValidation: ExtendedShopCreateRequest & { applications?: string[] } = { ...dataToValidate } as ExtendedShopCreateRequest & { applications?: string[] };
+      
+      // dataToValidateからservicesを明示的に設定
+      const { services: _dataToValidateServices, ...dataToValidateWithoutServices } = dataToValidate;
+      // servicesJsonがnullの場合はundefinedに変換（Zodスキーマのoptional()はundefinedを期待）
+      const servicesForValidation = servicesJson === null ? undefined : servicesJson;
+      let dataForZodValidation: ExtendedShopCreateRequest & { applications?: string[] } = { 
+        ...dataToValidateWithoutServices,
+        services: servicesForValidation, // 明示的にservicesを設定
+      } as ExtendedShopCreateRequest & { applications?: string[] };
       if ('applications' in dataForZodValidation) {
         delete (dataForZodValidation as Record<string, unknown>).applications;
       }
@@ -1009,7 +1013,11 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
         dataForZodValidation = { ...rest, accountEmail: null };
       }
 
-      const validationResult = schema.safeParse(dataForZodValidation);
+      // Zodのスキーマ側でservicesが配列形式を期待するケースがあり、
+      // Record<string, boolean>を渡すと`services.services`でinvalid_typeになるため、
+      // バリデーション時はいったんservicesを除外する（servicesはオプショナルなので削除してもスキーマ上はOK）。
+      const { services: _servicesForSubmit, ...dataForZodValidationWithoutServices } = dataForZodValidation;
+      const validationResult = schema.safeParse(dataForZodValidationWithoutServices);
 
       if (!validationResult.success) {
         const zodErrors: Record<string, string> = {};
@@ -1019,6 +1027,7 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
             zodErrors[path] = err.message;
           }
         });
+
 
         setValidationErrors(zodErrors);
         showError('入力内容に誤りがあります。各項目を確認してください。');
@@ -1080,9 +1089,12 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
         customCreditText: isCreditOtherSelected ? customCreditText : '',
         selectedQrBrands,
         customQrText: isQrOtherSelected ? customQrText : '',
+        selectedServices,
+        customServicesText: isServicesOtherSelected ? customServicesText : '',
         holidaysForSubmit,
         paymentCreditJson,
         paymentCodeJson,
+        servicesJson,
         existingImages,
         imagePreviews: imagePreviewDataUrls, // data:URLに変換したURLを保存
         hasExistingAccount,
@@ -1148,6 +1160,7 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
     customSceneText,
     selectedHolidays,
     customHolidayText,
+    selectedServices, // サービス情報を依存配列に追加
     formData,
     isEdit,
     shopId,
@@ -1196,6 +1209,9 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
     customQrText,
     selectedHolidays,
     customHolidayText,
+    selectedServices,
+    customServicesText,
+    setCustomServicesText,
     merchants,
     selectedMerchantDetails,
     genres,
@@ -1238,6 +1254,7 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
     setCustomQrText,
     setSelectedHolidays,
     setCustomHolidayText,
+    setSelectedServices,
     handleImageSelect,
     handleRemoveImage,
     handleRemoveExistingImage,

@@ -37,6 +37,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     console.log('Next.js API Route: レスポンステキストにcontactNameが含まれているか:', responseText.includes('"contactName"'));
     console.log('Next.js API Route: レスポンステキストにcontactPhoneが含まれているか:', responseText.includes('"contactPhone"'));
     console.log('Next.js API Route: レスポンステキストにcontactEmailが含まれているか:', responseText.includes('"contactEmail"'));
+    console.log('Next.js API Route: レスポンステキストにservicesが含まれているか:', responseText.includes('"services"'));
 
     // contactNameの位置を確認
     const contactNameIndex = responseText.indexOf('"contactName"');
@@ -45,19 +46,34 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       console.log('Next.js API Route: contactName付近:', responseText.substring(Math.max(0, contactNameIndex - 50), contactNameIndex + 200));
     }
 
-    const data = JSON.parse(responseText);
+    const data = JSON.parse(responseText) as unknown;
+    const dataRecord = (data && typeof data === 'object') ? data as Record<string, unknown> : null;
+    const getString = (obj: Record<string, unknown> | null, key: string): string | undefined => {
+      const value = obj?.[key];
+      return typeof value === 'string' ? value : undefined;
+    };
+    const contactName = getString(dataRecord, 'contactName');
+    const contactPhone = getString(dataRecord, 'contactPhone');
+    const contactEmail = getString(dataRecord, 'contactEmail');
+    const servicesValue = dataRecord?.['services'];
 
-    // デバッグログ: レスポンスに担当者情報が含まれているか確認
-    console.log('Next.js API Route: レスポンスデータ:', JSON.stringify(data, null, 2).substring(0, 1000));
+    // デバッグログ: レスポンスに担当者情報とservicesが含まれているか確認
+    console.log('Next.js API Route: レスポンスデータ:', JSON.stringify(dataRecord ?? data, null, 2).substring(0, 1000));
     console.log('Next.js API Route: 担当者情報:', {
-      contactName: (data as any)?.contactName,
-      contactPhone: (data as any)?.contactPhone,
-      contactEmail: (data as any)?.contactEmail,
+      contactName,
+      contactPhone,
+      contactEmail,
     });
-    console.log('Next.js API Route: レスポンスデータのキー一覧:', Object.keys(data || {}));
-    console.log('Next.js API Route: contactNameが含まれているか:', 'contactName' in (data || {}));
-    console.log('Next.js API Route: contactPhoneが含まれているか:', 'contactPhone' in (data || {}));
-    console.log('Next.js API Route: contactEmailが含まれているか:', 'contactEmail' in (data || {}));
+    console.log('Next.js API Route: services情報:', {
+      services: servicesValue,
+      'servicesの型': typeof servicesValue,
+      'servicesが存在するか': dataRecord ? 'services' in dataRecord : false,
+    });
+    console.log('Next.js API Route: レスポンスデータのキー一覧:', dataRecord ? Object.keys(dataRecord) : []);
+    console.log('Next.js API Route: contactNameが含まれているか:', dataRecord ? 'contactName' in dataRecord : false);
+    console.log('Next.js API Route: contactPhoneが含まれているか:', dataRecord ? 'contactPhone' in dataRecord : false);
+    console.log('Next.js API Route: contactEmailが含まれているか:', dataRecord ? 'contactEmail' in dataRecord : false);
+    console.log('Next.js API Route: servicesが含まれているか:', dataRecord ? 'services' in dataRecord : false);
 
     return createNoCacheResponse(data);
   } catch (error: unknown) {
