@@ -12,6 +12,7 @@ import { apiClient } from '@/lib/api';
 import type { ShopCreateRequest } from '@hv-development/schemas';
 import { SMOKING_OPTIONS } from '@/lib/constants/shop';
 import { compressImageFile } from '@/utils/imageUtils';
+import { useAuth } from '@/components/contexts/auth-context';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,6 +76,8 @@ interface ShopConfirmData {
 
 function ShopConfirmContent() {
   const router = useRouter();
+  const auth = useAuth();
+  const displayName = auth?.user?.name ?? '—';
   const { toasts, removeToast, showError } = useToast();
   const [shopData, setShopData] = useState<ShopConfirmData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -329,7 +332,7 @@ function ShopConfirmContent() {
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">
                 <Icon name="admin" size="sm" className="text-gray-600" />
-                <span className="font-medium text-gray-900">管理者太郎</span>
+                  <span className="font-medium text-gray-900">{displayName}</span>
               </div>
             </div>
           </div>
