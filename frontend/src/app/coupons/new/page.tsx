@@ -60,6 +60,7 @@ function CouponNewPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const auth = useAuth();
+  const displayName = auth?.user?.name ?? '—';
   const { toasts, removeToast, showError } = useToast();
   
   // アカウントタイプの判定
@@ -579,7 +580,7 @@ function CouponNewPageContent() {
             <div className="text-sm text-gray-600">
               <div className="flex items-center space-x-2">
                 <Icon name="admin" size="sm" className="text-gray-600" />
-                <span className="font-medium text-gray-900">管理者太郎</span>
+                <span className="font-medium text-gray-900">{displayName}</span>
               </div>
             </div>
           </div>
