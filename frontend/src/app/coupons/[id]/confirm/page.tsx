@@ -151,21 +151,28 @@ function CouponEditConfirmPageContent() {
             const errorData = await uploadResponse.json().catch(() => ({}));
             const message = errorData?.error || errorData?.message || '画像のアップロードに失敗しました';
             console.error('❌ Upload failed:', uploadResponse.status, errorData);
-            throw new Error(message);
+            throw new Error(`${message} (status: ${uploadResponse.status})`);
           }
           
           const uploadData = await uploadResponse.json();
           uploadedImageUrl = uploadData.url;
         } catch (uploadError) {
           console.error('画像のアップロードに失敗しました:', uploadError);
-          // 画像アップロードが失敗してもクーポン更新は続行
           const errorMessage = uploadError instanceof Error ? uploadError.message : '画像のアップロードに失敗しました';
-          showError(`一部の画像のアップロードに失敗しました: ${errorMessage}`);
+          showError(`画像のアップロードに失敗しました: ${errorMessage}`);
+          setIsSubmitting(false);
+          return;
         }
       }
       
-      // imageUrlが空文字列の場合はプロパティ自体を含めない
-      const imageUrl = uploadedImageUrl || (couponData.imageUrl && couponData.imageUrl.trim() !== '' ? couponData.imageUrl : undefined);
+      // 画像URLの決定
+      const previewHttpUrl = (!uploadedImageUrl && couponData.imagePreview?.startsWith('http'))
+        ? couponData.imagePreview
+        : undefined;
+      const imageUrl = uploadedImageUrl
+        ?? (couponData.imageUrl && couponData.imageUrl.trim() !== '' ? couponData.imageUrl : undefined)
+        ?? previewHttpUrl;
+      const shouldDeleteImage = !imageUrl && !couponData.imagePreview;
       
       const updateData: Partial<CouponUpdateRequest> = {
         title: couponData.couponName,
@@ -174,9 +181,10 @@ function CouponEditConfirmPageContent() {
         drinkType: (couponData.drinkType === 'alcohol' || couponData.drinkType === 'soft_drink' || couponData.drinkType === 'other') ? couponData.drinkType : undefined,
       };
       
-      // imageUrlが有効な場合のみ追加
       if (imageUrl) {
         updateData.imageUrl = imageUrl;
+      } else if (shouldDeleteImage) {
+        updateData.imageUrl = null;
       }
       
       await apiClient.updateCoupon(couponId, updateData);
