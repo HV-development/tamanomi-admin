@@ -286,6 +286,8 @@ function ShopEditConfirmContent() {
         images: allImages,
         sceneIds: shopData.selectedScenes,
         customSceneText: shopData.customSceneText || undefined,
+        createAccount: shopData.createAccount,
+        password: shopData.createAccount && !shopData.hasExistingAccount ? shopData.password : undefined,
         contactName: shopData.contactName || null,
         contactPhone: shopData.contactPhone || null,
         contactEmail: shopData.contactEmail || null,
