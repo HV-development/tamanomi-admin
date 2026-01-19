@@ -73,11 +73,11 @@ export default function UserTable({
   const getAccountStatusLabel = (status: string) => {
     switch (status) {
       case 'active':
-        return '有効';
+        return '契約中';
       case 'suspended':
         return '退会済み';
       case 'inactive':
-        return '無効';
+        return '未契約';
       case 'pending':
         return '保留中';
       default:
@@ -92,9 +92,9 @@ export default function UserTable({
       case 'suspended':
         return 'bg-red-100 text-red-800';
       case 'inactive':
-        return 'bg-gray-100 text-gray-800';
-      case 'pending':
         return 'bg-yellow-100 text-yellow-800';
+      case 'pending':
+        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
