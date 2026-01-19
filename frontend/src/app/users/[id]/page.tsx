@@ -241,36 +241,6 @@ export default function UserDetailPage() {
     }
   };
 
-  const getRankLabel = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return 'ブロンズ';
-      case 2:
-        return 'シルバー';
-      case 3:
-        return 'ゴールド';
-      case 4:
-        return 'ダイヤモンド';
-      default:
-        return 'ランク未設定';
-    }
-  };
-
-  const getRankBadgeColor = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return 'bg-orange-100 text-orange-800';
-      case 2:
-        return 'bg-gray-100 text-gray-800';
-      case 3:
-        return 'bg-yellow-100 text-yellow-800';
-      case 4:
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const getContractStatusLabel = (status: ContractStatusValue) => {
     if (typeof status === 'number') {
       switch (status) {
@@ -416,13 +386,6 @@ export default function UserDetailPage() {
               <table className="w-full border-collapse border border-gray-300">
                 <tbody>
                   {renderTableRow('ニックネーム', displayValue(user.nickname))}
-                  {renderTableRow(
-                    'ランク',
-                    <span className={`px-3 py-2 rounded-lg text-sm font-medium ${getRankBadgeColor(user.rank)}`}>
-                      {getRankLabel(user.rank)}
-                    </span>,
-                    { badge: true }
-                  )}
                   {renderTableRow(
                     '契約ステータス',
                     <span

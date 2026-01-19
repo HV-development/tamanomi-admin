@@ -26,6 +26,7 @@ export interface UserSearchFormData {
   ranks: number[];
   registeredDateStart: string;
   registeredDateEnd: string;
+  accountStatus: string;
 }
 
 interface UserSearchFormProps {
@@ -33,7 +34,6 @@ interface UserSearchFormProps {
   isSearchExpanded: boolean;
   isOperatorRole: boolean;
   onInputChange: (field: keyof UserSearchFormData, value: string) => void;
-  onRankChange: (rank: number, checked: boolean) => void;
   onSearch: () => void;
   onClear: () => void;
   onToggleExpand: () => void;
@@ -44,7 +44,6 @@ export default function UserSearchForm({
   isSearchExpanded,
   isOperatorRole,
   onInputChange,
-  onRankChange,
   onSearch,
   onClear,
   onToggleExpand,
@@ -202,54 +201,9 @@ export default function UserSearchForm({
             </div>
           </div>
 
-          {/* ランクと性別を横並びに配置 */}
+          {/* 性別とステータスを横並びに配置 */}
           <div className="md:col-span-2 mt-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* ランク（複数選択可） */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ランク（複数選択可）
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={searchForm.ranks.includes(1)}
-                      onChange={(e) => onRankChange(1, e.target.checked)}
-                      className="mr-2 text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-sm text-gray-700">ブロンズ</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={searchForm.ranks.includes(2)}
-                      onChange={(e) => onRankChange(2, e.target.checked)}
-                      className="mr-2 text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-sm text-gray-700">シルバー</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={searchForm.ranks.includes(3)}
-                      onChange={(e) => onRankChange(3, e.target.checked)}
-                      className="mr-2 text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-sm text-gray-700">ゴールド</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={searchForm.ranks.includes(4)}
-                      onChange={(e) => onRankChange(4, e.target.checked)}
-                      className="mr-2 text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-sm text-gray-700">ダイヤモンド</span>
-                  </label>
-                </div>
-              </div>
-
               {/* 性別 */}
               {!isOperatorRole && (
                 <div>
@@ -304,6 +258,48 @@ export default function UserSearchForm({
                   </div>
                 </div>
               )}
+
+              {/* アカウントステータス */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ステータス
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="accountStatus"
+                      value=""
+                      checked={searchForm.accountStatus === ''}
+                      onChange={(e) => onInputChange('accountStatus', e.target.value)}
+                      className="mr-2 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">すべて</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="accountStatus"
+                      value="active"
+                      checked={searchForm.accountStatus === 'active'}
+                      onChange={(e) => onInputChange('accountStatus', e.target.value)}
+                      className="mr-2 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">有効</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="accountStatus"
+                      value="suspended"
+                      checked={searchForm.accountStatus === 'suspended'}
+                      onChange={(e) => onInputChange('accountStatus', e.target.value)}
+                      className="mr-2 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">退会済み</span>
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
 
