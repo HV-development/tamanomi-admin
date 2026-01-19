@@ -251,7 +251,7 @@ export default function UserDetailPage() {
         case 3:
           return '解約';
         default:
-          return '契約ステータス未設定';
+          return 'ステータス未設定';
       }
     }
 
@@ -274,11 +274,11 @@ export default function UserDetailPage() {
         case 'paused':
           return '一時停止';
         default:
-          return '契約ステータス未設定';
+          return 'ステータス未設定';
       }
     }
 
-    return '契約ステータス未設定';
+    return 'ステータス未設定';
   };
 
   const getContractStatusColor = (status: ContractStatusValue) => {
@@ -406,7 +406,7 @@ export default function UserDetailPage() {
                 <tbody>
                   {renderTableRow('ニックネーム', displayValue(user.nickname))}
                   {renderTableRow(
-                    '契約ステータス',
+                    'ステータス',
                     <span
                       className={`px-3 py-2 rounded-lg text-sm font-medium ${getContractStatusColor(
                         user.contractStatus
