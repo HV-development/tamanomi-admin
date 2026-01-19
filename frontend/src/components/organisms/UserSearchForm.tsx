@@ -285,7 +285,7 @@ export default function UserSearchForm({
                       onChange={(e) => onInputChange('accountStatus', e.target.value)}
                       className="mr-2 text-green-600 focus:ring-green-500"
                     />
-                    <span className="text-sm text-gray-700">有効</span>
+                    <span className="text-sm text-gray-700">契約中</span>
                   </label>
                   <label className="flex items-center">
                     <input
