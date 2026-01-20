@@ -4,16 +4,6 @@ import React from 'react';
 import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 
-const prefectures = [
-  '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
-  '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県',
-  '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県',
-  '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県',
-  '奈良県', '和歌山県', '鳥取県', '島根県', '岡山県', '広島県', '山口県',
-  '徳島県', '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県',
-  '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'
-];
-
 export interface UserSearchFormData {
   nickname: string;
   postalCode: string;
@@ -92,43 +82,6 @@ export default function UserSearchForm({
                   placeholder="郵便番号を入力"
                   value={searchForm.postalCode}
                   onChange={(e) => onInputChange('postalCode', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            )}
-
-            {/* 都道府県 */}
-            {!isOperatorRole && (
-              <div>
-                <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700 mb-2">
-                  都道府県
-                </label>
-                <select
-                  id="prefecture"
-                  value={searchForm.prefecture}
-                  onChange={(e) => onInputChange('prefecture', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                >
-                  <option value="">都道府県を選択してください</option>
-                  {prefectures.map((pref) => (
-                    <option key={pref} value={pref}>{pref}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* 市区町村 */}
-            {!isOperatorRole && (
-              <div>
-                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
-                  市区町村
-                </label>
-                <input
-                  type="text"
-                  id="city"
-                  placeholder="市区町村を入力"
-                  value={searchForm.city}
-                  onChange={(e) => onInputChange('city', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
               </div>
@@ -226,8 +179,8 @@ export default function UserSearchForm({
                       <input
                         type="radio"
                         name="gender"
-                        value="1"
-                        checked={searchForm.gender === '1'}
+                        value="male"
+                        checked={searchForm.gender === 'male'}
                         onChange={(e) => onInputChange('gender', e.target.value)}
                         className="mr-2 text-green-600 focus:ring-green-500"
                       />
@@ -237,8 +190,8 @@ export default function UserSearchForm({
                       <input
                         type="radio"
                         name="gender"
-                        value="2"
-                        checked={searchForm.gender === '2'}
+                        value="female"
+                        checked={searchForm.gender === 'female'}
                         onChange={(e) => onInputChange('gender', e.target.value)}
                         className="mr-2 text-green-600 focus:ring-green-500"
                       />
@@ -248,8 +201,8 @@ export default function UserSearchForm({
                       <input
                         type="radio"
                         name="gender"
-                        value="3"
-                        checked={searchForm.gender === '3'}
+                        value="other"
+                        checked={searchForm.gender === 'other'}
                         onChange={(e) => onInputChange('gender', e.target.value)}
                         className="mr-2 text-green-600 focus:ring-green-500"
                       />
