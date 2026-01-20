@@ -241,36 +241,6 @@ export default function UserDetailPage() {
     }
   };
 
-  const getRankLabel = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return 'ブロンズ';
-      case 2:
-        return 'シルバー';
-      case 3:
-        return 'ゴールド';
-      case 4:
-        return 'ダイヤモンド';
-      default:
-        return 'ランク未設定';
-    }
-  };
-
-  const getRankBadgeColor = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return 'bg-orange-100 text-orange-800';
-      case 2:
-        return 'bg-gray-100 text-gray-800';
-      case 3:
-        return 'bg-yellow-100 text-yellow-800';
-      case 4:
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const getContractStatusLabel = (status: ContractStatusValue) => {
     if (typeof status === 'number') {
       switch (status) {
@@ -281,7 +251,7 @@ export default function UserDetailPage() {
         case 3:
           return '解約';
         default:
-          return '契約ステータス未設定';
+          return 'ステータス未設定';
       }
     }
 
@@ -293,12 +263,22 @@ export default function UserDetailPage() {
           return '未契約';
         case 'terminated':
           return '解約済み';
+        case 'suspended':
+          return '退会済み';
+        case 'expired':
+          return '期限切れ';
+        case 'cancelled':
+          return '解約済み';
+        case 'pending':
+          return '保留中';
+        case 'paused':
+          return '一時停止';
         default:
-          return status;
+          return 'ステータス未設定';
       }
     }
 
-    return '契約ステータス未設定';
+    return 'ステータス未設定';
   };
 
   const getContractStatusColor = (status: ContractStatusValue) => {
@@ -322,7 +302,16 @@ export default function UserDetailPage() {
         case 'inactive':
           return 'bg-yellow-100 text-yellow-800';
         case 'terminated':
+        case 'cancelled':
           return 'bg-gray-100 text-gray-800';
+        case 'suspended':
+          return 'bg-red-100 text-red-800';
+        case 'expired':
+          return 'bg-orange-100 text-orange-800';
+        case 'pending':
+          return 'bg-blue-100 text-blue-800';
+        case 'paused':
+          return 'bg-yellow-100 text-yellow-800';
         default:
           return 'bg-gray-100 text-gray-800';
       }
@@ -417,14 +406,7 @@ export default function UserDetailPage() {
                 <tbody>
                   {renderTableRow('ニックネーム', displayValue(user.nickname))}
                   {renderTableRow(
-                    'ランク',
-                    <span className={`px-3 py-2 rounded-lg text-sm font-medium ${getRankBadgeColor(user.rank)}`}>
-                      {getRankLabel(user.rank)}
-                    </span>,
-                    { badge: true }
-                  )}
-                  {renderTableRow(
-                    '契約ステータス',
+                    'ステータス',
                     <span
                       className={`px-3 py-2 rounded-lg text-sm font-medium ${getContractStatusColor(
                         user.contractStatus

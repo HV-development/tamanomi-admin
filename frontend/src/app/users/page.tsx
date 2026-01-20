@@ -28,6 +28,7 @@ interface User {
   rank: number;
   registeredStore: string;
   registeredAt: string;
+  accountStatus: string;
 }
 
 export default function UsersPage() {
@@ -50,6 +51,7 @@ export default function UsersPage() {
     ranks: [],
     registeredDateStart: '',
     registeredDateEnd: '',
+    accountStatus: '',
   });
   const [appliedSearchForm, setAppliedSearchForm] = useState<UserSearchFormData>({
     nickname: '',
@@ -63,6 +65,7 @@ export default function UsersPage() {
     ranks: [],
     registeredDateStart: '',
     registeredDateEnd: '',
+    accountStatus: '',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
@@ -104,6 +107,7 @@ export default function UsersPage() {
       }
       if (searchParams?.registeredDateStart) searchBody.registeredDateStart = searchParams.registeredDateStart;
       if (searchParams?.registeredDateEnd) searchBody.registeredDateEnd = searchParams.registeredDateEnd;
+      if (searchParams?.accountStatus) searchBody.accountStatus = searchParams.accountStatus;
 
       // ページネーションパラメータを追加
       searchBody.page = pagination.page;
@@ -125,6 +129,7 @@ export default function UsersPage() {
           rank: number;
           registeredStore?: string;
           registeredAt: string;
+          accountStatus?: string;
         }>;
         pagination?: {
           page: number;
@@ -158,6 +163,7 @@ export default function UsersPage() {
           rank: user.rank,
           registeredStore: '',
           registeredAt: user.registeredAt || '',
+          accountStatus: user.accountStatus || 'active',
         };
 
         // operatorロールでない場合のみ機密情報を設定
@@ -228,15 +234,6 @@ export default function UsersPage() {
     }));
   }, []);
 
-  const handleRankChange = useCallback((rank: number, checked: boolean) => {
-    setSearchForm(prev => ({
-      ...prev,
-      ranks: checked
-        ? [...prev.ranks, rank]
-        : prev.ranks.filter(r => r !== rank)
-    }));
-  }, []);
-
   const handleSearch = useCallback(() => {
     // 検索フォームの内容を適用済み検索フォームにコピーして検索実行
     setAppliedSearchForm({ ...searchForm });
@@ -257,6 +254,7 @@ export default function UsersPage() {
       ranks: [],
       registeredDateStart: '',
       registeredDateEnd: '',
+      accountStatus: '',
     };
     setSearchForm(emptyForm);
     setAppliedSearchForm(emptyForm);
@@ -298,6 +296,7 @@ export default function UsersPage() {
         }
         if (appliedSearchForm.registeredDateStart) searchBody.registeredDateStart = appliedSearchForm.registeredDateStart;
         if (appliedSearchForm.registeredDateEnd) searchBody.registeredDateEnd = appliedSearchForm.registeredDateEnd;
+        if (appliedSearchForm.accountStatus) searchBody.accountStatus = appliedSearchForm.accountStatus;
 
         searchBody.page = page;
         searchBody.limit = limit;
@@ -316,6 +315,7 @@ export default function UsersPage() {
             rank: number;
             registeredStore?: string;
             registeredAt: string;
+            accountStatus?: string;
           }>;
           pagination?: {
             totalPages?: number;
@@ -354,6 +354,7 @@ export default function UsersPage() {
                 rank: user.rank,
                 registeredStore: '',
                 registeredAt: user.registeredAt || '',
+                accountStatus: user.accountStatus || 'active',
               };
 
               // operatorロールでない場合のみ機密情報を設定
@@ -511,7 +512,6 @@ export default function UsersPage() {
           isSearchExpanded={isSearchExpanded}
           isOperatorRole={isOperatorRole}
           onInputChange={handleInputChange}
-          onRankChange={handleRankChange}
           onSearch={handleSearch}
           onClear={handleClear}
           onToggleExpand={() => setIsSearchExpanded(!isSearchExpanded)}
