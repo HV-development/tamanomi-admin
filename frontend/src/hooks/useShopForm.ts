@@ -465,18 +465,31 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
 
             const holidaysValue = (shopData as ShopCreateRequest).holidays;
             if (holidaysValue && holidaysValue.trim()) {
-              const holidayItems = holidaysValue.split(',').map(h => h.trim());
               const holidays: string[] = [];
               let customText = '';
 
-              holidayItems.forEach(item => {
-                if (item.startsWith('その他:')) {
-                  holidays.push('その他');
-                  customText = item.substring('その他:'.length);
-                } else {
-                  holidays.push(item);
+              // 「その他:」を含むかチェック
+              const otherPrefix = 'その他:';
+              const otherIdx = holidaysValue.indexOf(otherPrefix);
+
+              if (otherIdx >= 0) {
+                // 「その他:」より前の部分をカンマ区切りで分割
+                const beforeOther = holidaysValue.substring(0, otherIdx);
+                if (beforeOther.trim()) {
+                  beforeOther.split(',').map(h => h.trim()).filter(h => h.length > 0).forEach(item => {
+                    holidays.push(item);
+                  });
                 }
-              });
+                // 「その他」を追加
+                holidays.push('その他');
+                // 「その他:」以降の部分はすべてカスタムテキストとして扱う（カンマを含んでも分割しない）
+                customText = holidaysValue.substring(otherIdx + otherPrefix.length).trim();
+              } else {
+                // 「その他」がない場合は従来通りカンマ区切りで分割
+                holidaysValue.split(',').map(h => h.trim()).filter(h => h.length > 0).forEach(item => {
+                  holidays.push(item);
+                });
+              }
 
               setSelectedHolidays(holidays);
               setCustomHolidayText(customText);
