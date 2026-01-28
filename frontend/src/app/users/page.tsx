@@ -463,6 +463,7 @@ export default function UsersPage() {
         gender: user.gender,
         saitamaAppId: user.saitamaAppId,
         accountStatus: user.accountStatus,
+        registeredStore: user.registeredStore,
         registeredAt: user.registeredAt,
       }));
 

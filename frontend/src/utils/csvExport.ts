@@ -370,6 +370,7 @@ export type UserForCSV = {
   gender?: number;
   saitamaAppId?: string;
   accountStatus?: string;
+  registeredStore?: string;
   registeredAt: string;
 };
 
@@ -420,6 +421,7 @@ export function convertUsersToCSV(
       '性別',
       'さいこいんアプリID',
       'ステータス',
+      '登録店舗',
       '登録日'
     );
   }
@@ -446,6 +448,7 @@ export function convertUsersToCSV(
         escapeCSVValue(getGenderLabel(user.gender || 3)),
         escapeCSVValue(user.saitamaAppId || ''),
         escapeCSVValue(getUserStatusLabel(user.accountStatus || 'active')),
+        escapeCSVValue(user.registeredStore || ''),
         escapeCSVValue(formatDate(user.registeredAt))
       );
     }
