@@ -11,13 +11,13 @@ import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-
 import { useShopValidation } from '@/hooks/useShopValidation';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { compressImageFile } from '@/utils/imageUtils';
-import type { Merchant, ShopDataResponse, Genre, Scene, ExtendedShopCreateRequest } from '@/types/shop';
+import type { ShopMerchant, ShopDataResponse, Genre, Scene, ExtendedShopCreateRequest } from '@hv-development/schemas';
 import type { ToastData } from '@/components/molecules/toast-container';
 
 // 具体的な型パラメータを使用した型エイリアス
 export type UseShopFormReturnTyped = UseShopFormReturn<
   ExtendedShopCreateRequest,
-  Merchant,
+  ShopMerchant,
   Genre,
   Scene,
   ToastData
@@ -152,6 +152,7 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
     status: 'registering',
     createAccount: false,
     password: '',
+    confirmPassword: '',
     contactName: '',
     contactPhone: '',
     contactEmail: '',
@@ -165,8 +166,8 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
   const [customQrText, setCustomQrText] = useState<string>('');
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [customServicesText, setCustomServicesText] = useState<string>('');
-  const [merchants, setMerchants] = useState<Merchant[]>([]);
-  const [selectedMerchantDetails, setSelectedMerchantDetails] = useState<Merchant | null>(null);
+  const [merchants, setMerchants] = useState<ShopMerchant[]>([]);
+  const [selectedMerchantDetails, setSelectedMerchantDetails] = useState<ShopMerchant | null>(null);
   const [genres, setGenres] = useState<Genre[]>([]);
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [merchantName, setMerchantName] = useState<string>('');
@@ -276,14 +277,14 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
         if (!isMounted) return;
 
         let resultIndex = 0;
-        let merchantsArray: Merchant[] = [];
+        let merchantsArray: ShopMerchant[] = [];
 
         if (isMerchantAccount && myMerchantPromise) {
           const result = results[resultIndex++];
           if (result.status === 'fulfilled') {
             const myMerchantData = result.value;
             if (myMerchantData && typeof myMerchantData === 'object' && 'data' in myMerchantData && myMerchantData.data) {
-              const merchant = myMerchantData.data as Merchant;
+              const merchant = myMerchantData.data as ShopMerchant;
               if (!merchantId) {
                 setFormData((prev) => ({
                   ...prev,
@@ -305,12 +306,12 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
           if (result.status === 'fulfilled') {
             const merchantsData = result.value;
             if (Array.isArray(merchantsData)) {
-              merchantsArray = merchantsData as Merchant[];
+              merchantsArray = merchantsData as ShopMerchant[];
             } else if (merchantsData && typeof merchantsData === 'object') {
               if ('data' in merchantsData && merchantsData.data && typeof merchantsData.data === 'object' && 'merchants' in merchantsData.data) {
-                merchantsArray = ((merchantsData.data as { merchants: Merchant[] }).merchants || []) as Merchant[];
+                merchantsArray = ((merchantsData.data as { merchants: ShopMerchant[] }).merchants || []) as ShopMerchant[];
               } else if ('merchants' in merchantsData) {
-                merchantsArray = ((merchantsData as { merchants: Merchant[] }).merchants || []) as Merchant[];
+                merchantsArray = ((merchantsData as { merchants: ShopMerchant[] }).merchants || []) as ShopMerchant[];
               }
             }
             setMerchants(merchantsArray);
@@ -419,7 +420,7 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
               setMerchantName(merchantFromShop.name);
             }
             if (merchantFromShop) {
-              setSelectedMerchantDetails(merchantFromShop as Merchant);
+              setSelectedMerchantDetails(merchantFromShop as ShopMerchant);
             } else if (finalMerchantId) {
               const merchant = merchantsArray.find((m) => m.id === finalMerchantId);
               if (merchant) {
@@ -605,7 +606,7 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
 
   useEffect(() => {
     if (formData.merchantId && merchants.length > 0) {
-      const merchant = merchants.find(m => m.id === formData.merchantId) as Merchant;
+      const merchant = merchants.find(m => m.id === formData.merchantId) as ShopMerchant;
       if (merchant) {
         setMerchantName(merchant.name);
         setSelectedMerchantDetails(merchant);
@@ -613,7 +614,7 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
     }
   }, [formData.merchantId, merchants]);
 
-  const handleMerchantSelect = useCallback(async (merchant: Merchant) => {
+  const handleMerchantSelect = useCallback(async (merchant: ShopMerchant) => {
     setFormData(prev => ({
       ...prev,
       merchantId: merchant.id,
@@ -635,10 +636,10 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
       setSelectedMerchantDetails(existingMerchant);
     } else {
       try {
-        const response = await apiClient.getMerchant(merchant.id) as { data?: Merchant } | Merchant;
+        const response = await apiClient.getMerchant(merchant.id) as { data?: ShopMerchant } | ShopMerchant;
         const merchantDetails = (response && typeof response === 'object' && 'data' in response && response.data)
-          ? response.data as Merchant
-          : response as Merchant;
+          ? response.data as ShopMerchant
+          : response as ShopMerchant;
         if (merchantDetails && merchantDetails.id) {
           setSelectedMerchantDetails(merchantDetails);
           setMerchants(prev => [...prev, merchantDetails]);
