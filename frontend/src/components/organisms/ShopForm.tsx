@@ -8,7 +8,7 @@ import ErrorMessage from '@/components/atoms/ErrorMessage';
 import { useShopForm } from '@/hooks/useShopForm';
 import { PREFECTURES, WEEKDAYS, HOLIDAY_SPECIAL_OPTIONS, SAITAMA_WARDS } from '@/lib/constants/japan';
 import { SMOKING_OPTIONS, SERVICE_OPTIONS } from '@/lib/constants/shop';
-import type { ExtendedShopCreateRequest } from '@/types/shop';
+import type { ExtendedShopCreateRequest } from '@hv-development/schemas';
 
 const MerchantSelectModal = dynamicImport(() => import('@/components/molecules/MerchantSelectModal'), {
   loading: () => null,
@@ -1006,10 +1006,12 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             createAccount={formData.createAccount ?? false}
             accountEmail={formData.accountEmail || ''}
             password={formData.password || ''}
+            confirmPassword={formData.confirmPassword || ''}
             validationErrors={validationErrors}
             onCreateAccountChange={(value) => handleInputChange('createAccount', value)}
             onAccountEmailChange={(value) => handleInputChange('accountEmail', value)}
             onPasswordChange={(value) => handleInputChange('password', value)}
+            onConfirmPasswordChange={(value) => handleInputChange('confirmPassword', value)}
             onValidationErrorChange={(field, error) => {
               setValidationErrors(prev => {
                 const newErrors = { ...prev };

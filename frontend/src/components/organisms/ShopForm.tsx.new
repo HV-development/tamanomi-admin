@@ -21,7 +21,7 @@ import { SMOKING_OPTIONS } from '@/lib/constants/shop';
 import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-search';
 import { useShopValidation } from '@/hooks/useShopValidation';
 import { useImageUpload } from '@/hooks/useImageUpload';
-import type { Merchant, ShopDataResponse, Genre, Scene, ExtendedShopCreateRequest } from '@/types/shop';
+import type { ShopMerchant, ShopDataResponse, Genre, Scene, ExtendedShopCreateRequest } from '@hv-development/schemas';
 
 const PaymentMethodSelector = dynamicImport(() => import('@/components/molecules/PaymentMethodSelector'), {
   loading: () => null,

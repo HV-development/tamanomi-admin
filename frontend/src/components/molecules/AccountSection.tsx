@@ -9,10 +9,12 @@ interface AccountSectionProps {
   createAccount: boolean;
   accountEmail: string;
   password: string;
+  confirmPassword?: string; // パスワード確認用
   validationErrors: Record<string, string>;
   onCreateAccountChange: (value: boolean) => void;
   onAccountEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
+  onConfirmPasswordChange?: (value: string) => void; // パスワード確認用
   onValidationErrorChange: (field: string, error: string | null) => void;
   onFieldBlur?: (field: string, value: string) => void;
   onDeleteAccountChange?: (deleteAccount: boolean) => void;
@@ -24,18 +26,21 @@ export default function AccountSection({
   createAccount,
   accountEmail,
   password,
+  confirmPassword = '',
   validationErrors,
   onCreateAccountChange,
   onAccountEmailChange,
   onPasswordChange,
+  onConfirmPasswordChange,
   onValidationErrorChange,
   onFieldBlur,
   onDeleteAccountChange,
 }: AccountSectionProps) {
-  const shouldDisableEmailInput = isEdit && hasExistingAccount && !createAccount;
+  // 既存アカウント編集時はメールアドレスとパスワードを編集可能にする
+  const shouldDisableEmailInput = false; // 常に編集可能
 
   const handleEmailBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    if (createAccount) {
+    if (createAccount || (isEdit && hasExistingAccount)) {
       if (onFieldBlur) {
         onFieldBlur('accountEmail', e.target.value);
       }
@@ -43,9 +48,17 @@ export default function AccountSection({
   };
 
   const handlePasswordBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    if (createAccount) {
+    if (createAccount || (isEdit && hasExistingAccount)) {
       if (onFieldBlur) {
         onFieldBlur('password', e.target.value);
+      }
+    }
+  };
+
+  const handleConfirmPasswordBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (createAccount || (isEdit && hasExistingAccount)) {
+      if (onFieldBlur) {
+        onFieldBlur('confirmPassword', e.target.value);
       }
     }
   };
@@ -107,12 +120,19 @@ export default function AccountSection({
                 } ${shouldDisableEmailInput ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               />
               <ErrorMessage message={validationErrors.accountEmail} />
+              {isEdit && hasExistingAccount && (
+                <p className="mt-1 text-xs text-gray-500">
+                  メールアドレスを変更すると、新しいメールアドレスに確認メールが送信されます
+                </p>
+              )}
             </div>
 
-            {createAccount && (
+            {(createAccount || (isEdit && hasExistingAccount)) && (
+              <>
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  パスワード <span className="text-red-500">*</span>
+                    パスワード {createAccount && <span className="text-red-500">*</span>}
+                    {isEdit && hasExistingAccount && <span className="text-xs text-gray-500 ml-2">(変更する場合のみ入力)</span>}
                 </label>
                 <input
                   type="password"
@@ -132,6 +152,30 @@ export default function AccountSection({
                   パスワードは8文字以上で入力してください
                 </p>
               </div>
+
+                {/* パスワード確認用入力欄 */}
+                {password && (
+                  <div>
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                      パスワード（確認） {createAccount && <span className="text-red-500">*</span>}
+                    </label>
+                    <input
+                      type="password"
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      value={confirmPassword}
+                      onChange={(e) => onConfirmPasswordChange?.(e.target.value)}
+                      onBlur={handleConfirmPasswordBlur}
+                      placeholder="パスワードを再入力"
+                      maxLength={255}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        validationErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                    <ErrorMessage message={validationErrors.confirmPassword} />
+                  </div>
+                )}
+              </>
             )}
 
             {/* アカウント発行済みの場合：削除チェックボックスを表示 */}

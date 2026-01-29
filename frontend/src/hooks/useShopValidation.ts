@@ -9,7 +9,7 @@ import {
   isValidKana,
   isValidShopName,
 } from '@hv-development/schemas';
-import type { ExtendedShopCreateRequest } from '@/types/shop';
+import type { ExtendedShopCreateRequest } from '@hv-development/schemas';
 
 interface UseShopValidationOptions {
   formData: ExtendedShopCreateRequest;
@@ -132,6 +132,22 @@ export function useShopValidation({
         } else {
           delete newErrors[field as string];
         }
+        
+        // パスワードまたは確認用パスワードが変更された場合、もう一方も再検証
+        if (field === 'password' && updatedFormData.confirmPassword) {
+          if (value !== updatedFormData.confirmPassword) {
+            newErrors.confirmPassword = 'パスワードが一致しません';
+          } else {
+            delete newErrors.confirmPassword;
+          }
+        } else if (field === 'confirmPassword' && updatedFormData.password) {
+          if (value !== updatedFormData.password) {
+            newErrors.confirmPassword = 'パスワードが一致しません';
+          } else {
+            delete newErrors.confirmPassword;
+          }
+        }
+        
         return newErrors;
       });
     },
@@ -233,6 +249,17 @@ function validateShopFieldInternal(
         }
       } else if (typeof value === 'string' && value.length > 0 && value.length < 8) {
         return 'パスワードは8文字以上で入力してください';
+      }
+      return null;
+    }
+    case 'confirmPassword': {
+      if (formData.password) {
+        if (typeof value !== 'string' || value.length === 0) {
+          return 'パスワード（確認）は必須です';
+        }
+        if (value !== formData.password) {
+          return 'パスワードが一致しません';
+        }
       }
       return null;
     }
