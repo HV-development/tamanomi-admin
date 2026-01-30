@@ -71,8 +71,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // /api/me から現在のアカウント種別を取得（401時に自動リフレッシュはしない）
           return await apiClient.getMe() as MeResponse;
         } catch (error) {
-          // 401エラー（未認証）の場合はリトライしない
-          if (error instanceof Error && 'status' in error && (error as { status: number }).status === 401) {
+          // 401/403エラー（認証エラー）の場合はリトライしない
+          const errorStatus = error instanceof Error && 'response' in error 
+            ? (error as { response?: { status?: number } }).response?.status 
+            : undefined;
+          
+          if (errorStatus === 401 || errorStatus === 403) {
+            console.warn(`Auth error (${errorStatus}): redirecting to login`);
+            // 認証エラーの場合はログイン画面へリダイレクト
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login?session=expired';
+            }
             return null;
           }
           // ネットワークエラーや一時的なエラーの場合はリトライ
@@ -82,6 +91,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             return fetchMe(retryCount + 1);
           }
           console.error('Auth initialization failed after retries:', error);
+          // リトライ後もエラーが続く場合はログイン画面へリダイレクト
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login?session=expired';
+          }
           return null;
         }
       };
