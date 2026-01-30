@@ -77,10 +77,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             : undefined;
           
           if (errorStatus === 401 || errorStatus === 403) {
-            console.warn(`Auth error (${errorStatus}): redirecting to login`);
-            // 認証エラーの場合はログイン画面へリダイレクト
-            if (typeof window !== 'undefined') {
-              window.location.href = '/login?session=expired';
+            // すでにログインページにいる場合はリダイレクトしない（無限ループ防止）
+            const isLoginPage = typeof window !== 'undefined' && 
+              (window.location.pathname === '/login' || window.location.pathname.startsWith('/login'));
+            
+            if (!isLoginPage) {
+              console.warn(`Auth error (${errorStatus}): redirecting to login`);
+              // 認証エラーの場合はログイン画面へリダイレクト
+              if (typeof window !== 'undefined') {
+                window.location.href = '/login?session=expired';
+              }
             }
             return null;
           }
@@ -91,8 +97,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             return fetchMe(retryCount + 1);
           }
           console.error('Auth initialization failed after retries:', error);
-          // リトライ後もエラーが続く場合はログイン画面へリダイレクト
-          if (typeof window !== 'undefined') {
+          // リトライ後もエラーが続く場合はログイン画面へリダイレクト（ログインページ以外）
+          const isLoginPage = typeof window !== 'undefined' && 
+            (window.location.pathname === '/login' || window.location.pathname.startsWith('/login'));
+          
+          if (!isLoginPage && typeof window !== 'undefined') {
             window.location.href = '/login?session=expired';
           }
           return null;
