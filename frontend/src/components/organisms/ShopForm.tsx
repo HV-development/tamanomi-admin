@@ -8,7 +8,7 @@ import ErrorMessage from '@/components/atoms/ErrorMessage';
 import { useShopForm } from '@/hooks/useShopForm';
 import { PREFECTURES, WEEKDAYS, HOLIDAY_SPECIAL_OPTIONS, SAITAMA_WARDS } from '@/lib/constants/japan';
 import { SMOKING_OPTIONS, SERVICE_OPTIONS } from '@/lib/constants/shop';
-import type { ExtendedShopCreateRequest } from '@hv-development/schemas';
+import type { ExtendedShopCreateRequest } from '@/types/shop';
 
 const MerchantSelectModal = dynamicImport(() => import('@/components/molecules/MerchantSelectModal'), {
   loading: () => null,

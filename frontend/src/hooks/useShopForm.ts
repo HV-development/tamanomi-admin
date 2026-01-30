@@ -11,7 +11,7 @@ import { useAddressSearch, applyAddressSearchResult } from '@/hooks/use-address-
 import { useShopValidation } from '@/hooks/useShopValidation';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { compressImageFile } from '@/utils/imageUtils';
-import type { ShopMerchant, ShopDataResponse, Genre, Scene, ExtendedShopCreateRequest } from '@hv-development/schemas';
+import type { ShopMerchant, ShopDataResponse, Genre, Scene, ExtendedShopCreateRequest } from '@/types/shop';
 import type { ToastData } from '@/components/molecules/toast-container';
 
 // 具体的な型パラメータを使用した型エイリアス

@@ -2,7 +2,12 @@
 
 import React from 'react';
 import ErrorMessage from '@/components/atoms/ErrorMessage';
-import type { Scene } from '@hv-development/schemas';
+
+interface Scene {
+  id: string;
+  name: string;
+  sortOrder?: number;
+}
 
 interface SceneSelectorProps {
   scenes: Scene[];
