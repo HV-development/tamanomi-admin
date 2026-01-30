@@ -18,6 +18,7 @@ export const dynamic = 'force-dynamic';
 interface User {
   id: string;
   nickname: string;
+  email: string;
   postalCode: string;
   prefecture: string;
   city: string;
@@ -122,6 +123,7 @@ export default function UsersPage() {
         users: Array<{
           id: string;
           nickname: string;
+          email?: string;
           postalCode?: string;
           prefecture?: string;
           city?: string;
@@ -156,6 +158,7 @@ export default function UsersPage() {
         const base: User = {
           id: user.id,
           nickname: user.nickname,
+          email: '',
           postalCode: '',
           prefecture: '',
           city: '',
@@ -173,6 +176,7 @@ export default function UsersPage() {
         if (!isOperatorRole) {
           return {
             ...base,
+            email: user.email ?? '',
             postalCode: user.postalCode ?? '',
             prefecture: user.prefecture ?? '',
             city: user.city ?? '',
@@ -314,6 +318,7 @@ export default function UsersPage() {
           users?: Array<{
             id: string;
             nickname: string;
+            email?: string;
             postalCode?: string;
             prefecture?: string;
             city?: string;
@@ -353,6 +358,7 @@ export default function UsersPage() {
               const base: User = {
                 id: user.id,
                 nickname: user.nickname,
+                email: '',
                 postalCode: '',
                 prefecture: '',
                 city: '',
@@ -370,6 +376,7 @@ export default function UsersPage() {
               if (!isOperatorRole) {
                 return {
                   ...base,
+                  email: user.email ?? '',
                   postalCode: user.postalCode ?? '',
                   prefecture: user.prefecture ?? '',
                   city: user.city ?? '',
