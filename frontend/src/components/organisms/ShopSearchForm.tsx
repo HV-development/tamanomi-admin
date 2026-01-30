@@ -14,19 +14,19 @@ export interface ShopSearchFormData {
   accountEmail: string;
   postalCode: string;
   prefecture: string;
-  address: string;
+  fulladdress: string;
   status: string;
-  createdAtFrom: string;
-  createdAtTo: string;
-  updatedAtFrom: string;
-  updatedAtTo: string;
+  createdFrom: string;
+  createdTo: string;
+  updatedFrom: string;
+  updatedTo: string;
 }
 
 export interface ShopSearchErrors {
-  createdAtFrom?: string;
-  createdAtTo?: string;
-  updatedAtFrom?: string;
-  updatedAtTo?: string;
+  createdFrom?: string;
+  createdTo?: string;
+  updatedFrom?: string;
+  updatedTo?: string;
 }
 
 interface ShopSearchFormProps {
@@ -206,15 +206,15 @@ function ShopSearchForm({
             />
           </div>
           <div className="flex-1">
-            <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="fulladdress" className="block text-sm font-medium text-gray-700 mb-2">
               住所
             </label>
             <input
               type="text"
-              id="address"
+              id="fulladdress"
               placeholder="住所を入力"
-              value={searchForm.address}
-              onChange={(e) => onInputChange('address', e.target.value)}
+              value={searchForm.fulladdress}
+              onChange={(e) => onInputChange('fulladdress', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
             />
           </div>
@@ -241,63 +241,63 @@ function ShopSearchForm({
         {/* 登録日・更新日の範囲 */}
         <div className="flex gap-4" style={{ marginTop: '16px' }}>
           <div>
-            <label htmlFor="createdAtFrom" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="createdFrom" className="block text-sm font-medium text-gray-700 mb-2">
               登録日（開始）
             </label>
             <input
               type="date"
-              id="createdAtFrom"
-              value={searchForm.createdAtFrom}
-              onChange={(e) => onInputChange('createdAtFrom', e.target.value)}
+              id="createdFrom"
+              value={searchForm.createdFrom}
+              onChange={(e) => onInputChange('createdFrom', e.target.value)}
               className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
             />
-            {searchErrors.createdAtFrom && (
-              <p className="text-red-600 text-sm mt-1">{searchErrors.createdAtFrom}</p>
+            {searchErrors.createdFrom && (
+              <p className="text-red-600 text-sm mt-1">{searchErrors.createdFrom}</p>
             )}
           </div>
           <div>
-            <label htmlFor="createdAtTo" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="createdTo" className="block text-sm font-medium text-gray-700 mb-2">
               登録日（終了）
             </label>
             <input
               type="date"
-              id="createdAtTo"
-              value={searchForm.createdAtTo}
-              onChange={(e) => onInputChange('createdAtTo', e.target.value)}
+              id="createdTo"
+              value={searchForm.createdTo}
+              onChange={(e) => onInputChange('createdTo', e.target.value)}
               className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
             />
-            {searchErrors.createdAtTo && (
-              <p className="text-red-600 text-sm mt-1">{searchErrors.createdAtTo}</p>
+            {searchErrors.createdTo && (
+              <p className="text-red-600 text-sm mt-1">{searchErrors.createdTo}</p>
             )}
           </div>
           <div>
-            <label htmlFor="updatedAtFrom" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="updatedFrom" className="block text-sm font-medium text-gray-700 mb-2">
               更新日（開始）
             </label>
             <input
               type="date"
-              id="updatedAtFrom"
-              value={searchForm.updatedAtFrom}
-              onChange={(e) => onInputChange('updatedAtFrom', e.target.value)}
+              id="updatedFrom"
+              value={searchForm.updatedFrom}
+              onChange={(e) => onInputChange('updatedFrom', e.target.value)}
               className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
             />
-            {searchErrors.updatedAtFrom && (
-              <p className="text-red-600 text-sm mt-1">{searchErrors.updatedAtFrom}</p>
+            {searchErrors.updatedFrom && (
+              <p className="text-red-600 text-sm mt-1">{searchErrors.updatedFrom}</p>
             )}
           </div>
           <div>
-            <label htmlFor="updatedAtTo" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="updatedTo" className="block text-sm font-medium text-gray-700 mb-2">
               更新日（終了）
             </label>
             <input
               type="date"
-              id="updatedAtTo"
-              value={searchForm.updatedAtTo}
-              onChange={(e) => onInputChange('updatedAtTo', e.target.value)}
+              id="updatedTo"
+              value={searchForm.updatedTo}
+              onChange={(e) => onInputChange('updatedTo', e.target.value)}
               className="w-[200px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
             />
-            {searchErrors.updatedAtTo && (
-              <p className="text-red-600 text-sm mt-1">{searchErrors.updatedAtTo}</p>
+            {searchErrors.updatedTo && (
+              <p className="text-red-600 text-sm mt-1">{searchErrors.updatedTo}</p>
             )}
           </div>
         </div>
