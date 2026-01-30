@@ -52,19 +52,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Cookieベースの認証のみを使用（sessionStorageは使用しない）
 
-  // 初期化時にトークンをチェック
+  // 初期化時にトークンをチェック（リトライロジック付き）
   useEffect(() => {
     const initAuth = async () => {
+      type MeResponse = {
+        accountType?: 'admin' | 'merchant' | 'user' | 'shop';
+        email?: string | null;
+        shopId?: string | null;
+        merchantId?: string | null;
+        role?: string;
+      } | null;
+
+      const MAX_RETRIES = 3;
+      const RETRY_DELAY = 1000; // 1秒
+
+      const fetchMe = async (retryCount: number): Promise<MeResponse> => {
+        try {
+          // /api/me から現在のアカウント種別を取得（401時に自動リフレッシュはしない）
+          return await apiClient.getMe() as MeResponse;
+        } catch (error) {
+          // 401エラー（未認証）の場合はリトライしない
+          if (error instanceof Error && 'status' in error && (error as { status: number }).status === 401) {
+            return null;
+          }
+          // ネットワークエラーや一時的なエラーの場合はリトライ
+          if (retryCount < MAX_RETRIES) {
+            console.warn(`Auth initialization retry (${retryCount + 1}/${MAX_RETRIES})`);
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)));
+            return fetchMe(retryCount + 1);
+          }
+          console.error('Auth initialization failed after retries:', error);
+          return null;
+        }
+      };
+
       try {
-        // /api/me から現在のアカウント種別を取得（401時に自動リフレッシュはしない）
-        type MeResponse = {
-          accountType?: 'admin' | 'merchant' | 'user' | 'shop';
-          email?: string | null;
-          shopId?: string | null;
-          merchantId?: string | null;
-          role?: string;
-        } | null;
-        const me = await apiClient.getMe().catch(() => null) as MeResponse;
+        const me = await fetchMe(0);
         if (me && me.accountType) {
           const role = me.role;
           const userData = {
