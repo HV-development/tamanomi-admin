@@ -161,7 +161,7 @@ class ApiClient {
               window.location.href = '/login?session=expired';
             }
 
-            return new Promise(() => { }) as Promise<T>;
+            throw new Error('Unauthorized');
           }
         }
 
@@ -282,7 +282,7 @@ class ApiClient {
 
       return response;
     } catch (_error) {
-      return;
+      throw _error;
     }
   }
 
