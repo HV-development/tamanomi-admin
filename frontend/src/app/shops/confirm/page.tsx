@@ -174,8 +174,11 @@ function ShopConfirmContent() {
         contactEmail: shopData.contactEmail || null,
       };
 
-      // 店舗を作成
-      const createdShop = await apiClient.createShop(submitData) as { id: string; merchantId: string };
+      // 店舗を作成（confirmPasswordも送信）
+      const createdShop = await apiClient.createShop({
+        ...submitData,
+        confirmPassword: shopData.createAccount ? shopData.password : undefined,
+      }) as { id: string; merchantId: string };
       
       // 画像をアップロード
       if (shopData.imagePreviews && shopData.imagePreviews.length > 0) {
