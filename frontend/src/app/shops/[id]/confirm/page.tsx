@@ -288,6 +288,7 @@ function ShopEditConfirmContent() {
         customSceneText: shopData.customSceneText || undefined,
         createAccount: shopData.createAccount,
         password: shopData.createAccount && !shopData.hasExistingAccount ? shopData.password : undefined,
+        confirmPassword: shopData.createAccount && !shopData.hasExistingAccount ? shopData.password : undefined,
         contactName: shopData.contactName || null,
         contactPhone: shopData.contactPhone || null,
         contactEmail: shopData.contactEmail || null,
