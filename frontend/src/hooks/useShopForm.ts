@@ -81,10 +81,15 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
   );
 
   // shopIdの取得（編集時のみ存在）
-  const shopId = useMemo(
-    () => (params.shopId || (!propMerchantId ? params.id : undefined)) as string | undefined,
-    [params.shopId, params.id, propMerchantId]
-  );
+  const shopId = useMemo(() => {
+    // URLパラメータから取得を試みる
+    const urlShopId = (params.shopId || (!propMerchantId ? params.id : undefined)) as string | undefined;
+    // 店舗アカウントの場合、URLパラメータがなければauth.user.shopIdを使用
+    if (!urlShopId && isShopAccount && auth?.user?.shopId) {
+      return auth.user.shopId;
+    }
+    return urlShopId;
+  }, [params.shopId, params.id, propMerchantId, isShopAccount, auth?.user?.shopId]);
 
   const merchantIdFromParams = useMemo(
     () => params.id as string,
@@ -716,7 +721,7 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
       isMounted = false;
       abortController.abort();
     };
-  }, [shopId, isEdit, merchantId, showError, isMerchantAccount, isAdminAccount]);
+  }, [shopId, isEdit, merchantId, showError, isMerchantAccount, isAdminAccount, isShopAccount]);
 
   useEffect(() => {
     if (formData.merchantId && merchants.length > 0) {
