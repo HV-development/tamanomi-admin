@@ -55,61 +55,76 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // 初期化時にトークンをチェック（リトライロジック付き）
   useEffect(() => {
     const initAuth = async () => {
-      type MeResponse = {
-        accountType?: 'admin' | 'merchant' | 'user' | 'shop';
-        email?: string | null;
-        shopId?: string | null;
-        merchantId?: string | null;
-        role?: string;
-      } | null;
+      try {
+        // /api/me から現在のアカウント種別を取得
+        // accessToken期限切れ等で401になった場合は /api/auth/refresh を試してから再取得する
+        type MeResponse = {
+          accountType?: 'admin' | 'merchant' | 'user' | 'shop';
+          email?: string | null;
+          shopId?: string | null;
+          merchantId?: string | null;
+          role?: string;
+        } | null;
 
-      const MAX_RETRIES = 3;
-      const RETRY_DELAY = 1000; // 1秒
+        const MAX_RETRIES = 3;
+        const RETRY_DELAY = 1000; // 1秒
 
-      const fetchMe = async (retryCount: number): Promise<MeResponse> => {
-        try {
-          // /api/me から現在のアカウント種別を取得（401時に自動リフレッシュはしない）
-          return await apiClient.getMe() as MeResponse;
-        } catch (error) {
-          // 401/403エラー（認証エラー）の場合はリトライしない
-          const errorStatus = error instanceof Error && 'response' in error 
-            ? (error as { response?: { status?: number } }).response?.status 
-            : undefined;
+        const fetchMe = async (): Promise<{ status: number; data: MeResponse | null }> => {
+          try {
+            const res = await fetch('/api/me', { credentials: 'include' });
+            if (!res.ok) return { status: res.status, data: null };
+            const data = (await res.json()) as MeResponse;
+            return { status: res.status, data };
+          } catch (e) {
+            console.error('Auth init: /api/me fetch failed', e);
+            return { status: 0, data: null };
+          }
+        };
+
+        const tryRefresh = async (): Promise<boolean> => {
+          try {
+            const res = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
+            return res.ok;
+          } catch (e) {
+            console.error('Auth init: /api/auth/refresh fetch failed', e);
+            return false;
+          }
+        };
+
+        // リトライ付きでfetchMeを実行
+        const fetchMeWithRetry = async (retryCount: number): Promise<{ status: number; data: MeResponse | null }> => {
+          const result = await fetchMe();
+          // ネットワークエラー（status: 0）の場合はリトライ
+          if (result.status === 0 && retryCount < MAX_RETRIES) {
+            console.warn(`Auth initialization retry (${retryCount + 1}/${MAX_RETRIES})`);
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)));
+            return fetchMeWithRetry(retryCount + 1);
+          }
+          return result;
+        };
+
+        let meResult = await fetchMeWithRetry(0);
+        if (meResult.status === 401 || meResult.status === 403) {
+          const refreshed = await tryRefresh();
+          if (refreshed) {
+            meResult = await fetchMeWithRetry(0);
+          }
           
-          if (errorStatus === 401 || errorStatus === 403) {
-            // すでにログインページにいる場合はリダイレクトしない（無限ループ防止）
+          // リフレッシュ後も認証エラーの場合はログイン画面へリダイレクト
+          if (meResult.status === 401 || meResult.status === 403) {
+            // ログインページにいる場合はリダイレクトしない（無限ループ防止）
             const isLoginPage = typeof window !== 'undefined' && 
               (window.location.pathname === '/login' || window.location.pathname.startsWith('/login'));
             
-            if (!isLoginPage) {
-              console.warn(`Auth error (${errorStatus}): redirecting to login`);
-              // 認証エラーの場合はログイン画面へリダイレクト
-              if (typeof window !== 'undefined') {
-                window.location.href = '/login?session=expired';
-              }
+            if (!isLoginPage && typeof window !== 'undefined') {
+              console.warn(`Auth error (${meResult.status}): redirecting to login`);
+              window.location.href = '/login?session=expired';
+              return;
             }
-            return null;
           }
-          // ネットワークエラーや一時的なエラーの場合はリトライ
-          if (retryCount < MAX_RETRIES) {
-            console.warn(`Auth initialization retry (${retryCount + 1}/${MAX_RETRIES})`);
-            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)));
-            return fetchMe(retryCount + 1);
-          }
-          console.error('Auth initialization failed after retries:', error);
-          // リトライ後もエラーが続く場合はログイン画面へリダイレクト（ログインページ以外）
-          const isLoginPage = typeof window !== 'undefined' && 
-            (window.location.pathname === '/login' || window.location.pathname.startsWith('/login'));
-          
-          if (!isLoginPage && typeof window !== 'undefined') {
-            window.location.href = '/login?session=expired';
-          }
-          return null;
         }
-      };
 
-      try {
-        const me = await fetchMe(0);
+        const me = meResult.data as MeResponse;
         if (me && me.accountType) {
           const role = me.role;
           const userData = {
