@@ -244,7 +244,13 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
   useEffect(() => {
     try {
       const storedData = sessionStorage.getItem('shopConfirmData');
-      if (storedData) {
+      const returnedFromConfirm = sessionStorage.getItem('returnedFromConfirm');
+      
+      // 確認画面から戻ってきた場合のみ復元
+      if (storedData && returnedFromConfirm === 'true') {
+        // 復元フラグをクリア
+        sessionStorage.removeItem('returnedFromConfirm');
+        
         const parsedData = JSON.parse(storedData);
         // 新規登録モードで、保存されたデータも新規登録の場合のみ復元
         // または、編集モードで、保存されたデータのshopIdが一致する場合のみ復元
