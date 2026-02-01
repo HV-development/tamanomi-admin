@@ -474,6 +474,13 @@ class ApiClient {
     });
   }
 
+  async updateUser(id: string, userData: unknown): Promise<unknown> {
+    return this.request<unknown>(`/admin/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+  }
+
   async createShop(shopData: unknown): Promise<unknown> {
     return this.request<unknown>('/shops', {
       method: 'POST',
