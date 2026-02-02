@@ -115,6 +115,8 @@ function ShopEditConfirmContent() {
   }, [shopId, router]);
 
   const handleModify = () => {
+    // 確認画面から戻ることを示すフラグを設定
+    sessionStorage.setItem('returnedFromConfirm', 'true');
     // sessionStorageのデータは保持したまま戻る
     router.back();
   };
@@ -288,6 +290,7 @@ function ShopEditConfirmContent() {
         customSceneText: shopData.customSceneText || undefined,
         createAccount: shopData.createAccount,
         password: shopData.createAccount && !shopData.hasExistingAccount ? shopData.password : undefined,
+        confirmPassword: shopData.createAccount && !shopData.hasExistingAccount ? shopData.password : undefined,
         contactName: shopData.contactName || null,
         contactPhone: shopData.contactPhone || null,
         contactEmail: shopData.contactEmail || null,

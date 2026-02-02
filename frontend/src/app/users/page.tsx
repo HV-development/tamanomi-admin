@@ -18,6 +18,7 @@ export const dynamic = 'force-dynamic';
 interface User {
   id: string;
   nickname: string;
+  email: string;
   postalCode: string;
   prefecture: string;
   city: string;
@@ -41,6 +42,7 @@ export default function UsersPage() {
 
   const [searchForm, setSearchForm] = useState<UserSearchFormData>({
     nickname: '',
+    email: '',
     postalCode: '',
     prefecture: '',
     city: '',
@@ -55,6 +57,7 @@ export default function UsersPage() {
   });
   const [appliedSearchForm, setAppliedSearchForm] = useState<UserSearchFormData>({
     nickname: '',
+    email: '',
     postalCode: '',
     prefecture: '',
     city: '',
@@ -93,6 +96,7 @@ export default function UsersPage() {
 
       // operatorロールでない場合のみ機密情報での検索パラメータを追加
       if (!isOperatorRole) {
+        if (searchParams?.email) searchBody.email = searchParams.email;
         if (searchParams?.postalCode) searchBody.postalCode = searchParams.postalCode;
         if (searchParams?.prefecture) searchBody.prefecture = searchParams.prefecture;
         if (searchParams?.city) searchBody.city = searchParams.city;
@@ -119,6 +123,7 @@ export default function UsersPage() {
         users: Array<{
           id: string;
           nickname: string;
+          email?: string;
           postalCode?: string;
           prefecture?: string;
           city?: string;
@@ -153,6 +158,7 @@ export default function UsersPage() {
         const base: User = {
           id: user.id,
           nickname: user.nickname,
+          email: '',
           postalCode: '',
           prefecture: '',
           city: '',
@@ -170,6 +176,7 @@ export default function UsersPage() {
         if (!isOperatorRole) {
           return {
             ...base,
+            email: user.email ?? '',
             postalCode: user.postalCode ?? '',
             prefecture: user.prefecture ?? '',
             city: user.city ?? '',
@@ -239,11 +246,14 @@ export default function UsersPage() {
     setAppliedSearchForm({ ...searchForm });
     // ページを1にリセット
     setPagination(prev => ({ ...prev, page: 1 }));
+    // キャッシュをリセットして強制的に再フェッチ
+    lastFetchKeyRef.current = null;
   }, [searchForm]);
 
   const handleClear = useCallback(() => {
     const emptyForm: UserSearchFormData = {
       nickname: '',
+      email: '',
       postalCode: '',
       prefecture: '',
       city: '',
@@ -260,6 +270,8 @@ export default function UsersPage() {
     setAppliedSearchForm(emptyForm);
     // ページを1にリセット
     setPagination(prev => ({ ...prev, page: 1 }));
+    // キャッシュをリセットして強制的に再フェッチ
+    lastFetchKeyRef.current = null;
   }, []);
 
   // ページ変更ハンドラー
@@ -282,6 +294,7 @@ export default function UsersPage() {
         if (appliedSearchForm.nickname) searchBody.nickname = appliedSearchForm.nickname;
 
         if (!isOperatorRole) {
+          if (appliedSearchForm.email) searchBody.email = appliedSearchForm.email;
           if (appliedSearchForm.postalCode) searchBody.postalCode = appliedSearchForm.postalCode;
           if (appliedSearchForm.prefecture) searchBody.prefecture = appliedSearchForm.prefecture;
           if (appliedSearchForm.city) searchBody.city = appliedSearchForm.city;
@@ -305,6 +318,7 @@ export default function UsersPage() {
           users?: Array<{
             id: string;
             nickname: string;
+            email?: string;
             postalCode?: string;
             prefecture?: string;
             city?: string;
@@ -344,6 +358,7 @@ export default function UsersPage() {
               const base: User = {
                 id: user.id,
                 nickname: user.nickname,
+                email: '',
                 postalCode: '',
                 prefecture: '',
                 city: '',
@@ -361,6 +376,7 @@ export default function UsersPage() {
               if (!isOperatorRole) {
                 return {
                   ...base,
+                  email: user.email ?? '',
                   postalCode: user.postalCode ?? '',
                   prefecture: user.prefecture ?? '',
                   city: user.city ?? '',

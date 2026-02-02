@@ -66,12 +66,30 @@ function ShopsPageContent() {
     accountEmail: '',
     postalCode: '',
     prefecture: '',
-    address: '',
+    fulladdress: '',
     status: 'all' as 'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
-    createdAtFrom: '',
-    createdAtTo: '',
-    updatedAtFrom: '',
-    updatedAtTo: '',
+    createdFrom: '',
+    createdTo: '',
+    updatedFrom: '',
+    updatedTo: '',
+  });
+  // 検索ボタン押下時に適用される検索条件
+  const [appliedSearchForm, setAppliedSearchForm] = useState({
+    keyword: '',
+    merchantName: '',
+    merchantNameKana: '',
+    name: '',
+    nameKana: '',
+    phone: '',
+    accountEmail: '',
+    postalCode: '',
+    prefecture: '',
+    fulladdress: '',
+    status: 'all' as 'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
+    createdFrom: '',
+    createdTo: '',
+    updatedFrom: '',
+    updatedTo: '',
   });
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   
@@ -89,15 +107,16 @@ function ShopsPageContent() {
       accountEmail: searchParams.get('accountEmail') || '',
       postalCode: searchParams.get('postalCode') || '',
       prefecture: searchParams.get('prefecture') || '',
-      address: searchParams.get('address') || '',
+      fulladdress: searchParams.get('fulladdress') || '',
       status: (searchParams.get('status') || 'all') as 'all' | 'registering' | 'collection_requested' | 'approval_pending' | 'promotional_materials_preparing' | 'promotional_materials_shipping' | 'operating' | 'suspended' | 'terminated',
-      createdAtFrom: searchParams.get('createdAtFrom') || '',
-      createdAtTo: searchParams.get('createdAtTo') || '',
-      updatedAtFrom: searchParams.get('updatedAtFrom') || '',
-      updatedAtTo: searchParams.get('updatedAtTo') || '',
+      createdFrom: searchParams.get('createdFrom') || '',
+      createdTo: searchParams.get('createdTo') || '',
+      updatedFrom: searchParams.get('updatedFrom') || '',
+      updatedTo: searchParams.get('updatedTo') || '',
     };
     
     setSearchForm(newSearchForm);
+    setAppliedSearchForm(newSearchForm);
     
     // 検索条件がある場合、検索フォームを展開して表示
     const hasSearchParams = Object.values(newSearchForm).some(value => value && value !== 'all');
@@ -122,10 +141,10 @@ function ShopsPageContent() {
   }, [searchParams, showSuccess, router]);
 
   const [searchErrors, setSearchErrors] = useState({
-    createdAtFrom: '',
-    createdAtTo: '',
-    updatedAtFrom: '',
-    updatedAtTo: '',
+    createdFrom: '',
+    createdTo: '',
+    updatedFrom: '',
+    updatedTo: '',
   });
 
   // チェックボックス関連の状態を追加
@@ -202,24 +221,24 @@ function ShopsPageContent() {
         queryParams.append('merchantId', merchantId);
       }
       
-      // 検索フォームの各項目を追加
-      if (searchForm.keyword) queryParams.append('keyword', searchForm.keyword);
-      if (searchForm.merchantName) queryParams.append('merchantName', searchForm.merchantName);
-      if (searchForm.merchantNameKana) queryParams.append('merchantNameKana', searchForm.merchantNameKana);
-      if (searchForm.name) queryParams.append('name', searchForm.name);
-      if (searchForm.nameKana) queryParams.append('nameKana', searchForm.nameKana);
-      if (searchForm.phone) queryParams.append('phone', searchForm.phone);
-      if (searchForm.accountEmail) queryParams.append('accountEmail', searchForm.accountEmail);
-      if (searchForm.postalCode) queryParams.append('postalCode', searchForm.postalCode);
-      if (searchForm.prefecture) queryParams.append('prefecture', searchForm.prefecture);
-      if (searchForm.address) queryParams.append('address', searchForm.address);
-      if (searchForm.status && searchForm.status !== 'all') {
-        queryParams.append('status', searchForm.status);
+      // 検索フォームの各項目を追加（適用済みの検索条件を使用）
+      if (appliedSearchForm.keyword) queryParams.append('keyword', appliedSearchForm.keyword);
+      if (appliedSearchForm.merchantName) queryParams.append('merchantName', appliedSearchForm.merchantName);
+      if (appliedSearchForm.merchantNameKana) queryParams.append('merchantNameKana', appliedSearchForm.merchantNameKana);
+      if (appliedSearchForm.name) queryParams.append('name', appliedSearchForm.name);
+      if (appliedSearchForm.nameKana) queryParams.append('nameKana', appliedSearchForm.nameKana);
+      if (appliedSearchForm.phone) queryParams.append('phone', appliedSearchForm.phone);
+      if (appliedSearchForm.accountEmail) queryParams.append('accountEmail', appliedSearchForm.accountEmail);
+      if (appliedSearchForm.postalCode) queryParams.append('postalCode', appliedSearchForm.postalCode);
+      if (appliedSearchForm.prefecture) queryParams.append('prefecture', appliedSearchForm.prefecture);
+      if (appliedSearchForm.fulladdress) queryParams.append('fulladdress', appliedSearchForm.fulladdress);
+      if (appliedSearchForm.status && appliedSearchForm.status !== 'all') {
+        queryParams.append('status', appliedSearchForm.status);
       }
-      if (searchForm.createdAtFrom) queryParams.append('createdAtFrom', searchForm.createdAtFrom);
-      if (searchForm.createdAtTo) queryParams.append('createdAtTo', searchForm.createdAtTo);
-      if (searchForm.updatedAtFrom) queryParams.append('updatedAtFrom', searchForm.updatedAtFrom);
-      if (searchForm.updatedAtTo) queryParams.append('updatedAtTo', searchForm.updatedAtTo);
+      if (appliedSearchForm.createdFrom) queryParams.append('createdFrom', appliedSearchForm.createdFrom);
+      if (appliedSearchForm.createdTo) queryParams.append('createdTo', appliedSearchForm.createdTo);
+      if (appliedSearchForm.updatedFrom) queryParams.append('updatedFrom', appliedSearchForm.updatedFrom);
+      if (appliedSearchForm.updatedTo) queryParams.append('updatedTo', appliedSearchForm.updatedTo);
       
       const data = await apiClient.getShops(queryParams.toString());
       
@@ -295,7 +314,7 @@ function ShopsPageContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [merchantId, searchForm, pagination.page, pagination.limit]);
+  }, [merchantId, appliedSearchForm, pagination.page, pagination.limit]);
 
   // 初回マウント時とmerchantId変更時にデータ取得
   // 事業者アカウントの場合はmerchantIdが設定されるまで待機
@@ -322,7 +341,7 @@ function ShopsPageContent() {
       auth?.user?.id ?? auth?.user?.email ?? 'anonymous',
       pagination.page,
       pagination.limit,
-      JSON.stringify(searchForm),
+      JSON.stringify(appliedSearchForm),
     ].join('|');
 
     if (lastFetchKeyRef.current === key) {
@@ -347,6 +366,8 @@ function ShopsPageContent() {
     if (!validateSearchForm()) {
       return;
     }
+    // 検索条件を適用
+    setAppliedSearchForm({ ...searchForm });
     // ページを1にリセット
     setPagination(prev => ({ ...prev, page: 1 }));
     // URLパラメータを更新（ブラウザの戻る/進むボタンで検索条件を維持）
@@ -358,91 +379,92 @@ function ShopsPageContent() {
     });
     const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
     window.history.pushState({}, '', newUrl);
-    fetchShops();
+    // キャッシュをリセットして強制的に再フェッチ
+    lastFetchKeyRef.current = null;
   };
 
   // 日付バリデーション関数
   const validateSearchForm = (): boolean => {
-    const errors: {createdAtFrom?: string; createdAtTo?: string; updatedAtFrom?: string; updatedAtTo?: string} = {};
+    const errors: {createdFrom?: string; createdTo?: string; updatedFrom?: string; updatedTo?: string} = {};
     
     // 登録日開始日のバリデーション
-    if (searchForm.createdAtFrom) {
-      const fromDate = new Date(searchForm.createdAtFrom);
+    if (searchForm.createdFrom) {
+      const fromDate = new Date(searchForm.createdFrom);
       const today = new Date();
       today.setHours(23, 59, 59, 999);
       
       if (fromDate > today) {
-        errors.createdAtFrom = '開始日は今日以前の日付を指定してください';
+        errors.createdFrom = '開始日は今日以前の日付を指定してください';
       }
     }
     
     // 登録日終了日のバリデーション
-    if (searchForm.createdAtTo) {
-      const toDate = new Date(searchForm.createdAtTo);
+    if (searchForm.createdTo) {
+      const toDate = new Date(searchForm.createdTo);
       const today = new Date();
       today.setHours(23, 59, 59, 999);
       
       if (toDate > today) {
-        errors.createdAtTo = '終了日は今日以前の日付を指定してください';
+        errors.createdTo = '終了日は今日以前の日付を指定してください';
       }
     }
     
     // 登録日の範囲バリデーション
-    if (searchForm.createdAtFrom && searchForm.createdAtTo) {
-      const fromDate = new Date(searchForm.createdAtFrom);
-      const toDate = new Date(searchForm.createdAtTo);
+    if (searchForm.createdFrom && searchForm.createdTo) {
+      const fromDate = new Date(searchForm.createdFrom);
+      const toDate = new Date(searchForm.createdTo);
       
       if (fromDate > toDate) {
-        errors.createdAtFrom = '開始日は終了日より前の日付を指定してください';
-        errors.createdAtTo = '終了日は開始日より後の日付を指定してください';
+        errors.createdFrom = '開始日は終了日より前の日付を指定してください';
+        errors.createdTo = '終了日は開始日より後の日付を指定してください';
       }
     }
     
     // 更新日開始日のバリデーション
-    if (searchForm.updatedAtFrom) {
-      const fromDate = new Date(searchForm.updatedAtFrom);
+    if (searchForm.updatedFrom) {
+      const fromDate = new Date(searchForm.updatedFrom);
       const today = new Date();
       today.setHours(23, 59, 59, 999);
       
       if (fromDate > today) {
-        errors.updatedAtFrom = '開始日は今日以前の日付を指定してください';
+        errors.updatedFrom = '開始日は今日以前の日付を指定してください';
       }
     }
     
     // 更新日終了日のバリデーション
-    if (searchForm.updatedAtTo) {
-      const toDate = new Date(searchForm.updatedAtTo);
+    if (searchForm.updatedTo) {
+      const toDate = new Date(searchForm.updatedTo);
       const today = new Date();
       today.setHours(23, 59, 59, 999);
       
       if (toDate > today) {
-        errors.updatedAtTo = '終了日は今日以前の日付を指定してください';
+        errors.updatedTo = '終了日は今日以前の日付を指定してください';
       }
     }
     
     // 更新日の範囲バリデーション
-    if (searchForm.updatedAtFrom && searchForm.updatedAtTo) {
-      const fromDate = new Date(searchForm.updatedAtFrom);
-      const toDate = new Date(searchForm.updatedAtTo);
+    if (searchForm.updatedFrom && searchForm.updatedTo) {
+      const fromDate = new Date(searchForm.updatedFrom);
+      const toDate = new Date(searchForm.updatedTo);
       
       if (fromDate > toDate) {
-        errors.updatedAtFrom = '開始日は終了日より前の日付を指定してください';
-        errors.updatedAtTo = '終了日は開始日より後の日付を指定してください';
+        errors.updatedFrom = '開始日は終了日より前の日付を指定してください';
+        errors.updatedTo = '終了日は開始日より後の日付を指定してください';
       }
     }
     
     setSearchErrors({
-      createdAtFrom: errors.createdAtFrom || '',
-      createdAtTo: errors.createdAtTo || '',
-      updatedAtFrom: errors.updatedAtFrom || '',
-      updatedAtTo: errors.updatedAtTo || '',
+      createdFrom: errors.createdFrom || '',
+      createdTo: errors.createdTo || '',
+      updatedFrom: errors.updatedFrom || '',
+      updatedTo: errors.updatedTo || '',
     });
     return Object.keys(errors).length === 0;
   };
 
   // クリアハンドラー
   const handleClear = () => {
-    setSearchForm({
+    const clearedForm = {
       keyword: '',
       merchantName: '',
       merchantNameKana: '',
@@ -452,25 +474,27 @@ function ShopsPageContent() {
       accountEmail: '',
       postalCode: '',
       prefecture: '',
-      address: '',
-      status: 'all',
-      createdAtFrom: '',
-      createdAtTo: '',
-      updatedAtFrom: '',
-      updatedAtTo: '',
-    });
+      fulladdress: '',
+      status: 'all' as const,
+      createdFrom: '',
+      createdTo: '',
+      updatedFrom: '',
+      updatedTo: '',
+    };
+    setSearchForm(clearedForm);
+    setAppliedSearchForm(clearedForm);
     setSearchErrors({
-      createdAtFrom: '',
-      createdAtTo: '',
-      updatedAtFrom: '',
-      updatedAtTo: '',
+      createdFrom: '',
+      createdTo: '',
+      updatedFrom: '',
+      updatedTo: '',
     });
     // ページを1にリセット
     setPagination(prev => ({ ...prev, page: 1 }));
     // URLパラメータをクリア
     window.history.pushState({}, '', window.location.pathname);
-    // クリア後にデータを再取得
-    setTimeout(() => fetchShops(), 100);
+    // キャッシュをリセットして強制的に再フェッチ
+    lastFetchKeyRef.current = null;
   };
 
   // ページ変更ハンドラー
@@ -602,14 +626,14 @@ function ShopsPageContent() {
         if (searchForm.accountEmail) queryParams.append('accountEmail', searchForm.accountEmail);
         if (searchForm.postalCode) queryParams.append('postalCode', searchForm.postalCode);
         if (searchForm.prefecture) queryParams.append('prefecture', searchForm.prefecture);
-        if (searchForm.address) queryParams.append('address', searchForm.address);
+        if (searchForm.fulladdress) queryParams.append('fulladdress', searchForm.fulladdress);
         if (searchForm.status && searchForm.status !== 'all') {
           queryParams.append('status', searchForm.status);
         }
-        if (searchForm.createdAtFrom) queryParams.append('createdAtFrom', searchForm.createdAtFrom);
-        if (searchForm.createdAtTo) queryParams.append('createdAtTo', searchForm.createdAtTo);
-        if (searchForm.updatedAtFrom) queryParams.append('updatedAtFrom', searchForm.updatedAtFrom);
-        if (searchForm.updatedAtTo) queryParams.append('updatedAtTo', searchForm.updatedAtTo);
+        if (searchForm.createdFrom) queryParams.append('createdFrom', searchForm.createdFrom);
+        if (searchForm.createdTo) queryParams.append('createdTo', searchForm.createdTo);
+        if (searchForm.updatedFrom) queryParams.append('updatedFrom', searchForm.updatedFrom);
+        if (searchForm.updatedTo) queryParams.append('updatedTo', searchForm.updatedTo);
 
         const data = await apiClient.getShops(queryParams.toString());
         
@@ -789,24 +813,24 @@ function ShopsPageContent() {
             if (searchForm.accountEmail) conditions.push(`メールアドレス: ${searchForm.accountEmail}`);
             if (searchForm.postalCode) conditions.push(`郵便番号: ${searchForm.postalCode}`);
             if (searchForm.prefecture) conditions.push(`都道府県: ${searchForm.prefecture}`);
-            if (searchForm.address) conditions.push(`住所: ${searchForm.address}`);
+            if (searchForm.fulladdress) conditions.push(`住所: ${searchForm.fulladdress}`);
             if (searchForm.status && searchForm.status !== 'all') {
               const statusLabel = statusOptions?.find(opt => opt.value === searchForm.status)?.label || searchForm.status;
               conditions.push(`ステータス: ${statusLabel}`);
             }
-            if (searchForm.createdAtFrom && searchForm.createdAtTo) {
-              conditions.push(`登録日: ${searchForm.createdAtFrom} 〜 ${searchForm.createdAtTo}`);
-            } else if (searchForm.createdAtFrom) {
-              conditions.push(`登録日（開始）: ${searchForm.createdAtFrom}`);
-            } else if (searchForm.createdAtTo) {
-              conditions.push(`登録日（終了）: ${searchForm.createdAtTo}`);
+            if (searchForm.createdFrom && searchForm.createdTo) {
+              conditions.push(`登録日: ${searchForm.createdFrom} 〜 ${searchForm.createdTo}`);
+            } else if (searchForm.createdFrom) {
+              conditions.push(`登録日（開始）: ${searchForm.createdFrom}`);
+            } else if (searchForm.createdTo) {
+              conditions.push(`登録日（終了）: ${searchForm.createdTo}`);
             }
-            if (searchForm.updatedAtFrom && searchForm.updatedAtTo) {
-              conditions.push(`更新日: ${searchForm.updatedAtFrom} 〜 ${searchForm.updatedAtTo}`);
-            } else if (searchForm.updatedAtFrom) {
-              conditions.push(`更新日（開始）: ${searchForm.updatedAtFrom}`);
-            } else if (searchForm.updatedAtTo) {
-              conditions.push(`更新日（終了）: ${searchForm.updatedAtTo}`);
+            if (searchForm.updatedFrom && searchForm.updatedTo) {
+              conditions.push(`更新日: ${searchForm.updatedFrom} 〜 ${searchForm.updatedTo}`);
+            } else if (searchForm.updatedFrom) {
+              conditions.push(`更新日（開始）: ${searchForm.updatedFrom}`);
+            } else if (searchForm.updatedTo) {
+              conditions.push(`更新日（終了）: ${searchForm.updatedTo}`);
             }
             
             if (conditions.length === 0) return null;

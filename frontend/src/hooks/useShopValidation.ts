@@ -9,7 +9,7 @@ import {
   isValidKana,
   isValidShopName,
 } from '@hv-development/schemas';
-import type { ExtendedShopCreateRequest } from '@hv-development/schemas';
+import type { ExtendedShopCreateRequest } from '@/types/shop';
 
 interface UseShopValidationOptions {
   formData: ExtendedShopCreateRequest;
