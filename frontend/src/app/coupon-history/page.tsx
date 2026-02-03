@@ -169,6 +169,14 @@ export default function CouponHistoryPage() {
             totalPages: number;
           };
         };
+        
+        // デバッグログ
+        console.log('🔍 API Response:', {
+          historyCount: data.history?.length,
+          pagination: data.pagination,
+          rawData: data,
+        });
+        
         const formattedHistory = data.history.map((item) => ({
           id: item.id,
           usageId: item.usageId || item.id,
@@ -187,12 +195,24 @@ export default function CouponHistoryPage() {
         setUsages(formattedHistory);
         
         // ページネーション情報を更新
+        console.log('🔍 Pagination update:', {
+          hasPagination: !!data.pagination,
+          total: data.pagination?.total,
+          totalPages: data.pagination?.totalPages,
+        });
+        
         if (data.pagination) {
-          setPagination(prev => ({
-            ...prev,
-            total: data.pagination?.total || 0,
-            pages: data.pagination?.totalPages || 0,
-          }));
+          setPagination(prev => {
+            const newPagination = {
+              ...prev,
+              total: data.pagination?.total || 0,
+              pages: data.pagination?.totalPages || 0,
+            };
+            console.log('🔍 New pagination state:', newPagination);
+            return newPagination;
+          });
+        } else {
+          console.warn('⚠️ No pagination data in response');
         }
       } catch (error) {
         console.error('利用履歴の取得に失敗しました:', error);
