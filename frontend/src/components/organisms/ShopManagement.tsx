@@ -97,8 +97,14 @@ export default function ShopManagement({ merchantId }: ShopManagementProps) {
         if (!merchantInfo) {
           try {
             const merchantData = await apiClient.getMerchant(merchantId);
-            if (merchantData && typeof merchantData === 'object' && 'name' in merchantData) {
-              setMerchantName((merchantData as { name: string }).name);
+            // APIレスポンス形式: {success: true, data: {...}}
+            if (merchantData && typeof merchantData === 'object') {
+              if ('data' in merchantData && merchantData.data && typeof merchantData.data === 'object' && 'name' in merchantData.data) {
+                setMerchantName((merchantData.data as { name: string }).name);
+              } else if ('name' in merchantData) {
+                // 後方互換性のため、直接nameがある場合も対応
+                setMerchantName((merchantData as { name: string }).name);
+              }
             }
           } catch (err) {
             console.error('Failed to fetch merchant info:', err);

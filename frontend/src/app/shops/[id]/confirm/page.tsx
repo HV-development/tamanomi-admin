@@ -289,8 +289,9 @@ function ShopEditConfirmContent() {
         sceneIds: shopData.selectedScenes,
         customSceneText: shopData.customSceneText || undefined,
         createAccount: shopData.createAccount,
-        password: shopData.createAccount && !shopData.hasExistingAccount ? shopData.password : undefined,
-        confirmPassword: shopData.createAccount && !shopData.hasExistingAccount ? shopData.password : undefined,
+        // パスワードが入力されている場合は送信（新規アカウント作成時または既存アカウントのパスワード変更時）
+        password: shopData.password && shopData.password.trim().length > 0 ? shopData.password : undefined,
+        confirmPassword: (shopData as any).confirmPassword && (shopData as any).confirmPassword.trim().length > 0 ? (shopData as any).confirmPassword : undefined,
         contactName: shopData.contactName || null,
         contactPhone: shopData.contactPhone || null,
         contactEmail: shopData.contactEmail || null,
@@ -644,9 +645,11 @@ function ShopEditConfirmContent() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
                 <p className="text-gray-900 bg-gray-50 p-2 rounded">{shopData.accountEmail}</p>
               </div>
-              {!shopData.hasExistingAccount && shopData.password && (
+              {shopData.password && shopData.password.trim().length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {shopData.hasExistingAccount ? 'パスワード（変更）' : 'パスワード'}
+                  </label>
                   <p className="text-gray-900 bg-gray-50 p-2 rounded">{'*'.repeat(8)}</p>
                 </div>
               )}
