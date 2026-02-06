@@ -61,7 +61,16 @@ export async function POST(request: NextRequest) {
 
     const res = createNoCacheResponse({ ok: true });
     if (data.accessToken) {
-      // アクセストークン: 2時間（バックエンドのJWT_ACCESS_TOKEN_EXPIRES_INと一致）
+      // アクセストークン: 30日（バックエンドのJWT_ACCESS_TOKEN_EXPIRES_INのデフォルト値と一致）
+      const accessTokenMaxAge = COOKIE_MAX_AGE.ACCESS_TOKEN;
+      const accessTokenDays = accessTokenMaxAge / (60 * 60 * 24);
+      console.log('🍪 [auth/refresh] アクセストークンCookie設定:', {
+        maxAge: accessTokenMaxAge,
+        days: accessTokenDays,
+        hours: accessTokenMaxAge / (60 * 60),
+        configValue: COOKIE_MAX_AGE.ACCESS_TOKEN,
+      });
+      
       // 旧Cookie（プレフィックス無し）を削除して衝突を解消
       res.cookies.set('accessToken', '', { httpOnly: true, secure: isSecure, sameSite: 'lax', path: '/', maxAge: 0 });
       res.cookies.set('__Host-accessToken', '', { httpOnly: true, secure: isSecure, sameSite: 'lax', path: '/', maxAge: 0 });
@@ -71,7 +80,7 @@ export async function POST(request: NextRequest) {
         secure: isSecure,
         sameSite: 'lax',
         path: '/',
-        maxAge: COOKIE_MAX_AGE.ACCESS_TOKEN,
+        maxAge: accessTokenMaxAge,
       });
       // __Host- prefix for hardened cookie - HTTPS環境でのみ設定
       if (isSecure) {
@@ -80,12 +89,21 @@ export async function POST(request: NextRequest) {
           secure: true, // __Host-プレフィックスは必ずsecure: true
           sameSite: 'lax',
           path: '/',
-          maxAge: COOKIE_MAX_AGE.ACCESS_TOKEN,
+          maxAge: accessTokenMaxAge,
         });
       }
     }
     if (data.refreshToken) {
-      // リフレッシュトークン: 7日間（バックエンドのJWT_REFRESH_TOKEN_EXPIRES_INと一致）
+      // リフレッシュトークン: 30日（1か月、バックエンドのJWT_REFRESH_TOKEN_EXPIRES_INのデフォルト値と一致）
+      const refreshTokenMaxAge = COOKIE_MAX_AGE.REFRESH_TOKEN;
+      const refreshTokenDays = refreshTokenMaxAge / (60 * 60 * 24);
+      console.log('🍪 [auth/refresh] リフレッシュトークンCookie設定:', {
+        maxAge: refreshTokenMaxAge,
+        days: refreshTokenDays,
+        hours: refreshTokenMaxAge / (60 * 60),
+        configValue: COOKIE_MAX_AGE.REFRESH_TOKEN,
+      });
+      
       // 旧Cookie（プレフィックス無し）を削除して衝突を解消
       res.cookies.set('refreshToken', '', { httpOnly: true, secure: isSecure, sameSite: 'lax', path: '/', maxAge: 0 });
       res.cookies.set('__Host-refreshToken', '', { httpOnly: true, secure: isSecure, sameSite: 'lax', path: '/', maxAge: 0 });
@@ -95,7 +113,7 @@ export async function POST(request: NextRequest) {
         secure: isSecure,
         sameSite: 'lax',
         path: '/',
-        maxAge: COOKIE_MAX_AGE.REFRESH_TOKEN,
+        maxAge: refreshTokenMaxAge,
       });
       // __Host- prefix for hardened cookie - HTTPS環境でのみ設定
       if (isSecure) {
@@ -104,7 +122,7 @@ export async function POST(request: NextRequest) {
           secure: true, // __Host-プレフィックスは必ずsecure: true
           sameSite: 'lax',
           path: '/',
-          maxAge: COOKIE_MAX_AGE.REFRESH_TOKEN,
+          maxAge: refreshTokenMaxAge,
         });
       }
     }
