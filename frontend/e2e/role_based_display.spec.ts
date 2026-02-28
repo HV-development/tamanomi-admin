@@ -131,6 +131,30 @@ test.describe('ロールベースの表示制御', () => {
             expect(isOk || isForbidden || isRedirected).toBeTruthy();
         });
 
+        test('事業者アカウントで/adminsに直リンクすると/merchantsにリダイレクトされること', async ({ browser }) => {
+            const merchantEmail = process.env.E2E_MERCHANT_EMAIL;
+            const merchantPassword = process.env.E2E_MERCHANT_PASSWORD;
+            test.skip(!merchantEmail || !merchantPassword, 'E2E_MERCHANT_EMAIL と E2E_MERCHANT_PASSWORD が設定されている場合のみ実行');
+
+            const context = await browser.newContext();
+            const page = await context.newPage();
+            try {
+                await page.goto('/login');
+                await page.waitForLoadState('domcontentloaded');
+                await page.locator('input[type="email"], #email').first().fill(merchantEmail);
+                await page.locator('input[type="password"], #password').first().fill(merchantPassword);
+                await page.getByRole('button', { name: /ログイン/i }).click();
+                await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
+
+                await page.goto('/admins');
+                await page.waitForLoadState('domcontentloaded');
+
+                await expect(page).toHaveURL(/\/merchants/);
+            } finally {
+                await context.close();
+            }
+        });
+
         test('会員一覧ページにアクセスできること', async ({ page }) => {
             await page.goto('/users');
             await expect(page).toHaveURL(/\/users/);
