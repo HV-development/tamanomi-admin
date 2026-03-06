@@ -1005,14 +1005,6 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
         customErrors.address1 = '番地以降は必須です';
       }
 
-      if (!formData.latitude || String(formData.latitude).trim().length === 0) {
-        customErrors.latitude = '緯度は必須です';
-      }
-
-      if (!formData.longitude || String(formData.longitude).trim().length === 0) {
-        customErrors.longitude = '経度は必須です';
-      }
-
       if (!formData.genreId || formData.genreId.trim().length === 0) {
         customErrors.genreId = 'ジャンルを選択してください';
       }
