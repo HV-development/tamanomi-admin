@@ -6,11 +6,11 @@ settings:
 
 dependencies:
   '@hv-development/schemas':
-    specifier: 1.140.0
-    version: 1.140.0
+    specifier: 1.141.0
+    version: 1.141.0
   autoprefixer:
     specifier: 10.4.21
-    version: 10.4.21(postcss@8.5.22)
+    version: 10.4.21(postcss@8.5.23)
   jose:
     specifier: ^6.1.0
     version: 6.1.0
@@ -974,8 +974,8 @@ packages:
     engines: {node: '>=18.18'}
     dev: true
 
-  /@hv-development/schemas@1.140.0:
-    resolution: {integrity: sha512-zx17/5cnDPPLECNz9zD/yhbnjBfJL4JzYjnYRF6oKJ18s1o04mwqMs93TBOuyRPL6ys273KH5qutHzgHs/FVpw==, tarball: https://npm.pkg.github.com/download/@hv-development/schemas/1.140.0/5f957f0e5cb7adb5eb50290eaba027e5d09dde9d}
+  /@hv-development/schemas@1.141.0:
+    resolution: {integrity: sha512-WnkeITAGPJBOcz7gtHff0AXt8HAyFzpWcaeBWItBHVm/nHxbxxYvmQNVzJK/N+Xw+ISonaD5wpmNGhZ/7DvN8A==, tarball: https://npm.pkg.github.com/download/@hv-development/schemas/1.141.0/1f534cc4d8a1c9b85984dadc878328fbfed088cb}
     engines: {node: 22.x}
     dependencies:
       zod: 3.25.76
@@ -2546,7 +2546,7 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
-  /autoprefixer@10.4.21(postcss@8.5.22):
+  /autoprefixer@10.4.21(postcss@8.5.23):
     resolution: {integrity: sha512-O+A6LWV5LDHSJD3LjHYoNi4VLsj/Whi7k6zG12xTYaU4cQ8oxQGckXNX8cRHK5yOZ/ppVHe0ZBXGzSV9jXdVbQ==}
     engines: {node: ^10 || ^12 || >=14}
     hasBin: true
@@ -2558,7 +2558,7 @@ packages:
       fraction.js: 4.3.7
       normalize-range: 0.1.2
       picocolors: 1.1.1
-      postcss: 8.5.22
+      postcss: 8.5.23
       postcss-value-parser: 4.2.0
     dev: false
 
@@ -4587,8 +4587,8 @@ packages:
       source-map-js: 1.2.1
     dev: false
 
-  /postcss@8.5.22:
-    resolution: {integrity: sha512-KBDEIpLrvpv16pp3K0Fw+UCoZfopFjjgeB+0tA/aaThfEE74kKDLrgg603YvOWJyg3+WYtyq3xYsQWsIyZlPqQ==}
+  /postcss@8.5.23:
+    resolution: {integrity: sha512-g50586zr4bZmwFiTlflMu8E0bDTb5I5gertgwAKmsdUlTQIhZtunzUlD1WSzwcVWPoAVpsrA6vlfCD7oXvRwgg==}
     engines: {node: ^10 || ^12 || >=14}
     dependencies:
       nanoid: 3.3.16
@@ -5514,7 +5514,7 @@ packages:
       esbuild: 0.28.1
       fdir: 6.5.0(picomatch@4.0.5)
       picomatch: 4.0.5
-      postcss: 8.5.22
+      postcss: 8.5.23
       rollup: 4.62.2
       tinyglobby: 0.2.17
       tsx: 4.20.6
