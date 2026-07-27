@@ -268,12 +268,12 @@ export default function EditCampaignPage() {
   const startAtRef = useRef<HTMLInputElement>(null);
   const endAtRef = useRef<HTMLInputElement>(null);
 
-  const proceedToConfirm = useCallback((acknowledgedOverlap: boolean) => {
+  const proceedToConfirm = useCallback((acknowledgedOverlapIds: string[]) => {
     if (!formData) return;
-    if (acknowledgedOverlap) {
-      sessionStorage.setItem(`campaignEditOverlapAcknowledged_${campaignId}`, 'true');
+    if (acknowledgedOverlapIds.length > 0) {
+      sessionStorage.setItem(`campaignEditAcknowledgedOverlapIds_${campaignId}`, JSON.stringify(acknowledgedOverlapIds));
     } else {
-      sessionStorage.removeItem(`campaignEditOverlapAcknowledged_${campaignId}`);
+      sessionStorage.removeItem(`campaignEditAcknowledgedOverlapIds_${campaignId}`);
     }
     sessionStorage.setItem(
       `campaignEditConfirmData_${campaignId}`,
@@ -331,7 +331,7 @@ export default function EditCampaignPage() {
       return;
     }
 
-    proceedToConfirm(false);
+    proceedToConfirm([]);
   }, [formData, campaignId, validateForm, showError, proceedToConfirm]);
 
   if (notFound) {
@@ -649,7 +649,7 @@ export default function EditCampaignPage() {
         onCancel={() => setOverlapConfirmOpen(false)}
         onConfirm={() => {
           setOverlapConfirmOpen(false);
-          proceedToConfirm(true);
+          proceedToConfirm(overlappingCampaigns.map((c) => c.id));
         }}
       />
 
