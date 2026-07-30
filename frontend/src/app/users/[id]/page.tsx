@@ -265,6 +265,8 @@ export default function UserDetailPage() {
           return '解約済み';
         case 'suspended':
           return '退会済み';
+        case 'withdrawing':
+          return '退会予定';
         case 'expired':
           return '期限切れ';
         case 'cancelled':
@@ -306,6 +308,8 @@ export default function UserDetailPage() {
           return 'bg-gray-100 text-gray-800';
         case 'suspended':
           return 'bg-red-100 text-red-800';
+        case 'withdrawing':
+          return 'bg-orange-100 text-orange-800';
         case 'expired':
           return 'bg-orange-100 text-orange-800';
         case 'pending':
