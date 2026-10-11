@@ -610,12 +610,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               {/* 店舗紹介説明 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  店舗紹介説明
+                  店舗紹介説明 <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   name="description"
                   value={formData.description ?? ''}
                   onChange={(e) => handleInputChange('description', e.target.value)}
+                  onBlur={(e) => handleFieldBlur('description', e.target.value)}
                   rows={4}
                   maxLength={500}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${validationErrors.description
@@ -633,12 +634,13 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
               {/* 詳細情報 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  詳細情報
+                  詳細情報 <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   name="details"
                   value={formData.details ?? ''}
                   onChange={(e) => handleInputChange('details', e.target.value)}
+                  onBlur={(e) => handleFieldBlur('details', e.target.value)}
                   rows={6}
                   maxLength={1000}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${validationErrors.details
@@ -911,6 +913,7 @@ export default function ShopForm({ merchantId: propMerchantId }: ShopFormProps =
             onImageSelect={handleImageSelect}
             onRemoveImage={handleRemoveImage}
             onRemoveExistingImage={handleRemoveExistingImage}
+            error={validationErrors.images}
           />
 
           {/* QRコード表示（編集モードのみ） */}
