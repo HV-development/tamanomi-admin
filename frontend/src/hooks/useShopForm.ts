@@ -199,6 +199,17 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
     restoreFromDataUrls,
   } = useImageUpload({ maxImages: 3 });
 
+  const totalImageCount = existingImages.length + imagePreviews.length;
+  useEffect(() => {
+    if (totalImageCount === 0) return;
+    setValidationErrors((prev) => {
+      if (!prev.images) return prev;
+      const newErrors = { ...prev };
+      delete newErrors.images;
+      return newErrors;
+    });
+  }, [totalImageCount]);
+
   const [selectedHolidays, setSelectedHolidays] = useState<string[]>([]);
   const [customHolidayText, setCustomHolidayText] = useState<string>('');
 
@@ -1042,12 +1053,20 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
         }
       }
 
-      if (formData.description && formData.description.length > 500) {
+      if (!formData.description || formData.description.trim().length === 0) {
+        customErrors.description = '店舗紹介説明は必須です';
+      } else if (formData.description.length > 500) {
         customErrors.description = '店舗紹介説明は500文字以内で入力してください';
       }
 
-      if (formData.details && formData.details.length > 1000) {
+      if (!formData.details || formData.details.trim().length === 0) {
+        customErrors.details = '詳細情報は必須です';
+      } else if (formData.details.length > 1000) {
         customErrors.details = '詳細情報は1000文字以内で入力してください';
+      }
+
+      if (existingImages.length + imagePreviews.length === 0) {
+        customErrors.images = '店舗画像を1枚以上登録してください';
       }
 
       if (isCreditOtherSelected && (!customCreditText || customCreditText.trim().length === 0)) {
