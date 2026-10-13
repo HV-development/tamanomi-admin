@@ -1065,10 +1065,6 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
         customErrors.details = '詳細情報は1000文字以内で入力してください';
       }
 
-      if (existingImages.length + imagePreviews.length === 0) {
-        customErrors.images = '店舗画像を1枚以上登録してください';
-      }
-
       if (isCreditOtherSelected && (!customCreditText || customCreditText.trim().length === 0)) {
         customErrors.customCreditText = 'その他のクレジットカードブランド名を入力してください';
       } else if (isCreditOtherSelected && customCreditText && customCreditText.length > 100) {
@@ -1091,6 +1087,10 @@ export function useShopForm({ merchantId: propMerchantId }: UseShopFormOptions =
         customErrors.customHolidayText = 'その他の定休日の内容を入力してください';
       } else if (isHolidayOtherSelected && customHolidayText && customHolidayText.length > 100) {
         customErrors.customHolidayText = 'その他の定休日は100文字以内で入力してください';
+      }
+
+      if (existingImages.length + imagePreviews.length === 0) {
+        customErrors.images = '店舗画像を1枚以上登録してください';
       }
 
       // 担当者情報のバリデーション
