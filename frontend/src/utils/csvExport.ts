@@ -555,13 +555,13 @@ export function convertCouponUsagesToCSV(
 
 export function convertReferralUsersToCSV(
   shopName: string,
-  users: { saitamaAppId: string; registeredAt: string; planName: string }[],
-  options: { includeAppId: boolean } = { includeAppId: true }
+  users: { email: string; saitamaAppId: string; registeredAt: string; planName: string }[],
+  options: { includeSensitiveInfo: boolean } = { includeSensitiveInfo: true }
 ): string {
-  const header = ['店舗名', ...(options.includeAppId ? ['さいたまアプリID'] : []), '登録日', '登録プラン'];
+  const header = ['店舗名', ...(options.includeSensitiveInfo ? ['メールアドレス', 'さいたまアプリID'] : []), '登録日', '登録プラン'];
   const rows = users.map((u) => [
     shopName,
-    ...(options.includeAppId ? [u.saitamaAppId || '-'] : []),
+    ...(options.includeSensitiveInfo ? [u.email || '-', u.saitamaAppId || '-'] : []),
     u.registeredAt.replace(/-/g, '/'),
     u.planName,
   ]);

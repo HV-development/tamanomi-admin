@@ -47,22 +47,22 @@ describe('convertShopsToCSV', () => {
 });
 
 describe('convertReferralUsersToCSV', () => {
-  it('店舗名・さいたまアプリID（未連携は -）・登録日（YYYY/MM/DD）・登録プランを出す', () => {
+  it('店舗名・メールアドレス・さいたまアプリID（未連携は -）・登録日（YYYY/MM/DD）・登録プランを出す', () => {
     const csv = convertReferralUsersToCSV('店舗A', [
-      { saitamaAppId: 'app-1', registeredAt: '2026-10-01', planName: '月額プラン' },
-      { saitamaAppId: '', registeredAt: '2026-09-16', planName: '' },
+      { email: 'a@example.com', saitamaAppId: 'app-1', registeredAt: '2026-10-01', planName: '月額プラン' },
+      { email: 'b@example.com', saitamaAppId: '', registeredAt: '2026-09-16', planName: '' },
     ]);
     expect(csv.startsWith('﻿')).toBe(true);
     expect(rows(csv)).toEqual([
-      ['店舗名', 'さいたまアプリID', '登録日', '登録プラン'],
-      ['店舗A', 'app-1', '2026/10/01', '月額プラン'],
-      ['店舗A', '-', '2026/09/16', ''],
+      ['店舗名', 'メールアドレス', 'さいたまアプリID', '登録日', '登録プラン'],
+      ['店舗A', 'a@example.com', 'app-1', '2026/10/01', '月額プラン'],
+      ['店舗A', 'b@example.com', '-', '2026/09/16', ''],
     ]);
   });
 
-  it('includeAppId が false ならさいたまアプリIDの列を出さない', () => {
-    const csv = convertReferralUsersToCSV('店舗A', [{ saitamaAppId: 'app-1', registeredAt: '2026-10-01', planName: '月額プラン' }], {
-      includeAppId: false,
+  it('includeSensitiveInfo が false ならメールアドレスとさいたまアプリIDの列を出さない', () => {
+    const csv = convertReferralUsersToCSV('店舗A', [{ email: 'a@example.com', saitamaAppId: 'app-1', registeredAt: '2026-10-01', planName: '月額プラン' }], {
+      includeSensitiveInfo: false,
     });
     expect(rows(csv)).toEqual([
       ['店舗名', '登録日', '登録プラン'],
