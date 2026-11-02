@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { type MerchantWithDetails } from '@hv-development/schemas';
 import { useAuth } from '@/components/contexts/auth-context';
 import { convertMerchantsToCSV, downloadCSV, generateFilename, type MerchantForCSV } from '@/utils/csvExport';
+import { usePermissions } from '@/hooks/use-permissions';
 
 // 動的インポート：選択時のみ表示されるフローティングフッター
 const FloatingFooterMerchant = dynamic(() => import('@/components/molecules/floating-footer-merchant'), {
@@ -72,6 +73,7 @@ export default function MerchantsPage() {
   
   // 事業者アカウントかどうかを判定
   const isMerchantAccount = auth?.user?.accountType === 'merchant';
+  const { canWrite } = usePermissions();
   
   // operatorロールかどうかを判定
   const isOperatorRole = auth?.user?.accountType === 'admin' && auth?.user?.role === 'operator';
@@ -839,6 +841,7 @@ export default function MerchantsPage() {
           return merchant && merchant.account && merchant.account.passwordHash;
         }).length}
         onDownloadCSV={handleDownloadSelectedCSV}
+        canIssueAccount={canWrite}
       />
 
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
