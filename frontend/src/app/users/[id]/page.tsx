@@ -263,6 +263,8 @@ export default function UserDetailPage() {
       switch (status) {
         case 'active':
           return '契約中';
+        case 'free_period':
+          return '無料期間中';
         case 'inactive':
           return '未契約';
         case 'terminated':
@@ -305,6 +307,8 @@ export default function UserDetailPage() {
       switch (status) {
         case 'active':
           return 'bg-green-100 text-green-800';
+        case 'free_period':
+          return 'bg-purple-100 text-purple-800';
         case 'inactive':
           return 'bg-yellow-100 text-yellow-800';
         case 'terminated':
